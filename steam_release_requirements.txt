@@ -1,0 +1,60 @@
+Here's a suggested set of minimal requirements:
+Core Gameplay:
+
+Top-down, tile-based mining gameplay
+Basic resource gathering (ore mining)
+Simple crafting system (tools, upgrades)
+Character progression through skill improvements
+
+Content:
+
+At least 3-5 hours of gameplay for an average player
+1 main mining area with procedurally generated caves
+5-10 different types of ores/resources
+10-15 craftable items or upgrades
+
+Features:
+
+Save/load functionality
+Basic sound effects and background music
+Simple tutorial or help system
+Minimalistic UI for inventory, crafting, and skills
+
+Graphics:
+
+Consistent, albeit simple, pixel art style
+Basic animations for player character and mining actions
+
+Polish:
+
+Bug-free experience
+Balanced gameplay progression
+Clear objectives or goals for the player
+
+Steam Integration:
+
+Steam achievements (5-10 basic achievements)
+Steam cloud saves
+
+Localization:
+
+English language support (additional languages as stretch goals)
+
+Suggested Genre for Steam Release:
+For the Steam store page, I would recommend categorizing Pickaxe Pioneer under the following genres:
+Primary Genre: Indie
+Secondary Genres:
+
+Casual
+Simulation
+RPG
+
+Tags:
+
+Mining
+Resource Management
+Pixel Graphics
+Crafting
+Top-Down
+Exploration
+Procedural Generation
