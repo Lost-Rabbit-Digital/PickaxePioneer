@@ -1,60 +1,67 @@
-Here's a suggested set of minimal requirements:
-Core Gameplay:
+Pickaxe Pioneer: Vampire Survivors-like Design
+Core Concept
+A fast-paced, mineral-mining roguelite where you survive waves of advancing mineral formations while continuously upgrading your mining abilities.
+Key Features
 
-Top-down, tile-based mining gameplay
-Basic resource gathering (ore mining)
-Simple crafting system (tools, upgrades)
-Character progression through skill improvements
+Automatic mining: Your pickaxe swings automatically, allowing focus on movement and upgrades
+Endless waves: Mineral formations continuously emerge and advance towards the player
+Rapid progression: Quick runs (10-30 minutes) with fast-paced upgrading
+Permadeath: Each run starts fresh, with meta-progression between runs
+Minimalist controls: Move with WASD or arrow keys, minimal additional inputs required
 
-Content:
+Gameplay Loop
 
-At least 3-5 hours of gameplay for an average player
-1 main mining area with procedurally generated caves
-5-10 different types of ores/resources
-10-15 craftable items or upgrades
+Start in a procedurally generated mine
+Mine automatically approaching mineral formations
+Collect experience gems and rare minerals
+Level up and choose upgrades
+Survive as long as possible against increasingly difficult waves
+Die and start over with meta-progression benefits
 
-Features:
+Player Abilities & Upgrades
 
-Save/load functionality
-Basic sound effects and background music
-Simple tutorial or help system
-Minimalistic UI for inventory, crafting, and skills
+Basic pickaxe attack (auto-swings)
+Upgradeable mining speed, area, and damage
+Special abilities: drill dash, dynamite throw, ore magnet, etc.
+Passive upgrades: movement speed, gem attraction, critical mining chance
 
-Graphics:
+Mineral "Enemies"
 
-Consistent, albeit simple, pixel art style
-Basic animations for player character and mining actions
+Various types: coal (basic), iron (tough), gold (valuable), diamond (dangerous), etc.
+Special formations: geodes (burst into smaller minerals), crystal clusters (shoot projectiles)
+Boss minerals: Large, complex formations with unique patterns and abilities
 
-Polish:
+Progression System
 
-Bug-free experience
-Balanced gameplay progression
-Clear objectives or goals for the player
+In-run leveling: Choose from random upgrades each level
+Meta-progression: Unlock new miners, starting bonuses, and abilities between runs
 
-Steam Integration:
+Economy & Monetization ($4.99 price point)
 
-Steam achievements (5-10 basic achievements)
-Steam cloud saves
+One-time purchase, no microtransactions
+Unlockable content through gameplay progression
+Potential for future DLC with new biomes, miners, or mineral types
 
-Localization:
+Art Style
 
-English language support (additional languages as stretch goals)
+Vibrant, chunky pixel art for clear visibility during chaotic gameplay
+Distinct silhouettes for different mineral types
+Satisfying particle effects for mining and explosions
 
-Suggested Genre for Steam Release:
-For the Steam store page, I would recommend categorizing Pickaxe Pioneer under the following genres:
-Primary Genre: Indie
-Secondary Genres:
+Sound Design
 
-Casual
-Simulation
-RPG
+Catchy, upbeat soundtrack that intensifies as difficulty increases
+Satisfying mining sound effects with pitch variation for different minerals
 
-Tags:
+Unique Selling Points
 
-Mining
-Resource Management
-Pixel Graphics
-Crafting
-Top-Down
-Exploration
-Procedural Generation
+Fresh theme: Mining instead of combat, appealing to a broad audience
+Educational undertones: Mineral types loosely based on real geology
+Satisfying progression: Both in-run and meta-progression feels rewarding
+Low price point with high replayability
+
+Post-Launch Support
+
+Regular content updates: New miners, minerals, and special events
+Community challenges: Daily/weekly runs with specific conditions
+Leaderboards: Global and friend rankings for longest survival time
