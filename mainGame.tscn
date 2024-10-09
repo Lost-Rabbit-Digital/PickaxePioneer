@@ -1,15 +1,22 @@
-[gd_scene load_steps=6 format=3 uid="uid://dhoarc3cdxklh"]
+[gd_scene load_steps=7 format=3 uid="uid://dhoarc3cdxklh"]
 
 [ext_resource type="Script" path="res://PlayerCharacter.gd" id="1_8avol"]
 [ext_resource type="Texture2D" uid="uid://d2ydo7dis1gpy" path="res://basic_hero.png" id="2_1c2mr"]
 [ext_resource type="PackedScene" uid="uid://mm4p8wa1y38k" path="res://mineral.tscn" id="3_4fshc"]
 [ext_resource type="Script" path="res://mineral_spawner.gd" id="4_e52ow"]
+[ext_resource type="Texture2D" uid="uid://caj7bees44qsk" path="res://background.jpg" id="5_8fhnp"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_k1s5n"]
 radius = 15.0
 height = 44.0
 
 [node name="Node2D" type="Node2D"]
+
+[node name="Sprite2D (Background)" type="Sprite2D" parent="."]
+modulate = Color(0.505882, 0.501961, 0.533333, 1)
+position = Vector2(572, 321)
+scale = Vector2(0.868533, 0.863146)
+texture = ExtResource("5_8fhnp")
 
 [node name="CharacterBody2D" type="CharacterBody2D" parent="."]
 position = Vector2(566, 312)
