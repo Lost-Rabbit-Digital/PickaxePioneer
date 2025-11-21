@@ -20,7 +20,7 @@ shape = SubResource("CircleShape2D_1")
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("2_health")
-max_health = 30
+max_health = 10
 
 [node name="HurtboxComponent" type="Area2D" parent="." node_paths=PackedStringArray("health_component")]
 script = ExtResource("3_hurtbox")

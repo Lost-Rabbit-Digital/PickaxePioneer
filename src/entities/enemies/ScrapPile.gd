@@ -47,5 +47,5 @@ func _spawn_loot() -> void:
 	var loot_count = randi_range(2, 5)
 	for i in range(loot_count):
 		var loot = loot_scene.instantiate()
-		loot.position = position + Vector2(randf_range(-20, 20), randf_range(-20, 20))
+		loot.position = position + Vector2(randf_range(-50, 50), randf_range(-50, 50))
 		get_parent().call_deferred("add_child", loot)

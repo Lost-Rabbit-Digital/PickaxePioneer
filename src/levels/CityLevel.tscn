@@ -58,3 +58,5 @@ spawn_area = Rect2(50, 50, 1180, 620)
 stream = ExtResource("6_music")
 autoplay = true
 bus = &"Music"
+
+[connection signal="pressed" from="CanvasLayer/ReturnButton" to="." method="_on_return_button_pressed"]

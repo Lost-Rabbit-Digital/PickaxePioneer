@@ -34,6 +34,18 @@ func _update_visuals() -> void:
 		NodeType.EMPTY:
 			sprite.modulate = Color.WHITE
 
+var neighbors: Array[MapNode] = []
+
+func highlight(active: bool) -> void:
+	if active:
+		sprite.scale = Vector2(1.2, 1.2)
+		label.modulate = Color.YELLOW
+	else:
+		sprite.scale = Vector2(1.0, 1.0)
+		if node_type == NodeType.ASTEROID:
+			sprite.scale = Vector2(0.5, 0.5)
+		label.modulate = Color.WHITE
+
 func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		node_clicked.emit(self)

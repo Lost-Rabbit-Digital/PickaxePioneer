@@ -25,6 +25,17 @@ func _change_direction() -> void:
 	direction = Vector2(randf_range(-1, 1), randf_range(-1, 1)).normalized()
 
 func _physics_process(delta: float) -> void:
+	var move_type = get_meta("movement_type", 0) # Default to WANDER (0)
+	
+	if move_type == 1: # CHASE
+		var player = get_tree().get_first_node_in_group("player")
+		if player:
+			direction = global_position.direction_to(player.global_position)
+		else:
+			# Fallback to wander if no player
+			if direction == Vector2.ZERO:
+				_change_direction()
+	
 	velocity = direction * speed
 	move_and_slide()
 	
@@ -32,18 +43,14 @@ func _physics_process(delta: float) -> void:
 	if is_on_wall():
 		direction = get_wall_normal()
 
+
 func _on_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player"):
 		print("Player hit by Mutant! Run Lost!")
 		GameManager.lose_run()
 
 func _on_area_entered(area: Area2D) -> void:
-	if area.name == "MiningLaser":
-		take_damage(10)
-		_spawn_blood_particles()
-		# Push back from laser
-		var knockback = global_position.direction_to(area.global_position) * -200
-		velocity = knockback
+	pass
 
 func take_damage(amount: int) -> void:
 	health -= amount
@@ -76,3 +83,16 @@ func _spawn_blood_particles() -> void:
 	# Auto-cleanup
 	await get_tree().create_timer(0.8).timeout
 	particles.queue_free()
+
+func setup(new_color: Color, speed_mult: float, movement_type: int) -> void:
+	$Sprite2D.modulate = new_color
+	speed *= speed_mult
+	
+	# If chasing, we might want a higher speed or different behavior
+	if movement_type == 1: # CHASE
+		# Chase mutants might be faster or slower depending on design, 
+		# for now we just respect the multiplier.
+		pass
+		
+	# Store movement type if needed for logic switching
+	set_meta("movement_type", movement_type)

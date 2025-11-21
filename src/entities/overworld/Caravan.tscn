@@ -1,10 +1,11 @@
 [gd_scene load_steps=3 format=3 uid="uid://caravan456"]
 
 [ext_resource type="Script" path="res://src/entities/overworld/Caravan.gd" id="1_caravan"]
-[ext_resource type="Texture2D" uid="uid://caravan_svg" path="res://assets/caravan.svg" id="2_sprite"]
+[ext_resource type="Texture2D" uid="uid://player_ship_svg" path="res://assets/player_ship.svg" id="2_sprite"]
 
 [node name="Caravan" type="Node2D"]
 script = ExtResource("1_caravan")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("2_sprite")
+rotation = 1.5708

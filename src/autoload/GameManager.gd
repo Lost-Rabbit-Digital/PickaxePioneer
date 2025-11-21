@@ -10,6 +10,7 @@ enum GameState {
 var current_state: GameState = GameState.MENU
 var scrap_currency: int = 0
 var run_scrap_currency: int = 0
+var last_overworld_node_name: String = ""
 
 # Upgrade levels
 var hull_level: int = 0
