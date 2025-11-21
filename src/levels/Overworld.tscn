@@ -1,0 +1,57 @@
+[gd_scene load_steps=6 format=3 uid="uid://overworld8aa"]
+
+[ext_resource type="Script" path="res://src/levels/Overworld.gd" id="1_overworld"]
+[ext_resource type="PackedScene" uid="uid://mapnode123" path="res://src/entities/overworld/MapNode.tscn" id="2_node"]
+[ext_resource type="PackedScene" uid="uid://caravan456" path="res://src/entities/overworld/Caravan.tscn" id="3_caravan"]
+[ext_resource type="AudioStream" uid="uid://overworld_mp3" path="res://assets/overworld.mp3" id="4_music"]
+[ext_resource type="Texture2D" uid="uid://bg_wasteland_svg" path="res://assets/bg_wasteland.svg" id="5_bg_wasteland"]
+[ext_resource type="Texture2D" uid="uid://dust_svg" path="res://assets/dust.svg" id="6_dust"]
+
+[node name="Overworld" type="Node2D"]
+script = ExtResource("1_overworld")
+
+[node name="ParallaxBackground" type="ParallaxBackground" parent="."]
+
+[node name="ParallaxLayerBg" type="ParallaxLayer" parent="ParallaxBackground"]
+motion_scale = Vector2(0.1, 0.1)
+
+[node name="Sprite2D" type="Sprite2D" parent="ParallaxBackground/ParallaxLayerBg"]
+texture = ExtResource("5_bg_wasteland")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 0, 1280, 720)
+
+[node name="ParallaxLayerDust" type="ParallaxLayer" parent="ParallaxBackground"]
+motion_scale = Vector2(0.5, 0.5)
+
+[node name="Sprite2D" type="Sprite2D" parent="ParallaxBackground/ParallaxLayerDust"]
+texture = ExtResource("6_dust")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 0, 1280, 720)
+
+[node name="CityNode" parent="." instance=ExtResource("2_node")]
+position = Vector2(200, 360)
+location_name = "Base City"
+node_type = 2
+scene_path = "res://src/levels/CityLevel.tscn"
+
+[node name="MineNode1" parent="." instance=ExtResource("2_node")]
+position = Vector2(600, 200)
+location_name = "Iron Mine"
+node_type = 1
+scene_path = "res://src/levels/MiningLevel.tscn"
+
+[node name="MineNode2" parent="." instance=ExtResource("2_node")]
+position = Vector2(800, 500)
+location_name = "Gold Mine"
+node_type = 1
+scene_path = "res://src/levels/MiningLevel.tscn"
+
+[node name="Caravan" parent="." instance=ExtResource("3_caravan")]
+position = Vector2(200, 360)
+
+[node name="Music" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("4_music")
+autoplay = true
+bus = &"Music"

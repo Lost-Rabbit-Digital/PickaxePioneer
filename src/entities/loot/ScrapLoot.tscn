@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3 uid="uid://scraploot123"]
+
+[ext_resource type="Script" path="res://src/entities/loot/ScrapLoot.gd" id="1_loot"]
+[ext_resource type="Texture2D" uid="uid://scrap_chunk_svg" path="res://assets/scrap_chunk.svg" id="2_sprite"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1"]
+radius = 8.0
+
+[node name="ScrapLoot" type="Area2D"]
+collision_layer = 8
+collision_mask = 2
+script = ExtResource("1_loot")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_sprite")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_1")

@@ -1,0 +1,32 @@
+[gd_scene load_steps=4 format=3 uid="uid://e1z9l4r7x5b4"]
+
+[ext_resource type="Script" path="res://src/entities/player/MiningLaser.gd" id="1_laser"]
+[ext_resource type="Script" path="res://src/components/HitboxComponent.gd" id="2_hitbox"]
+[ext_resource type="Texture2D" uid="uid://laser_beam_svg" path="res://assets/laser_beam.svg" id="3_sprite"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
+size = Vector2(10, 4)
+
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_laser"]
+size = Vector2(1, 1)
+
+[node name="MiningLaser" type="Area2D"]
+collision_layer = 0
+collision_mask = 5
+script = ExtResource("1_laser")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("3_sprite")
+scale = Vector2(1, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_1")
+
+[node name="HitboxComponent" type="Area2D" parent="."]
+script = ExtResource("2_hitbox")
+damage = 10
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HitboxComponent"]
+shape = SubResource("RectangleShape2D_1")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]

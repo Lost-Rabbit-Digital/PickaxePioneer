@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3 uid="uid://extraction123"]
+
+[ext_resource type="Script" path="res://src/entities/world/ExtractionZone.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://extractionsvg123" path="res://assets/extraction_zone.svg" id="2_sprite"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
+size = Vector2(64, 64)
+
+[node name="ExtractionZone" type="Area2D"]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("1_script")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_sprite")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_1")

@@ -1,0 +1,99 @@
+[gd_scene load_steps=2 format=3 uid="uid://dmqhra3bkoef7"]
+
+[ext_resource type="Script" path="res://src/ui/UpgradeMenu.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://shopkeepersvg123" path="res://assets/shopkeeper.svg" id="2_shopkeeper"]
+
+[node name="UpgradeMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -150.0
+offset_right = 200.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Shopkeeper" type="TextureRect" parent="Panel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -32.0
+offset_top = -64.0
+offset_right = 32.0
+grow_horizontal = 2
+texture = ExtResource("2_shopkeeper")
+
+[node name="DialogueLabel" type="Label" parent="Panel/Shopkeeper"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 70.0
+offset_top = -20.0
+offset_right = 270.0
+offset_bottom = 20.0
+grow_vertical = 2
+text = "Welcome, traveler!"
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="Label" type="Label" parent="Panel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 40.0
+text = "Ship Upgrades"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="InfoLabel" type="Label" parent="Panel"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
+text = "Current Scrap: 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -80.0
+offset_right = 150.0
+offset_bottom = 80.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 15
+
+[node name="HullButton" type="Button" parent="Panel/VBoxContainer"]
+layout_mode = 2
+text = "Upgrade Hull (50 Scrap)"
+
+[node name="EngineButton" type="Button" parent="Panel/VBoxContainer"]
+layout_mode = 2
+text = "Upgrade Engine (50 Scrap)"
+
+[node name="LaserButton" type="Button" parent="Panel/VBoxContainer"]
+layout_mode = 2
+text = "Upgrade Laser (50 Scrap)"
