@@ -10,58 +10,98 @@ const CELL_SIZE: int = 64
 const EXIT_COLS: int = 2  # Rightmost columns are the exit/spawn zone
 
 enum TileType {
-	EMPTY     = 0,
-	DIRT      = 1,
-	ORE_COPPER = 2,
-	ORE_IRON  = 3,
-	ORE_GOLD  = 4,
-	ORE_GEM   = 5,
-	EXPLOSIVE = 6,
-	LAVA      = 7,
-	FUEL_NODE = 8,
-	REFUEL_STATION = 9,
-	SURFACE   = 10,  # Surface tile - no fuel consumption, left/right only
+	EMPTY            = 0,
+	DIRT             = 1,
+	DIRT_DARK        = 2,   # Darker soil variant
+	ORE_COPPER       = 3,
+	ORE_COPPER_DEEP  = 4,   # Deeper copper ore
+	ORE_IRON         = 5,
+	ORE_IRON_DEEP    = 6,   # Deeper iron ore
+	ORE_GOLD         = 7,
+	ORE_GOLD_DEEP    = 8,   # Deeper gold ore
+	ORE_GEM          = 9,
+	ORE_GEM_DEEP     = 10,  # Deeper gem ore
+	STONE            = 11,  # Regular stone
+	STONE_DARK       = 12,  # Dark stone variant
+	EXPLOSIVE        = 13,
+	EXPLOSIVE_ARMED  = 14,  # Armed explosive variant
+	LAVA             = 15,
+	LAVA_FLOW        = 16,  # Lava flow variant
+	FUEL_NODE        = 17,
+	FUEL_NODE_FULL   = 18,  # Fully charged fuel node
+	REFUEL_STATION   = 19,
+	SURFACE          = 20,  # Surface tile - no fuel consumption, left/right only
+	SURFACE_GRASS    = 21,  # Grass surface variant
 }
 
 const TILE_COLORS: Dictionary = {
-	TileType.DIRT:          Color(0.45, 0.28, 0.12),  # Brown
-	TileType.ORE_COPPER:    Color(0.80, 0.50, 0.20),  # Copper orange
-	TileType.ORE_IRON:      Color(0.65, 0.65, 0.72),  # Iron silver
-	TileType.ORE_GOLD:      Color(1.00, 0.85, 0.10),  # Gold yellow
-	TileType.ORE_GEM:       Color(0.15, 0.85, 0.75),  # Gem cyan
-	TileType.EXPLOSIVE:     Color(0.90, 0.10, 0.10),  # Explosive red
-	TileType.LAVA:          Color(1.00, 0.45, 0.00),  # Lava orange
-	TileType.FUEL_NODE:     Color(0.20, 0.80, 0.20),  # Fuel green
-	TileType.REFUEL_STATION: Color(0.50, 0.50, 0.50), # Refuel station grey
-	TileType.SURFACE:       Color(0.35, 0.35, 0.35),  # Surface dark grey
+	TileType.DIRT:           Color(0.45, 0.28, 0.12),  # Brown
+	TileType.DIRT_DARK:      Color(0.35, 0.20, 0.08),  # Dark brown
+	TileType.ORE_COPPER:     Color(0.80, 0.50, 0.20),  # Copper orange
+	TileType.ORE_COPPER_DEEP: Color(0.70, 0.40, 0.10), # Deep copper
+	TileType.ORE_IRON:       Color(0.65, 0.65, 0.72),  # Iron silver
+	TileType.ORE_IRON_DEEP:  Color(0.55, 0.55, 0.65),  # Deep iron
+	TileType.ORE_GOLD:       Color(1.00, 0.85, 0.10),  # Gold yellow
+	TileType.ORE_GOLD_DEEP:  Color(0.90, 0.75, 0.05),  # Deep gold
+	TileType.ORE_GEM:        Color(0.15, 0.85, 0.75),  # Gem cyan
+	TileType.ORE_GEM_DEEP:   Color(0.10, 0.75, 0.65),  # Deep gem
+	TileType.STONE:          Color(0.50, 0.50, 0.50),  # Stone grey
+	TileType.STONE_DARK:     Color(0.40, 0.40, 0.40),  # Dark stone
+	TileType.EXPLOSIVE:      Color(0.90, 0.10, 0.10),  # Explosive red
+	TileType.EXPLOSIVE_ARMED: Color(1.00, 0.00, 0.00), # Armed explosive bright red
+	TileType.LAVA:           Color(1.00, 0.45, 0.00),  # Lava orange
+	TileType.LAVA_FLOW:      Color(1.00, 0.30, 0.00),  # Lava flow darker
+	TileType.FUEL_NODE:      Color(0.20, 0.80, 0.20),  # Fuel green
+	TileType.FUEL_NODE_FULL: Color(0.10, 1.00, 0.10),  # Full fuel bright green
+	TileType.REFUEL_STATION: Color(0.50, 0.50, 0.50),  # Refuel station grey
+	TileType.SURFACE:        Color(0.35, 0.35, 0.35),  # Surface dark grey
+	TileType.SURFACE_GRASS:  Color(0.25, 0.50, 0.25),  # Surface grass green
 }
 
-# Sprite indices for terrain spritesheet (0=grass_foliage, 1=grass_block, 2=dirt_block, 3=stone_block, 4=coal_block, 5=oak_log_block)
+# Sprite indices for terrain spritesheet with 16x16 individual block sprites
 const TILE_SPRITES: Dictionary = {
-	TileType.DIRT:          2,  # dirt_block
-	TileType.ORE_COPPER:    3,  # stone_block
-	TileType.ORE_IRON:      4,  # coal_block
-	TileType.ORE_GOLD:      5,  # oak_log_block
-	TileType.ORE_GEM:       0,  # grass_foliage
-	TileType.EXPLOSIVE:     1,  # grass_block
-	TileType.LAVA:          1,  # grass_block
-	TileType.FUEL_NODE:     1,  # grass_block
-	TileType.REFUEL_STATION: 3,  # stone_block (special rendering adds border)
-	TileType.SURFACE:       2,  # dirt_block
+	TileType.DIRT:           0,  # dirt_block
+	TileType.DIRT_DARK:      1,  # dark_dirt_block
+	TileType.STONE:          2,  # stone_block
+	TileType.STONE_DARK:     3,  # dark_stone_block
+	TileType.ORE_COPPER:     4,  # copper_ore
+	TileType.ORE_COPPER_DEEP: 5,  # deep_copper_ore
+	TileType.ORE_IRON:       6,  # iron_ore
+	TileType.ORE_IRON_DEEP:  7,  # deep_iron_ore
+	TileType.ORE_GOLD:       8,  # gold_ore
+	TileType.ORE_GOLD_DEEP:  9,  # deep_gold_ore
+	TileType.ORE_GEM:        10, # gem_ore
+	TileType.ORE_GEM_DEEP:   11, # deep_gem_ore
+	TileType.EXPLOSIVE:      12, # explosive
+	TileType.EXPLOSIVE_ARMED: 13, # armed_explosive
+	TileType.LAVA:           14, # lava
+	TileType.LAVA_FLOW:      15, # lava_flow
+	TileType.FUEL_NODE:      16, # fuel_node
+	TileType.FUEL_NODE_FULL: 17, # fuel_node_full
+	TileType.REFUEL_STATION: 18, # refuel_station (special rendering adds border)
+	TileType.SURFACE:        19, # surface
+	TileType.SURFACE_GRASS:  20, # surface_grass
 }
 
-# Spritesheet layout: 12x67 (1 sprite wide + 1px buffer on each side, 6 sprites tall with 1px buffer)
-const SPRITE_SHEET_WIDTH: int = 12
-const SPRITE_WIDTH: int = 10
-const SPRITE_HEIGHT: int = 10
+# Spritesheet layout: 18 pixels wide, 357 pixels tall for 21 sprites at 16x16 with 1px buffer
+const SPRITE_SHEET_WIDTH: int = 18
+const SPRITE_WIDTH: int = 16
+const SPRITE_HEIGHT: int = 16
 const SPRITE_BUFFER: int = 1
 
 const TILE_SCRAP: Dictionary = {
-	TileType.DIRT:       1,
-	TileType.ORE_COPPER: 3,
-	TileType.ORE_IRON:   5,
-	TileType.ORE_GOLD:   10,
-	TileType.ORE_GEM:    20,
+	TileType.DIRT:            1,
+	TileType.DIRT_DARK:       1,
+	TileType.STONE:           2,
+	TileType.STONE_DARK:      2,
+	TileType.ORE_COPPER:      3,
+	TileType.ORE_COPPER_DEEP: 5,
+	TileType.ORE_IRON:        5,
+	TileType.ORE_IRON_DEEP:   8,
+	TileType.ORE_GOLD:        10,
+	TileType.ORE_GOLD_DEEP:   15,
+	TileType.ORE_GEM:         20,
+	TileType.ORE_GEM_DEEP:    30,
 }
 
 var grid: Array = []
@@ -118,19 +158,37 @@ func _generate_grid() -> void:
 
 func _random_tile() -> TileType:
 	var r := randf()
-	if   r < 0.06: return TileType.EXPLOSIVE
-	elif r < 0.10: return TileType.LAVA
-	elif r < 0.12: return TileType.FUEL_NODE  # 2% fuel nodes
-	elif r < 0.24: return TileType.ORE_COPPER
-	elif r < 0.32: return TileType.ORE_IRON
-	elif r < 0.37: return TileType.ORE_GOLD
-	elif r < 0.39: return TileType.ORE_GEM
-	else:          return TileType.DIRT
+	# Hazards (10% total)
+	if   r < 0.04: return TileType.EXPLOSIVE
+	elif r < 0.06: return TileType.EXPLOSIVE_ARMED  # 2% armed explosive
+	elif r < 0.08: return TileType.LAVA
+	elif r < 0.09: return TileType.LAVA_FLOW  # 1% lava flow
+	# Fuel nodes (3% total)
+	elif r < 0.11: return TileType.FUEL_NODE
+	elif r < 0.12: return TileType.FUEL_NODE_FULL  # 1% full fuel
+	# Copper ore (8% total)
+	elif r < 0.16: return TileType.ORE_COPPER
+	elif r < 0.18: return TileType.ORE_COPPER_DEEP  # 2% deep copper
+	# Iron ore (8% total)
+	elif r < 0.22: return TileType.ORE_IRON
+	elif r < 0.25: return TileType.ORE_IRON_DEEP  # 3% deep iron
+	# Gold ore (6% total)
+	elif r < 0.29: return TileType.ORE_GOLD
+	elif r < 0.31: return TileType.ORE_GOLD_DEEP  # 2% deep gold
+	# Gem ore (4% total)
+	elif r < 0.33: return TileType.ORE_GEM
+	elif r < 0.35: return TileType.ORE_GEM_DEEP  # 2% deep gem
+	# Stone (10% total)
+	elif r < 0.42: return TileType.STONE
+	elif r < 0.45: return TileType.STONE_DARK  # 3% dark stone
+	# Dirt (48% total)
+	elif r < 0.87: return TileType.DIRT
+	else:          return TileType.DIRT_DARK  # 13% dark dirt
 
 func _create_sprite_atlases() -> void:
-	# Create 6 AtlasTexture objects for each sprite in the spritesheet
-	# Spritesheet is laid out vertically with 1px buffer
-	for i in range(6):
+	# Create 21 AtlasTexture objects for each sprite in the spritesheet
+	# Spritesheet is laid out vertically with 1px buffer around each 16x16 sprite
+	for i in range(21):
 		var atlas = AtlasTexture.new()
 		atlas.atlas = terrain_spritesheet
 		var y_pos = SPRITE_BUFFER + i * (SPRITE_HEIGHT + SPRITE_BUFFER)
@@ -184,10 +242,10 @@ func _draw() -> void:
 				CELL_SIZE - 12
 			)
 			match tile:
-				TileType.ORE_COPPER, TileType.ORE_IRON:
+				TileType.ORE_COPPER, TileType.ORE_COPPER_DEEP, TileType.ORE_IRON, TileType.ORE_IRON_DEEP:
 					if scrap_pile_texture:
 						draw_texture_rect(scrap_pile_texture, svg_rect, false)
-				TileType.ORE_GOLD, TileType.ORE_GEM:
+				TileType.ORE_GOLD, TileType.ORE_GOLD_DEEP, TileType.ORE_GEM, TileType.ORE_GEM_DEEP:
 					if scrap_chunk_texture:
 						draw_texture_rect(scrap_chunk_texture, svg_rect, false)
 
