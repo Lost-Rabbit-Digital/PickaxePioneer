@@ -188,6 +188,10 @@ func _random_tile() -> TileType:
 func _create_sprite_atlases() -> void:
 	# Create 21 AtlasTexture objects for each sprite in the spritesheet
 	# Spritesheet is laid out vertically with 1px buffer around each 16x16 sprite
+	if not terrain_spritesheet:
+		push_error("terrain_spritesheet failed to load! Check path: res://assets/terrain/terrain_spritesheet.png")
+		return
+
 	for i in range(21):
 		var atlas = AtlasTexture.new()
 		atlas.atlas = terrain_spritesheet
@@ -227,7 +231,16 @@ func _draw() -> void:
 			if sprite_atlases.size() > 0:
 				var sprite_index = TILE_SPRITES.get(tile, 2)  # Default to dirt_block if not found
 				var sprite_texture = sprite_atlases[sprite_index] if sprite_index < sprite_atlases.size() else sprite_atlases[0]
-				draw_texture_rect(sprite_texture, tile_screen_rect, false)
+				if sprite_texture:
+					draw_texture_rect(sprite_texture, tile_screen_rect, false)
+				else:
+					# Fallback to colored squares if texture fails to load
+					var color = TILE_COLORS.get(tile, Color(0.5, 0.5, 0.5))
+					draw_rect(tile_screen_rect, color)
+			else:
+				# No sprite atlases loaded - draw colored squares as fallback
+				var color = TILE_COLORS.get(tile, Color(0.5, 0.5, 0.5))
+				draw_rect(tile_screen_rect, color)
 
 			# Draw refuel station border highlight
 			if tile == TileType.REFUEL_STATION:
@@ -306,9 +319,20 @@ func _try_move(dc: int, dr: int) -> void:
 
 	# Check if trying to move on surface
 	if was_on_surface:
-		# Surface only allows left/right movement
-		if dr != 0:
+		# Surface only allows left/right movement, except downward to enter mining area
+		if dr != 0 and dr != 1:
 			return
+		# If moving down from surface, allow it (enters mining area)
+		if dr == 1:
+			# Allow moving down into mining area
+			var new_tile = grid[new_col][new_row]
+			if new_tile != TileType.EMPTY:
+				player_grid_pos = Vector2i(new_col, new_row)
+				is_on_surface = false
+				queue_redraw()
+				return
+			else:
+				return
 		# Moving on surface is always allowed if in bounds
 		player_grid_pos = Vector2i(new_col, new_row)
 		is_on_surface = (grid[new_col][new_row] == TileType.SURFACE)
