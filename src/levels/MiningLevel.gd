@@ -3,11 +3,15 @@ extends Node2D
 # Grid-based Mining Level
 # Player spawns on the right (exit zone) and moves LEFT to mine.
 # Right EXIT_COLS columns are empty — returning there ends the run.
+# Map is 32x128 tiles; Camera2D follows the player.
 
-const GRID_COLS: int = 20
-const GRID_ROWS: int = 11
+const GRID_COLS: int = 32
+const GRID_ROWS: int = 128
 const CELL_SIZE: int = 64
 const EXIT_COLS: int = 2  # Rightmost columns are the exit/spawn zone
+
+const VIEWPORT_W: int = 1280
+const VIEWPORT_H: int = 720
 
 enum TileType {
 	EMPTY            = 0,
@@ -83,7 +87,7 @@ const TILE_SPRITES: Dictionary = {
 	TileType.SURFACE_GRASS:  20, # surface_grass
 }
 
-# Spritesheet layout: 18 pixels wide, 357 pixels tall for 21 sprites at 16x16 with 1px buffer
+# Spritesheet layout: 18 pixels wide, sprites are 16x16 with 1px buffer around each
 const SPRITE_SHEET_WIDTH: int = 18
 const SPRITE_WIDTH: int = 16
 const SPRITE_HEIGHT: int = 16
@@ -116,6 +120,9 @@ var scrap_chunk_texture: Texture2D
 var terrain_spritesheet: Texture2D
 var sprite_atlases: Array[AtlasTexture] = []  # Pre-created atlas textures for each sprite
 
+# Camera
+var camera: Camera2D
+
 @onready var player_node = $PlayerProbe
 @onready var pause_menu = $PauseMenu
 
@@ -125,10 +132,23 @@ func _ready() -> void:
 	scrap_chunk_texture = load("res://assets/scrap_chunk.svg")
 	terrain_spritesheet = load("res://assets/terrain/terrain_spritesheet.png")
 
+	# Use nearest-neighbor filtering for crisp pixel-art tile textures
+	texture_filter = TEXTURE_FILTER_NEAREST
+
 	# Pre-create AtlasTexture objects for each sprite in the sheet
 	_create_sprite_atlases()
 
 	_generate_grid()
+
+	# Create Camera2D and configure it to follow the player with map bounds
+	camera = Camera2D.new()
+	add_child(camera)
+	camera.limit_left   = 0
+	camera.limit_top    = 0
+	camera.limit_right  = GRID_COLS * CELL_SIZE
+	camera.limit_bottom = GRID_ROWS * CELL_SIZE
+	_update_camera()
+
 	var music = load("res://assets/mine.mp3")
 	MusicManager.play_music(music)
 	QuestManager.clear_quest()
@@ -148,106 +168,150 @@ func _generate_grid() -> void:
 				# Exit zone
 				column.append(TileType.EMPTY)
 			else:
-				# Mining area
-				column.append(_random_tile())
+				# Mining area — ore richness increases with depth
+				column.append(_random_tile(row))
 		grid.append(column)
 
 	# Place refuel station on surface (middle area)
 	var refuel_col = GRID_COLS / 2
 	grid[refuel_col][SURFACE_ROWS - 1] = TileType.REFUEL_STATION
 
-func _random_tile() -> TileType:
+# Depth-weighted random tile: rarer ores are more common deeper
+func _random_tile(row: int = SURFACE_ROWS) -> TileType:
 	var r := randf()
-	# Hazards (10% total)
-	if   r < 0.04: return TileType.EXPLOSIVE
-	elif r < 0.06: return TileType.EXPLOSIVE_ARMED  # 2% armed explosive
-	elif r < 0.08: return TileType.LAVA
-	elif r < 0.09: return TileType.LAVA_FLOW  # 1% lava flow
-	# Fuel nodes (3% total)
-	elif r < 0.11: return TileType.FUEL_NODE
-	elif r < 0.12: return TileType.FUEL_NODE_FULL  # 1% full fuel
-	# Copper ore (8% total)
-	elif r < 0.16: return TileType.ORE_COPPER
-	elif r < 0.18: return TileType.ORE_COPPER_DEEP  # 2% deep copper
-	# Iron ore (8% total)
-	elif r < 0.22: return TileType.ORE_IRON
-	elif r < 0.25: return TileType.ORE_IRON_DEEP  # 3% deep iron
-	# Gold ore (6% total)
-	elif r < 0.29: return TileType.ORE_GOLD
-	elif r < 0.31: return TileType.ORE_GOLD_DEEP  # 2% deep gold
-	# Gem ore (4% total)
-	elif r < 0.33: return TileType.ORE_GEM
-	elif r < 0.35: return TileType.ORE_GEM_DEEP  # 2% deep gem
-	# Stone (10% total)
-	elif r < 0.42: return TileType.STONE
-	elif r < 0.45: return TileType.STONE_DARK  # 3% dark stone
-	# Dirt (48% total)
-	elif r < 0.87: return TileType.DIRT
-	else:          return TileType.DIRT_DARK  # 13% dark dirt
+	# Depth factor: 0.0 at surface, 1.0 at bottom row
+	var depth := float(row - SURFACE_ROWS) / float(GRID_ROWS - SURFACE_ROWS)
+
+	# Hazards (10% total, slightly more at depth)
+	var hazard_bias := 0.10 + depth * 0.05
+	if   r < hazard_bias * 0.4:  return TileType.EXPLOSIVE
+	elif r < hazard_bias * 0.6:  return TileType.EXPLOSIVE_ARMED
+	elif r < hazard_bias * 0.8:  return TileType.LAVA
+	elif r < hazard_bias:        return TileType.LAVA_FLOW
+
+	# Fuel nodes (3%)
+	elif r < hazard_bias + 0.02: return TileType.FUEL_NODE
+	elif r < hazard_bias + 0.03: return TileType.FUEL_NODE_FULL
+
+	# Rare ores (gem/gold) more common at depth
+	var gem_chance   := 0.04 + depth * 0.08
+	var gold_chance  := 0.06 + depth * 0.06
+	var iron_chance  := 0.08
+	var copper_chance := 0.08
+
+	var ore_start := hazard_bias + 0.03
+	if r < ore_start + gem_chance * 0.5:             return TileType.ORE_GEM_DEEP
+	elif r < ore_start + gem_chance:                  return TileType.ORE_GEM
+	elif r < ore_start + gem_chance + gold_chance * 0.5:  return TileType.ORE_GOLD_DEEP
+	elif r < ore_start + gem_chance + gold_chance:    return TileType.ORE_GOLD
+	elif r < ore_start + gem_chance + gold_chance + iron_chance * 0.5:  return TileType.ORE_IRON_DEEP
+	elif r < ore_start + gem_chance + gold_chance + iron_chance:         return TileType.ORE_IRON
+	elif r < ore_start + gem_chance + gold_chance + iron_chance + copper_chance * 0.5: return TileType.ORE_COPPER_DEEP
+	elif r < ore_start + gem_chance + gold_chance + iron_chance + copper_chance:       return TileType.ORE_COPPER
+
+	# Stone (heavier at depth) vs Dirt (heavier at surface)
+	var stone_chance := 0.10 + depth * 0.30
+	var r2 := randf()
+	if r2 < stone_chance * 0.6:  return TileType.STONE_DARK
+	elif r2 < stone_chance:       return TileType.STONE
+	elif r2 < stone_chance + 0.15: return TileType.DIRT_DARK
+	else:                          return TileType.DIRT
 
 func _create_sprite_atlases() -> void:
-	# Create 21 AtlasTexture objects for each sprite in the spritesheet
-	# Spritesheet is laid out vertically with 1px buffer around each 16x16 sprite
+	# Create 21 AtlasTexture objects for each sprite in the terrain spritesheet.
+	# Spritesheet is laid out vertically: 1px buffer, then 16x16 sprite, 1px buffer, …
 	if not terrain_spritesheet:
-		push_error("terrain_spritesheet failed to load! Check path: res://assets/terrain/terrain_spritesheet.png")
+		push_error("terrain_spritesheet failed to load! Check: res://assets/terrain/terrain_spritesheet.png")
 		return
 
 	for i in range(21):
-		var atlas = AtlasTexture.new()
+		var atlas := AtlasTexture.new()
 		atlas.atlas = terrain_spritesheet
-		var y_pos = SPRITE_BUFFER + i * (SPRITE_HEIGHT + SPRITE_BUFFER)
+		var y_pos := SPRITE_BUFFER + i * (SPRITE_HEIGHT + SPRITE_BUFFER)
 		atlas.region = Rect2(SPRITE_BUFFER, y_pos, SPRITE_WIDTH, SPRITE_HEIGHT)
 		sprite_atlases.append(atlas)
 
+# ---------------------------------------------------------------------------
+# Camera follow
+# ---------------------------------------------------------------------------
+
+func _update_camera() -> void:
+	if not camera:
+		return
+	# Center the camera on the player in world space; Camera2D limits handle clamping.
+	camera.position = Vector2(
+		player_grid_pos.x * CELL_SIZE + CELL_SIZE * 0.5,
+		player_grid_pos.y * CELL_SIZE + CELL_SIZE * 0.5
+	)
+
+# ---------------------------------------------------------------------------
+# Rendering
+# ---------------------------------------------------------------------------
+
 func _draw() -> void:
-	# Dark dirt background for the mining area
-	draw_rect(
-		Rect2(0, 0, (GRID_COLS - EXIT_COLS) * CELL_SIZE, GRID_ROWS * CELL_SIZE),
-		Color(0.08, 0.06, 0.04)
-	)
+	# Determine which tiles are inside the visible viewport (culling).
+	# Camera position equals camera.position when limits are respected.
+	var cam_x: float
+	var cam_y: float
+	if camera:
+		cam_x = clamp(camera.position.x, VIEWPORT_W * 0.5, GRID_COLS * CELL_SIZE - VIEWPORT_W * 0.5)
+		cam_y = clamp(camera.position.y, VIEWPORT_H * 0.5, GRID_ROWS * CELL_SIZE - VIEWPORT_H * 0.5)
+	else:
+		cam_x = VIEWPORT_W * 0.5
+		cam_y = VIEWPORT_H * 0.5
 
-	# Exit zone — dark green background
-	var exit_x := (GRID_COLS - EXIT_COLS) * CELL_SIZE
-	draw_rect(
-		Rect2(exit_x, 0, EXIT_COLS * CELL_SIZE, GRID_ROWS * CELL_SIZE),
-		Color(0.05, 0.18, 0.05)
-	)
+	var half_w := VIEWPORT_W * 0.5 + CELL_SIZE  # one-cell overdraw margin
+	var half_h := VIEWPORT_H * 0.5 + CELL_SIZE
 
-	# Draw all tiles in the mining area and surface
-	for col in range(GRID_COLS - EXIT_COLS):
-		for row in range(GRID_ROWS):
+	var min_col := max(0,           int((cam_x - half_w) / CELL_SIZE))
+	var max_col := min(GRID_COLS - 1, int((cam_x + half_w) / CELL_SIZE))
+	var min_row := max(0,           int((cam_y - half_h) / CELL_SIZE))
+	var max_row := min(GRID_ROWS - 1, int((cam_y + half_h) / CELL_SIZE))
+
+	# ---- Background fills (only the visible strip) ----
+	var mine_end_col := GRID_COLS - EXIT_COLS  # first exit column index
+
+	var bg_left   := min_col * CELL_SIZE
+	var bg_top    := min_row * CELL_SIZE
+	var bg_width  := (max_col - min_col + 1) * CELL_SIZE
+	var bg_height := (max_row - min_row + 1) * CELL_SIZE
+
+	# Dark dirt for the mining + surface area
+	draw_rect(Rect2(bg_left, bg_top, bg_width, bg_height), Color(0.08, 0.06, 0.04))
+
+	# Dark green for the exit zone columns (if visible)
+	if max_col >= mine_end_col:
+		var exit_vis_left := max(min_col, mine_end_col) * CELL_SIZE
+		var exit_vis_w    := (max_col - max(min_col, mine_end_col) + 1) * CELL_SIZE
+		draw_rect(Rect2(exit_vis_left, bg_top, exit_vis_w, bg_height), Color(0.05, 0.18, 0.05))
+
+	# ---- Tile sprites ----
+	for col in range(min_col, min(max_col + 1, mine_end_col)):
+		for row in range(min_row, max_row + 1):
 			var tile: int = grid[col][row]
 			if tile == TileType.EMPTY:
 				continue
 
-			var tile_screen_rect := Rect2(
-				col * CELL_SIZE,
-				row * CELL_SIZE,
-				CELL_SIZE,
-				CELL_SIZE
-			)
+			var tile_rect := Rect2(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
 
-			# Draw sprite from terrain spritesheet
+			# Draw the 16x16 texture from the terrain spritesheet, scaled to CELL_SIZE
 			if sprite_atlases.size() > 0:
-				var sprite_index = TILE_SPRITES.get(tile, 2)  # Default to dirt_block if not found
-				var sprite_texture = sprite_atlases[sprite_index] if sprite_index < sprite_atlases.size() else sprite_atlases[0]
-				if sprite_texture:
-					draw_texture_rect(sprite_texture, tile_screen_rect, false)
+				var sprite_index: int = TILE_SPRITES.get(tile, 0)
+				var tex: AtlasTexture = sprite_atlases[sprite_index] if sprite_index < sprite_atlases.size() else sprite_atlases[0]
+				if tex:
+					draw_texture_rect(tex, tile_rect, false)
 				else:
-					# Fallback to colored squares if texture fails to load
-					var color = TILE_COLORS.get(tile, Color(0.5, 0.5, 0.5))
-					draw_rect(tile_screen_rect, color)
+					draw_rect(tile_rect, TILE_COLORS.get(tile, Color(0.5, 0.5, 0.5)))
 			else:
-				# No sprite atlases loaded - draw colored squares as fallback
-				var color = TILE_COLORS.get(tile, Color(0.5, 0.5, 0.5))
-				draw_rect(tile_screen_rect, color)
+				draw_rect(tile_rect, TILE_COLORS.get(tile, Color(0.5, 0.5, 0.5)))
 
-			# Draw refuel station border highlight
+			# Refuel station gets a white border highlight
 			if tile == TileType.REFUEL_STATION:
-				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4), Color.WHITE, false, 2.0)
+				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
+					Color.WHITE, false, 2.0)
 				continue
 
-			# Overlay SVG icon for ore nodes on top of sprite background
+			# SVG ore overlays on top of the sprite texture
 			var svg_rect := Rect2(
 				col * CELL_SIZE + 6,
 				row * CELL_SIZE + 6,
@@ -262,7 +326,7 @@ func _draw() -> void:
 					if scrap_chunk_texture:
 						draw_texture_rect(scrap_chunk_texture, svg_rect, false)
 
-	# Draw player using player_ship.svg
+	# ---- Player sprite ----
 	var player_rect := Rect2(
 		player_grid_pos.x * CELL_SIZE + 2,
 		player_grid_pos.y * CELL_SIZE + 2,
@@ -274,18 +338,23 @@ func _draw() -> void:
 	else:
 		draw_rect(player_rect, Color(0.20, 0.80, 1.00))
 
-	# Exit zone label
-	var font := ThemeDB.fallback_font
-	draw_string(
-		font,
-		Vector2(exit_x + 6, GRID_ROWS * CELL_SIZE / 2 - 6),
-		"EXIT",
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 13,
-		Color(0.4, 1.0, 0.4)
-	)
+	# ---- Exit zone label (only when exit columns are visible) ----
+	if max_col >= mine_end_col:
+		var exit_x := mine_end_col * CELL_SIZE
+		var label_y := cam_y  # Keep label roughly centred in the visible viewport
+		var font := ThemeDB.fallback_font
+		draw_string(font,
+			Vector2(exit_x + 6, label_y),
+			"EXIT",
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 13,
+			Color(0.4, 1.0, 0.4)
+		)
+
+# ---------------------------------------------------------------------------
+# Input
+# ---------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
-	# Open pause menu with Escape
 	if event.is_action_pressed("ui_cancel"):
 		pause_menu.show_menu()
 		return
@@ -315,91 +384,87 @@ func _try_move(dc: int, dr: int) -> void:
 
 	var tile: int = grid[new_col][new_row]
 	var current_tile: int = grid[player_grid_pos.x][player_grid_pos.y]
-	var was_on_surface = current_tile == TileType.SURFACE
+	var was_on_surface := current_tile == TileType.SURFACE
 
-	# Check if trying to move on surface
+	# Surface movement rules
 	if was_on_surface:
-		# Surface only allows left/right movement, except downward to enter mining area
+		# On surface: left/right only; allow downward to enter the mining area
 		if dr != 0 and dr != 1:
 			return
-		# If moving down from surface, allow it (enters mining area)
 		if dr == 1:
-			# Allow moving down into mining area
-			var new_tile = grid[new_col][new_row]
+			var new_tile: int = grid[new_col][new_row]
 			if new_tile != TileType.EMPTY:
 				player_grid_pos = Vector2i(new_col, new_row)
 				is_on_surface = false
+				_update_camera()
 				queue_redraw()
 				return
 			else:
 				return
-		# Moving on surface is always allowed if in bounds
 		player_grid_pos = Vector2i(new_col, new_row)
 		is_on_surface = (grid[new_col][new_row] == TileType.SURFACE)
+		_update_camera()
 		queue_redraw()
 		return
 
-	# Below surface: check for hazards and fuel
+	# Below surface: hazard checks first
 	if tile == TileType.LAVA:
-		# Lava burns — can't step in, but takes damage
 		_damage_player(1)
 		return
 
 	if tile == TileType.EXPLOSIVE:
-		# Explosion — destroys 3×3 area around it, deals damage; player stays put
 		_mine_cell(new_col, new_row)
 		_explode_area(new_col, new_row)
 		_damage_player(1)
 		queue_redraw()
 		return
 
-	# Consume fuel for movement in mining area
+	# Fuel cost for underground movement
 	if not GameManager.consume_fuel(1):
-		# Out of fuel - game over
 		_on_out_of_fuel()
 		return
 
-	# Check if moving to surface from below
+	# Returning to surface from below
 	if grid[new_col][new_row] == TileType.SURFACE:
 		player_grid_pos = Vector2i(new_col, new_row)
 		is_on_surface = true
+		_update_camera()
 		queue_redraw()
 		return
 
-	# Move player to target cell
+	# Move player
 	player_grid_pos = Vector2i(new_col, new_row)
 
-	# Handle fuel nodes
-	if tile == TileType.FUEL_NODE:
+	if tile == TileType.FUEL_NODE or tile == TileType.FUEL_NODE_FULL:
 		_mine_cell(new_col, new_row)
 		GameManager.restore_fuel(10)
 		SoundManager.play_drill_sound()
-	# Handle refuel station
 	elif tile == TileType.REFUEL_STATION:
-		# Try to refuel
 		if GameManager.refuel_completely(10):
 			SoundManager.play_drill_sound()
-		else:
-			# Not enough scrap - do nothing but move is still consumed
-			pass
-	# Handle regular mining
 	elif tile != TileType.EMPTY:
 		_mine_cell(new_col, new_row)
 		var scrap: int = TILE_SCRAP.get(tile, 1)
 		GameManager.add_currency(scrap)
 		SoundManager.play_drill_sound()
 
-	# Track when player first leaves spawn zone
+	# Track first departure from spawn zone
 	if new_col < GRID_COLS - EXIT_COLS:
 		has_left_spawn = true
 
-	# Reaching the exit zone AFTER having mined = run complete
+	# Reaching exit after having mined = run complete
 	if has_left_spawn and new_col >= GRID_COLS - EXIT_COLS:
+		_update_camera()
 		queue_redraw()
 		GameManager.complete_run()
 		return
 
+	_update_camera()
 	queue_redraw()
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 func _mine_cell(col: int, row: int) -> void:
 	grid[col][row] = TileType.EMPTY
