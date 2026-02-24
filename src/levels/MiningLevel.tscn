@@ -1,97 +1,19 @@
-[gd_scene load_steps=5 format=3 uid="uid://f2a0m5s8y6c5"]
+[gd_scene load_steps=4 format=3 uid="uid://f2a0m5s8y6c5"]
 
 [ext_resource type="PackedScene" uid="uid://c8x7k2q5y3z2" path="res://src/entities/player/PlayerProbe.tscn" id="1_player"]
-[ext_resource type="Script" path="res://src/systems/AsteroidSpawner.gd" id="2_spawner"]
-[ext_resource type="PackedScene" uid="uid://scrappile456" path="res://src/entities/enemies/ScrapPile.tscn" id="3_scrappile"]
-[ext_resource type="Texture2D" uid="uid://bg_wasteland_svg" path="res://assets/bg_wasteland.svg" id="4_bg_wasteland"]
-[ext_resource type="Texture2D" uid="uid://dust_svg" path="res://assets/dust.svg" id="5_dust"]
-[ext_resource type="PackedScene" uid="uid://hud123456789" path="res://src/ui/HUD.tscn" id="6_hud"]
-[ext_resource type="Script" path="res://src/systems/MutantSpawner.gd" id="7_mutant_spawner"]
-[ext_resource type="PackedScene" uid="uid://mutant123" path="res://src/entities/enemies/Mutant.tscn" id="8_mutant"]
-[ext_resource type="PackedScene" uid="uid://extraction123" path="res://src/entities/world/ExtractionZone.tscn" id="9_extraction"]
-[ext_resource type="Script" path="res://src/components/CameraShake.gd" id="10_shake"]
-[ext_resource type="AudioStream" uid="uid://mine_mp3" path="res://assets/mine.mp3" id="11_music"]
-[ext_resource type="Script" path="res://src/levels/MiningLevel.gd" id="14_script"]
-
-[sub_resource type="Environment" id="Environment_1"]
-background_mode = 3
-glow_enabled = true
-glow_intensity = 0.5
+[ext_resource type="PackedScene" uid="uid://hud123456789" path="res://src/ui/HUD.tscn" id="2_hud"]
+[ext_resource type="AudioStream" uid="uid://mine_mp3" path="res://assets/mine.mp3" id="3_music"]
+[ext_resource type="Script" path="res://src/levels/MiningLevel.gd" id="4_script"]
 
 [node name="MiningLevel" type="Node2D"]
-script = ExtResource("14_script")
-
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = SubResource("Environment_1")
+script = ExtResource("4_script")
 
 [node name="PlayerProbe" parent="." instance=ExtResource("1_player")]
-position = Vector2(640, 360)
 
-[node name="RemoteTransform2D" parent="PlayerProbe" index="8"]
-remote_path = NodePath("../../Camera2D")
-
-[node name="AsteroidSpawner" type="Node" parent="."]
-script = ExtResource("2_spawner")
-asteroid_scene = ExtResource("3_scrappile")
-spawn_area = Rect2(-1500, -1000, 3000, 2000)
-max_asteroids = 50
-
-[node name="MutantSpawner" type="Node" parent="."]
-script = ExtResource("7_mutant_spawner")
-mutant_scene = ExtResource("8_mutant")
-spawn_area = Rect2(-1500, -1000, 3000, 2000)
-mutant_count = 20
-
-[node name="ExtractionZone" parent="." instance=ExtResource("9_extraction")]
-position = Vector2(1200, 800)
-
-[node name="HUD" parent="." instance=ExtResource("6_hud")]
-
-[node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(640, 360)
-limit_left = -1500
-limit_top = -1000
-limit_right = 1500
-limit_bottom = 1000
-position_smoothing_enabled = true
-script = ExtResource("10_shake")
-
-[node name="ParallaxBackground" type="ParallaxBackground" parent="."]
-
-[node name="ParallaxLayer" type="ParallaxLayer" parent="ParallaxBackground"]
-motion_scale = Vector2(0.5, 0.5)
-motion_mirroring = Vector2(1280, 720)
-
-[node name="Sprite2D" type="Sprite2D" parent="ParallaxBackground/ParallaxLayer"]
-texture = ExtResource("4_bg_wasteland")
-centered = false
-region_enabled = true
-region_rect = Rect2(0, 0, 3000, 2000)
-
-[node name="ParallaxLayer2" type="ParallaxLayer" parent="ParallaxBackground"]
-motion_scale = Vector2(0.8, 0.8)
-motion_mirroring = Vector2(1280, 720)
-
-[node name="Sprite2D" type="Sprite2D" parent="ParallaxBackground/ParallaxLayer2"]
-modulate = Color(1, 1, 1, 0.5)
-texture = ExtResource("5_dust")
-centered = false
-region_enabled = true
-region_rect = Rect2(0, 0, 3000, 2000)
-
-[node name="ParallaxLayer3" type="ParallaxLayer" parent="ParallaxBackground"]
-motion_scale = Vector2(1.2, 1.2)
-motion_mirroring = Vector2(1280, 720)
-
-[node name="Sprite2D" type="Sprite2D" parent="ParallaxBackground/ParallaxLayer3"]
-modulate = Color(1, 1, 1, 0.3)
-texture = ExtResource("5_dust")
-centered = false
-region_enabled = true
-region_rect = Rect2(0, 0, 3000, 2000)
+[node name="HUD" parent="." instance=ExtResource("2_hud")]
 
 [node name="Music" type="AudioStreamPlayer" parent="."]
-stream = ExtResource("11_music")
+stream = ExtResource("3_music")
 autoplay = true
 volume_db = -10.0
 bus = &"Music"
