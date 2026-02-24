@@ -260,29 +260,30 @@ func _draw() -> void:
 		cam_x = VIEWPORT_W * 0.5
 		cam_y = VIEWPORT_H * 0.5
 
-	var half_w := VIEWPORT_W * 0.5 + CELL_SIZE  # one-cell overdraw margin
-	var half_h := VIEWPORT_H * 0.5 + CELL_SIZE
+	var half_w: float = float(VIEWPORT_W) * 0.5 + float(CELL_SIZE)  # one-cell overdraw margin
+	var half_h: float = float(VIEWPORT_H) * 0.5 + float(CELL_SIZE)
 
-	var min_col := max(0,           int((cam_x - half_w) / CELL_SIZE))
-	var max_col := min(GRID_COLS - 1, int((cam_x + half_w) / CELL_SIZE))
-	var min_row := max(0,           int((cam_y - half_h) / CELL_SIZE))
-	var max_row := min(GRID_ROWS - 1, int((cam_y + half_h) / CELL_SIZE))
+	var min_col: int = maxi(0,             int((cam_x - half_w) / float(CELL_SIZE)))
+	var max_col: int = mini(GRID_COLS - 1, int((cam_x + half_w) / float(CELL_SIZE)))
+	var min_row: int = maxi(0,             int((cam_y - half_h) / float(CELL_SIZE)))
+	var max_row: int = mini(GRID_ROWS - 1, int((cam_y + half_h) / float(CELL_SIZE)))
 
 	# ---- Background fills (only the visible strip) ----
-	var mine_end_col := GRID_COLS - EXIT_COLS  # first exit column index
+	var mine_end_col: int = GRID_COLS - EXIT_COLS  # first exit column index
 
-	var bg_left   := min_col * CELL_SIZE
-	var bg_top    := min_row * CELL_SIZE
-	var bg_width  := (max_col - min_col + 1) * CELL_SIZE
-	var bg_height := (max_row - min_row + 1) * CELL_SIZE
+	var bg_left: int   = min_col * CELL_SIZE
+	var bg_top: int    = min_row * CELL_SIZE
+	var bg_width: int  = (max_col - min_col + 1) * CELL_SIZE
+	var bg_height: int = (max_row - min_row + 1) * CELL_SIZE
 
 	# Dark dirt for the mining + surface area
 	draw_rect(Rect2(bg_left, bg_top, bg_width, bg_height), Color(0.08, 0.06, 0.04))
 
 	# Dark green for the exit zone columns (if visible)
 	if max_col >= mine_end_col:
-		var exit_vis_left := max(min_col, mine_end_col) * CELL_SIZE
-		var exit_vis_w    := (max_col - max(min_col, mine_end_col) + 1) * CELL_SIZE
+		var exit_col_start: int = maxi(min_col, mine_end_col)
+		var exit_vis_left: int  = exit_col_start * CELL_SIZE
+		var exit_vis_w: int     = (max_col - exit_col_start + 1) * CELL_SIZE
 		draw_rect(Rect2(exit_vis_left, bg_top, exit_vis_w, bg_height), Color(0.05, 0.18, 0.05))
 
 	# ---- Tile sprites ----
