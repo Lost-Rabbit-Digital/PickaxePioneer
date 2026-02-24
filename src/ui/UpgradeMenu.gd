@@ -3,13 +3,13 @@ extends Control
 
 @onready var hull_button: Button = $Panel/VBoxContainer/HullButton
 @onready var engine_button: Button = $Panel/VBoxContainer/EngineButton
-@onready var laser_button: Button = $Panel/VBoxContainer/LaserButton
+@onready var drill_button: Button = $Panel/VBoxContainer/DrillButton
 @onready var info_label: Label = $Panel/InfoLabel
 @onready var dialogue_label: Label = $Panel/Shopkeeper/DialogueLabel
 
 var hull_cost: int = 50
 var engine_cost: int = 50
-var laser_cost: int = 50
+var drill_cost: int = 50
 
 var welcome_lines: Array[String] = [
 	"Welcome, traveler!",
@@ -25,7 +25,7 @@ var welcome_lines: Array[String] = [
 func _ready() -> void:
 	hull_button.pressed.connect(_on_hull_pressed)
 	engine_button.pressed.connect(_on_engine_pressed)
-	laser_button.pressed.connect(_on_laser_pressed)
+	drill_button.pressed.connect(_on_drill_pressed)
 	_update_ui()
 	
 	# Rotate dialogue
@@ -42,7 +42,7 @@ func _update_dialogue() -> void:
 func _update_ui() -> void:
 	hull_button.text = "Upgrade Hull Lv%d (%d Scrap)" % [GameManager.hull_level, hull_cost]
 	engine_button.text = "Upgrade Engine Lv%d (%d Scrap)" % [GameManager.engine_level, engine_cost]
-	laser_button.text = "Upgrade Laser Lv%d (%d Scrap)" % [GameManager.laser_level, laser_cost]
+	drill_button.text = "Upgrade Drill Lv%d (%d Scrap)" % [GameManager.drill_level, drill_cost]
 	info_label.text = "Current Scrap: %d" % GameManager.scrap_currency
 
 func _on_hull_pressed() -> void:
@@ -61,10 +61,10 @@ func _on_engine_pressed() -> void:
 		GameManager.save_game()
 		_update_ui()
 
-func _on_laser_pressed() -> void:
-	if GameManager.scrap_currency >= laser_cost:
-		GameManager.scrap_currency -= laser_cost
-		GameManager.upgrade_laser()
-		laser_cost += 25
+func _on_drill_pressed() -> void:
+	if GameManager.scrap_currency >= drill_cost:
+		GameManager.scrap_currency -= drill_cost
+		GameManager.upgrade_drill()
+		drill_cost += 25
 		GameManager.save_game()
 		_update_ui()

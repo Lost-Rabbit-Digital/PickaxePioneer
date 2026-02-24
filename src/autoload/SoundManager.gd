@@ -24,21 +24,21 @@ func play_pickup_sound() -> void:
 	await get_tree().create_timer(0.2).timeout
 	player.queue_free()
 
-func play_laser_sound() -> void:
+func play_drill_sound() -> void:
 	var player = AudioStreamPlayer.new()
 	add_child(player)
-	
+
 	var stream = AudioStreamGenerator.new()
 	stream.mix_rate = sample_rate
-	stream.buffer_length = 0.1
+	stream.buffer_length = 0.15
 	player.stream = stream
-	player.volume_db = -10.0
+	player.volume_db = -8.0
 	player.play()
-	
+
 	var playback = player.get_stream_playback()
-	_fill_laser_buffer(playback)
-	
-	await get_tree().create_timer(0.2).timeout
+	_fill_drill_buffer(playback)
+
+	await get_tree().create_timer(0.25).timeout
 	player.queue_free()
 
 func play_explosion_sound() -> void:
@@ -71,18 +71,19 @@ func _fill_pickup_buffer(playback: AudioStreamGeneratorPlayback) -> void:
 		var sample = Vector2.ONE * sin(phase * TAU) * 0.5 * (1.0 - t * 10.0) # Decay
 		playback.push_frame(sample)
 
-func _fill_laser_buffer(playback: AudioStreamGeneratorPlayback) -> void:
+func _fill_drill_buffer(playback: AudioStreamGeneratorPlayback) -> void:
 	var phase = 0.0
 	var frames = playback.get_frames_available()
-	
+
 	for i in range(frames):
 		var t = float(i) / sample_rate
-		# Square wave with pitch drop
-		var freq = 800.0 - (t * 2000.0)
-		if freq < 100: freq = 100
+		# Grinding buzz: low sawtooth + noise for a mechanical drill feel
+		var freq = 150.0 + sin(t * 30.0) * 40.0 # Oscillating low frequency
 		var increment = freq / sample_rate
 		phase = fmod(phase + increment, 1.0)
-		var sample_val = (1.0 if phase < 0.5 else -1.0) * 0.3 * (1.0 - t * 5.0)
+		var saw = (phase * 2.0 - 1.0) * 0.25
+		var noise = randf_range(-0.1, 0.1)
+		var sample_val = (saw + noise) * (1.0 - t * 4.0) # Decay over time
 		playback.push_frame(Vector2.ONE * sample_val)
 
 func _fill_explosion_buffer(playback: AudioStreamGeneratorPlayback) -> void:
