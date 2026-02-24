@@ -14,7 +14,7 @@ config/name="Pickaxe Pioneer"
 config/tags=PackedStringArray("active", "itch_io")
 run/main_scene="res://src/ui/MainMenu.tscn"
 config/features=PackedStringArray("4.5", "Forward Plus")
-config/icon="res://icon.svg"
+config/icon="res://icon.png"
 
 [autoload]
 
