@@ -36,6 +36,26 @@ const TILE_COLORS: Dictionary = {
 	TileType.SURFACE:       Color(0.35, 0.35, 0.35),  # Surface dark grey
 }
 
+# Sprite indices for terrain spritesheet (0=grass_foliage, 1=grass_block, 2=dirt_block, 3=stone_block, 4=coal_block, 5=oak_log_block)
+const TILE_SPRITES: Dictionary = {
+	TileType.DIRT:          2,  # dirt_block
+	TileType.ORE_COPPER:    3,  # stone_block
+	TileType.ORE_IRON:      4,  # coal_block
+	TileType.ORE_GOLD:      5,  # oak_log_block
+	TileType.ORE_GEM:       0,  # grass_foliage
+	TileType.EXPLOSIVE:     1,  # grass_block
+	TileType.LAVA:          1,  # grass_block
+	TileType.FUEL_NODE:     1,  # grass_block
+	TileType.REFUEL_STATION: 3,  # stone_block (special rendering adds border)
+	TileType.SURFACE:       2,  # dirt_block
+}
+
+# Spritesheet layout: 12x67 (1 sprite wide + 1px buffer on each side, 6 sprites tall with 1px buffer)
+const SPRITE_SHEET_WIDTH: int = 12
+const SPRITE_WIDTH: int = 10
+const SPRITE_HEIGHT: int = 10
+const SPRITE_BUFFER: int = 1
+
 const TILE_SCRAP: Dictionary = {
 	TileType.DIRT:       1,
 	TileType.ORE_COPPER: 3,
@@ -49,10 +69,12 @@ var player_grid_pos: Vector2i = Vector2i(0, 0)  # Start at top-left (on surface)
 var has_left_spawn: bool = false  # True once player moves into the mining area
 var is_on_surface: bool = true  # Whether player is on the surface layer
 
-# SVG textures
+# Textures
 var player_texture: Texture2D
 var scrap_pile_texture: Texture2D
 var scrap_chunk_texture: Texture2D
+var terrain_spritesheet: Texture2D
+var sprite_atlases: Array[AtlasTexture] = []  # Pre-created atlas textures for each sprite
 
 @onready var player_node = $PlayerProbe
 @onready var pause_menu = $PauseMenu
@@ -61,6 +83,11 @@ func _ready() -> void:
 	player_texture = load("res://assets/player_ship.svg")
 	scrap_pile_texture = load("res://assets/scrap_pile.svg")
 	scrap_chunk_texture = load("res://assets/scrap_chunk.svg")
+	terrain_spritesheet = load("res://assets/terrain/terrain_spritesheet.png")
+
+	# Pre-create AtlasTexture objects for each sprite in the sheet
+	_create_sprite_atlases()
+
 	_generate_grid()
 	var music = load("res://assets/mine.mp3")
 	MusicManager.play_music(music)
@@ -100,6 +127,16 @@ func _random_tile() -> TileType:
 	elif r < 0.39: return TileType.ORE_GEM
 	else:          return TileType.DIRT
 
+func _create_sprite_atlases() -> void:
+	# Create 6 AtlasTexture objects for each sprite in the spritesheet
+	# Spritesheet is laid out vertically with 1px buffer
+	for i in range(6):
+		var atlas = AtlasTexture.new()
+		atlas.atlas = terrain_spritesheet
+		var y_pos = SPRITE_BUFFER + i * (SPRITE_HEIGHT + SPRITE_BUFFER)
+		atlas.region = Rect2(SPRITE_BUFFER, y_pos, SPRITE_WIDTH, SPRITE_HEIGHT)
+		sprite_atlases.append(atlas)
+
 func _draw() -> void:
 	# Dark dirt background for the mining area
 	draw_rect(
@@ -121,30 +158,25 @@ func _draw() -> void:
 			if tile == TileType.EMPTY:
 				continue
 
-			var rect := Rect2(
-				col * CELL_SIZE + 1,
-				row * CELL_SIZE + 1,
-				CELL_SIZE - 2,
-				CELL_SIZE - 2
+			var tile_screen_rect := Rect2(
+				col * CELL_SIZE,
+				row * CELL_SIZE,
+				CELL_SIZE,
+				CELL_SIZE
 			)
 
-			# Draw background color for all tiles
-			draw_rect(rect, TILE_COLORS[tile])
+			# Draw sprite from terrain spritesheet
+			if sprite_atlases.size() > 0:
+				var sprite_index = TILE_SPRITES.get(tile, 2)  # Default to dirt_block if not found
+				var sprite_texture = sprite_atlases[sprite_index] if sprite_index < sprite_atlases.size() else sprite_atlases[0]
+				draw_texture_rect(sprite_texture, tile_screen_rect, false)
 
-			# Draw refuel station as a bigger square with a special indicator
+			# Draw refuel station border highlight
 			if tile == TileType.REFUEL_STATION:
-				var station_rect := Rect2(
-					col * CELL_SIZE + 4,
-					row * CELL_SIZE + 4,
-					CELL_SIZE - 8,
-					CELL_SIZE - 8
-				)
-				draw_rect(station_rect, TILE_COLORS[tile])
-				# Draw a border to highlight it
 				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4), Color.WHITE, false, 2.0)
 				continue
 
-			# Overlay SVG icon for ore nodes on top of color background
+			# Overlay SVG icon for ore nodes on top of sprite background
 			var svg_rect := Rect2(
 				col * CELL_SIZE + 6,
 				row * CELL_SIZE + 6,
