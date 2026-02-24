@@ -20,16 +20,9 @@ func _physics_process(delta: float) -> void:
 	position += direction * speed * delta
 
 func _on_area_entered(area: Area2D) -> void:
-	# Hit a mutant's Area2D
-	if area.get_parent() is Mutant:
-		area.get_parent().take_damage(GameManager.get_laser_damage())
-		queue_free()
-	elif area is HurtboxComponent:
+	if area is HurtboxComponent:
 		area.take_damage(GameManager.get_laser_damage())
 		queue_free()
 
 func _on_body_entered(body: Node) -> void:
-	if body is Mutant:
-		body.take_damage(GameManager.get_laser_damage())
-	# Hit a scrap pile or wall or mutant
 	queue_free()

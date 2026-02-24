@@ -3,7 +3,7 @@ extends Node
 
 # Spawns asteroids randomly
 
-@export var asteroid_scene: PackedScene # Kept name for compatibility, but will hold ScrapPile
+@export var asteroid_scene: PackedScene
 @export var spawn_area: Rect2 = Rect2(-500, -500, 1000, 1000)
 @export var max_asteroids: int = 10
 
