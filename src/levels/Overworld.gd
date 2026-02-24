@@ -7,6 +7,8 @@ extends Node2D
 @onready var city_node: MapNode = $CityNode
 @onready var mine_node_1: MapNode = $MineNode1
 @onready var mine_node_2: MapNode = $MineNode2
+@onready var settlement_node_3: MapNode = $SettlementNode3
+@onready var settlement_node_4: MapNode = $SettlementNode4
 
 var current_node: MapNode
 var nodes: Array[MapNode] = []
@@ -38,12 +40,15 @@ func _ready() -> void:
 	# Randomize mine nodes
 	_randomize_mines()
 
-	# Define connections
+	# Define connections - create a connected network
 	_connect_nodes(city_node, mine_node_1)
-	_connect_nodes(mine_node_1, mine_node_2)
+	_connect_nodes(city_node, mine_node_2)
+	_connect_nodes(mine_node_1, settlement_node_3)
+	_connect_nodes(mine_node_2, settlement_node_4)
+	_connect_nodes(settlement_node_3, settlement_node_4)
 
 	# Collect all nodes
-	nodes = [city_node, mine_node_1, mine_node_2]
+	nodes = [city_node, mine_node_1, mine_node_2, settlement_node_3, settlement_node_4]
 
 	# Connect click signals
 	for node in nodes:

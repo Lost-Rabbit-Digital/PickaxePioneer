@@ -48,6 +48,18 @@ location_name = "Gold Mine"
 node_type = 1
 scene_path = "res://src/levels/MiningLevel.tscn"
 
+[node name="SettlementNode3" parent="." instance=ExtResource("2_node")]
+position = Vector2(1000, 200)
+location_name = "North Settlement"
+node_type = 1
+scene_path = "res://src/levels/MiningLevel.tscn"
+
+[node name="SettlementNode4" parent="." instance=ExtResource("2_node")]
+position = Vector2(600, 600)
+location_name = "South Settlement"
+node_type = 1
+scene_path = "res://src/levels/MiningLevel.tscn"
+
 [node name="Caravan" parent="." instance=ExtResource("3_caravan")]
 position = Vector2(200, 360)
 
