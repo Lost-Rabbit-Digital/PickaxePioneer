@@ -399,8 +399,33 @@ func _try_move(dc: int, dr: int) -> void:
 		if dr == 1:
 			var new_tile: int = grid[new_col][new_row]
 			if new_tile != TileType.EMPTY:
+				# Entering the mining area: apply normal underground movement rules.
+				if new_tile == TileType.LAVA or new_tile == TileType.LAVA_FLOW:
+					_damage_player(1)
+					return
+				if new_tile == TileType.EXPLOSIVE or new_tile == TileType.EXPLOSIVE_ARMED:
+					_mine_cell(new_col, new_row)
+					_explode_area(new_col, new_row)
+					_damage_player(1)
+					queue_redraw()
+					return
+				if not GameManager.consume_fuel(1):
+					_on_out_of_fuel()
+					return
 				player_grid_pos = Vector2i(new_col, new_row)
 				is_on_surface = false
+				if new_tile == TileType.FUEL_NODE or new_tile == TileType.FUEL_NODE_FULL:
+					_mine_cell(new_col, new_row)
+					GameManager.restore_fuel(10)
+					SoundManager.play_drill_sound()
+				elif new_tile == TileType.REFUEL_STATION:
+					if GameManager.refuel_completely(10):
+						SoundManager.play_drill_sound()
+				else:
+					_mine_cell(new_col, new_row)
+					var scrap: int = TILE_SCRAP.get(new_tile, 1)
+					GameManager.add_currency(scrap)
+					SoundManager.play_drill_sound()
 				_update_camera()
 				queue_redraw()
 				return
