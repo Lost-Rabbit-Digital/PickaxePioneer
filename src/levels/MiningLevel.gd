@@ -18,16 +18,22 @@ enum TileType {
 	ORE_GEM   = 5,
 	EXPLOSIVE = 6,
 	LAVA      = 7,
+	FUEL_NODE = 8,
+	REFUEL_STATION = 9,
+	SURFACE   = 10,  # Surface tile - no fuel consumption, left/right only
 }
 
 const TILE_COLORS: Dictionary = {
-	TileType.DIRT:        Color(0.45, 0.28, 0.12),  # Brown
-	TileType.ORE_COPPER:  Color(0.80, 0.50, 0.20),  # Copper orange
-	TileType.ORE_IRON:    Color(0.65, 0.65, 0.72),  # Iron silver
-	TileType.ORE_GOLD:    Color(1.00, 0.85, 0.10),  # Gold yellow
-	TileType.ORE_GEM:     Color(0.15, 0.85, 0.75),  # Gem cyan
-	TileType.EXPLOSIVE:   Color(0.90, 0.10, 0.10),  # Explosive red
-	TileType.LAVA:        Color(1.00, 0.45, 0.00),  # Lava orange
+	TileType.DIRT:          Color(0.45, 0.28, 0.12),  # Brown
+	TileType.ORE_COPPER:    Color(0.80, 0.50, 0.20),  # Copper orange
+	TileType.ORE_IRON:      Color(0.65, 0.65, 0.72),  # Iron silver
+	TileType.ORE_GOLD:      Color(1.00, 0.85, 0.10),  # Gold yellow
+	TileType.ORE_GEM:       Color(0.15, 0.85, 0.75),  # Gem cyan
+	TileType.EXPLOSIVE:     Color(0.90, 0.10, 0.10),  # Explosive red
+	TileType.LAVA:          Color(1.00, 0.45, 0.00),  # Lava orange
+	TileType.FUEL_NODE:     Color(0.20, 0.80, 0.20),  # Fuel green
+	TileType.REFUEL_STATION: Color(0.50, 0.50, 0.50), # Refuel station grey
+	TileType.SURFACE:       Color(0.35, 0.35, 0.35),  # Surface dark grey
 }
 
 const TILE_SCRAP: Dictionary = {
@@ -39,8 +45,9 @@ const TILE_SCRAP: Dictionary = {
 }
 
 var grid: Array = []
-var player_grid_pos: Vector2i = Vector2i(GRID_COLS - 1, GRID_ROWS / 2)
+var player_grid_pos: Vector2i = Vector2i(0, 0)  # Start at top-left (on surface)
 var has_left_spawn: bool = false  # True once player moves into the mining area
+var is_on_surface: bool = true  # Whether player is on the surface layer
 
 # SVG textures
 var player_texture: Texture2D
@@ -60,25 +67,37 @@ func _ready() -> void:
 	QuestManager.clear_quest()
 	queue_redraw()
 
+const SURFACE_ROWS: int = 3  # Top 3 rows are surface
+
 func _generate_grid() -> void:
 	grid = []
 	for col in range(GRID_COLS):
 		var column: Array = []
 		for row in range(GRID_ROWS):
-			if col >= GRID_COLS - EXIT_COLS:
+			if row < SURFACE_ROWS:
+				# Surface layer - accessible to player, no fuel consumption
+				column.append(TileType.SURFACE)
+			elif col >= GRID_COLS - EXIT_COLS:
+				# Exit zone
 				column.append(TileType.EMPTY)
 			else:
+				# Mining area
 				column.append(_random_tile())
 		grid.append(column)
+
+	# Place refuel station on surface (middle area)
+	var refuel_col = GRID_COLS / 2
+	grid[refuel_col][SURFACE_ROWS - 1] = TileType.REFUEL_STATION
 
 func _random_tile() -> TileType:
 	var r := randf()
 	if   r < 0.06: return TileType.EXPLOSIVE
 	elif r < 0.10: return TileType.LAVA
-	elif r < 0.22: return TileType.ORE_COPPER
-	elif r < 0.30: return TileType.ORE_IRON
-	elif r < 0.35: return TileType.ORE_GOLD
-	elif r < 0.37: return TileType.ORE_GEM
+	elif r < 0.12: return TileType.FUEL_NODE  # 2% fuel nodes
+	elif r < 0.24: return TileType.ORE_COPPER
+	elif r < 0.32: return TileType.ORE_IRON
+	elif r < 0.37: return TileType.ORE_GOLD
+	elif r < 0.39: return TileType.ORE_GEM
 	else:          return TileType.DIRT
 
 func _draw() -> void:
@@ -95,7 +114,7 @@ func _draw() -> void:
 		Color(0.05, 0.18, 0.05)
 	)
 
-	# Draw all tiles in the mining area
+	# Draw all tiles in the mining area and surface
 	for col in range(GRID_COLS - EXIT_COLS):
 		for row in range(GRID_ROWS):
 			var tile: int = grid[col][row]
@@ -111,6 +130,19 @@ func _draw() -> void:
 
 			# Draw background color for all tiles
 			draw_rect(rect, TILE_COLORS[tile])
+
+			# Draw refuel station as a bigger square with a special indicator
+			if tile == TileType.REFUEL_STATION:
+				var station_rect := Rect2(
+					col * CELL_SIZE + 4,
+					row * CELL_SIZE + 4,
+					CELL_SIZE - 8,
+					CELL_SIZE - 8
+				)
+				draw_rect(station_rect, TILE_COLORS[tile])
+				# Draw a border to highlight it
+				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4), Color.WHITE, false, 2.0)
+				continue
 
 			# Overlay SVG icon for ore nodes on top of color background
 			var svg_rect := Rect2(
@@ -179,7 +211,21 @@ func _try_move(dc: int, dr: int) -> void:
 		return
 
 	var tile: int = grid[new_col][new_row]
+	var current_tile: int = grid[player_grid_pos.x][player_grid_pos.y]
+	var was_on_surface = current_tile == TileType.SURFACE
 
+	# Check if trying to move on surface
+	if was_on_surface:
+		# Surface only allows left/right movement
+		if dr != 0:
+			return
+		# Moving on surface is always allowed if in bounds
+		player_grid_pos = Vector2i(new_col, new_row)
+		is_on_surface = (grid[new_col][new_row] == TileType.SURFACE)
+		queue_redraw()
+		return
+
+	# Below surface: check for hazards and fuel
 	if tile == TileType.LAVA:
 		# Lava burns — can't step in, but takes damage
 		_damage_player(1)
@@ -193,11 +239,37 @@ func _try_move(dc: int, dr: int) -> void:
 		queue_redraw()
 		return
 
+	# Consume fuel for movement in mining area
+	if not GameManager.consume_fuel(1):
+		# Out of fuel - game over
+		_on_out_of_fuel()
+		return
+
+	# Check if moving to surface from below
+	if grid[new_col][new_row] == TileType.SURFACE:
+		player_grid_pos = Vector2i(new_col, new_row)
+		is_on_surface = true
+		queue_redraw()
+		return
+
 	# Move player to target cell
 	player_grid_pos = Vector2i(new_col, new_row)
 
-	if tile != TileType.EMPTY:
-		# Mine the tile player stepped onto
+	# Handle fuel nodes
+	if tile == TileType.FUEL_NODE:
+		_mine_cell(new_col, new_row)
+		GameManager.restore_fuel(10)
+		SoundManager.play_drill_sound()
+	# Handle refuel station
+	elif tile == TileType.REFUEL_STATION:
+		# Try to refuel
+		if GameManager.refuel_completely(10):
+			SoundManager.play_drill_sound()
+		else:
+			# Not enough scrap - do nothing but move is still consumed
+			pass
+	# Handle regular mining
+	elif tile != TileType.EMPTY:
 		_mine_cell(new_col, new_row)
 		var scrap: int = TILE_SCRAP.get(tile, 1)
 		GameManager.add_currency(scrap)
@@ -230,3 +302,7 @@ func _explode_area(center_col: int, center_row: int) -> void:
 func _damage_player(amount: int) -> void:
 	if player_node and player_node.has_method("take_damage"):
 		player_node.take_damage(amount)
+
+func _on_out_of_fuel() -> void:
+	print("Out of fuel! Game Over")
+	GameManager.lose_run()

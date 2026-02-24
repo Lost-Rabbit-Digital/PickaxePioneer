@@ -11,36 +11,87 @@ extends Node2D
 var current_node: MapNode
 var nodes: Array[MapNode] = []
 
+# Mine name options for randomization
+var mine_names = [
+	"Iron Mine",
+	"Gold Mine",
+	"Copper Mine",
+	"Silver Mine",
+	"Coal Mine",
+	"Diamond Mine",
+	"Platinum Mine",
+	"Emerald Mine",
+	"Ruby Mine",
+	"Sapphire Mine",
+	"Tin Mine",
+	"Lead Mine",
+	"Uranium Mine",
+	"Crystal Cave",
+	"Obsidian Pit"
+]
+
 func _ready() -> void:
 	# Start overworld music
 	var music = load("res://assets/overworld.mp3")
 	MusicManager.play_music(music)
-	
+
+	# Randomize mine nodes
+	_randomize_mines()
+
 	# Define connections
 	_connect_nodes(city_node, mine_node_1)
 	_connect_nodes(mine_node_1, mine_node_2)
-	
+
 	# Collect all nodes
 	nodes = [city_node, mine_node_1, mine_node_2]
-	
+
 	# Connect click signals
 	for node in nodes:
 		node.node_clicked.connect(_on_node_clicked)
-	
+
 	# Initialize position
 	if GameManager.last_overworld_node_name != "":
 		for node in nodes:
 			if node.name == GameManager.last_overworld_node_name:
 				current_node = node
 				break
-	
+
 	if not current_node:
 		current_node = city_node
-		
+
 	caravan.teleport_to(current_node.position)
 	current_node.highlight(true)
-	
+
 	queue_redraw()
+
+func _randomize_mines() -> void:
+	# Randomly decide how many mines to show (1-2 mines)
+	var mine_count = randi_range(1, 2)
+
+	# Get random mine names
+	var available_names = mine_names.duplicate()
+	available_names.shuffle()
+
+	# Randomize positions for mines
+	var mine_positions = [
+		Vector2(600, 200),
+		Vector2(800, 500)
+	]
+	mine_positions.shuffle()
+
+	# Apply randomization to both mines
+	mine_node_1.location_name = available_names[0]
+	mine_node_1.position = mine_positions[0]
+	mine_node_1._update_visuals()
+
+	if mine_count >= 2:
+		mine_node_2.location_name = available_names[1]
+		mine_node_2.position = mine_positions[1]
+		mine_node_2._update_visuals()
+		mine_node_2.visible = true
+	else:
+		# Hide second mine if only 1 mine is selected
+		mine_node_2.visible = false
 
 func _connect_nodes(node_a: MapNode, node_b: MapNode) -> void:
 	if not node_a.neighbors.has(node_b):
@@ -63,7 +114,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_accept"):
 		_enter_node(current_node)
 		return
-		
+
 	var direction = Vector2.ZERO
 	if event.is_action_pressed("ui_up"):
 		direction = Vector2.UP
@@ -73,22 +124,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		direction = Vector2.LEFT
 	elif event.is_action_pressed("ui_right"):
 		direction = Vector2.RIGHT
-		
+
 	if direction != Vector2.ZERO:
 		_move_selection(direction)
 
 func _move_selection(direction: Vector2) -> void:
 	var best_neighbor: MapNode = null
 	var best_dot = -1.0
-	
+
 	for neighbor in current_node.neighbors:
 		var dir_to_neighbor = current_node.position.direction_to(neighbor.position)
 		var dot = dir_to_neighbor.dot(direction)
-		
+
 		if dot > 0.5 and dot > best_dot: # Must be roughly in the direction (45 degrees)
 			best_dot = dot
 			best_neighbor = neighbor
-			
+
 	if best_neighbor:
 		current_node.highlight(false)
 		current_node = best_neighbor
@@ -107,7 +158,7 @@ func _on_node_clicked(node: MapNode) -> void:
 
 func _enter_node(node: MapNode) -> void:
 	GameManager.last_overworld_node_name = node.name
-	
+
 	if node.node_type == MapNode.NodeType.ASTEROID or node.node_type == MapNode.NodeType.STATION:
 		GameManager.load_mining_level(node.scene_path)
 	elif node.node_type == MapNode.NodeType.EMPTY: # City is usually NodeType.STATION or custom

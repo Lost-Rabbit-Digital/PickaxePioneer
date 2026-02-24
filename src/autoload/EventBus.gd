@@ -18,3 +18,6 @@ signal game_state_changed(new_state: int)
 
 # Currency Signals
 signal scrap_changed(amount: int)
+
+# Fuel Signals
+signal fuel_changed(current_fuel: int, max_fuel: int)
