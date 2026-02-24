@@ -1,10 +1,15 @@
-[gd_scene load_steps=5 format=3 uid="uid://mainmenu123"]
+[gd_scene load_steps=6 format=3 uid="uid://cbasjhj0dn6w6"]
 
-[ext_resource type="Script" path="res://src/ui/MainMenu.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://djild5fqk5aii" path="res://src/ui/MainMenu.gd" id="1_script"]
 [ext_resource type="Script" path="res://src/ui/MenuBackground.gd" id="2_bgscript"]
-[ext_resource type="Texture2D" uid="uid://dv6n3kpx8m2wr" path="res://assets/discord_icon.svg" id="3_discord"]
+[ext_resource type="Script" uid="uid://b2f4ygsyu65y" path="res://src/ui/main_menu/social_buttons.gd" id="3_ihbld"]
+[ext_resource type="Texture2D" uid="uid://bhww7y11pvgal" path="res://assets/social_icons/discord_icon_normal.png" id="4_ihbld"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
+content_margin_left = 20.0
+content_margin_top = 16.0
+content_margin_right = 20.0
+content_margin_bottom = 16.0
 bg_color = Color(0.07, 0.06, 0.05, 0.94)
 border_width_left = 2
 border_width_top = 2
@@ -15,10 +20,6 @@ corner_radius_top_left = 8
 corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
-content_margin_left = 20.0
-content_margin_top = 16.0
-content_margin_right = 20.0
-content_margin_bottom = 16.0
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -94,20 +95,6 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "QUIT"
 
-[node name="DiscordButton" type="TextureButton" parent="."]
-layout_mode = 1
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -130.0
-offset_top = -50.0
-offset_right = -10.0
-offset_bottom = -10.0
-grow_horizontal = 0
-grow_vertical = 0
-texture_normal = ExtResource("3_discord")
-
 [node name="SettingsPanel" type="PanelContainer" parent="."]
 visible = false
 layout_mode = 1
@@ -150,7 +137,6 @@ vertical_alignment = 1
 custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-min_value = 0.0
 max_value = 1.0
 step = 0.01
 value = 1.0
@@ -178,7 +164,6 @@ vertical_alignment = 1
 custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-min_value = 0.0
 max_value = 1.0
 step = 0.01
 value = 1.0
@@ -206,7 +191,6 @@ vertical_alignment = 1
 custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-min_value = 0.0
 max_value = 1.0
 step = 0.01
 value = 1.0
@@ -223,3 +207,27 @@ vertical_alignment = 1
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 text = "CLOSE"
+
+[node name="SocialButtons" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -72.0
+offset_top = -74.0
+offset_right = -8.0
+offset_bottom = -10.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("3_ihbld")
+
+[node name="DiscordBackground" type="PanelContainer" parent="SocialButtons"]
+layout_mode = 2
+
+[node name="DiscordButton" type="TextureButton" parent="SocialButtons/DiscordBackground"]
+layout_mode = 2
+texture_normal = ExtResource("4_ihbld")
+
+[connection signal="pressed" from="SocialButtons/DiscordBackground/DiscordButton" to="SocialButtons" method="_on_discord_button_pressed"]

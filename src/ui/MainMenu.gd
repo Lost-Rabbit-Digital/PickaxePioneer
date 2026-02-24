@@ -12,7 +12,6 @@ func _ready() -> void:
 	$VBoxContainer/StartButton.pressed.connect(_on_start_pressed)
 	$VBoxContainer/SettingsButton.pressed.connect(_on_settings_pressed)
 	$VBoxContainer/QuitButton.pressed.connect(_on_quit_pressed)
-	$DiscordButton.pressed.connect(_on_discord_pressed)
 	$SettingsPanel/VBox/CloseButton.pressed.connect(_on_settings_close_pressed)
 
 	master_slider.value_changed.connect(_on_master_changed)
@@ -39,9 +38,6 @@ func _on_settings_pressed() -> void:
 func _on_settings_close_pressed() -> void:
 	SettingsManager.save_settings()
 	settings_panel.hide()
-
-func _on_discord_pressed() -> void:
-	OS.shell_open("https://discord.gg/e7M6DcU5fR")
 
 func _on_master_changed(value: float) -> void:
 	SettingsManager.set_master_volume(value)
