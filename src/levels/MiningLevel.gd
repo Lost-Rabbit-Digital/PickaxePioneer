@@ -105,7 +105,7 @@ const TILE_SCRAP: Dictionary = {
 }
 
 var grid: Array = []
-var player_grid_pos: Vector2i = Vector2i(0, 0)  # Start at top-left (on surface)
+var player_grid_pos: Vector2i = Vector2i(2, 2)  # Start at top-left (on surface)
 var has_left_spawn: bool = false  # True once player moves into the mining area
 var is_on_surface: bool = true  # Whether player is on the surface layer
 

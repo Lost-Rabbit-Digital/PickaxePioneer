@@ -27,7 +27,7 @@ func _update_visuals() -> void:
 	
 	match node_type:
 		NodeType.ASTEROID:
-			sprite.texture = preload("res://assets/asteroid.svg")
+			sprite.texture = preload("res://assets/social_icons/godot_icon_normal.png")
 			sprite.scale = Vector2(0.5, 0.5) # Adjust scale if needed
 		NodeType.STATION:
 			sprite.modulate = Color.CYAN
