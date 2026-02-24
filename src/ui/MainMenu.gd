@@ -14,6 +14,9 @@ func _ready() -> void:
 	$VBoxContainer/QuitButton.pressed.connect(_on_quit_pressed)
 	$SettingsPanel/VBox/CloseButton.pressed.connect(_on_settings_close_pressed)
 
+	var music = load("res://assets/music/crickets.mp3")
+	MusicManager.play_music(music)
+
 	master_slider.value_changed.connect(_on_master_changed)
 	music_slider.value_changed.connect(_on_music_changed)
 	sfx_slider.value_changed.connect(_on_sfx_changed)

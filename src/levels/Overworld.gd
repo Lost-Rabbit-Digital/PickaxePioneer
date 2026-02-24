@@ -34,7 +34,7 @@ var mine_names = [
 
 func _ready() -> void:
 	# Start overworld music
-	var music = load("res://assets/overworld.mp3")
+	var music = load("res://assets/music/crickets.mp3")
 	MusicManager.play_music(music)
 
 	# Randomize mine nodes

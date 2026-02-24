@@ -129,7 +129,7 @@ func _ready() -> void:
 	_create_sprite_atlases()
 
 	_generate_grid()
-	var music = load("res://assets/mine.mp3")
+	var music = load("res://assets/music/crickets.mp3")
 	MusicManager.play_music(music)
 	QuestManager.clear_quest()
 	queue_redraw()
