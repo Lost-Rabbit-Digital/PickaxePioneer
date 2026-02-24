@@ -149,7 +149,7 @@ func _ready() -> void:
 	camera.limit_bottom = GRID_ROWS * CELL_SIZE
 	_update_camera()
 
-	var music = load("res://assets/mine.mp3")
+	var music = load("res://assets/music/crickets.mp3")
 	MusicManager.play_music(music)
 	QuestManager.clear_quest()
 	queue_redraw()
