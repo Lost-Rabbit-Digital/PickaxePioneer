@@ -24,6 +24,7 @@ SoundManager="*res://src/autoload/SoundManager.gd"
 MusicManager="*res://src/autoload/MusicManager.gd"
 SceneTransition="*res://src/autoload/SceneTransition.tscn"
 QuestManager="*res://src/autoload/QuestManager.gd"
+SettingsManager="*res://src/autoload/SettingsManager.gd"
 
 [display]
 

@@ -11,11 +11,12 @@ func _ready() -> void:
 func play_pickup_sound() -> void:
 	var player = AudioStreamPlayer.new()
 	add_child(player)
-	
+
 	var stream = AudioStreamGenerator.new()
 	stream.mix_rate = sample_rate
 	stream.buffer_length = 0.1
 	player.stream = stream
+	player.bus = &"SFX"
 	player.play()
 	
 	var playback = player.get_stream_playback()
@@ -32,6 +33,7 @@ func play_drill_sound() -> void:
 	stream.mix_rate = sample_rate
 	stream.buffer_length = 0.15
 	player.stream = stream
+	player.bus = &"SFX"
 	player.volume_db = -8.0
 	player.play()
 
@@ -44,11 +46,12 @@ func play_drill_sound() -> void:
 func play_explosion_sound() -> void:
 	var player = AudioStreamPlayer.new()
 	add_child(player)
-	
+
 	var stream = AudioStreamGenerator.new()
 	stream.mix_rate = sample_rate
 	stream.buffer_length = 0.5
 	player.stream = stream
+	player.bus = &"SFX"
 	player.volume_db = -5.0
 	player.play()
 	
