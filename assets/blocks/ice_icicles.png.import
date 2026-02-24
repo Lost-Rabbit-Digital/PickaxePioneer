@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cqojydbitb5ic"
-path="res://.godot/imported/terrain_spritesheet.png-ce04332bdd85fa71d61a58c811ed9ca6.ctex"
+uid="uid://bcb5lgqm6vtuf"
+path="res://.godot/imported/ice_icicles.png-2521cfc074260dbef42b240253a7e4f0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/terrain/terrain_spritesheet.png"
-dest_files=["res://.godot/imported/terrain_spritesheet.png-ce04332bdd85fa71d61a58c811ed9ca6.ctex"]
+source_file="res://assets/blocks/ice_icicles.png"
+dest_files=["res://.godot/imported/ice_icicles.png-2521cfc074260dbef42b240253a7e4f0.ctex"]
 
 [params]
 
