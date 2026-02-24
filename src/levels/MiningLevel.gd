@@ -127,7 +127,11 @@ var camera: Camera2D
 @onready var pause_menu = $PauseMenu
 
 func _ready() -> void:
-	player_texture = load("res://assets/player_ship.svg")
+	var ant_spritesheet := load("res://assets/creatures/red_ant_spritesheet.png") as Texture2D
+	var ant_atlas := AtlasTexture.new()
+	ant_atlas.atlas = ant_spritesheet
+	ant_atlas.region = Rect2(0, 0, 16, 16)
+	player_texture = ant_atlas
 	scrap_pile_texture = load("res://assets/scrap_pile.svg")
 	scrap_chunk_texture = load("res://assets/scrap_chunk.svg")
 	terrain_spritesheet = load("res://assets/terrain/terrain_spritesheet.png")
