@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bi5ae0nywliyi"
-path="res://.godot/imported/laser_beam.svg-f93cce1b916cd88b6d5b8e53c593f23f.ctex"
+uid="uid://c2ddsnbhofsu"
+path="res://.godot/imported/terrain_spritesheet.png-ce04332bdd85fa71d61a58c811ed9ca6.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/laser_beam.svg"
-dest_files=["res://.godot/imported/laser_beam.svg-f93cce1b916cd88b6d5b8e53c593f23f.ctex"]
+source_file="res://assets/terrain/terrain_spritesheet.png"
+dest_files=["res://.godot/imported/terrain_spritesheet.png-ce04332bdd85fa71d61a58c811ed9ca6.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false
