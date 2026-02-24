@@ -42,9 +42,18 @@ var grid: Array = []
 var player_grid_pos: Vector2i = Vector2i(GRID_COLS - 1, GRID_ROWS / 2)
 var has_left_spawn: bool = false  # True once player moves into the mining area
 
+# SVG textures
+var player_texture: Texture2D
+var scrap_pile_texture: Texture2D
+var scrap_chunk_texture: Texture2D
+
 @onready var player_node = $PlayerProbe
+@onready var pause_menu = $PauseMenu
 
 func _ready() -> void:
+	player_texture = load("res://assets/player_ship.svg")
+	scrap_pile_texture = load("res://assets/scrap_pile.svg")
+	scrap_chunk_texture = load("res://assets/scrap_chunk.svg")
 	_generate_grid()
 	var music = load("res://assets/mine.mp3")
 	MusicManager.play_music(music)
@@ -90,27 +99,45 @@ func _draw() -> void:
 	for col in range(GRID_COLS - EXIT_COLS):
 		for row in range(GRID_ROWS):
 			var tile: int = grid[col][row]
-			if tile != TileType.EMPTY:
-				draw_rect(
-					Rect2(
-						col * CELL_SIZE + 1,
-						row * CELL_SIZE + 1,
-						CELL_SIZE - 2,
-						CELL_SIZE - 2
-					),
-					TILE_COLORS[tile]
-				)
+			if tile == TileType.EMPTY:
+				continue
 
-	# Draw player (cyan square)
-	draw_rect(
-		Rect2(
-			player_grid_pos.x * CELL_SIZE + 2,
-			player_grid_pos.y * CELL_SIZE + 2,
-			CELL_SIZE - 4,
-			CELL_SIZE - 4
-		),
-		Color(0.20, 0.80, 1.00)
+			var rect := Rect2(
+				col * CELL_SIZE + 1,
+				row * CELL_SIZE + 1,
+				CELL_SIZE - 2,
+				CELL_SIZE - 2
+			)
+
+			# Draw background color for all tiles
+			draw_rect(rect, TILE_COLORS[tile])
+
+			# Overlay SVG icon for ore nodes on top of color background
+			var svg_rect := Rect2(
+				col * CELL_SIZE + 6,
+				row * CELL_SIZE + 6,
+				CELL_SIZE - 12,
+				CELL_SIZE - 12
+			)
+			match tile:
+				TileType.ORE_COPPER, TileType.ORE_IRON:
+					if scrap_pile_texture:
+						draw_texture_rect(scrap_pile_texture, svg_rect, false)
+				TileType.ORE_GOLD, TileType.ORE_GEM:
+					if scrap_chunk_texture:
+						draw_texture_rect(scrap_chunk_texture, svg_rect, false)
+
+	# Draw player using player_ship.svg
+	var player_rect := Rect2(
+		player_grid_pos.x * CELL_SIZE + 2,
+		player_grid_pos.y * CELL_SIZE + 2,
+		CELL_SIZE - 4,
+		CELL_SIZE - 4
 	)
+	if player_texture:
+		draw_texture_rect(player_texture, player_rect, false)
+	else:
+		draw_rect(player_rect, Color(0.20, 0.80, 1.00))
 
 	# Exit zone label
 	var font := ThemeDB.fallback_font
@@ -123,6 +150,11 @@ func _draw() -> void:
 	)
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Open pause menu with Escape
+	if event.is_action_pressed("ui_cancel"):
+		pause_menu.show_menu()
+		return
+
 	if event.is_action_pressed("ui_left"):
 		_try_move(-1, 0)
 	elif event.is_action_pressed("ui_right"):

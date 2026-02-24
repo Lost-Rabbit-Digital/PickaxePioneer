@@ -11,6 +11,9 @@ var health_squares: Array[ColorRect] = []
 func _ready() -> void:
 	EventBus.scrap_changed.connect(_on_scrap_changed)
 	EventBus.player_health_changed.connect(_on_health_changed)
+	# Initialize hearts immediately since PlayerProbe emits before HUD connects
+	var max_hp := GameManager.get_max_health()
+	_on_health_changed(max_hp, max_hp)
 
 func _on_scrap_changed(amount: int) -> void:
 	scrap_label.text = "Scrap: %d" % amount

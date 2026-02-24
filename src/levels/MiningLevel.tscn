@@ -1,9 +1,10 @@
-[gd_scene load_steps=4 format=3 uid="uid://f2a0m5s8y6c5"]
+[gd_scene load_steps=6 format=3 uid="uid://f2a0m5s8y6c5"]
 
 [ext_resource type="PackedScene" uid="uid://c8x7k2q5y3z2" path="res://src/entities/player/PlayerProbe.tscn" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://hud123456789" path="res://src/ui/HUD.tscn" id="2_hud"]
 [ext_resource type="AudioStream" uid="uid://mine_mp3" path="res://assets/mine.mp3" id="3_music"]
 [ext_resource type="Script" path="res://src/levels/MiningLevel.gd" id="4_script"]
+[ext_resource type="PackedScene" uid="uid://pausemenu0123" path="res://src/ui/PauseMenu.tscn" id="5_pause"]
 
 [node name="MiningLevel" type="Node2D"]
 script = ExtResource("4_script")
@@ -17,3 +18,5 @@ stream = ExtResource("3_music")
 autoplay = true
 volume_db = -10.0
 bus = &"Music"
+
+[node name="PauseMenu" parent="." instance=ExtResource("5_pause")]
