@@ -36,7 +36,7 @@ var messages: Array[String] = [
 	"Buy upgrades to survive longer.",
 	"The extraction zone is your only way out.",
 	"Watch your hull integrity!",
-	"Lasers mine faster with upgrades.",
+	"Drills mine faster with upgrades.",
 	"Engines help you outrun trouble.",
 	"Scrap is life out here.",
 	"Don't get greedy, get out alive.",

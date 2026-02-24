@@ -18,7 +18,7 @@ func _ready() -> void:
 	
 	# Connect collision for player damage
 	$Area2D.body_entered.connect(_on_body_entered)
-	# Connect area detection for laser hits
+	# Connect area detection for drill/damage hits
 	$Area2D.area_entered.connect(_on_area_entered)
 
 func _change_direction() -> void:

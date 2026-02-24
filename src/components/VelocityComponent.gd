@@ -5,7 +5,7 @@ extends Node
 
 @export var max_speed: float = 300.0
 @export var acceleration: float = 200.0
-@export var friction: float = 100.0
+@export var friction: float = 300.0
 @export var rotation_speed: float = 3.0
 
 var velocity: Vector2 = Vector2.ZERO

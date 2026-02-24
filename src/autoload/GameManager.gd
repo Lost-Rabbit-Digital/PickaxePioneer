@@ -15,7 +15,7 @@ var last_overworld_node_name: String = ""
 # Upgrade levels
 var hull_level: int = 0
 var engine_level: int = 0
-var laser_level: int = 0
+var drill_level: int = 0
 
 const SAVE_PATH = "user://save_data.json"
 
@@ -80,26 +80,26 @@ func upgrade_engine() -> void:
 	save_game()
 	print("Engine upgraded to level ", engine_level)
 
-func upgrade_laser() -> void:
-	laser_level += 1
+func upgrade_drill() -> void:
+	drill_level += 1
 	save_game()
-	print("Laser upgraded to level ", laser_level)
+	print("Drill upgraded to level ", drill_level)
 
 func get_max_health() -> int:
-	return 100 + (hull_level * 20)
+	return 3 + hull_level
 
 func get_max_speed() -> float:
 	return 300.0 + (engine_level * 30.0)
 
-func get_laser_damage() -> int:
-	return 10 + (laser_level * 5)
+func get_drill_damage() -> int:
+	return 5 + (drill_level * 3)
 
 func save_game() -> void:
 	var save_data = {
 		"scrap_currency": scrap_currency,
 		"hull_level": hull_level,
 		"engine_level": engine_level,
-		"laser_level": laser_level
+		"drill_level": drill_level
 	}
 	
 	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -125,7 +125,7 @@ func load_game() -> void:
 			scrap_currency = data.get("scrap_currency", 0)
 			hull_level = data.get("hull_level", 0)
 			engine_level = data.get("engine_level", 0)
-			laser_level = data.get("laser_level", 0)
+			drill_level = data.get("drill_level", 0)
 			print("Game loaded")
 		else:
 			print("Failed to parse save file")
