@@ -475,6 +475,7 @@ func _try_move(dc: int, dr: int) -> void:
 					_mine_cell(new_col, new_row)
 					var scrap: int = TILE_SCRAP.get(new_tile, 1)
 					GameManager.add_currency(scrap)
+					EventBus.scrap_earned.emit(scrap)
 					SoundManager.play_drill_sound()
 				_update_camera()
 				queue_redraw()
@@ -528,6 +529,7 @@ func _try_move(dc: int, dr: int) -> void:
 		_mine_cell(new_col, new_row)
 		var scrap: int = TILE_SCRAP.get(tile, 1)
 		GameManager.add_currency(scrap)
+		EventBus.scrap_earned.emit(scrap)
 		SoundManager.play_drill_sound()
 
 	# Track first departure from spawn zone
