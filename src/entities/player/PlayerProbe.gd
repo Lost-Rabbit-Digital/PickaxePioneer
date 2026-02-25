@@ -34,4 +34,5 @@ func _on_health_changed(current: int, max_hp: int) -> void:
 	EventBus.player_health_changed.emit(current, max_hp)
 
 func _on_died() -> void:
-	GameManager.lose_run()
+	# Emit signal so MiningLevel can show a death overlay before transitioning
+	EventBus.player_died.emit()
