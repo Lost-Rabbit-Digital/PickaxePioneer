@@ -331,7 +331,36 @@ func _draw() -> void:
 # Auto-move (hold-to-repeat)
 # ---------------------------------------------------------------------------
 
+func _get_interact_key_name() -> String:
+	var events := InputMap.action_get_events("interact")
+	for event in events:
+		if event is InputEventKey:
+			return OS.get_keycode_string(event.keycode)
+	return "E"
+
+func _update_interact_prompt() -> void:
+	if not player_node:
+		return
+	var current_tile := grid[player_grid_pos.x][player_grid_pos.y]
+	if current_tile == TileType.REFUEL_STATION:
+		var key_name := _get_interact_key_name()
+		player_node.show_prompt("Press %s to refuel" % key_name)
+		var world_pos := Vector2(
+			player_grid_pos.x * CELL_SIZE + CELL_SIZE * 0.5,
+			player_grid_pos.y * CELL_SIZE
+		)
+		var screen_pos := get_viewport().get_canvas_transform() * world_pos
+		player_node.set_prompt_position(screen_pos)
+	else:
+		player_node.hide_prompt()
+
+func _try_interact() -> void:
+	if grid[player_grid_pos.x][player_grid_pos.y] == TileType.REFUEL_STATION:
+		if GameManager.refuel_completely(10):
+			SoundManager.play_drill_sound()
+
 func _process(delta: float) -> void:
+	_update_interact_prompt()
 	# Determine which direction (if any) is currently held
 	var dir := Vector2i.ZERO
 	if Input.is_action_pressed("ui_left") or Input.is_key_pressed(KEY_A):
@@ -379,6 +408,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_try_move(0, -1)
 	elif event.is_action_pressed("ui_down"):
 		_try_move(0, 1)
+	elif event.is_action_pressed("interact"):
+		_try_interact()
 	elif event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
 			KEY_A: _try_move(-1, 0)
@@ -426,8 +457,7 @@ func _try_move(dc: int, dr: int) -> void:
 					GameManager.restore_fuel(10)
 					SoundManager.play_drill_sound()
 				elif new_tile == TileType.REFUEL_STATION:
-					if GameManager.refuel_completely(10):
-						SoundManager.play_drill_sound()
+					pass  # Interact prompt handles refueling
 				else:
 					_mine_cell(new_col, new_row)
 					var scrap: int = TILE_SCRAP.get(new_tile, 1)
@@ -480,8 +510,7 @@ func _try_move(dc: int, dr: int) -> void:
 		GameManager.restore_fuel(10)
 		SoundManager.play_drill_sound()
 	elif tile == TileType.REFUEL_STATION:
-		if GameManager.refuel_completely(10):
-			SoundManager.play_drill_sound()
+		pass  # Interact prompt handles refueling
 	elif tile != TileType.EMPTY:
 		_mine_cell(new_col, new_row)
 		var scrap: int = TILE_SCRAP.get(tile, 1)
