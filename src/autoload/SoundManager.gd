@@ -43,6 +43,25 @@ func play_drill_sound() -> void:
 	await get_tree().create_timer(0.25).timeout
 	player.queue_free()
 
+func play_impact_sound() -> void:
+	# Short, sharp thud for hitting a block that isn't destroyed yet
+	var player = AudioStreamPlayer.new()
+	add_child(player)
+
+	var stream = AudioStreamGenerator.new()
+	stream.mix_rate = sample_rate
+	stream.buffer_length = 0.1
+	player.stream = stream
+	player.bus = &"SFX"
+	player.volume_db = -14.0
+	player.play()
+
+	var playback = player.get_stream_playback()
+	_fill_impact_buffer(playback)
+
+	await get_tree().create_timer(0.15).timeout
+	player.queue_free()
+
 func play_explosion_sound() -> void:
 	var player = AudioStreamPlayer.new()
 	add_child(player)
@@ -88,6 +107,20 @@ func _fill_drill_buffer(playback: AudioStreamGeneratorPlayback) -> void:
 		var noise = randf_range(-0.1, 0.1)
 		var sample_val = (saw + noise) * (1.0 - t * 4.0) # Decay over time
 		playback.push_frame(Vector2.ONE * sample_val)
+
+func _fill_impact_buffer(playback: AudioStreamGeneratorPlayback) -> void:
+	var phase = 0.0
+	var frames = playback.get_frames_available()
+
+	for i in range(frames):
+		var t = float(i) / sample_rate
+		# Short percussive thud: pitch-dropping tone + quick noise burst
+		var freq = 200.0 * exp(-t * 25.0)  # Pitch drops rapidly
+		var increment = freq / sample_rate
+		phase = fmod(phase + increment, 1.0)
+		var tone = sin(phase * TAU) * exp(-t * 35.0) * 0.35
+		var noise = randf_range(-0.12, 0.12) * exp(-t * 30.0)
+		playback.push_frame(Vector2.ONE * (tone + noise))
 
 func _fill_explosion_buffer(playback: AudioStreamGeneratorPlayback) -> void:
 	var frames = playback.get_frames_available()

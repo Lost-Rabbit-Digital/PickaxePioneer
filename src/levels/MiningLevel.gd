@@ -39,6 +39,25 @@ enum TileType {
 	EXIT_STATION     = 22,  # Exit station tile on the surface (far right)
 }
 
+# Display names shown in the HUD earnings popup
+const TILE_NAMES: Dictionary = {
+	TileType.SURFACE_GRASS:   "Topsoil",
+	TileType.DIRT:            "Dirt",
+	TileType.DIRT_DARK:       "Dark Mud",
+	TileType.STONE:           "Stone",
+	TileType.STONE_DARK:      "Dark Stone",
+	TileType.ORE_COPPER:      "Copper",
+	TileType.ORE_COPPER_DEEP: "Deep Copper",
+	TileType.ORE_IRON:        "Iron",
+	TileType.ORE_IRON_DEEP:   "Deep Iron",
+	TileType.ORE_GOLD:        "Gold",
+	TileType.ORE_GOLD_DEEP:   "Deep Gold",
+	TileType.ORE_GEM:         "Gem",
+	TileType.ORE_GEM_DEEP:    "Deep Gem",
+	TileType.FUEL_NODE:       "Fuel",
+	TileType.FUEL_NODE_FULL:  "Fuel",
+}
+
 const TILE_COLORS: Dictionary = {
 	TileType.DIRT:           Color(0.45, 0.28, 0.12),  # Brown
 	TileType.DIRT_DARK:      Color(0.35, 0.20, 0.08),  # Dark brown
@@ -94,6 +113,27 @@ const TILE_TEXTURE_PATHS: Dictionary = {
 const AUTO_MOVE_DELAY: float = 0.15    # Hold threshold before repeating starts
 const AUTO_MOVE_INTERVAL: float = 0.15 # Time between repeated steps
 
+# HP per tile type — determines how many hits needed to mine it.
+# Base mandibles power = 5 (get_mandibles_power()). Each upgrade adds 3.
+# Each upgrade level unlocks 1-hit mining for the next ore tier:
+#   Lv0→dirt(1-hit), Lv1→stone(1-hit), Lv2→copper(1-hit), Lv3→iron(1-hit),
+#   Lv5→gold(1-hit), Lv8→gem(1-hit)
+const TILE_HP: Dictionary = {
+	TileType.SURFACE_GRASS:   4,   # Always 1 hit (HP < base power 5)
+	TileType.DIRT:            4,
+	TileType.DIRT_DARK:       4,
+	TileType.STONE:           8,   # 2 hits base; 1 hit at Lv1 (power 8)
+	TileType.STONE_DARK:      10,  # 2 hits base; 1 hit at Lv2 (power 11)
+	TileType.ORE_COPPER:      11,  # 3 hits base; 1 hit at Lv2 (power 11)
+	TileType.ORE_COPPER_DEEP: 13,  # 3 hits base; 1 hit at Lv3 (power 14)
+	TileType.ORE_IRON:        14,  # 3 hits base; 1 hit at Lv3 (power 14)
+	TileType.ORE_IRON_DEEP:   17,  # 4 hits base; 1 hit at Lv4 (power 17)
+	TileType.ORE_GOLD:        20,  # 4 hits base; 1 hit at Lv5 (power 20)
+	TileType.ORE_GOLD_DEEP:   23,  # 5 hits base; 1 hit at Lv6 (power 23)
+	TileType.ORE_GEM:         29,  # 6 hits base; 1 hit at Lv8 (power 29)
+	TileType.ORE_GEM_DEEP:    32,  # 7 hits base; 1 hit at Lv9 (power 32)
+}
+
 const TILE_MINERALS: Dictionary = {
 	TileType.SURFACE_GRASS:   1,
 	TileType.DIRT:            1,
@@ -136,6 +176,15 @@ var _upgrade_layer: CanvasLayer  # Hosts the UpgradeMenu overlay when opened in-
 # Depth tracking — rows below the surface
 var _last_depth: int = 0
 
+# Set to true when the game-over overlay is shown to block further input
+var _game_over: bool = false
+
+# Per-tile damage tracking for multi-hit blocks (key: Vector2i, value: damage dealt)
+var _tile_damage: Dictionary = {}
+
+# Per-tile white impact flash (key: Vector2i, value: alpha 0-1, fades in _process)
+var _flash_cells: Dictionary = {}
+
 @onready var player_node = $PlayerProbe
 @onready var pause_menu = $PauseMenu
 
@@ -162,6 +211,8 @@ func _ready() -> void:
 	camera.limit_right  = GRID_COLS * CELL_SIZE
 	camera.limit_bottom = GRID_ROWS * CELL_SIZE
 	_update_camera()
+
+	EventBus.player_died.connect(_on_player_died)
 
 	var music = load("res://assets/music/crickets.mp3")
 	MusicManager.play_music(music)
@@ -337,6 +388,22 @@ func _draw() -> void:
 				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
 					Color.WHITE, false, 2.0)
 
+			# Crack overlay — darkens as block loses HP from repeated hits
+			var pk := Vector2i(col, row)
+			if _tile_damage.has(pk):
+				var tile_hp: int = TILE_HP.get(tile, 0)
+				if tile_hp > 0:
+					var damage_ratio := float(_tile_damage[pk]) / float(tile_hp)
+					draw_rect(tile_rect, Color(0.0, 0.0, 0.0, damage_ratio * 0.6))
+
+	# ---- Impact flashes (drawn on top of tiles, below player) ----
+	for pk in _flash_cells:
+		var fc: int = pk.x
+		var fr: int = pk.y
+		if fc >= min_col and fc <= max_col and fr >= min_row and fr <= max_row:
+			var frect := Rect2(fc * CELL_SIZE, fr * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+			draw_rect(frect, Color(1.0, 1.0, 1.0, _flash_cells[pk]))
+
 	# ---- Player sprite ----
 	var player_rect := Rect2(
 		player_grid_pos.x * CELL_SIZE + 2,
@@ -383,8 +450,19 @@ func _try_interact() -> void:
 			SoundManager.play_drill_sound()
 
 func _process(delta: float) -> void:
-	if _hub_visible:
-		return  # Block all movement while the surface hub is open
+	# Fade impact flashes — runs regardless of hub/game-over state
+	if _flash_cells.size() > 0:
+		var to_remove: Array = []
+		for pos_key in _flash_cells:
+			_flash_cells[pos_key] -= delta * 5.0
+			if _flash_cells[pos_key] <= 0.0:
+				to_remove.append(pos_key)
+		for k in to_remove:
+			_flash_cells.erase(k)
+		queue_redraw()
+
+	if _hub_visible or _game_over:
+		return  # Block all movement while the surface hub is open or game-over screen shows
 	_update_interact_prompt()
 	# Determine which direction (if any) is currently held
 	var dir := Vector2i.ZERO
@@ -421,8 +499,8 @@ func _process(delta: float) -> void:
 # ---------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _hub_visible:
-		return  # Hub captures its own input via buttons
+	if _hub_visible or _game_over:
+		return  # Hub or game-over screen captures input
 	if event.is_action_pressed("ui_cancel"):
 		pause_menu.show_menu()
 		return
@@ -477,20 +555,37 @@ func _try_move(dc: int, dr: int) -> void:
 				if not GameManager.consume_fuel(1):
 					_on_out_of_fuel()
 					return
-				player_grid_pos = Vector2i(new_col, new_row)
-				is_on_surface = false
+				# Don't move player until the target tile is cleared
 				if new_tile == TileType.FUEL_NODE or new_tile == TileType.FUEL_NODE_FULL:
 					_mine_cell(new_col, new_row)
 					GameManager.restore_fuel(10)
+					EventBus.ore_mined_popup.emit(10, "Fuel")
 					SoundManager.play_drill_sound()
+					player_grid_pos = Vector2i(new_col, new_row)
+					is_on_surface = false
 				elif new_tile == TileType.REFUEL_STATION:
-					pass  # Interact prompt handles refueling
+					player_grid_pos = Vector2i(new_col, new_row)
+					is_on_surface = false
 				else:
-					_mine_cell(new_col, new_row)
-					var minerals: int = TILE_MINERALS.get(new_tile, 1)
-					GameManager.add_currency(minerals)
-					EventBus.minerals_earned.emit(minerals)
-					SoundManager.play_drill_sound()
+					var pos_key := Vector2i(new_col, new_row)
+					var tile_hp: int = TILE_HP.get(new_tile, 1)
+					var new_damage: int = _tile_damage.get(pos_key, 0) + GameManager.get_mandibles_power()
+					_flash_cells[pos_key] = 1.0
+					if new_damage >= tile_hp:
+						_tile_damage.erase(pos_key)
+						_mine_cell(new_col, new_row)
+						var minerals: int = TILE_MINERALS.get(new_tile, 1)
+						GameManager.add_currency(minerals)
+						EventBus.minerals_earned.emit(minerals)
+						EventBus.ore_mined_popup.emit(minerals, TILE_NAMES.get(new_tile, "Mineral"))
+						SoundManager.play_drill_sound()
+						player_grid_pos = Vector2i(new_col, new_row)
+						is_on_surface = false
+					else:
+						_tile_damage[pos_key] = new_damage
+						SoundManager.play_impact_sound()
+						queue_redraw()
+						return  # Player stays on surface; no camera/depth update needed
 				_update_camera()
 				queue_redraw()
 				return
@@ -532,33 +627,51 @@ func _try_move(dc: int, dr: int) -> void:
 		queue_redraw()
 		return
 
-	# Move player
-	player_grid_pos = Vector2i(new_col, new_row)
+	# Move player or deal damage — depends on tile hardness
+	var player_moved := false
 
 	if tile == TileType.FUEL_NODE or tile == TileType.FUEL_NODE_FULL:
 		_mine_cell(new_col, new_row)
 		GameManager.restore_fuel(10)
+		EventBus.ore_mined_popup.emit(10, "Fuel")
 		SoundManager.play_drill_sound()
-	elif tile == TileType.REFUEL_STATION:
-		pass  # Interact prompt handles refueling
-	elif tile != TileType.EMPTY:
-		_mine_cell(new_col, new_row)
-		var minerals: int = TILE_MINERALS.get(tile, 1)
-		GameManager.add_currency(minerals)
-		EventBus.minerals_earned.emit(minerals)
-		SoundManager.play_drill_sound()
+		player_grid_pos = Vector2i(new_col, new_row)
+		player_moved = true
+	elif tile == TileType.REFUEL_STATION or tile == TileType.EMPTY:
+		player_grid_pos = Vector2i(new_col, new_row)
+		player_moved = true
+	else:
+		# Minable tile: apply mandibles damage; move in only when destroyed
+		var pos_key := Vector2i(new_col, new_row)
+		var tile_hp: int = TILE_HP.get(tile, 1)
+		var new_damage: int = _tile_damage.get(pos_key, 0) + GameManager.get_mandibles_power()
+		_flash_cells[pos_key] = 1.0
+		if new_damage >= tile_hp:
+			_tile_damage.erase(pos_key)
+			_mine_cell(new_col, new_row)
+			var minerals: int = TILE_MINERALS.get(tile, 1)
+			GameManager.add_currency(minerals)
+			EventBus.minerals_earned.emit(minerals)
+			EventBus.ore_mined_popup.emit(minerals, TILE_NAMES.get(tile, "Mineral"))
+			SoundManager.play_drill_sound()
+			player_grid_pos = Vector2i(new_col, new_row)
+			player_moved = true
+		else:
+			_tile_damage[pos_key] = new_damage
+			SoundManager.play_impact_sound()
 
-	# Track first departure from spawn zone
-	if new_col < GRID_COLS - EXIT_COLS:
-		has_left_spawn = true
+	if player_moved:
+		# Track first departure from spawn zone
+		if new_col < GRID_COLS - EXIT_COLS:
+			has_left_spawn = true
 
-	# Reaching exit after having mined = prompt the surface hub
-	if has_left_spawn and new_col >= GRID_COLS - EXIT_COLS:
-		_update_depth()
-		_update_camera()
-		queue_redraw()
-		_show_surface_hub()
-		return
+		# Reaching exit after having mined = prompt the surface hub
+		if has_left_spawn and new_col >= GRID_COLS - EXIT_COLS:
+			_update_depth()
+			_update_camera()
+			queue_redraw()
+			_show_surface_hub()
+			return
 
 	_update_depth()
 	_update_camera()
@@ -579,14 +692,75 @@ func _explode_area(center_col: int, center_row: int) -> void:
 			if nc >= 0 and nc < GRID_COLS and nr >= 0 and nr < GRID_ROWS:
 				grid[nc][nr] = TileType.EMPTY
 	SoundManager.play_explosion_sound()
+	_shake_camera(6.0, 0.35)
 
 func _damage_player(amount: int) -> void:
 	if player_node and player_node.has_method("take_damage"):
 		player_node.take_damage(amount)
 
-func _on_out_of_fuel() -> void:
-	print("Out of fuel! Game Over")
+func _on_player_died() -> void:
+	if _game_over:
+		return
+	_game_over = true
+	_show_game_over_overlay("YOU DIED", "Run minerals have been lost...")
+	await get_tree().create_timer(2.5).timeout
 	GameManager.lose_run()
+
+func _on_out_of_fuel() -> void:
+	if _game_over:
+		return
+	_game_over = true
+	_show_game_over_overlay("OUT OF FUEL", "Run minerals have been lost...")
+	await get_tree().create_timer(2.5).timeout
+	GameManager.lose_run()
+
+func _show_game_over_overlay(title: String, subtitle: String) -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 20
+	add_child(layer)
+
+	var dim := ColorRect.new()
+	dim.position = Vector2.ZERO
+	dim.size = Vector2(VIEWPORT_W, VIEWPORT_H)
+	dim.color = Color(0.0, 0.0, 0.0, 0.0)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	layer.add_child(dim)
+
+	var title_label := Label.new()
+	title_label.text = title
+	title_label.position = Vector2(0, VIEWPORT_H / 2 - 48)
+	title_label.size = Vector2(VIEWPORT_W, 52)
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.add_theme_font_size_override("font_size", 48)
+	title_label.modulate = Color(1.0, 0.15, 0.05)
+	layer.add_child(title_label)
+
+	var sub_label := Label.new()
+	sub_label.text = subtitle
+	sub_label.position = Vector2(0, VIEWPORT_H / 2 + 12)
+	sub_label.size = Vector2(VIEWPORT_W, 28)
+	sub_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub_label.modulate = Color(0.85, 0.85, 0.85)
+	layer.add_child(sub_label)
+
+	var tween := create_tween()
+	tween.tween_property(dim, "color:a", 0.80, 0.6)
+
+func _shake_camera(intensity: float = 5.0, duration: float = 0.3) -> void:
+	if not camera:
+		return
+	var tween := create_tween()
+	var steps := 8
+	var step_dur := duration / steps
+	for i in range(steps):
+		var t := float(i) / float(steps)
+		var cur_intensity := intensity * (1.0 - t)
+		var offset := Vector2(
+			randf_range(-cur_intensity, cur_intensity),
+			randf_range(-cur_intensity, cur_intensity)
+		)
+		tween.tween_property(camera, "offset", offset, step_dur)
+	tween.tween_property(camera, "offset", Vector2.ZERO, 0.05)
 
 # ---------------------------------------------------------------------------
 # Depth tracking
