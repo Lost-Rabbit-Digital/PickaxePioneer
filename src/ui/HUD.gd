@@ -13,7 +13,9 @@ var fuel_segments: Array[ColorRect] = []
 
 var scrap_panel: ColorRect
 var earnings_label: Label
+var _pickup_panel: ColorRect
 var depth_label: Label
+var depth_panel: ColorRect
 var _earnings_tween: Tween
 
 # Low fuel warning
@@ -54,12 +56,29 @@ func _ready() -> void:
 	$Control.add_child(scrap_panel)
 	$Control.move_child(scrap_panel, 0)  # Draw behind everything else
 
+	# Background panel behind the item pickup popup
+	_pickup_panel = ColorRect.new()
+	_pickup_panel.color = Color(0.0, 0.0, 0.0, 0.55)
+	_pickup_panel.position = Vector2(8, 42)
+	_pickup_panel.size = Vector2(200, 30)
+	_pickup_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_pickup_panel.modulate.a = 0.0  # Starts invisible, fades in with earnings label
+	$Control.add_child(_pickup_panel)
+
 	# Earnings popup label — appears below the minerals panel when a tile is mined
 	earnings_label = Label.new()
 	earnings_label.position = Vector2(16, 46)
 	earnings_label.custom_minimum_size = Vector2(220, 22)
 	earnings_label.modulate = Color(1.0, 0.88, 0.2, 0.0)  # Gold, starts invisible
 	$Control.add_child(earnings_label)
+
+	# Background panel behind the depth meter label
+	depth_panel = ColorRect.new()
+	depth_panel.color = Color(0.0, 0.0, 0.0, 0.55)
+	depth_panel.position = Vector2(4, 68)
+	depth_panel.size = Vector2(164, 30)
+	depth_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$Control.add_child(depth_panel)
 
 	# Depth indicator — shows how far underground the ant is
 	depth_label = Label.new()
@@ -101,12 +120,14 @@ func _on_ore_mined_popup(amount: int, ore_name: String) -> void:
 	var popup_color: Color = ORE_COLORS.get(ore_name, Color(1.0, 0.88, 0.2))
 	earnings_label.text = "+%d %s" % [amount, ore_name]
 	earnings_label.modulate = Color(popup_color.r, popup_color.g, popup_color.b, 1.0)
+	_pickup_panel.modulate.a = 1.0  # Show panel immediately
 
 	if _earnings_tween:
 		_earnings_tween.kill()
 	_earnings_tween = create_tween()
 	_earnings_tween.tween_interval(0.8)
 	_earnings_tween.tween_property(earnings_label, "modulate:a", 0.0, 0.45)
+	_earnings_tween.parallel().tween_property(_pickup_panel, "modulate:a", 0.0, 0.45)
 
 func _on_health_changed(current: int, max_hp: int) -> void:
 	# Clear previous squares
