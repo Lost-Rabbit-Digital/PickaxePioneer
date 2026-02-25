@@ -62,6 +62,25 @@ func play_impact_sound() -> void:
 	await get_tree().create_timer(0.15).timeout
 	player.queue_free()
 
+func play_damage_sound() -> void:
+	# Short sharp "hurt" sound: descending tone + noise burst
+	var player = AudioStreamPlayer.new()
+	add_child(player)
+
+	var stream = AudioStreamGenerator.new()
+	stream.mix_rate = sample_rate
+	stream.buffer_length = 0.15
+	player.stream = stream
+	player.bus = &"SFX"
+	player.volume_db = -6.0
+	player.play()
+
+	var playback = player.get_stream_playback()
+	_fill_damage_buffer(playback)
+
+	await get_tree().create_timer(0.3).timeout
+	player.queue_free()
+
 func play_explosion_sound() -> void:
 	var player = AudioStreamPlayer.new()
 	add_child(player)
@@ -124,9 +143,24 @@ func _fill_impact_buffer(playback: AudioStreamGeneratorPlayback) -> void:
 
 func _fill_explosion_buffer(playback: AudioStreamGeneratorPlayback) -> void:
 	var frames = playback.get_frames_available()
-	
+
 	for i in range(frames):
 		var t = float(i) / sample_rate
 		# White noise with decay
 		var sample_val = randf_range(-1.0, 1.0) * 0.5 * exp(-t * 5.0)
 		playback.push_frame(Vector2.ONE * sample_val)
+
+func _fill_damage_buffer(playback: AudioStreamGeneratorPlayback) -> void:
+	var phase = 0.0
+	var frames = playback.get_frames_available()
+
+	for i in range(frames):
+		var t = float(i) / sample_rate
+		# Descending tone from 300 Hz down to ~80 Hz — a dull "thwack" with a pain edge
+		var freq = 300.0 * exp(-t * 12.0) + 80.0
+		var increment = freq / sample_rate
+		phase = fmod(phase + increment, 1.0)
+		var tone = sin(phase * TAU) * exp(-t * 18.0) * 0.45
+		# Gritty noise layer for impact texture
+		var noise = randf_range(-0.2, 0.2) * exp(-t * 22.0)
+		playback.push_frame(Vector2.ONE * (tone + noise))

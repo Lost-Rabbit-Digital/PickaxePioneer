@@ -697,6 +697,8 @@ func _explode_area(center_col: int, center_row: int) -> void:
 func _damage_player(amount: int) -> void:
 	if player_node and player_node.has_method("take_damage"):
 		player_node.take_damage(amount)
+		SoundManager.play_damage_sound()
+		_shake_camera(5.0, 0.25)
 
 func _on_player_died() -> void:
 	if _game_over:
