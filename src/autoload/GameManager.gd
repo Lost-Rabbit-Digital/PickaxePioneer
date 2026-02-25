@@ -8,8 +8,8 @@ enum GameState {
 }
 
 var current_state: GameState = GameState.MENU
-var scrap_currency: int = 0
-var run_scrap_currency: int = 0
+var mineral_currency: int = 0
+var run_mineral_currency: int = 0
 var last_overworld_node_name: String = ""
 
 # Fuel system
@@ -17,9 +17,9 @@ var max_fuel: int = 100
 var current_fuel: int = 100
 
 # Upgrade levels
-var hull_level: int = 0
-var engine_level: int = 0
-var drill_level: int = 0
+var carapace_level: int = 0
+var legs_level: int = 0
+var mandibles_level: int = 0
 
 const SAVE_PATH = "user://save_data.json"
 
@@ -28,13 +28,13 @@ func _ready() -> void:
 	load_game()
 
 func add_currency(amount: int) -> void:
-	run_scrap_currency += amount
-	EventBus.scrap_changed.emit(run_scrap_currency)
+	run_mineral_currency += amount
+	EventBus.minerals_changed.emit(run_mineral_currency)
 
 func bank_currency() -> void:
-	scrap_currency += run_scrap_currency
-	run_scrap_currency = 0
-	EventBus.scrap_changed.emit(0)
+	mineral_currency += run_mineral_currency
+	run_mineral_currency = 0
+	EventBus.minerals_changed.emit(0)
 
 func change_state(new_state: GameState) -> void:
 	current_state = new_state
@@ -49,8 +49,8 @@ func pause_game() -> void:
 	change_state(GameState.PAUSED)
 
 func lose_run() -> void:
-	run_scrap_currency = 0
-	EventBus.scrap_changed.emit(0)
+	run_mineral_currency = 0
+	EventBus.minerals_changed.emit(0)
 	await _transition_to_scene("res://src/levels/Overworld.tscn")
 
 func complete_run() -> void:
@@ -60,9 +60,9 @@ func complete_run() -> void:
 	# Note: RunSummary handles banking and returning to Overworld
 
 func load_mining_level(scene_path: String = "") -> void:
-	run_scrap_currency = 0 # Reset run currency on entry
+	run_mineral_currency = 0 # Reset run currency on entry
 	current_fuel = max_fuel # Reset fuel on entry
-	EventBus.scrap_changed.emit(0)
+	EventBus.minerals_changed.emit(0)
 	EventBus.fuel_changed.emit(current_fuel, max_fuel)
 	var path = scene_path if scene_path != "" else "res://src/levels/MiningLevel.tscn"
 	await _transition_to_scene(path)
@@ -76,29 +76,29 @@ func _transition_to_scene(scene_path: String) -> void:
 	await get_tree().create_timer(0.1).timeout
 	await SceneTransition.fade_from_black(0.5)
 
-func upgrade_hull() -> void:
-	hull_level += 1
+func upgrade_carapace() -> void:
+	carapace_level += 1
 	save_game()
-	print("Hull upgraded to level ", hull_level)
+	print("Carapace upgraded to level ", carapace_level)
 
-func upgrade_engine() -> void:
-	engine_level += 1
+func upgrade_legs() -> void:
+	legs_level += 1
 	save_game()
-	print("Engine upgraded to level ", engine_level)
+	print("Legs upgraded to level ", legs_level)
 
-func upgrade_drill() -> void:
-	drill_level += 1
+func upgrade_mandibles() -> void:
+	mandibles_level += 1
 	save_game()
-	print("Drill upgraded to level ", drill_level)
+	print("Mandibles upgraded to level ", mandibles_level)
 
 func get_max_health() -> int:
-	return 3 + hull_level
+	return 3 + carapace_level
 
 func get_max_speed() -> float:
-	return 300.0 + (engine_level * 30.0)
+	return 300.0 + (legs_level * 30.0)
 
-func get_drill_damage() -> int:
-	return 5 + (drill_level * 3)
+func get_mandibles_power() -> int:
+	return 5 + (mandibles_level * 3)
 
 func consume_fuel(amount: int) -> bool:
 	current_fuel -= amount
@@ -112,10 +112,10 @@ func restore_fuel(amount: int) -> void:
 	EventBus.fuel_changed.emit(current_fuel, max_fuel)
 
 func refuel_completely(cost: int) -> bool:
-	if run_scrap_currency >= cost:
-		run_scrap_currency -= cost
+	if run_mineral_currency >= cost:
+		run_mineral_currency -= cost
 		current_fuel = max_fuel
-		EventBus.scrap_changed.emit(run_scrap_currency)
+		EventBus.minerals_changed.emit(run_mineral_currency)
 		EventBus.fuel_changed.emit(current_fuel, max_fuel)
 		return true
 	return false
@@ -125,10 +125,10 @@ func is_out_of_fuel() -> bool:
 
 func save_game() -> void:
 	var save_data = {
-		"scrap_currency": scrap_currency,
-		"hull_level": hull_level,
-		"engine_level": engine_level,
-		"drill_level": drill_level
+		"mineral_currency": mineral_currency,
+		"carapace_level": carapace_level,
+		"legs_level": legs_level,
+		"mandibles_level": mandibles_level
 	}
 	
 	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -151,10 +151,10 @@ func load_game() -> void:
 		var error = json.parse(json_string)
 		if error == OK:
 			var data = json.data
-			scrap_currency = data.get("scrap_currency", 0)
-			hull_level = data.get("hull_level", 0)
-			engine_level = data.get("engine_level", 0)
-			drill_level = data.get("drill_level", 0)
+			mineral_currency = data.get("mineral_currency", 0)
+			carapace_level = data.get("carapace_level", 0)
+			legs_level = data.get("legs_level", 0)
+			mandibles_level = data.get("mandibles_level", 0)
 			print("Game loaded")
 		else:
 			print("Failed to parse save file")
