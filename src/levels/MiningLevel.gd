@@ -270,7 +270,9 @@ func _generate_grid() -> void:
 	for col in range(GRID_COLS - EXIT_COLS):
 		grid[col][SURFACE_ROWS] = TileType.SURFACE_GRASS
 
-# Depth-weighted random tile: rarer ores are more common deeper
+# Depth-weighted random tile: ore density increases dramatically with depth.
+# At the surface ~25% of tiles are ore; at the deepest rows ~55% are ore.
+# Copper/iron dominate shallow layers; gold/gem dominate deep layers.
 func _random_tile(row: int = SURFACE_ROWS) -> TileType:
 	var r := randf()
 	# Depth factor: 0.0 at surface, 1.0 at bottom row
@@ -287,29 +289,37 @@ func _random_tile(row: int = SURFACE_ROWS) -> TileType:
 	elif r < hazard_bias + 0.02: return TileType.FUEL_NODE
 	elif r < hazard_bias + 0.03: return TileType.FUEL_NODE_FULL
 
-	# Rare ores (gem/gold) more common at depth
-	var gem_chance   := 0.04 + depth * 0.08
-	var gold_chance  := 0.06 + depth * 0.06
-	var iron_chance  := 0.08
-	var copper_chance := 0.08
+	# Ore chances scale with depth for a dense underground feel:
+	#   copper: fades with depth  (14% → 2%)  — shallow/surface ore
+	#   iron:   stable then tapers (12% → 8%)  — mid-depth ore
+	#   gold:   rises with depth  (4% → 20%)  — deep ore
+	#   gem:    rises steeply     (2% → 20%)  — deepest ore
+	# Total ore at surface: ~25%  |  mid: ~40%  |  bottom: ~50%
+	var copper_chance := 0.14 - depth * 0.12
+	var iron_chance   := 0.12 - depth * 0.04
+	var gold_chance   := 0.04 + depth * 0.16
+	var gem_chance    := 0.02 + depth * 0.18
+
+	# Deeper tiles are more likely to be "deep" (higher-quality) ore variants
+	var deep_ratio := 0.30 + depth * 0.50   # 30% deep at surface → 80% at bottom
 
 	var ore_start := hazard_bias + 0.03
-	if r < ore_start + gem_chance * 0.5:             return TileType.ORE_GEM_DEEP
-	elif r < ore_start + gem_chance:                  return TileType.ORE_GEM
-	elif r < ore_start + gem_chance + gold_chance * 0.5:  return TileType.ORE_GOLD_DEEP
-	elif r < ore_start + gem_chance + gold_chance:    return TileType.ORE_GOLD
-	elif r < ore_start + gem_chance + gold_chance + iron_chance * 0.5:  return TileType.ORE_IRON_DEEP
-	elif r < ore_start + gem_chance + gold_chance + iron_chance:         return TileType.ORE_IRON
-	elif r < ore_start + gem_chance + gold_chance + iron_chance + copper_chance * 0.5: return TileType.ORE_COPPER_DEEP
-	elif r < ore_start + gem_chance + gold_chance + iron_chance + copper_chance:       return TileType.ORE_COPPER
+	if r < ore_start + gem_chance * deep_ratio:                                             return TileType.ORE_GEM_DEEP
+	elif r < ore_start + gem_chance:                                                         return TileType.ORE_GEM
+	elif r < ore_start + gem_chance + gold_chance * deep_ratio:                              return TileType.ORE_GOLD_DEEP
+	elif r < ore_start + gem_chance + gold_chance:                                           return TileType.ORE_GOLD
+	elif r < ore_start + gem_chance + gold_chance + iron_chance * deep_ratio:                return TileType.ORE_IRON_DEEP
+	elif r < ore_start + gem_chance + gold_chance + iron_chance:                             return TileType.ORE_IRON
+	elif r < ore_start + gem_chance + gold_chance + iron_chance + copper_chance * deep_ratio: return TileType.ORE_COPPER_DEEP
+	elif r < ore_start + gem_chance + gold_chance + iron_chance + copper_chance:              return TileType.ORE_COPPER
 
-	# Stone (heavier at depth) vs Dirt (heavier at surface)
-	var stone_chance := 0.10 + depth * 0.30
+	# Stone (increasingly dominant at depth) vs Dirt (surface-heavy)
+	var stone_chance := 0.10 + depth * 0.50
 	var r2 := randf()
-	if r2 < stone_chance * 0.6:  return TileType.STONE_DARK
-	elif r2 < stone_chance:       return TileType.STONE
-	elif r2 < stone_chance + 0.15: return TileType.DIRT_DARK
-	else:                          return TileType.DIRT
+	if r2 < stone_chance * 0.6:    return TileType.STONE_DARK
+	elif r2 < stone_chance:         return TileType.STONE
+	elif r2 < stone_chance + 0.10:  return TileType.DIRT_DARK
+	else:                            return TileType.DIRT
 
 func _load_tile_textures() -> void:
 	# Load each tile's individual block PNG from assets/blocks/
