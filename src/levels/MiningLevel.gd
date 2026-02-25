@@ -94,7 +94,7 @@ const TILE_TEXTURE_PATHS: Dictionary = {
 const AUTO_MOVE_DELAY: float = 0.15    # Hold threshold before repeating starts
 const AUTO_MOVE_INTERVAL: float = 0.15 # Time between repeated steps
 
-const TILE_SCRAP: Dictionary = {
+const TILE_MINERALS: Dictionary = {
 	TileType.SURFACE_GRASS:   1,
 	TileType.DIRT:            1,
 	TileType.DIRT_DARK:       1,
@@ -473,9 +473,9 @@ func _try_move(dc: int, dr: int) -> void:
 					pass  # Interact prompt handles refueling
 				else:
 					_mine_cell(new_col, new_row)
-					var scrap: int = TILE_SCRAP.get(new_tile, 1)
-					GameManager.add_currency(scrap)
-					EventBus.scrap_earned.emit(scrap)
+					var minerals: int = TILE_MINERALS.get(new_tile, 1)
+					GameManager.add_currency(minerals)
+					EventBus.minerals_earned.emit(minerals)
 					SoundManager.play_drill_sound()
 				_update_camera()
 				queue_redraw()
@@ -527,9 +527,9 @@ func _try_move(dc: int, dr: int) -> void:
 		pass  # Interact prompt handles refueling
 	elif tile != TileType.EMPTY:
 		_mine_cell(new_col, new_row)
-		var scrap: int = TILE_SCRAP.get(tile, 1)
-		GameManager.add_currency(scrap)
-		EventBus.scrap_earned.emit(scrap)
+		var minerals: int = TILE_MINERALS.get(tile, 1)
+		GameManager.add_currency(minerals)
+		EventBus.minerals_earned.emit(minerals)
 		SoundManager.play_drill_sound()
 
 	# Track first departure from spawn zone

@@ -1,7 +1,7 @@
 class_name HUD
 extends CanvasLayer
 
-# HUD — displays Scrap total (upper-left), health squares and fuel gauge (upper-right).
+# HUD — displays Minerals total (upper-left), health squares and fuel gauge (upper-right).
 
 @onready var scrap_label: Label = $Control/ScrapLabel
 @onready var health_container: HBoxContainer = $Control/HealthContainer
@@ -16,17 +16,17 @@ var earnings_label: Label
 var _earnings_tween: Tween
 
 func _ready() -> void:
-	EventBus.scrap_changed.connect(_on_scrap_changed)
+	EventBus.minerals_changed.connect(_on_minerals_changed)
 	EventBus.player_health_changed.connect(_on_health_changed)
 	EventBus.fuel_changed.connect(_on_fuel_changed)
-	EventBus.scrap_earned.connect(_on_scrap_earned)
+	EventBus.minerals_earned.connect(_on_minerals_earned)
 	# Initialize hearts immediately since PlayerProbe emits before HUD connects
 	var max_hp := GameManager.get_max_health()
 	_on_health_changed(max_hp, max_hp)
 	# Initialize fuel
 	_on_fuel_changed(GameManager.current_fuel, GameManager.max_fuel)
 
-	# Semi-transparent black background panel behind the scrap label
+	# Semi-transparent black background panel behind the minerals label
 	scrap_panel = ColorRect.new()
 	scrap_panel.color = Color(0.0, 0.0, 0.0, 0.55)
 	scrap_panel.position = Vector2(8, 8)
@@ -35,17 +35,17 @@ func _ready() -> void:
 	$Control.add_child(scrap_panel)
 	$Control.move_child(scrap_panel, 0)  # Draw behind everything else
 
-	# Earnings popup label — appears below the scrap panel when a tile is mined
+	# Earnings popup label — appears below the minerals panel when a tile is mined
 	earnings_label = Label.new()
 	earnings_label.position = Vector2(16, 46)
 	earnings_label.custom_minimum_size = Vector2(148, 22)
 	earnings_label.modulate = Color(1.0, 0.88, 0.2, 0.0)  # Gold, starts invisible
 	$Control.add_child(earnings_label)
 
-func _on_scrap_changed(amount: int) -> void:
-	scrap_label.text = "Scrap: %d" % amount
+func _on_minerals_changed(amount: int) -> void:
+	scrap_label.text = "Minerals: %d" % amount
 
-func _on_scrap_earned(amount: int) -> void:
+func _on_minerals_earned(amount: int) -> void:
 	earnings_label.text = "+%d" % amount
 	earnings_label.modulate = Color(1.0, 0.88, 0.2, 1.0)
 

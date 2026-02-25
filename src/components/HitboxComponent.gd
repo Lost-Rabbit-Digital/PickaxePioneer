@@ -7,7 +7,7 @@ extends Area2D
 
 func _ready() -> void:
 	# Apply upgrades from GameManager
-	damage = GameManager.get_drill_damage()
+	damage = GameManager.get_mandibles_power()
 
 func on_hit() -> void:
 	# Optional: Destroy projectile on hit, play sound, etc.

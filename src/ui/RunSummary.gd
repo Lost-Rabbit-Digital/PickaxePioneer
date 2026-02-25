@@ -5,7 +5,7 @@ extends CanvasLayer
 @onready var return_button: Button = $Control/Panel/ReturnButton
 
 func _ready() -> void:
-	scrap_label.text = "Scrap Collected: %d" % GameManager.run_scrap_currency
+	scrap_label.text = "Minerals Collected: %d" % GameManager.run_mineral_currency
 	return_button.pressed.connect(_on_return_pressed)
 
 func _on_return_pressed() -> void:

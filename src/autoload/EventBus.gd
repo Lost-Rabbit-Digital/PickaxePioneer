@@ -17,8 +17,8 @@ signal inventory_updated(item_name: String, quantity: int)
 signal game_state_changed(new_state: int)
 
 # Currency Signals
-signal scrap_changed(amount: int)
-signal scrap_earned(amount: int)  # Emitted with each individual mining earn
+signal minerals_changed(amount: int)
+signal minerals_earned(amount: int)  # Emitted with each individual mining earn
 
 # Fuel Signals
 signal fuel_changed(current_fuel: int, max_fuel: int)
