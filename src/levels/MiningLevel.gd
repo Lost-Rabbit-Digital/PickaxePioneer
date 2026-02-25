@@ -354,7 +354,7 @@ func _get_interact_key_name() -> String:
 func _update_interact_prompt() -> void:
 	if not player_node:
 		return
-	var current_tile := grid[player_grid_pos.x][player_grid_pos.y]
+	var current_tile: int = grid[player_grid_pos.x][player_grid_pos.y]
 	if current_tile == TileType.REFUEL_STATION:
 		var key_name := _get_interact_key_name()
 		player_node.show_prompt("Press %s to refuel" % key_name)
