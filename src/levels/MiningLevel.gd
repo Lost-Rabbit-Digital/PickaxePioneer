@@ -36,6 +36,7 @@ enum TileType {
 	REFUEL_STATION   = 19,
 	SURFACE          = 20,  # Surface tile - no fuel consumption, left/right only
 	SURFACE_GRASS    = 21,  # Grass surface variant
+	EXIT_STATION     = 22,  # Exit station tile on the surface (far right)
 }
 
 const TILE_COLORS: Dictionary = {
@@ -60,6 +61,7 @@ const TILE_COLORS: Dictionary = {
 	TileType.REFUEL_STATION: Color(0.50, 0.50, 0.50),  # Refuel station grey
 	TileType.SURFACE:        Color(0.35, 0.35, 0.35),  # Surface dark grey
 	TileType.SURFACE_GRASS:  Color(0.25, 0.50, 0.25),  # Surface grass green
+	TileType.EXIT_STATION:   Color(0.15, 0.55, 0.15),   # Exit station green
 }
 
 # Sprite indices for terrain spritesheet with 16x16 individual block sprites
@@ -190,6 +192,9 @@ func _generate_grid() -> void:
 	var refuel_col = GRID_COLS / 2
 	grid[refuel_col][SURFACE_ROWS - 1] = TileType.REFUEL_STATION
 
+	# Place exit station on surface (far right)
+	grid[GRID_COLS - 1][SURFACE_ROWS - 1] = TileType.EXIT_STATION
+
 # Depth-weighted random tile: rarer ores are more common deeper
 func _random_tile(row: int = SURFACE_ROWS) -> TileType:
 	var r := randf()
@@ -283,8 +288,6 @@ func _draw() -> void:
 	var max_row: int = mini(GRID_ROWS - 1, int((cam_y + half_h) / float(CELL_SIZE)))
 
 	# ---- Background fills (only the visible strip) ----
-	var mine_end_col: int = GRID_COLS - EXIT_COLS  # first exit column index
-
 	var bg_left: int   = min_col * CELL_SIZE
 	var bg_top: int    = min_row * CELL_SIZE
 	var bg_width: int  = (max_col - min_col + 1) * CELL_SIZE
@@ -293,21 +296,27 @@ func _draw() -> void:
 	# Dark dirt for the mining + surface area
 	draw_rect(Rect2(bg_left, bg_top, bg_width, bg_height), Color(0.08, 0.06, 0.04))
 
-	# Dark green for the exit zone columns (if visible)
-	if max_col >= mine_end_col:
-		var exit_col_start: int = maxi(min_col, mine_end_col)
-		var exit_vis_left: int  = exit_col_start * CELL_SIZE
-		var exit_vis_w: int     = (max_col - exit_col_start + 1) * CELL_SIZE
-		draw_rect(Rect2(exit_vis_left, bg_top, exit_vis_w, bg_height), Color(0.05, 0.18, 0.05))
-
 	# ---- Tile sprites ----
-	for col in range(min_col, min(max_col + 1, mine_end_col)):
+	for col in range(min_col, max_col + 1):
 		for row in range(min_row, max_row + 1):
 			var tile: int = grid[col][row]
 			if tile == TileType.EMPTY:
 				continue
 
 			var tile_rect := Rect2(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+
+			# Exit station gets custom rendering (green square + white border + EXIT label)
+			if tile == TileType.EXIT_STATION:
+				draw_rect(tile_rect, Color(0.15, 0.55, 0.15))
+				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
+					Color.WHITE, false, 2.0)
+				var exit_font := ThemeDB.fallback_font
+				draw_string(exit_font,
+					Vector2(col * CELL_SIZE, row * CELL_SIZE + CELL_SIZE / 2 + 5),
+					"EXIT",
+					HORIZONTAL_ALIGNMENT_CENTER, CELL_SIZE, 13,
+					Color(0.4, 1.0, 0.4))
+				continue
 
 			# Draw the 16x16 texture from the terrain spritesheet, scaled to CELL_SIZE
 			if sprite_atlases.size() > 0:
@@ -353,17 +362,6 @@ func _draw() -> void:
 	else:
 		draw_rect(player_rect, Color(0.20, 0.80, 1.00))
 
-	# ---- Exit zone label (only when exit columns are visible) ----
-	if max_col >= mine_end_col:
-		var exit_x := mine_end_col * CELL_SIZE
-		var label_y := cam_y  # Keep label roughly centred in the visible viewport
-		var font := ThemeDB.fallback_font
-		draw_string(font,
-			Vector2(exit_x + 6, label_y),
-			"EXIT",
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 13,
-			Color(0.4, 1.0, 0.4)
-		)
 
 # ---------------------------------------------------------------------------
 # Auto-move (hold-to-repeat)
@@ -480,6 +478,9 @@ func _try_move(dc: int, dr: int) -> void:
 		is_on_surface = (grid[new_col][new_row] == TileType.SURFACE)
 		_update_camera()
 		queue_redraw()
+		if grid[new_col][new_row] == TileType.EXIT_STATION:
+			GameManager.complete_run()
+			return
 		return
 
 	# Below surface: hazard checks first
