@@ -8,3 +8,16 @@ script = ExtResource("1_probe")
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("2_health")
+
+[node name="PromptLayer" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="InteractPrompt" type="Label" parent="PromptLayer"]
+visible = false
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 320.0
+offset_bottom = 32.0
+text = ""
+horizontal_alignment = 1
