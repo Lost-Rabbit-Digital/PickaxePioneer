@@ -93,6 +93,11 @@ const SPRITE_WIDTH: int = 16
 const SPRITE_HEIGHT: int = 16
 const SPRITE_BUFFER: int = 1
 
+# Auto-move: after holding a direction key for AUTO_MOVE_DELAY seconds the
+# player automatically steps in that direction every AUTO_MOVE_INTERVAL seconds.
+const AUTO_MOVE_DELAY: float = 0.15    # Hold threshold before repeating starts
+const AUTO_MOVE_INTERVAL: float = 0.15 # Time between repeated steps
+
 const TILE_SCRAP: Dictionary = {
 	TileType.DIRT:            1,
 	TileType.DIRT_DARK:       1,
@@ -112,6 +117,11 @@ var grid: Array = []
 var player_grid_pos: Vector2i = Vector2i(2, 2)  # Start at top-left (on surface)
 var has_left_spawn: bool = false  # True once player moves into the mining area
 var is_on_surface: bool = true  # Whether player is on the surface layer
+
+# Auto-move state
+var _held_dir: Vector2i = Vector2i.ZERO
+var _hold_time: float = 0.0
+var _auto_move_time: float = 0.0
 
 # Textures
 var player_texture: Texture2D
@@ -354,6 +364,41 @@ func _draw() -> void:
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 13,
 			Color(0.4, 1.0, 0.4)
 		)
+
+# ---------------------------------------------------------------------------
+# Auto-move (hold-to-repeat)
+# ---------------------------------------------------------------------------
+
+func _process(delta: float) -> void:
+	# Determine which direction (if any) is currently held
+	var dir := Vector2i.ZERO
+	if Input.is_action_pressed("ui_left") or Input.is_key_pressed(KEY_A):
+		dir = Vector2i(-1, 0)
+	elif Input.is_action_pressed("ui_right") or Input.is_key_pressed(KEY_D):
+		dir = Vector2i(1, 0)
+	elif Input.is_action_pressed("ui_up") or Input.is_key_pressed(KEY_W):
+		dir = Vector2i(0, -1)
+	elif Input.is_action_pressed("ui_down") or Input.is_key_pressed(KEY_S):
+		dir = Vector2i(0, 1)
+
+	# Reset timers whenever the held direction changes (including key release)
+	if dir != _held_dir:
+		_held_dir = dir
+		_hold_time = 0.0
+		_auto_move_time = 0.0
+
+	if _held_dir == Vector2i.ZERO:
+		return
+
+	# Accumulate hold time; auto-repeat only kicks in after the delay
+	_hold_time += delta
+	if _hold_time < AUTO_MOVE_DELAY:
+		return
+
+	_auto_move_time += delta
+	if _auto_move_time >= AUTO_MOVE_INTERVAL:
+		_auto_move_time -= AUTO_MOVE_INTERVAL
+		_try_move(_held_dir.x, _held_dir.y)
 
 # ---------------------------------------------------------------------------
 # Input
