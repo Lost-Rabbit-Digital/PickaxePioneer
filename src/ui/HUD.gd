@@ -149,14 +149,14 @@ func _on_depth_changed(depth_rows: int) -> void:
 		depth_label.modulate = Color(0.6, 0.85, 1.0, 1.0)
 		_next_milestone = 20  # Reset milestone tracking each time player surfaces
 	else:
-		depth_label.text = "Depth: %dm" % depth_rows
+		depth_label.text = "Depth: %dm" % (depth_rows * 12)
 		# Colour shifts from light blue → orange-red as player goes deeper
 		var t: float = clampf(float(depth_rows) / 80.0, 0.0, 1.0)
 		depth_label.modulate = Color(0.6 + t * 0.4, 0.85 - t * 0.55, 1.0 - t * 0.8, 1.0)
 
-		# Show a milestone banner at every 20 m of new depth
+		# Show a milestone banner at every 20 blocks of new depth
 		if depth_rows >= _next_milestone:
-			_show_milestone_banner("Depth: %dm" % _next_milestone)
+			_show_milestone_banner("Depth: %dm" % (_next_milestone * 12))
 			_next_milestone += 20
 
 func _on_fuel_changed(current_fuel: int, max_fuel: int) -> void:
