@@ -44,11 +44,6 @@ func _ready() -> void:
 	EventBus.fuel_changed.connect(_on_fuel_changed)
 	EventBus.ore_mined_popup.connect(_on_ore_mined_popup)
 	EventBus.depth_changed.connect(_on_depth_changed)
-	# Initialize hearts immediately since PlayerProbe emits before HUD connects
-	var max_hp := GameManager.get_max_health()
-	_on_health_changed(max_hp, max_hp)
-	# Initialize fuel
-	_on_fuel_changed(GameManager.current_fuel, GameManager.max_fuel)
 
 	# Semi-transparent black background panel behind the minerals label
 	scrap_panel = ColorRect.new()
@@ -91,6 +86,12 @@ func _ready() -> void:
 	_milestone_label.modulate = Color(1.0, 0.85, 0.2, 0.0)  # Gold, starts invisible
 	_milestone_label.add_theme_font_size_override("font_size", 18)
 	$Control.add_child(_milestone_label)
+
+	# Initialize hearts immediately since PlayerProbe emits before HUD connects
+	var max_hp := GameManager.get_max_health()
+	_on_health_changed(max_hp, max_hp)
+	# Initialize fuel display (must be after _low_fuel_warning is created)
+	_on_fuel_changed(GameManager.current_fuel, GameManager.max_fuel)
 
 func _on_minerals_changed(amount: int) -> void:
 	scrap_label.text = "Minerals: %d" % amount
