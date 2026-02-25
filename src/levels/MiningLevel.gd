@@ -95,6 +95,7 @@ const AUTO_MOVE_DELAY: float = 0.15    # Hold threshold before repeating starts
 const AUTO_MOVE_INTERVAL: float = 0.15 # Time between repeated steps
 
 const TILE_SCRAP: Dictionary = {
+	TileType.SURFACE_GRASS:   1,
 	TileType.DIRT:            1,
 	TileType.DIRT_DARK:       1,
 	TileType.STONE:           2,
@@ -182,6 +183,10 @@ func _generate_grid() -> void:
 
 	# Place exit station on surface (far right)
 	grid[GRID_COLS - 1][SURFACE_ROWS - 1] = TileType.EXIT_STATION
+
+	# First mine-able row is a grass layer (row SURFACE_ROWS = 3)
+	for col in range(GRID_COLS - EXIT_COLS):
+		grid[col][SURFACE_ROWS] = TileType.SURFACE_GRASS
 
 # Depth-weighted random tile: rarer ores are more common deeper
 func _random_tile(row: int = SURFACE_ROWS) -> TileType:
@@ -277,14 +282,22 @@ func _draw() -> void:
 	var bg_width: int  = (max_col - min_col + 1) * CELL_SIZE
 	var bg_height: int = (max_row - min_row + 1) * CELL_SIZE
 
-	# Dark dirt for the mining + surface area
-	draw_rect(Rect2(bg_left, bg_top, bg_width, bg_height), Color(0.08, 0.06, 0.04))
+	# Sky blue for surface rows (open sky look), dark dirt for underground
+	if min_row < SURFACE_ROWS:
+		var sky_top := min_row * CELL_SIZE
+		var sky_bottom := mini(SURFACE_ROWS, max_row + 1) * CELL_SIZE
+		draw_rect(Rect2(bg_left, sky_top, bg_width, sky_bottom - sky_top), Color(0.40, 0.65, 0.90))
+	if max_row >= SURFACE_ROWS:
+		var dirt_top := maxi(min_row, SURFACE_ROWS) * CELL_SIZE
+		var dirt_bottom := (max_row + 1) * CELL_SIZE
+		draw_rect(Rect2(bg_left, dirt_top, bg_width, dirt_bottom - dirt_top), Color(0.08, 0.06, 0.04))
 
 	# ---- Tile sprites ----
 	for col in range(min_col, max_col + 1):
 		for row in range(min_row, max_row + 1):
 			var tile: int = grid[col][row]
-			if tile == TileType.EMPTY:
+			# SURFACE tiles are rendered as open sky (blue background shows through)
+			if tile == TileType.EMPTY or tile == TileType.SURFACE:
 				continue
 
 			var tile_rect := Rect2(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
