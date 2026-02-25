@@ -127,6 +127,15 @@ var tile_textures: Dictionary = {}  # TileType → Texture2D loaded from assets/
 # Camera
 var camera: Camera2D
 
+# Surface Hub — shown when the ant reaches the Exit Station
+var _hub_layer: CanvasLayer
+var _hub_minerals_label: Label
+var _hub_visible: bool = false
+var _upgrade_layer: CanvasLayer  # Hosts the UpgradeMenu overlay when opened in-mine
+
+# Depth tracking — rows below the surface
+var _last_depth: int = 0
+
 @onready var player_node = $PlayerProbe
 @onready var pause_menu = $PauseMenu
 
@@ -157,6 +166,7 @@ func _ready() -> void:
 	var music = load("res://assets/music/crickets.mp3")
 	MusicManager.play_music(music)
 	QuestManager.clear_quest()
+	_setup_surface_hub()
 	queue_redraw()
 
 const SURFACE_ROWS: int = 3  # Top 3 rows are surface
@@ -373,6 +383,8 @@ func _try_interact() -> void:
 			SoundManager.play_drill_sound()
 
 func _process(delta: float) -> void:
+	if _hub_visible:
+		return  # Block all movement while the surface hub is open
 	_update_interact_prompt()
 	# Determine which direction (if any) is currently held
 	var dir := Vector2i.ZERO
@@ -409,6 +421,8 @@ func _process(delta: float) -> void:
 # ---------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _hub_visible:
+		return  # Hub captures its own input via buttons
 	if event.is_action_pressed("ui_cancel"):
 		pause_menu.show_menu()
 		return
@@ -484,10 +498,11 @@ func _try_move(dc: int, dr: int) -> void:
 				return
 		player_grid_pos = Vector2i(new_col, new_row)
 		is_on_surface = (grid[new_col][new_row] == TileType.SURFACE)
+		_update_depth()
 		_update_camera()
 		queue_redraw()
 		if grid[new_col][new_row] == TileType.EXIT_STATION:
-			GameManager.complete_run()
+			_show_surface_hub()
 			return
 		return
 
@@ -512,6 +527,7 @@ func _try_move(dc: int, dr: int) -> void:
 	if grid[new_col][new_row] == TileType.SURFACE:
 		player_grid_pos = Vector2i(new_col, new_row)
 		is_on_surface = true
+		_update_depth()
 		_update_camera()
 		queue_redraw()
 		return
@@ -536,13 +552,15 @@ func _try_move(dc: int, dr: int) -> void:
 	if new_col < GRID_COLS - EXIT_COLS:
 		has_left_spawn = true
 
-	# Reaching exit after having mined = run complete
+	# Reaching exit after having mined = prompt the surface hub
 	if has_left_spawn and new_col >= GRID_COLS - EXIT_COLS:
+		_update_depth()
 		_update_camera()
 		queue_redraw()
-		GameManager.complete_run()
+		_show_surface_hub()
 		return
 
+	_update_depth()
 	_update_camera()
 	queue_redraw()
 
@@ -569,3 +587,165 @@ func _damage_player(amount: int) -> void:
 func _on_out_of_fuel() -> void:
 	print("Out of fuel! Game Over")
 	GameManager.lose_run()
+
+# ---------------------------------------------------------------------------
+# Depth tracking
+# ---------------------------------------------------------------------------
+
+func _update_depth() -> void:
+	var depth: int = maxi(0, player_grid_pos.y - SURFACE_ROWS)
+	if depth != _last_depth:
+		_last_depth = depth
+		EventBus.depth_changed.emit(depth)
+
+# ---------------------------------------------------------------------------
+# Surface Hub — the mine's shop/bank at the Exit Station
+# ---------------------------------------------------------------------------
+
+func _setup_surface_hub() -> void:
+	const VW: int = 1280
+	const VH: int = 720
+	const PANEL_W: int = 460
+	const PANEL_H: int = 310
+	const PX: int = (VW - PANEL_W) / 2
+	const PY: int = (VH - PANEL_H) / 2
+
+	_hub_layer = CanvasLayer.new()
+	_hub_layer.layer = 10
+	_hub_layer.visible = false
+	add_child(_hub_layer)
+
+	# Full-screen semi-transparent overlay — also blocks world input
+	var dim := ColorRect.new()
+	dim.position = Vector2.ZERO
+	dim.size = Vector2(VW, VH)
+	dim.color = Color(0.0, 0.0, 0.0, 0.70)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_hub_layer.add_child(dim)
+
+	# Coloured border (drawn first, sits behind the panel)
+	var border := ColorRect.new()
+	border.position = Vector2(PX - 3, PY - 3)
+	border.size = Vector2(PANEL_W + 6, PANEL_H + 6)
+	border.color = Color(0.30, 0.70, 0.25, 1.0)
+	_hub_layer.add_child(border)
+
+	# Panel background
+	var panel := ColorRect.new()
+	panel.position = Vector2(PX, PY)
+	panel.size = Vector2(PANEL_W, PANEL_H)
+	panel.color = Color(0.09, 0.08, 0.06, 0.97)
+	_hub_layer.add_child(panel)
+
+	# Title
+	var title := Label.new()
+	title.text = "You surfaced!"
+	title.position = Vector2(PX, PY + 14)
+	title.size = Vector2(PANEL_W, 32)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hub_layer.add_child(title)
+
+	# Minerals sub-label (updated dynamically when hub opens)
+	_hub_minerals_label = Label.new()
+	_hub_minerals_label.position = Vector2(PX, PY + 50)
+	_hub_minerals_label.size = Vector2(PANEL_W, 28)
+	_hub_minerals_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hub_minerals_label.modulate = Color(1.0, 0.85, 0.2, 1.0)
+	_hub_layer.add_child(_hub_minerals_label)
+
+	# Divider line
+	var divider := ColorRect.new()
+	divider.position = Vector2(PX + 20, PY + 86)
+	divider.size = Vector2(PANEL_W - 40, 2)
+	divider.color = Color(0.30, 0.70, 0.25, 0.6)
+	_hub_layer.add_child(divider)
+
+	# Button setup helper
+	const BTN_X: int = PX + 30
+	const BTN_W: int = PANEL_W - 60
+	const BTN_H: int = 46
+
+	var bank_btn := Button.new()
+	bank_btn.text = "Bank Minerals & Keep Mining"
+	bank_btn.position = Vector2(BTN_X, PY + 100)
+	bank_btn.size = Vector2(BTN_W, BTN_H)
+	bank_btn.pressed.connect(_hub_bank_and_continue)
+	_hub_layer.add_child(bank_btn)
+
+	var shop_btn := Button.new()
+	shop_btn.text = "Open Colony Shop (banks minerals)"
+	shop_btn.position = Vector2(BTN_X, PY + 156)
+	shop_btn.size = Vector2(BTN_W, BTN_H)
+	shop_btn.pressed.connect(_hub_open_shop)
+	_hub_layer.add_child(shop_btn)
+
+	var end_btn := Button.new()
+	end_btn.text = "End Run & Return to Colony"
+	end_btn.position = Vector2(BTN_X, PY + 212)
+	end_btn.size = Vector2(BTN_W, BTN_H)
+	end_btn.pressed.connect(_hub_end_run)
+	_hub_layer.add_child(end_btn)
+
+func _show_surface_hub() -> void:
+	_hub_minerals_label.text = "Minerals this run: %d" % GameManager.run_mineral_currency
+	_hub_layer.visible = true
+	_hub_visible = true
+
+func _hide_surface_hub() -> void:
+	_hub_layer.visible = false
+	_hub_visible = false
+
+func _hub_bank_and_continue() -> void:
+	GameManager.bank_currency()
+	_hide_surface_hub()
+
+func _hub_open_shop() -> void:
+	GameManager.bank_currency()
+	_hide_surface_hub()
+	_open_upgrade_overlay()
+
+func _hub_end_run() -> void:
+	_hide_surface_hub()
+	GameManager.complete_run()
+
+# ---------------------------------------------------------------------------
+# In-mine upgrade overlay — Colony Shop accessible from the Exit Station
+# ---------------------------------------------------------------------------
+
+func _open_upgrade_overlay() -> void:
+	const VW: int = 1280
+	const VH: int = 720
+
+	_upgrade_layer = CanvasLayer.new()
+	_upgrade_layer.layer = 10
+	add_child(_upgrade_layer)
+
+	# Dim backdrop
+	var dim := ColorRect.new()
+	dim.position = Vector2.ZERO
+	dim.size = Vector2(VW, VH)
+	dim.color = Color(0.0, 0.0, 0.0, 0.75)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_upgrade_layer.add_child(dim)
+
+	# UpgradeMenu scene
+	var upgrade_scene := load("res://src/ui/UpgradeMenu.tscn") as PackedScene
+	if upgrade_scene:
+		var upgrade_menu: Node = upgrade_scene.instantiate()
+		# Centre it on screen
+		if upgrade_menu is Control:
+			(upgrade_menu as Control).set_anchors_preset(Control.PRESET_CENTER)
+		_upgrade_layer.add_child(upgrade_menu)
+
+	# "Continue Mining" close button
+	var close_btn := Button.new()
+	close_btn.text = "Continue Mining"
+	close_btn.position = Vector2((VW - 260) / 2, VH - 70)
+	close_btn.size = Vector2(260, 44)
+	close_btn.pressed.connect(_close_upgrade_overlay)
+	_upgrade_layer.add_child(close_btn)
+
+func _close_upgrade_overlay() -> void:
+	if _upgrade_layer:
+		_upgrade_layer.queue_free()
+		_upgrade_layer = null
