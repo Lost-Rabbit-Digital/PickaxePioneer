@@ -64,36 +64,30 @@ const TILE_COLORS: Dictionary = {
 	TileType.EXIT_STATION:   Color(0.15, 0.55, 0.15),   # Exit station green
 }
 
-# Sprite indices for terrain spritesheet with 16x16 individual block sprites
-const TILE_SPRITES: Dictionary = {
-	TileType.DIRT:           0,  # dirt_block
-	TileType.DIRT_DARK:      1,  # dark_dirt_block
-	TileType.STONE:          2,  # stone_block
-	TileType.STONE_DARK:     3,  # dark_stone_block
-	TileType.ORE_COPPER:     4,  # copper_ore
-	TileType.ORE_COPPER_DEEP: 5,  # deep_copper_ore
-	TileType.ORE_IRON:       6,  # iron_ore
-	TileType.ORE_IRON_DEEP:  7,  # deep_iron_ore
-	TileType.ORE_GOLD:       8,  # gold_ore
-	TileType.ORE_GOLD_DEEP:  9,  # deep_gold_ore
-	TileType.ORE_GEM:        10, # gem_ore
-	TileType.ORE_GEM_DEEP:   11, # deep_gem_ore
-	TileType.EXPLOSIVE:      12, # explosive
-	TileType.EXPLOSIVE_ARMED: 13, # armed_explosive
-	TileType.LAVA:           14, # lava
-	TileType.LAVA_FLOW:      15, # lava_flow
-	TileType.FUEL_NODE:      16, # fuel_node
-	TileType.FUEL_NODE_FULL: 17, # fuel_node_full
-	TileType.REFUEL_STATION: 18, # refuel_station (special rendering adds border)
-	TileType.SURFACE:        19, # surface
-	TileType.SURFACE_GRASS:  20, # surface_grass
+# Individual block texture paths for each tile type
+const TILE_TEXTURE_PATHS: Dictionary = {
+	TileType.DIRT:            "res://assets/blocks/dirt.png",
+	TileType.DIRT_DARK:       "res://assets/blocks/mud.png",
+	TileType.STONE:           "res://assets/blocks/stone_generic.png",
+	TileType.STONE_DARK:      "res://assets/blocks/slate.png",
+	TileType.ORE_COPPER:      "res://assets/blocks/stone_generic_ore_nuggets.png",
+	TileType.ORE_COPPER_DEEP: "res://assets/blocks/stone_generic_ore_crystalline.png",
+	TileType.ORE_IRON:        "res://assets/blocks/gabbro.png",
+	TileType.ORE_IRON_DEEP:   "res://assets/blocks/schist.png",
+	TileType.ORE_GOLD:        "res://assets/blocks/sandstone.png",
+	TileType.ORE_GOLD_DEEP:   "res://assets/blocks/granite.png",
+	TileType.ORE_GEM:         "res://assets/blocks/amethyst.png",
+	TileType.ORE_GEM_DEEP:    "res://assets/blocks/obsidian.png",
+	TileType.EXPLOSIVE:       "res://assets/blocks/rhyolite.png",
+	TileType.EXPLOSIVE_ARMED: "res://assets/blocks/rhyolite_tiles.png",
+	TileType.LAVA:            "res://assets/blocks/basalt_flow.png",
+	TileType.LAVA_FLOW:       "res://assets/blocks/basalt.png",
+	TileType.FUEL_NODE:       "res://assets/blocks/limestone.png",
+	TileType.FUEL_NODE_FULL:  "res://assets/blocks/marble.png",
+	TileType.REFUEL_STATION:  "res://assets/blocks/cobblestone_bricks.png",
+	TileType.SURFACE:         "res://assets/blocks/grass_top.png",
+	TileType.SURFACE_GRASS:   "res://assets/blocks/grass_side.png",
 }
-
-# Spritesheet layout: 18 pixels wide, sprites are 16x16 with 1px buffer around each
-const SPRITE_SHEET_WIDTH: int = 18
-const SPRITE_WIDTH: int = 16
-const SPRITE_HEIGHT: int = 16
-const SPRITE_BUFFER: int = 1
 
 # Auto-move: after holding a direction key for AUTO_MOVE_DELAY seconds the
 # player automatically steps in that direction every AUTO_MOVE_INTERVAL seconds.
@@ -127,10 +121,7 @@ var _auto_move_time: float = 0.0
 
 # Textures
 var player_texture: Texture2D
-var scrap_pile_texture: Texture2D
-var scrap_chunk_texture: Texture2D
-var terrain_spritesheet: Texture2D
-var sprite_atlases: Array[AtlasTexture] = []  # Pre-created atlas textures for each sprite
+var tile_textures: Dictionary = {}  # TileType → Texture2D loaded from assets/blocks/
 
 # Camera
 var camera: Camera2D
@@ -144,15 +135,12 @@ func _ready() -> void:
 	ant_atlas.atlas = ant_spritesheet
 	ant_atlas.region = Rect2(0, 0, 16, 16)
 	player_texture = ant_atlas
-	scrap_pile_texture = load("res://assets/scrap_pile.svg")
-	scrap_chunk_texture = load("res://assets/scrap_chunk.svg")
-	terrain_spritesheet = load("res://assets/terrain/terrain_spritesheet.png")
 
 	# Use nearest-neighbor filtering for crisp pixel-art tile textures
 	texture_filter = TEXTURE_FILTER_NEAREST
 
-	# Pre-create AtlasTexture objects for each sprite in the sheet
-	_create_sprite_atlases()
+	# Load individual block textures from assets/blocks/
+	_load_tile_textures()
 
 	_generate_grid()
 
@@ -236,19 +224,15 @@ func _random_tile(row: int = SURFACE_ROWS) -> TileType:
 	elif r2 < stone_chance + 0.15: return TileType.DIRT_DARK
 	else:                          return TileType.DIRT
 
-func _create_sprite_atlases() -> void:
-	# Create 21 AtlasTexture objects for each sprite in the terrain spritesheet.
-	# Spritesheet is laid out vertically: 1px buffer, then 16x16 sprite, 1px buffer, …
-	if not terrain_spritesheet:
-		push_error("terrain_spritesheet failed to load! Check: res://assets/terrain/terrain_spritesheet.png")
-		return
-
-	for i in range(21):
-		var atlas := AtlasTexture.new()
-		atlas.atlas = terrain_spritesheet
-		var y_pos := SPRITE_BUFFER + i * (SPRITE_HEIGHT + SPRITE_BUFFER)
-		atlas.region = Rect2(SPRITE_BUFFER, y_pos, SPRITE_WIDTH, SPRITE_HEIGHT)
-		sprite_atlases.append(atlas)
+func _load_tile_textures() -> void:
+	# Load each tile's individual block PNG from assets/blocks/
+	for tile_type in TILE_TEXTURE_PATHS:
+		var path: String = TILE_TEXTURE_PATHS[tile_type]
+		var tex := load(path) as Texture2D
+		if tex:
+			tile_textures[tile_type] = tex
+		else:
+			push_warning("Failed to load block texture: " + path)
 
 # ---------------------------------------------------------------------------
 # Camera follow
@@ -318,14 +302,10 @@ func _draw() -> void:
 					Color(0.4, 1.0, 0.4))
 				continue
 
-			# Draw the 16x16 texture from the terrain spritesheet, scaled to CELL_SIZE
-			if sprite_atlases.size() > 0:
-				var sprite_index: int = TILE_SPRITES.get(tile, 0)
-				var tex: AtlasTexture = sprite_atlases[sprite_index] if sprite_index < sprite_atlases.size() else sprite_atlases[0]
-				if tex:
-					draw_texture_rect(tex, tile_rect, false)
-				else:
-					draw_rect(tile_rect, TILE_COLORS.get(tile, Color(0.5, 0.5, 0.5)))
+			# Draw the block sprite, fall back to color if texture not loaded
+			var tex: Texture2D = tile_textures.get(tile)
+			if tex:
+				draw_texture_rect(tex, tile_rect, false)
 			else:
 				draw_rect(tile_rect, TILE_COLORS.get(tile, Color(0.5, 0.5, 0.5)))
 
@@ -333,22 +313,6 @@ func _draw() -> void:
 			if tile == TileType.REFUEL_STATION:
 				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
 					Color.WHITE, false, 2.0)
-				continue
-
-			# SVG ore overlays on top of the sprite texture
-			var svg_rect := Rect2(
-				col * CELL_SIZE + 6,
-				row * CELL_SIZE + 6,
-				CELL_SIZE - 12,
-				CELL_SIZE - 12
-			)
-			match tile:
-				TileType.ORE_COPPER, TileType.ORE_COPPER_DEEP, TileType.ORE_IRON, TileType.ORE_IRON_DEEP:
-					if scrap_pile_texture:
-						draw_texture_rect(scrap_pile_texture, svg_rect, false)
-				TileType.ORE_GOLD, TileType.ORE_GOLD_DEEP, TileType.ORE_GEM, TileType.ORE_GEM_DEEP:
-					if scrap_chunk_texture:
-						draw_texture_rect(scrap_chunk_texture, svg_rect, false)
 
 	# ---- Player sprite ----
 	var player_rect := Rect2(
