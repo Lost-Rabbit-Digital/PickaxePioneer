@@ -115,23 +115,41 @@ const AUTO_MOVE_INTERVAL: float = 0.15 # Time between repeated steps
 
 # HP per tile type — determines how many hits needed to mine it.
 # Base mandibles power = 5 (get_mandibles_power()). Each upgrade adds 3.
-# Each upgrade level unlocks 1-hit mining for the next ore tier:
-#   Lv0→dirt(1-hit), Lv1→stone(1-hit), Lv2→copper(1-hit), Lv3→iron(1-hit),
-#   Lv5→gold(1-hit), Lv8→gem(1-hit)
+# TILE_MIN_HITS enforces a hard minimum regardless of mandibles upgrade level,
+# ensuring higher-value ores always require proportionally more hits.
 const TILE_HP: Dictionary = {
-	TileType.SURFACE_GRASS:   4,   # Always 1 hit (HP < base power 5)
-	TileType.DIRT:            4,
-	TileType.DIRT_DARK:       4,
-	TileType.STONE:           8,   # 2 hits base; 1 hit at Lv1 (power 8)
-	TileType.STONE_DARK:      10,  # 2 hits base; 1 hit at Lv2 (power 11)
-	TileType.ORE_COPPER:      11,  # 3 hits base; 1 hit at Lv2 (power 11)
-	TileType.ORE_COPPER_DEEP: 13,  # 3 hits base; 1 hit at Lv3 (power 14)
-	TileType.ORE_IRON:        14,  # 3 hits base; 1 hit at Lv3 (power 14)
-	TileType.ORE_IRON_DEEP:   17,  # 4 hits base; 1 hit at Lv4 (power 17)
-	TileType.ORE_GOLD:        20,  # 4 hits base; 1 hit at Lv5 (power 20)
-	TileType.ORE_GOLD_DEEP:   23,  # 5 hits base; 1 hit at Lv6 (power 23)
-	TileType.ORE_GEM:         29,  # 6 hits base; 1 hit at Lv8 (power 29)
-	TileType.ORE_GEM_DEEP:    32,  # 7 hits base; 1 hit at Lv9 (power 32)
+	TileType.SURFACE_GRASS:   4,   # soft terrain — 1 hit
+	TileType.DIRT:            4,   # soft terrain — 1 hit
+	TileType.DIRT_DARK:       4,   # soft terrain — 1 hit
+	TileType.STONE:           8,
+	TileType.STONE_DARK:      10,
+	TileType.ORE_COPPER:      11,
+	TileType.ORE_COPPER_DEEP: 13,
+	TileType.ORE_IRON:        14,
+	TileType.ORE_IRON_DEEP:   17,
+	TileType.ORE_GOLD:        20,
+	TileType.ORE_GOLD_DEEP:   23,
+	TileType.ORE_GEM:         29,
+	TileType.ORE_GEM_DEEP:    32,
+}
+
+# Minimum number of hits required to mine each tile, regardless of mandibles power.
+# Higher-value ores require proportionally more hits to reward the risk of going deeper.
+# Any tile not listed defaults to 2 hits minimum.
+const TILE_MIN_HITS: Dictionary = {
+	TileType.SURFACE_GRASS:   1,
+	TileType.DIRT:            1,
+	TileType.DIRT_DARK:       1,
+	TileType.STONE:           2,
+	TileType.STONE_DARK:      2,
+	TileType.ORE_COPPER:      3,
+	TileType.ORE_COPPER_DEEP: 3,
+	TileType.ORE_IRON:        3,
+	TileType.ORE_IRON_DEEP:   4,
+	TileType.ORE_GOLD:        4,
+	TileType.ORE_GOLD_DEEP:   5,
+	TileType.ORE_GEM:         6,
+	TileType.ORE_GEM_DEEP:    7,
 }
 
 const TILE_MINERALS: Dictionary = {
@@ -181,6 +199,9 @@ var _game_over: bool = false
 
 # Per-tile damage tracking for multi-hit blocks (key: Vector2i, value: damage dealt)
 var _tile_damage: Dictionary = {}
+
+# Per-tile hit count for enforcing TILE_MIN_HITS (key: Vector2i, value: hits landed)
+var _tile_hits: Dictionary = {}
 
 # Per-tile white impact flash (key: Vector2i, value: alpha 0-1, fades in _process)
 var _flash_cells: Dictionary = {}
@@ -568,11 +589,18 @@ func _try_move(dc: int, dr: int) -> void:
 					is_on_surface = false
 				else:
 					var pos_key := Vector2i(new_col, new_row)
-					var tile_hp: int = TILE_HP.get(new_tile, 1)
-					var new_damage: int = _tile_damage.get(pos_key, 0) + GameManager.get_mandibles_power()
+					var tile_hp: int = TILE_HP.get(new_tile, 6)
+					var prev_damage: int = _tile_damage.get(pos_key, 0)
+					var hits_so_far: int = _tile_hits.get(pos_key, 0)
+					var new_damage: int = prev_damage + GameManager.get_mandibles_power()
+					var min_hits: int = TILE_MIN_HITS.get(new_tile, 2)
+					# Enforce minimum hit count — prevent block from breaking before required hits
+					if hits_so_far + 1 < min_hits and new_damage >= tile_hp:
+						new_damage = tile_hp - 1
 					_flash_cells[pos_key] = 1.0
 					if new_damage >= tile_hp:
 						_tile_damage.erase(pos_key)
+						_tile_hits.erase(pos_key)
 						_mine_cell(new_col, new_row)
 						var minerals: int = TILE_MINERALS.get(new_tile, 1)
 						GameManager.add_currency(minerals)
@@ -583,6 +611,7 @@ func _try_move(dc: int, dr: int) -> void:
 						is_on_surface = false
 					else:
 						_tile_damage[pos_key] = new_damage
+						_tile_hits[pos_key] = hits_so_far + 1
 						SoundManager.play_impact_sound()
 						queue_redraw()
 						return  # Player stays on surface; no camera/depth update needed
@@ -643,11 +672,18 @@ func _try_move(dc: int, dr: int) -> void:
 	else:
 		# Minable tile: apply mandibles damage; move in only when destroyed
 		var pos_key := Vector2i(new_col, new_row)
-		var tile_hp: int = TILE_HP.get(tile, 1)
-		var new_damage: int = _tile_damage.get(pos_key, 0) + GameManager.get_mandibles_power()
+		var tile_hp: int = TILE_HP.get(tile, 6)
+		var prev_damage: int = _tile_damage.get(pos_key, 0)
+		var hits_so_far: int = _tile_hits.get(pos_key, 0)
+		var new_damage: int = prev_damage + GameManager.get_mandibles_power()
+		var min_hits: int = TILE_MIN_HITS.get(tile, 2)
+		# Enforce minimum hit count — prevent block from breaking before required hits
+		if hits_so_far + 1 < min_hits and new_damage >= tile_hp:
+			new_damage = tile_hp - 1
 		_flash_cells[pos_key] = 1.0
 		if new_damage >= tile_hp:
 			_tile_damage.erase(pos_key)
+			_tile_hits.erase(pos_key)
 			_mine_cell(new_col, new_row)
 			var minerals: int = TILE_MINERALS.get(tile, 1)
 			GameManager.add_currency(minerals)
@@ -658,6 +694,7 @@ func _try_move(dc: int, dr: int) -> void:
 			player_moved = true
 		else:
 			_tile_damage[pos_key] = new_damage
+			_tile_hits[pos_key] = hits_so_far + 1
 			SoundManager.play_impact_sound()
 
 	if player_moved:
