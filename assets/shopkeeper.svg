@@ -1,9 +1,62 @@
 <svg width="64" height="64" xmlns="http://www.w3.org/2000/svg">
-  <rect x="16" y="20" width="32" height="40" fill="#555"/>
-  <circle cx="32" cy="20" r="12" fill="#dcb"/>
-  <rect x="12" y="10" width="40" height="8" fill="#333"/>
-  <rect x="20" y="2" width="24" height="8" fill="#333"/>
-  <circle cx="28" cy="18" r="2" fill="#000"/>
-  <circle cx="36" cy="18" r="2" fill="#000"/>
-  <path d="M 28 24 Q 32 28 36 24" stroke="#000" stroke-width="2" fill="none"/>
+
+  <!-- ═══ ANTENNAE ═══ -->
+  <path d="M 27 6 Q 20 1 14 0" stroke="#3D0D00" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <circle cx="13" cy="0" r="2.5" fill="#3D0D00"/>
+  <path d="M 37 6 Q 44 1 50 0" stroke="#3D0D00" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <circle cx="51" cy="0" r="2.5" fill="#3D0D00"/>
+
+  <!-- ═══ HEAD ═══ -->
+  <ellipse cx="32" cy="13" rx="12" ry="10" fill="#8B1A00"/>
+  <!-- Chitin sheen highlight -->
+  <ellipse cx="27" cy="9" rx="5" ry="4" fill="#B03010" opacity="0.5"/>
+
+  <!-- ═══ COMPOUND EYES ═══ -->
+  <ellipse cx="23" cy="12" rx="5" ry="5" fill="#0D0044"/>
+  <ellipse cx="41" cy="12" rx="5" ry="5" fill="#0D0044"/>
+  <!-- Eye facet glint -->
+  <circle cx="21" cy="10" r="2" fill="#4433BB" opacity="0.65"/>
+  <circle cx="39" cy="10" r="2" fill="#4433BB" opacity="0.65"/>
+
+  <!-- ═══ MANDIBLES ═══ -->
+  <path d="M 27 20 Q 22 24 25 27" stroke="#5D0A00" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M 37 20 Q 42 24 39 27" stroke="#5D0A00" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- Friendly smile between mandibles -->
+  <path d="M 28 21 Q 32 26 36 21" stroke="#5D0A00" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+
+  <!-- ═══ NECK (head–thorax connector) ═══ -->
+  <ellipse cx="32" cy="24" rx="4" ry="3" fill="#6B1400"/>
+
+  <!-- ═══ THORAX ═══ -->
+  <ellipse cx="32" cy="34" rx="10" ry="9" fill="#8B1A00"/>
+  <!-- Thorax sheen -->
+  <ellipse cx="28" cy="29" rx="4" ry="3" fill="#B03010" opacity="0.4"/>
+
+  <!-- Merchant vest (gold V-collar — marks him as the colony's trader) -->
+  <path d="M 25 28 L 29 35 L 32 32 L 35 35 L 39 28"
+        stroke="#DDAA33" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+
+  <!-- ═══ ARMS ═══ -->
+  <!-- Left arm: reached out holding a mineral/coin -->
+  <path d="M 22 32 Q 13 35 9 43" stroke="#7A1600" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <circle cx="9"  cy="44" r="4"   fill="#7A1600"/>
+  <circle cx="9"  cy="44" r="2.5" fill="#FFCC00"/>  <!-- gold coin -->
+  <!-- Right arm: raised in greeting -->
+  <path d="M 42 32 Q 51 29 55 22" stroke="#7A1600" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <circle cx="55" cy="21" r="4"   fill="#7A1600"/>
+
+  <!-- ═══ PETIOLE (waist node — very ant-specific) ═══ -->
+  <ellipse cx="32" cy="44" rx="4" ry="3.5" fill="#6B1400"/>
+
+  <!-- ═══ ABDOMEN ═══ -->
+  <ellipse cx="32" cy="55" rx="12" ry="10" fill="#9B1E00"/>
+  <!-- Abdomen sheen -->
+  <ellipse cx="27" cy="49" rx="5" ry="4" fill="#C02810" opacity="0.4"/>
+  <!-- Darker banding near tip -->
+  <ellipse cx="32" cy="60" rx="9" ry="5" fill="#7A1600" opacity="0.35"/>
+
+  <!-- ═══ LEGS (two visible from front) ═══ -->
+  <line x1="24" y1="58" x2="15" y2="64" stroke="#6B1400" stroke-width="2" stroke-linecap="round"/>
+  <line x1="40" y1="58" x2="49" y2="64" stroke="#6B1400" stroke-width="2" stroke-linecap="round"/>
+
 </svg>

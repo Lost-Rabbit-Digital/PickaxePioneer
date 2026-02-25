@@ -10,7 +10,7 @@ var trauma_power: int = 2
 
 func _ready() -> void:
 	randomize()
-	EventBus.scrap_changed.connect(func(_amount): add_trauma(0.2)) # Small shake on pickup
+	EventBus.minerals_changed.connect(func(_amount): add_trauma(0.2)) # Small shake on pickup
 
 func add_trauma(amount: float) -> void:
 	trauma = min(trauma + amount, 1.0)
