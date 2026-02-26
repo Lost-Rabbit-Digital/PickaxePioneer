@@ -3,9 +3,9 @@ extends Node2D
 # Grid-based Mining Level
 # Player spawns on the right (exit zone) and moves LEFT to mine.
 # Right EXIT_COLS columns are empty — returning there ends the run.
-# Map is 32x128 tiles; Camera2D follows the player.
+# Map is 96x128 tiles; Camera2D follows the player.
 
-const GRID_COLS: int = 32
+const GRID_COLS: int = 96
 const GRID_ROWS: int = 128
 const CELL_SIZE: int = 64
 const EXIT_COLS: int = 2  # Rightmost columns are the exit/spawn zone
