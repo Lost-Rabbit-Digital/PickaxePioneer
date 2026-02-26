@@ -14,7 +14,7 @@ Through developing these systems, the team at Lost Rabbit aims to explore what m
 - [ ] Adapt the asteroids-style minigame to a hydrothermal probe variant (mineral clusters in water)
 - [ ] Implement ADOM-style overworld with multiple mine entrances, cavern networks, and surface features
 - [ ] Develop a colony passive skill tree for deep progression customization
-- [ ] Implement a smelting/refining system: combine raw ores into ingots for bonus minerals — IMPORTANT: must use *consecutive mining* constraint (mine ore A then B immediately = combo; breaking sequence resets it). See docs/mining_game_design_lessons.md §3.5
+- [x] Implement a smelting/refining system: combine raw ores into ingots for bonus minerals — IMPORTANT: must use *consecutive mining* constraint (mine ore A then B immediately = combo; breaking sequence resets it). See docs/mining_game_design_lessons.md §3.5
 - [ ] Add a geology skill — ant learns to identify ore veins at a distance
 - [ ] Implement a dynamic weather system affecting surface layers (rain softens soil, heat hardens stone)
 - [ ] Implement a pet/companion system (a small beetle assistant, etc.)
@@ -26,10 +26,10 @@ Through developing these systems, the team at Lost Rabbit aims to explore what m
 - [x] Create a happy hour event system boosting mineral yield at specific depths
 - [x] Enhance mining difficulty checks based on ore value and tile hardness
 - [x] Develop a crafting/combining system for rare mineral combinations
-- [ ] Redesign Mineral Sense upgrade as a sonar ping (hotkey Q, radial pulse, ore shimmer through rock, fuel cost per ping) — replaces simple "show adjacent tile type" design. See docs/mining_game_design_lessons.md §3.2
-- [ ] Add fossil forgiveness system — hidden per-block-type drought counter that scales fossil probability up across a run until one drops. See docs/mining_game_design_lessons.md §3.6
+- [x] Redesign Mineral Sense upgrade as a sonar ping (hotkey Q, radial pulse, ore shimmer through rock, fuel cost per ping) — replaces simple "show adjacent tile type" design. See docs/mining_game_design_lessons.md §3.2
+- [x] Add fossil forgiveness system — hidden per-block-type drought counter that scales fossil probability up across a run until one drops. See docs/mining_game_design_lessons.md §3.6
 - [ ] Implement single Forager Ant companion — follows player, auto-collects minerals, auto-returns to surface when carry capacity full. First step toward full worker ant system. See docs/mining_game_design_lessons.md §3.4
-- [ ] Implement pheromone trail rendering — faint colored overlay on player-mined tiles. Visual foundation for future worker ant pathfinding. See docs/mining_game_design_lessons.md §3.3
+- [x] Implement pheromone trail rendering — faint colored overlay on player-mined tiles. Visual foundation for future worker ant pathfinding. See docs/mining_game_design_lessons.md §3.3
 
 ## Medium Priority
 - [ ] Add random cave generation for exploration and replayability beyond the main grid

@@ -30,6 +30,7 @@ func get_max_fuel() -> int:
 var carapace_level: int = 0
 var legs_level: int = 0
 var mandibles_level: int = 0
+var mineral_sense_level: int = 0
 
 const SAVE_PATH = "user://save_data.json"
 
@@ -101,6 +102,17 @@ func upgrade_mandibles() -> void:
 	save_game()
 	print("Mandibles upgraded to level ", mandibles_level)
 
+func upgrade_mineral_sense() -> void:
+	mineral_sense_level += 1
+	save_game()
+	print("Mineral Sense upgraded to level ", mineral_sense_level)
+
+func get_sonar_ping_radius() -> float:
+	return 4.0 + mineral_sense_level * 3.0
+
+func get_sonar_ping_fuel_cost() -> int:
+	return maxi(3, 10 - mineral_sense_level * 2)
+
 func get_max_health() -> int:
 	return 3 + carapace_level
 
@@ -138,7 +150,8 @@ func save_game() -> void:
 		"mineral_currency": mineral_currency,
 		"carapace_level": carapace_level,
 		"legs_level": legs_level,
-		"mandibles_level": mandibles_level
+		"mandibles_level": mandibles_level,
+		"mineral_sense_level": mineral_sense_level
 	}
 	
 	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -165,6 +178,7 @@ func load_game() -> void:
 			carapace_level = data.get("carapace_level", 0)
 			legs_level = data.get("legs_level", 0)
 			mandibles_level = data.get("mandibles_level", 0)
+			mineral_sense_level = data.get("mineral_sense_level", 0)
 			print("Game loaded")
 		else:
 			print("Failed to parse save file")

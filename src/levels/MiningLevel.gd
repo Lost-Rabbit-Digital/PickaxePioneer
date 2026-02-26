@@ -182,6 +182,60 @@ const ORE_TILES: Array = [
 const LUCKY_STRIKE_CHANCE := 0.08
 const SURFACE_ROWS: int = 3
 
+# ---------------------------------------------------------------------------
+# Smelting / consecutive-chain system (§3.5)
+# ---------------------------------------------------------------------------
+# Ore group tags used to identify chain membership
+const SMELT_ORE_GROUPS: Dictionary = {
+	TileType.ORE_COPPER:      "copper",
+	TileType.ORE_COPPER_DEEP: "copper",
+	TileType.ORE_IRON:        "iron",
+	TileType.ORE_IRON_DEEP:   "iron",
+	TileType.ORE_GOLD:        "gold",
+	TileType.ORE_GOLD_DEEP:   "gold",
+	TileType.ORE_GEM:         "gem",
+	TileType.ORE_GEM_DEEP:    "gem",
+}
+# Chain bonus at 3 consecutive: [bonus_pct, popup_label]
+const SMELT_CHAIN_BONUSES: Dictionary = {
+	"copper": [0.50, "Bronze Ingot"],
+	"iron":   [0.50, "Steel Ingot"],
+	"gold":   [0.75, "Pure Gold"],
+	"gem":    [1.00, "Faceted Gem"],
+}
+# Two-ore cross-combos: "first+second" -> [bonus_pct, popup_label]
+const SMELT_COMBOS: Dictionary = {
+	"copper+iron": [1.00, "Alloy Ore"],
+	"iron+copper": [1.00, "Alloy Ore"],
+	"iron+gold":   [2.00, "Gilded Steel"],
+	"gold+iron":   [2.00, "Gilded Steel"],
+	"copper+gold": [1.50, "Fool's Gold"],
+	"gold+copper": [1.50, "Fool's Gold"],
+}
+
+# ---------------------------------------------------------------------------
+# Fossil forgiveness system (§3.6)
+# ---------------------------------------------------------------------------
+const FOSSIL_BASE_RATE: float  = 0.005
+const FOSSIL_DROUGHT_SCALE: float = 0.005
+const FOSSIL_CAP_RATE: float   = 0.30
+const FOSSIL_TYPES: Dictionary = {
+	TileType.DIRT:            {"name": "Ancient Root",    "minerals": 25},
+	TileType.DIRT_DARK:       {"name": "Root Fossil",     "minerals": 30},
+	TileType.STONE:           {"name": "Trilobite",       "minerals": 50},
+	TileType.STONE_DARK:      {"name": "Ammonite",        "minerals": 60},
+	TileType.ORE_COPPER:      {"name": "Mineralite",      "minerals": 40},
+	TileType.ORE_COPPER_DEEP: {"name": "Deep Mineralite", "minerals": 50},
+	TileType.ORE_IRON:        {"name": "Iron Fossil",     "minerals": 65},
+	TileType.ORE_GOLD:        {"name": "Gilded Fossil",   "minerals": 100},
+	TileType.ORE_GEM:         {"name": "Crystal Fossil",  "minerals": 120},
+}
+
+# ---------------------------------------------------------------------------
+# Sonar ping system (§3.2)
+# ---------------------------------------------------------------------------
+const SONAR_PING_DURATION: float = 3.0  # seconds until ping fades
+
 # Tiles that block player movement (have collision)
 const SOLID_TILES: Array = [
 	TileType.DIRT, TileType.DIRT_DARK,
@@ -256,6 +310,24 @@ var _exit_pulse_time: float = 0.0
 
 # Cursor highlight
 var _cursor_grid_pos: Vector2i = Vector2i(-1, -1)
+
+# Pheromone trails — mined tile positions with fade alpha (§3.3)
+var _pheromone_trails: Dictionary = {}
+const PHEROMONE_FADE_RATE: float = 0.025  # alpha units/sec (~40 s full fade
+
+# Sonar ping state (§3.2)
+var _sonar_ping_active: bool = false
+var _sonar_ping_elapsed: float = 0.0
+var _sonar_ping_center: Vector2i = Vector2i(-1, -1)
+var _sonar_wave_radius: float = 0.0
+
+# Consecutive smelting state (§3.5)
+var _smelt_last_ore_group: String = ""
+var _smelt_chain_count: int = 0
+var _smelt_prev_ore_group: String = ""
+
+# Fossil forgiveness drought counters (§3.6) — reset each run
+var _fossil_drought: Dictionary = {}
 
 # Hazard damage cooldown to prevent instant death
 var _hazard_cooldown: float = 0.0
@@ -572,6 +644,58 @@ func _draw() -> void:
 		var highlight_rect := Rect2(_cursor_grid_pos.x * CELL_SIZE, _cursor_grid_pos.y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
 		draw_rect(highlight_rect, Color(1.0, 1.0, 1.0, 0.2), false, 2.0)
 
+	# Pheromone trail overlay — faint purple on player-mined EMPTY tiles (§3.3)
+	for pk in _pheromone_trails:
+		var tc: int = pk.x
+		var tr: int = pk.y
+		if tc >= min_col and tc <= max_col and tr >= min_row and tr <= max_row:
+			var trail_alpha := _pheromone_trails[pk] * 0.22
+			draw_rect(Rect2(tc * CELL_SIZE, tr * CELL_SIZE, CELL_SIZE, CELL_SIZE),
+				Color(0.55, 0.30, 0.80, trail_alpha))
+
+	# Sonar ping overlay — expanding wave reveals ore tiles through rock (§3.2)
+	if _sonar_ping_active and _sonar_ping_center.x >= 0:
+		var ping_alpha := 1.0 - _sonar_ping_elapsed / SONAR_PING_DURATION
+		var max_radius := GameManager.get_sonar_ping_radius()
+		var cx := _sonar_ping_center.x
+		var cy := _sonar_ping_center.y
+		var scan_r := int(max_radius) + 2
+		# Glow each ore tile that the expanding wave has already swept over
+		for sc in range(maxi(min_col, cx - scan_r), mini(max_col + 1, cx + scan_r + 1)):
+			for sr in range(maxi(min_row, cy - scan_r), mini(max_row + 1, cy + scan_r + 1)):
+				var stile: int = grid[sc][sr]
+				if stile != TileType.ORE_COPPER and stile != TileType.ORE_COPPER_DEEP \
+				and stile != TileType.ORE_IRON and stile != TileType.ORE_IRON_DEEP \
+				and stile != TileType.ORE_GOLD and stile != TileType.ORE_GOLD_DEEP \
+				and stile != TileType.ORE_GEM and stile != TileType.ORE_GEM_DEEP \
+				and stile != TileType.FUEL_NODE and stile != TileType.FUEL_NODE_FULL:
+					continue
+				var dist := Vector2(sc - cx, sr - cy).length()
+				if dist > _sonar_wave_radius:
+					continue
+				# Glow age: how far behind the wave front this tile is
+				var glow_age := _sonar_wave_radius - dist
+				var glow_alpha := maxf(0.0, ping_alpha - glow_age * 0.12) * 0.80
+				if glow_alpha <= 0.02:
+					continue
+				# Color by ore tier (level 1: uniform green; level 2+: color-coded)
+				var glow_color := Color(0.20, 1.0, 0.40, glow_alpha)
+				if GameManager.mineral_sense_level >= 2:
+					if stile == TileType.ORE_GEM or stile == TileType.ORE_GEM_DEEP:
+						glow_color = Color(0.10, 0.90, 1.00, glow_alpha)
+					elif stile == TileType.ORE_GOLD or stile == TileType.ORE_GOLD_DEEP:
+						glow_color = Color(1.00, 0.85, 0.10, glow_alpha)
+					elif stile == TileType.ORE_IRON or stile == TileType.ORE_IRON_DEEP:
+						glow_color = Color(0.65, 0.65, 1.00, glow_alpha)
+					elif stile == TileType.FUEL_NODE or stile == TileType.FUEL_NODE_FULL:
+						glow_color = Color(0.30, 1.00, 0.30, glow_alpha)
+				draw_rect(Rect2(sc * CELL_SIZE, sr * CELL_SIZE, CELL_SIZE, CELL_SIZE), glow_color)
+		# Expanding wave ring arc
+		var wave_px := _sonar_wave_radius * CELL_SIZE
+		var center_px := Vector2(cx * CELL_SIZE + CELL_SIZE * 0.5, cy * CELL_SIZE + CELL_SIZE * 0.5)
+		if wave_px > 0:
+			draw_arc(center_px, wave_px, 0.0, TAU, 48, Color(0.40, 1.0, 0.60, ping_alpha * 0.55), 2.0)
+
 # ---------------------------------------------------------------------------
 # Process — fuel drain, cursor highlight, flashes
 # ---------------------------------------------------------------------------
@@ -589,6 +713,19 @@ func _process(delta: float) -> void:
 				to_remove.append(pos_key)
 		for k in to_remove:
 			_flash_cells.erase(k)
+
+	# Fade pheromone trails (§3.3)
+	if _pheromone_trails.size() > 0:
+		var to_remove_pt: Array = []
+		for pk in _pheromone_trails:
+			_pheromone_trails[pk] -= PHEROMONE_FADE_RATE * delta
+			if _pheromone_trails[pk] <= 0.0:
+				to_remove_pt.append(pk)
+		for k in to_remove_pt:
+			_pheromone_trails.erase(k)
+
+	# Update sonar ping wave (§3.2)
+	_update_sonar_ping(delta)
 
 	if _hub_visible or _game_over or _fuel_shop_visible:
 		return
@@ -663,6 +800,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("interact"):
 		_try_interact()
+		return
+	if event.is_action_pressed("sonar_ping"):
+		_try_sonar_ping()
 
 # ---------------------------------------------------------------------------
 # Mining API — called by PlayerProbe
@@ -725,6 +865,10 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 			var lucky := tile in ORE_TILES and randf() < LUCKY_STRIKE_CHANCE
 			if lucky:
 				minerals *= 2
+			# Fossil forgiveness check (§3.6) — before awarding base minerals
+			_check_fossil(tile, col, row)
+			# Consecutive smelting bonus (§3.5) — awards extra currency internally
+			_process_smelt(tile, minerals)
 			GameManager.add_currency(minerals)
 			EventBus.minerals_earned.emit(minerals)
 			var popup_label: String = "LUCKY!" if lucky else TILE_NAMES.get(tile, "Mineral")
@@ -766,6 +910,8 @@ func _check_streak_milestone() -> void:
 func _mine_cell(col: int, row: int) -> void:
 	grid[col][row] = TileType.EMPTY
 	_set_tile_collision(col, row, false)
+	# Record pheromone trail on player-mined cells (§3.3)
+	_pheromone_trails[Vector2i(col, row)] = 1.0
 
 func _explode_area(center_col: int, center_row: int) -> void:
 	for dc in range(-1, 2):
@@ -843,6 +989,89 @@ func _shake_camera(intensity: float = 5.0, duration: float = 0.3) -> void:
 		)
 		tween.tween_property(camera, "offset", offset, step_dur)
 	tween.tween_property(camera, "offset", Vector2.ZERO, 0.05)
+
+# ---------------------------------------------------------------------------
+# Sonar ping (§3.2)
+# ---------------------------------------------------------------------------
+
+func _try_sonar_ping() -> void:
+	if _sonar_ping_active or not player_node:
+		return
+	var fuel_cost := GameManager.get_sonar_ping_fuel_cost()
+	if GameManager.current_fuel < fuel_cost:
+		EventBus.ore_mined_popup.emit(0, "No fuel for ping")
+		return
+	GameManager.consume_fuel(fuel_cost)
+	_sonar_ping_active = true
+	_sonar_ping_elapsed = 0.0
+	_sonar_wave_radius = 0.0
+	_sonar_ping_center = player_node.get_grid_pos()
+
+func _update_sonar_ping(delta: float) -> void:
+	if not _sonar_ping_active:
+		return
+	_sonar_ping_elapsed += delta
+	var max_radius := GameManager.get_sonar_ping_radius()
+	_sonar_wave_radius = (_sonar_ping_elapsed / SONAR_PING_DURATION) * max_radius
+	if _sonar_ping_elapsed >= SONAR_PING_DURATION:
+		_sonar_ping_active = false
+
+# ---------------------------------------------------------------------------
+# Consecutive smelting (§3.5)
+# ---------------------------------------------------------------------------
+
+func _process_smelt(tile: int, base_minerals: int) -> void:
+	if not SMELT_ORE_GROUPS.has(tile):
+		# Neutral tile — does not break the chain
+		return
+	var group: String = SMELT_ORE_GROUPS[tile]
+
+	# Check for a cross-ore combo BEFORE updating chain state
+	if _smelt_last_ore_group != "" and _smelt_last_ore_group != group:
+		var combo_key := _smelt_last_ore_group + "+" + group
+		if SMELT_COMBOS.has(combo_key):
+			var combo: Array = SMELT_COMBOS[combo_key]
+			var bonus := maxi(1, roundi(base_minerals * combo[0]))
+			GameManager.add_currency(bonus)
+			EventBus.ore_mined_popup.emit(bonus, combo[1] + "!")
+			# Combo resets the chain
+			_smelt_prev_ore_group = ""
+			_smelt_last_ore_group = group
+			_smelt_chain_count = 1
+			return
+
+	# Same ore: advance chain
+	if group == _smelt_last_ore_group:
+		_smelt_chain_count += 1
+		if _smelt_chain_count == 3:
+			var chain_data: Array = SMELT_CHAIN_BONUSES.get(group, [0.5, "Ingot"])
+			var bonus := maxi(1, roundi(base_minerals * chain_data[0]))
+			GameManager.add_currency(bonus)
+			EventBus.ore_mined_popup.emit(bonus, chain_data[1] + "!")
+	else:
+		# Different ore breaks chain, start fresh
+		_smelt_prev_ore_group = _smelt_last_ore_group
+		_smelt_last_ore_group = group
+		_smelt_chain_count = 1
+
+# ---------------------------------------------------------------------------
+# Fossil forgiveness (§3.6)
+# ---------------------------------------------------------------------------
+
+func _check_fossil(tile: int, _col: int, _row: int) -> void:
+	if not FOSSIL_TYPES.has(tile):
+		_fossil_drought[tile] = _fossil_drought.get(tile, 0) + 1
+		return
+	var drought: int = _fossil_drought.get(tile, 0)
+	var roll_rate := minf(FOSSIL_CAP_RATE, FOSSIL_BASE_RATE + drought * FOSSIL_DROUGHT_SCALE)
+	if randf() < roll_rate:
+		var fossil_data: Dictionary = FOSSIL_TYPES[tile]
+		var minerals: int = fossil_data["minerals"]
+		GameManager.add_currency(minerals)
+		EventBus.ore_mined_popup.emit(minerals, fossil_data["name"] + " Fossil!")
+		_fossil_drought[tile] = 0
+	else:
+		_fossil_drought[tile] = drought + 1
 
 # ---------------------------------------------------------------------------
 # Depth tracking

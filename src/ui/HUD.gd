@@ -47,9 +47,29 @@ const ORE_COLORS: Dictionary = {
 	"Gem":         Color(0.15, 0.85, 0.75),
 	"Deep Gem":    Color(0.10, 0.75, 0.65),
 	"Fuel":        Color(0.20, 0.90, 0.20),
-	"LUCKY!":      Color(1.0,  1.0,  0.30),   # Bright yellow for lucky double-strikes
-	"Discovery!":  Color(0.20, 0.90, 0.90),   # Teal for first zone visit
-	"Streak!":     Color(1.0,  0.60, 0.10),   # Orange for consecutive dig milestones
+	"LUCKY!":          Color(1.0,  1.0,  0.30),   # Bright yellow for lucky double-strikes
+	"Discovery!":      Color(0.20, 0.90, 0.90),   # Teal for first zone visit
+	"Streak!":         Color(1.0,  0.60, 0.10),   # Orange for consecutive dig milestones
+	# Smelting chain / combo events (name + "!" suffix)
+	"Bronze Ingot!":    Color(0.80, 0.55, 0.20),
+	"Steel Ingot!":     Color(0.70, 0.70, 0.80),
+	"Pure Gold!":       Color(1.00, 0.90, 0.10),
+	"Faceted Gem!":     Color(0.10, 0.95, 0.85),
+	"Alloy Ore!":       Color(0.85, 0.60, 0.35),
+	"Gilded Steel!":    Color(1.00, 0.80, 0.30),
+	"Fool's Gold!":     Color(0.90, 0.75, 0.20),
+	# Sonar ping
+	"No fuel for ping": Color(0.80, 0.20, 0.10),
+	# Fossil finds — name + " Fossil!" suffix, warm amber/teal tones
+	"Ancient Root Fossil!":    Color(0.85, 0.65, 0.30),
+	"Root Fossil Fossil!":     Color(0.85, 0.65, 0.30),
+	"Trilobite Fossil!":       Color(0.90, 0.75, 0.40),
+	"Ammonite Fossil!":        Color(0.90, 0.75, 0.40),
+	"Mineralite Fossil!":      Color(0.80, 0.60, 0.90),
+	"Deep Mineralite Fossil!": Color(0.80, 0.60, 0.90),
+	"Iron Fossil Fossil!":     Color(0.65, 0.65, 0.90),
+	"Gilded Fossil Fossil!":   Color(1.00, 0.85, 0.20),
+	"Crystal Fossil Fossil!":  Color(0.20, 0.95, 1.00),
 }
 
 func _ready() -> void:
