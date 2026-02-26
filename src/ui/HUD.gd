@@ -47,6 +47,9 @@ const ORE_COLORS: Dictionary = {
 	"Gem":         Color(0.15, 0.85, 0.75),
 	"Deep Gem":    Color(0.10, 0.75, 0.65),
 	"Fuel":        Color(0.20, 0.90, 0.20),
+	"LUCKY!":      Color(1.0,  1.0,  0.30),   # Bright yellow for lucky double-strikes
+	"Discovery!":  Color(0.20, 0.90, 0.90),   # Teal for first zone visit
+	"Streak!":     Color(1.0,  0.60, 0.10),   # Orange for consecutive dig milestones
 }
 
 func _ready() -> void:
