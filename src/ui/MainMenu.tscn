@@ -90,6 +90,11 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "SETTINGS"
 
+[node name="WishlistButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "WISHLIST NOW"
+
 [node name="QuitButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
