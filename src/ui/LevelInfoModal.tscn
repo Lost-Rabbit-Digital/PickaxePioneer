@@ -17,17 +17,17 @@ mouse_filter = 2
 
 [node name="Panel" type="Panel" parent="Control"]
 layout_mode = 1
-anchors_preset = 1
+anchors_preset = 3
 anchor_left = 1.0
-anchor_top = 0.0
+anchor_top = 1.0
 anchor_right = 1.0
-anchor_bottom = 0.0
+anchor_bottom = 1.0
 offset_left = -290.0
-offset_top = 10.0
+offset_top = -300.0
 offset_right = -10.0
-offset_bottom = 300.0
+offset_bottom = -10.0
 grow_horizontal = 0
-grow_vertical = 1
+grow_vertical = 0
 
 [node name="MarginContainer" type="MarginContainer" parent="Control/Panel"]
 layout_mode = 1
@@ -101,9 +101,9 @@ theme_override_constants/separation = 12
 [node name="CancelButton" type="Button" parent="Control/Panel/MarginContainer/VBox/ButtonsBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(100, 36)
-text = "Cancel"
+text = "Close"
 
 [node name="EnterButton" type="Button" parent="Control/Panel/MarginContainer/VBox/ButtonsBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(120, 36)
-text = "Begin Mining"
+text = "Enter"

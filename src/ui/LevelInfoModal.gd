@@ -43,7 +43,7 @@ func show_for_node(node: MapNode) -> void:
 			difficulty_label.visible = true
 			ore_types_label.visible = node.ore_types.size() > 0
 			hazards_label.visible = node.hazard_types.size() > 0
-			enter_button.text = "Begin Mining"
+			enter_button.text = "Enter"
 		_:
 			type_label.text = "[ Unknown ]"
 			type_label.modulate = Color(1.0, 1.0, 1.0)
