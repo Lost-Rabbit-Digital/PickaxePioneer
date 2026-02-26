@@ -223,6 +223,11 @@ var _exit_pulse_time: float = 0.0
 @onready var player_node = $PlayerProbe
 @onready var pause_menu = $PauseMenu
 
+# Farm animal NPCs — static, non-moving, wiggle when interacted with via E
+var _farm_npcs: Array = []
+var _farm_npc_grid_cols: Array[int] = []
+const FARM_NPC_ROW: int = 1  # Placed on the middle surface row
+
 func _ready() -> void:
 	var ant_spritesheet := load("res://assets/creatures/red_ant_spritesheet.png") as Texture2D
 	var ant_atlas := AtlasTexture.new()
@@ -254,6 +259,7 @@ func _ready() -> void:
 	QuestManager.clear_quest()
 	_setup_surface_hub()
 	_setup_fuel_station_shop()
+	_setup_farm_animals()
 	queue_redraw()
 
 const SURFACE_ROWS: int = 3  # Top 3 rows are surface
@@ -514,12 +520,34 @@ func _update_interact_prompt() -> void:
 		)
 		var screen_pos := get_viewport().get_canvas_transform() * world_pos
 		player_node.set_prompt_position(screen_pos)
+	elif _get_nearby_farm_npc() != null:
+		var nearby_npc: FarmAnimalNPC = _get_nearby_farm_npc()
+		var key_name := _get_interact_key_name()
+		player_node.show_prompt("Press %s to pet the %s" % [key_name, nearby_npc.animal_name])
+		var world_pos := Vector2(
+			player_grid_pos.x * CELL_SIZE + CELL_SIZE * 0.5,
+			player_grid_pos.y * CELL_SIZE
+		)
+		var screen_pos := get_viewport().get_canvas_transform() * world_pos
+		player_node.set_prompt_position(screen_pos)
 	else:
 		player_node.hide_prompt()
+
+func _get_nearby_farm_npc() -> FarmAnimalNPC:
+	if not is_on_surface:
+		return null
+	for i in range(_farm_npcs.size()):
+		if abs(_farm_npc_grid_cols[i] - player_grid_pos.x) <= 1:
+			return _farm_npcs[i]
+	return null
 
 func _try_interact() -> void:
 	if grid[player_grid_pos.x][player_grid_pos.y] == TileType.REFUEL_STATION:
 		_show_fuel_station_shop()
+		return
+	var nearby_npc: FarmAnimalNPC = _get_nearby_farm_npc()
+	if nearby_npc:
+		nearby_npc.wiggle()
 
 func _process(delta: float) -> void:
 	# Advance exit station pulse regardless of game state
@@ -871,6 +899,30 @@ func _update_depth() -> void:
 # ---------------------------------------------------------------------------
 # Surface Hub — the mine's shop/bank at the Exit Station
 # ---------------------------------------------------------------------------
+
+func _setup_farm_animals() -> void:
+	var npc_scene := load("res://src/entities/npcs/FarmAnimalNPC.tscn") as PackedScene
+	if not npc_scene:
+		return
+	var animals := [
+		{"name": "Chicken", "texture_path": "res://assets/chicken.svg", "col": 4},
+		{"name": "Sheep",   "texture_path": "res://assets/sheep.svg",   "col": 8},
+		{"name": "Pig",     "texture_path": "res://assets/pig.svg",     "col": 12},
+	]
+	for a in animals:
+		var npc := npc_scene.instantiate() as FarmAnimalNPC
+		npc.animal_name = a["name"]
+		var tex := load(a["texture_path"]) as Texture2D
+		if tex:
+			npc.get_node("Sprite2D").texture = tex
+		npc.scale = Vector2(2.0, 2.0)
+		npc.position = Vector2(
+			a["col"] * CELL_SIZE + CELL_SIZE * 0.5,
+			FARM_NPC_ROW * CELL_SIZE + CELL_SIZE * 0.5
+		)
+		add_child(npc)
+		_farm_npcs.append(npc)
+		_farm_npc_grid_cols.append(a["col"])
 
 func _setup_surface_hub() -> void:
 	const VW: int = 1280
