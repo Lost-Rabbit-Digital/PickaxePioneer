@@ -2,6 +2,8 @@ https://opengameart.org/content/mining-platformer
 https://opengameart.org/content/16x16-block-texture-set
 https://opengameart.org/content/16x16-ant-enemies
 https://opengameart.org/content/16-x-16-monster-items
+https://opengameart.org/content/16x16-rpg-items-db32
+https://opengameart.org/content/16x16-swords-weird
 
 https://lospec.com/palette-list/comfy52
 
