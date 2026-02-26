@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://bz3nq7wdlp4c1"]
+[gd_scene load_steps=2 format=3 uid="uid://b03nq7wdlp4c1"]
 
 [ext_resource type="Script" path="res://src/ui/LevelInfoModal.gd" id="1_script"]
 
