@@ -12,6 +12,10 @@ var mineral_currency: int = 0
 var run_mineral_currency: int = 0
 var last_overworld_node_name: String = ""
 
+# Ores allowed to spawn in the current level instance (set from MapNode.ore_types).
+# Empty array means all ores can spawn (default behaviour).
+var allowed_ore_types: Array = []
+
 # Fuel system
 var current_fuel: int = 100
 

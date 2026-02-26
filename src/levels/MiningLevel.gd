@@ -318,6 +318,14 @@ func _random_tile(row: int = SURFACE_ROWS) -> TileType:
 	var gold_chance   := 0.04 + depth * 0.16
 	var gem_chance    := 0.02 + depth * 0.18
 
+	# Restrict spawnable ores to the set shown on the overworld map for this location.
+	var allowed: Array = GameManager.allowed_ore_types
+	if allowed.size() > 0:
+		if not allowed.has("Copper"): copper_chance = 0.0
+		if not allowed.has("Iron"):   iron_chance   = 0.0
+		if not allowed.has("Gold"):   gold_chance   = 0.0
+		if not allowed.has("Gem"):    gem_chance    = 0.0
+
 	# Deeper tiles are more likely to be "deep" (higher-quality) ore variants
 	var deep_ratio := 0.30 + depth * 0.50   # 30% deep at surface → 80% at bottom
 

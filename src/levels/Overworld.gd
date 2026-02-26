@@ -33,23 +33,24 @@ var mine_names = [
 	"Obsidian Pit"
 ]
 
-# Difficulty and primary ore info keyed by mine name
+# Difficulty and primary ore info keyed by mine name.
+# Ore names must match the game's actual tile types: Copper, Iron, Gold, Gem.
 var mine_metadata: Dictionary = {
 	"Iron Mine":     {"difficulty": 1, "ores": ["Iron", "Copper"]},
 	"Gold Mine":     {"difficulty": 3, "ores": ["Gold", "Iron"]},
 	"Copper Mine":   {"difficulty": 1, "ores": ["Copper"]},
-	"Silver Mine":   {"difficulty": 2, "ores": ["Silver", "Copper"]},
-	"Coal Mine":     {"difficulty": 1, "ores": ["Coal", "Stone"]},
-	"Diamond Mine":  {"difficulty": 3, "ores": ["Diamond", "Gold"]},
-	"Platinum Mine": {"difficulty": 3, "ores": ["Platinum", "Gold"]},
-	"Emerald Mine":  {"difficulty": 2, "ores": ["Emerald", "Iron"]},
-	"Ruby Mine":     {"difficulty": 2, "ores": ["Ruby", "Copper"]},
-	"Sapphire Mine": {"difficulty": 2, "ores": ["Sapphire", "Stone"]},
-	"Tin Mine":      {"difficulty": 1, "ores": ["Tin", "Stone"]},
-	"Lead Mine":     {"difficulty": 1, "ores": ["Lead", "Dirt"]},
-	"Uranium Mine":  {"difficulty": 3, "ores": ["Uranium", "Gold"]},
-	"Crystal Cave":  {"difficulty": 2, "ores": ["Crystal", "Iron"]},
-	"Obsidian Pit":  {"difficulty": 3, "ores": ["Obsidian", "Iron"]},
+	"Silver Mine":   {"difficulty": 2, "ores": ["Iron", "Copper"]},
+	"Coal Mine":     {"difficulty": 1, "ores": ["Copper", "Iron"]},
+	"Diamond Mine":  {"difficulty": 3, "ores": ["Gem", "Gold"]},
+	"Platinum Mine": {"difficulty": 3, "ores": ["Gold", "Gem"]},
+	"Emerald Mine":  {"difficulty": 2, "ores": ["Gem", "Iron"]},
+	"Ruby Mine":     {"difficulty": 2, "ores": ["Gem", "Copper"]},
+	"Sapphire Mine": {"difficulty": 2, "ores": ["Gem", "Iron"]},
+	"Tin Mine":      {"difficulty": 1, "ores": ["Copper"]},
+	"Lead Mine":     {"difficulty": 1, "ores": ["Iron", "Copper"]},
+	"Uranium Mine":  {"difficulty": 3, "ores": ["Gem", "Gold"]},
+	"Crystal Cave":  {"difficulty": 2, "ores": ["Gem", "Iron"]},
+	"Obsidian Pit":  {"difficulty": 3, "ores": ["Iron", "Gem"]},
 }
 
 func _ready() -> void:
@@ -64,10 +65,10 @@ func _ready() -> void:
 	city_node.description = "Your home colony. Spend your hard-earned minerals on upgrades to improve your mining operation."
 	settlement_node_3.description = "A small outpost along the mining route."
 	settlement_node_3.difficulty = 1
-	settlement_node_3.ore_types = ["Stone", "Copper"]
+	settlement_node_3.ore_types = ["Copper"]
 	settlement_node_4.description = "A remote settlement near deeper deposits."
 	settlement_node_4.difficulty = 2
-	settlement_node_4.ore_types = ["Iron", "Stone", "Copper"]
+	settlement_node_4.ore_types = ["Iron", "Copper"]
 
 	# Instantiate the level info modal
 	_modal = preload("res://src/ui/LevelInfoModal.tscn").instantiate()
@@ -198,15 +199,15 @@ func _on_node_clicked(node: MapNode) -> void:
 		current_node = node
 		current_node.highlight(true)
 		caravan.move_to(node.position)
-	elif not caravan.is_moving:
-		# Already at the node and stopped, so enter
-		_enter_node(node)
+	# Always show the info panel immediately on click
+	_enter_node(node)
 
 func _enter_node(node: MapNode) -> void:
 	_modal.show_for_node(node)
 
 func _on_modal_confirmed(node: MapNode) -> void:
 	GameManager.last_overworld_node_name = node.name
+	GameManager.allowed_ore_types = node.ore_types.duplicate()
 
 	if node.node_type == MapNode.NodeType.ASTEROID or node.node_type == MapNode.NodeType.STATION:
 		GameManager.load_mining_level(node.scene_path)
