@@ -1106,14 +1106,14 @@ func _setup_fuel_station_shop() -> void:
 func _show_fuel_station_shop() -> void:
 	_fuel_shop_minerals_label.text = "Run Minerals: %d" % GameManager.run_mineral_currency
 	_fuel_shop_btn_refuel_full.text = "Full Refuel  (%d → %d fuel)  — %d minerals" % [
-		GameManager.current_fuel, GameManager.max_fuel, SHOP_REFUEL_FULL_COST]
+		GameManager.current_fuel, GameManager.get_max_fuel(), SHOP_REFUEL_FULL_COST]
 	_fuel_shop_btn_refuel_half.text = "Refuel 50%%  (+%d fuel)  — %d minerals" % [
-		GameManager.max_fuel / 2, SHOP_REFUEL_HALF_COST]
+		GameManager.get_max_fuel() / 2, SHOP_REFUEL_HALF_COST]
 	_fuel_shop_btn_repair.text = "Emergency Repair  (+1 HP)  — %d minerals" % SHOP_REPAIR_COST
 	_fuel_shop_btn_refuel_full.disabled = GameManager.run_mineral_currency < SHOP_REFUEL_FULL_COST \
-		or GameManager.current_fuel >= GameManager.max_fuel
+		or GameManager.current_fuel >= GameManager.get_max_fuel()
 	_fuel_shop_btn_refuel_half.disabled = GameManager.run_mineral_currency < SHOP_REFUEL_HALF_COST \
-		or GameManager.current_fuel >= GameManager.max_fuel
+		or GameManager.current_fuel >= GameManager.get_max_fuel()
 	var at_max_hp: bool = player_node != null and player_node.is_at_max_health()
 	_fuel_shop_btn_repair.disabled = GameManager.run_mineral_currency < SHOP_REPAIR_COST or at_max_hp
 	_fuel_shop_layer.visible = true
@@ -1126,16 +1126,16 @@ func _hide_fuel_station_shop() -> void:
 func _shop_refuel_full() -> void:
 	if GameManager.run_mineral_currency >= SHOP_REFUEL_FULL_COST:
 		GameManager.run_mineral_currency -= SHOP_REFUEL_FULL_COST
-		GameManager.current_fuel = GameManager.max_fuel
+		GameManager.current_fuel = GameManager.get_max_fuel()
 		EventBus.minerals_changed.emit(GameManager.run_mineral_currency)
-		EventBus.fuel_changed.emit(GameManager.current_fuel, GameManager.max_fuel)
+		EventBus.fuel_changed.emit(GameManager.current_fuel, GameManager.get_max_fuel())
 		SoundManager.play_drill_sound()
 		_show_fuel_station_shop()  # Refresh labels and button states
 
 func _shop_refuel_half() -> void:
 	if GameManager.run_mineral_currency >= SHOP_REFUEL_HALF_COST:
 		GameManager.run_mineral_currency -= SHOP_REFUEL_HALF_COST
-		GameManager.restore_fuel(GameManager.max_fuel / 2)
+		GameManager.restore_fuel(GameManager.get_max_fuel() / 2)
 		EventBus.minerals_changed.emit(GameManager.run_mineral_currency)
 		SoundManager.play_drill_sound()
 		_show_fuel_station_shop()  # Refresh labels and button states
