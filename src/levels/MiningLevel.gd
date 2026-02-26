@@ -192,6 +192,17 @@ const TILE_MINERALS: Dictionary = {
 	TileType.ORE_GEM_DEEP:    30,
 }
 
+# Ore tile types eligible for lucky strike doubles
+const ORE_TILES: Array = [
+	TileType.ORE_COPPER, TileType.ORE_COPPER_DEEP,
+	TileType.ORE_IRON, TileType.ORE_IRON_DEEP,
+	TileType.ORE_GOLD, TileType.ORE_GOLD_DEEP,
+	TileType.ORE_GEM, TileType.ORE_GEM_DEEP,
+]
+
+# 8% chance per ore break to score a lucky double-mineral hit
+const LUCKY_STRIKE_CHANCE := 0.08
+
 var grid: Array = []
 var player_grid_pos: Vector2i = Vector2i(2, 2)  # Start at top-left (on surface)
 var has_left_spawn: bool = false  # True once player moves into the mining area
@@ -246,6 +257,12 @@ var _tile_hits: Dictionary = {}
 
 # Per-tile white impact flash (key: Vector2i, value: alpha 0-1, fades in _process)
 var _flash_cells: Dictionary = {}
+
+# Consecutive successful tile breaks — resets when player moves through empty space
+var _mine_streak: int = 0
+
+# Which depth zones have been discovered this run (first visit rewards a fuel boost)
+var _zones_discovered: Array[bool] = [false, false, false, false, false]
 
 # Exit station pulse animation time (seconds, increments every frame)
 var _exit_pulse_time: float = 0.0
@@ -736,11 +753,13 @@ func _try_move(dc: int, dr: int) -> void:
 					_damage_player(1)
 					queue_redraw()
 					return
-				# Fuel cost scales with depth tier: 1 fuel shallow, 2 mid, 3 deep
+				# Movement costs 1 fuel; only digging solid tiles scales with depth
 				var entry_depth_row := new_row - SURFACE_ROWS
 				var entry_fuel_cost: int = 1
-				if entry_depth_row > 70:   entry_fuel_cost = 3
-				elif entry_depth_row > 40: entry_fuel_cost = 2
+				if new_tile != TileType.FUEL_NODE and new_tile != TileType.FUEL_NODE_FULL and \
+				   new_tile != TileType.REFUEL_STATION:
+					if entry_depth_row > 70:   entry_fuel_cost = 3
+					elif entry_depth_row > 40: entry_fuel_cost = 2
 				if not GameManager.consume_fuel(entry_fuel_cost):
 					_on_out_of_fuel()
 					return
@@ -776,9 +795,15 @@ func _try_move(dc: int, dr: int) -> void:
 						# Only award minerals for actual mineable tiles — not hazards or stations
 						if new_tile in MINEABLE_TILES:
 							var minerals: int = TILE_MINERALS.get(new_tile, 1)
+							_mine_streak += 1
+							var lucky := new_tile in ORE_TILES and randf() < LUCKY_STRIKE_CHANCE
+							if lucky:
+								minerals *= 2
 							GameManager.add_currency(minerals)
 							EventBus.minerals_earned.emit(minerals)
-							EventBus.ore_mined_popup.emit(minerals, TILE_NAMES.get(new_tile, "Mineral"))
+							var popup_label: String = "LUCKY!" if lucky else TILE_NAMES.get(new_tile, "Mineral")
+							EventBus.ore_mined_popup.emit(minerals, popup_label)
+							_check_streak_milestone()
 						SoundManager.play_drill_sound()
 						player_grid_pos = Vector2i(new_col, new_row)
 						is_on_surface = false
@@ -815,11 +840,14 @@ func _try_move(dc: int, dr: int) -> void:
 		queue_redraw()
 		return
 
-	# Fuel cost scales with depth tier: 1 fuel shallow, 2 mid, 3 deep
-	var move_depth_row := player_grid_pos.y - SURFACE_ROWS
+	# Movement costs 1 fuel; only digging solid tiles scales with depth
+	var move_depth_row := new_row - SURFACE_ROWS
 	var move_fuel_cost: int = 1
-	if move_depth_row > 70:   move_fuel_cost = 3
-	elif move_depth_row > 40: move_fuel_cost = 2
+	if tile != TileType.EMPTY and tile != TileType.REFUEL_STATION and \
+	   tile != TileType.FUEL_NODE and tile != TileType.FUEL_NODE_FULL and \
+	   tile != TileType.SURFACE:
+		if move_depth_row > 70:   move_fuel_cost = 3
+		elif move_depth_row > 40: move_fuel_cost = 2
 	if not GameManager.consume_fuel(move_fuel_cost):
 		_on_out_of_fuel()
 		return
@@ -828,6 +856,7 @@ func _try_move(dc: int, dr: int) -> void:
 	if grid[new_col][new_row] == TileType.SURFACE:
 		player_grid_pos = Vector2i(new_col, new_row)
 		is_on_surface = true
+		_mine_streak = 0  # Surfacing resets the digging streak
 		_update_depth()
 		_update_camera()
 		queue_redraw()
@@ -846,6 +875,7 @@ func _try_move(dc: int, dr: int) -> void:
 	elif tile == TileType.REFUEL_STATION or tile == TileType.EMPTY:
 		player_grid_pos = Vector2i(new_col, new_row)
 		player_moved = true
+		_mine_streak = 0  # Moving through open space breaks the digging streak
 	else:
 		# Minable tile: apply mandibles damage; move in only when destroyed
 		var pos_key := Vector2i(new_col, new_row)
@@ -868,9 +898,15 @@ func _try_move(dc: int, dr: int) -> void:
 			# Only award minerals for actual mineable tiles — not hazards or stations
 			if tile in MINEABLE_TILES:
 				var minerals: int = TILE_MINERALS.get(tile, 1)
+				_mine_streak += 1
+				var lucky := tile in ORE_TILES and randf() < LUCKY_STRIKE_CHANCE
+				if lucky:
+					minerals *= 2
 				GameManager.add_currency(minerals)
 				EventBus.minerals_earned.emit(minerals)
-				EventBus.ore_mined_popup.emit(minerals, TILE_NAMES.get(tile, "Mineral"))
+				var popup_label: String = "LUCKY!" if lucky else TILE_NAMES.get(tile, "Mineral")
+				EventBus.ore_mined_popup.emit(minerals, popup_label)
+				_check_streak_milestone()
 			SoundManager.play_drill_sound()
 			player_grid_pos = Vector2i(new_col, new_row)
 			player_moved = true
@@ -899,6 +935,14 @@ func _try_move(dc: int, dr: int) -> void:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+func _check_streak_milestone() -> void:
+	# Every 5 consecutive tile breaks awards a streak bonus and shows a popup
+	if _mine_streak > 0 and _mine_streak % 5 == 0:
+		var bonus := mini(_mine_streak, 15)  # +5 at x5, +10 at x10, capped at +15
+		GameManager.add_currency(bonus)
+		EventBus.minerals_earned.emit(bonus)
+		EventBus.ore_mined_popup.emit(bonus, "Streak!")
 
 func _mine_cell(col: int, row: int) -> void:
 	grid[col][row] = TileType.EMPTY
@@ -1005,6 +1049,12 @@ func _check_zone_transition(depth_row: int) -> void:
 		_current_zone_idx = new_zone_idx
 		if depth_row > 0:  # No banner on the very first surface row
 			_show_zone_banner(DEPTH_ZONE_NAMES[new_zone_idx], DEPTH_ZONE_COLORS[new_zone_idx])
+			# First visit to this zone: reward a fuel boost for pushing deeper
+			if new_zone_idx > 0 and not _zones_discovered[new_zone_idx]:
+				_zones_discovered[new_zone_idx] = true
+				const DISCOVERY_FUEL := 20
+				GameManager.restore_fuel(DISCOVERY_FUEL)
+				EventBus.ore_mined_popup.emit(DISCOVERY_FUEL, "Discovery!")
 
 func _show_zone_banner(zone_name: String, color: Color) -> void:
 	const VW: int = 1280
