@@ -178,6 +178,9 @@ var _held_dir: Vector2i = Vector2i.ZERO
 var _hold_time: float = 0.0
 var _auto_move_time: float = 0.0
 
+# Player facing direction — true = facing left, false = facing right
+var _facing_left: bool = true
+
 # Textures
 var player_texture: Texture2D
 var tile_textures: Dictionary = {}  # TileType → Texture2D loaded from assets/blocks/
@@ -468,7 +471,13 @@ func _draw() -> void:
 		CELL_SIZE - 4
 	)
 	if player_texture:
-		draw_texture_rect(player_texture, player_rect, false)
+		if _facing_left:
+			var cx := player_rect.position.x + player_rect.size.x * 0.5
+			draw_set_transform(Vector2(cx * 2.0, 0.0), 0.0, Vector2(-1.0, 1.0))
+			draw_texture_rect(player_texture, player_rect, false)
+			draw_set_transform(Vector2.ZERO)
+		else:
+			draw_texture_rect(player_texture, player_rect, false)
 	else:
 		draw_rect(player_rect, Color(0.20, 0.80, 1.00))
 
@@ -582,6 +591,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_S: _try_move(0, 1)
 
 func _try_move(dc: int, dr: int) -> void:
+	if dc != 0:
+		_facing_left = (dc < 0)
 	var new_col := player_grid_pos.x + dc
 	var new_row := player_grid_pos.y + dr
 
