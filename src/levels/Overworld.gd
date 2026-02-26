@@ -227,7 +227,7 @@ func _on_modal_confirmed(node: MapNode) -> void:
 	GameManager.allowed_ore_types = node.ore_types.duplicate()
 	GameManager.allowed_hazard_types = node.hazard_types.duplicate()
 
-	if node.node_type == MapNode.NodeType.ASTEROID or node.node_type == MapNode.NodeType.STATION:
+	if node.node_type == MapNode.NodeType.MINE or node.node_type == MapNode.NodeType.STATION:
 		GameManager.load_mining_level(node.scene_path)
 	elif node.node_type == MapNode.NodeType.EMPTY:
 		if node.name == "CityNode":

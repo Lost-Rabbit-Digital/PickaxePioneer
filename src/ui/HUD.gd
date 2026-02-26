@@ -47,9 +47,38 @@ const ORE_COLORS: Dictionary = {
 	"Gem":         Color(0.15, 0.85, 0.75),
 	"Deep Gem":    Color(0.10, 0.75, 0.65),
 	"Fuel":        Color(0.20, 0.90, 0.20),
-	"LUCKY!":      Color(1.0,  1.0,  0.30),   # Bright yellow for lucky double-strikes
-	"Discovery!":  Color(0.20, 0.90, 0.90),   # Teal for first zone visit
-	"Streak!":     Color(1.0,  0.60, 0.10),   # Orange for consecutive dig milestones
+	"LUCKY!":          Color(1.0,  1.0,  0.30),   # Bright yellow for lucky double-strikes
+	"Discovery!":      Color(0.20, 0.90, 0.90),   # Teal for first zone visit
+	"Streak!":         Color(1.0,  0.60, 0.10),   # Orange for consecutive dig milestones
+	# Smelting chain / combo events (name + "!" suffix)
+	"Bronze Ingot!":    Color(0.80, 0.55, 0.20),
+	"Steel Ingot!":     Color(0.70, 0.70, 0.80),
+	"Pure Gold!":       Color(1.00, 0.90, 0.10),
+	"Faceted Gem!":     Color(0.10, 0.95, 0.85),
+	"Alloy Ore!":       Color(0.85, 0.60, 0.35),
+	"Gilded Steel!":    Color(1.00, 0.80, 0.30),
+	"Fool's Gold!":     Color(0.90, 0.75, 0.20),
+	# Sonar ping / system notifications
+	"No fuel for ping":     Color(0.80, 0.20, 0.10),
+	# Wandering Trader events
+	"Wandering Trader!":    Color(1.00, 0.75, 0.10),
+	"Fuel Pack!":           Color(0.20, 0.90, 0.20),
+	"Carapace Patched!":    Color(0.85, 0.08, 0.08),
+	"Mining Shroom!":       Color(0.50, 0.90, 0.20),
+	"Lucky Compass!":       Color(1.00, 0.90, 0.10),
+	"Ancient Map!":         Color(0.20, 0.90, 1.00),
+	"Not enough minerals":  Color(0.80, 0.20, 0.10),
+	"Already at full HP":   Color(0.60, 0.60, 0.60),
+	# Fossil finds — name + " Fossil!" suffix, warm amber/teal tones
+	"Ancient Root Fossil!":    Color(0.85, 0.65, 0.30),
+	"Root Fossil Fossil!":     Color(0.85, 0.65, 0.30),
+	"Trilobite Fossil!":       Color(0.90, 0.75, 0.40),
+	"Ammonite Fossil!":        Color(0.90, 0.75, 0.40),
+	"Mineralite Fossil!":      Color(0.80, 0.60, 0.90),
+	"Deep Mineralite Fossil!": Color(0.80, 0.60, 0.90),
+	"Iron Fossil Fossil!":     Color(0.65, 0.65, 0.90),
+	"Gilded Fossil Fossil!":   Color(1.00, 0.85, 0.20),
+	"Crystal Fossil Fossil!":  Color(0.20, 0.95, 1.00),
 }
 
 func _ready() -> void:
@@ -156,7 +185,8 @@ func _on_minerals_changed(amount: int) -> void:
 # Called when a tile is mined — shows a coloured "+X OreName" popup.
 func _on_ore_mined_popup(amount: int, ore_name: String) -> void:
 	var popup_color: Color = ORE_COLORS.get(ore_name, Color(1.0, 0.88, 0.2))
-	earnings_label.text = "+%d %s" % [amount, ore_name]
+	# amount == 0 means a pure notification (no mineral award) — omit the "+" prefix
+	earnings_label.text = "+%d %s" % [amount, ore_name] if amount > 0 else ore_name
 	earnings_label.modulate = Color(popup_color.r, popup_color.g, popup_color.b, 1.0)
 	_pickup_panel.modulate.a = 1.0  # Show panel immediately
 

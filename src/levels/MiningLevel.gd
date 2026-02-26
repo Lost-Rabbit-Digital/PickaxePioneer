@@ -182,6 +182,77 @@ const ORE_TILES: Array = [
 const LUCKY_STRIKE_CHANCE := 0.08
 const SURFACE_ROWS: int = 3
 
+# ---------------------------------------------------------------------------
+# Smelting / consecutive-chain system (§3.5)
+# ---------------------------------------------------------------------------
+# Ore group tags used to identify chain membership
+const SMELT_ORE_GROUPS: Dictionary = {
+	TileType.ORE_COPPER:      "copper",
+	TileType.ORE_COPPER_DEEP: "copper",
+	TileType.ORE_IRON:        "iron",
+	TileType.ORE_IRON_DEEP:   "iron",
+	TileType.ORE_GOLD:        "gold",
+	TileType.ORE_GOLD_DEEP:   "gold",
+	TileType.ORE_GEM:         "gem",
+	TileType.ORE_GEM_DEEP:    "gem",
+}
+# Chain bonus at 3 consecutive: [bonus_pct, popup_label]
+const SMELT_CHAIN_BONUSES: Dictionary = {
+	"copper": [0.50, "Bronze Ingot"],
+	"iron":   [0.50, "Steel Ingot"],
+	"gold":   [0.75, "Pure Gold"],
+	"gem":    [1.00, "Faceted Gem"],
+}
+# Two-ore cross-combos: "first+second" -> [bonus_pct, popup_label]
+const SMELT_COMBOS: Dictionary = {
+	"copper+iron": [1.00, "Alloy Ore"],
+	"iron+copper": [1.00, "Alloy Ore"],
+	"iron+gold":   [2.00, "Gilded Steel"],
+	"gold+iron":   [2.00, "Gilded Steel"],
+	"copper+gold": [1.50, "Fool's Gold"],
+	"gold+copper": [1.50, "Fool's Gold"],
+}
+
+# ---------------------------------------------------------------------------
+# Fossil forgiveness system (§3.6)
+# ---------------------------------------------------------------------------
+const FOSSIL_BASE_RATE: float  = 0.005
+const FOSSIL_DROUGHT_SCALE: float = 0.005
+const FOSSIL_CAP_RATE: float   = 0.30
+const FOSSIL_TYPES: Dictionary = {
+	TileType.DIRT:            {"name": "Ancient Root",    "minerals": 25},
+	TileType.DIRT_DARK:       {"name": "Root Fossil",     "minerals": 30},
+	TileType.STONE:           {"name": "Trilobite",       "minerals": 50},
+	TileType.STONE_DARK:      {"name": "Ammonite",        "minerals": 60},
+	TileType.ORE_COPPER:      {"name": "Mineralite",      "minerals": 40},
+	TileType.ORE_COPPER_DEEP: {"name": "Deep Mineralite", "minerals": 50},
+	TileType.ORE_IRON:        {"name": "Iron Fossil",     "minerals": 65},
+	TileType.ORE_GOLD:        {"name": "Gilded Fossil",   "minerals": 100},
+	TileType.ORE_GEM:         {"name": "Crystal Fossil",  "minerals": 120},
+}
+
+# ---------------------------------------------------------------------------
+# Sonar ping system (§3.2)
+# ---------------------------------------------------------------------------
+const SONAR_PING_DURATION: float = 3.0  # seconds until ping fades
+
+# ---------------------------------------------------------------------------
+# Wandering Trader system
+# ---------------------------------------------------------------------------
+# Depth rows that trigger a trader spawn — one per milestone
+const TRADER_DEPTH_MILESTONES: Array[int] = [32, 64, 96, 128]
+# World-space radius within which the trader can be interacted with
+const TRADER_INTERACT_RADIUS: float = 128.0  # px (~2 tiles)
+
+# Tier-scaled item definitions: [label, description, run_mineral_cost, tier_required]
+const TRADER_ITEMS: Array = [
+	{"key": "fuel",    "label": "Fuel Cache",      "desc": "+50 Fuel",                      "cost": 12, "tier": 1},
+	{"key": "repair",  "label": "Carapace Patch",  "desc": "Restore 1 HP",                  "cost": 18, "tier": 1},
+	{"key": "shroom",  "label": "Mining Shroom",   "desc": "Next 12 ores yield +100%",       "cost": 30, "tier": 2},
+	{"key": "compass", "label": "Lucky Compass",   "desc": "2× Lucky Strike chance (run)",   "cost": 45, "tier": 3},
+	{"key": "map",     "label": "Ancient Map",     "desc": "2× Sonar radius (run)",          "cost": 65, "tier": 4},
+]
+
 # Tiles that block player movement (have collision)
 const SOLID_TILES: Array = [
 	TileType.DIRT, TileType.DIRT_DARK,
@@ -256,6 +327,37 @@ var _exit_pulse_time: float = 0.0
 
 # Cursor highlight
 var _cursor_grid_pos: Vector2i = Vector2i(-1, -1)
+
+# Pheromone trails — mined tile positions with fade alpha (§3.3)
+var _pheromone_trails: Dictionary = {}
+const PHEROMONE_FADE_RATE: float = 0.025  # alpha units/sec (~40 s full fade
+
+# Sonar ping state (§3.2)
+var _sonar_ping_active: bool = false
+var _sonar_ping_elapsed: float = 0.0
+var _sonar_ping_center: Vector2i = Vector2i(-1, -1)
+var _sonar_wave_radius: float = 0.0
+
+# Consecutive smelting state (§3.5)
+var _smelt_last_ore_group: String = ""
+var _smelt_chain_count: int = 0
+var _smelt_prev_ore_group: String = ""
+
+# Fossil forgiveness drought counters (§3.6) — reset each run
+var _fossil_drought: Dictionary = {}
+
+# Wandering Trader state
+# Each entry: {world_pos: Vector2, tier: int, pulse: float}
+var _active_traders: Array = []
+var _trader_milestones_seen: Array[bool] = [false, false, false, false]
+var _trader_shop_layer: CanvasLayer = null
+var _trader_shop_visible: bool = false
+var _current_trader: Dictionary = {}
+
+# Run-length buffs granted by trader items
+var _shroom_charges: int = 0       # Mining Shroom: remaining ores with doubled yield
+var _lucky_compass_active: bool = false   # Lucky Compass: 2× lucky strike chance
+var _ancient_map_active: bool = false     # Ancient Map: 2× sonar ping radius
 
 # Hazard damage cooldown to prevent instant death
 var _hazard_cooldown: float = 0.0
@@ -572,6 +674,76 @@ func _draw() -> void:
 		var highlight_rect := Rect2(_cursor_grid_pos.x * CELL_SIZE, _cursor_grid_pos.y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
 		draw_rect(highlight_rect, Color(1.0, 1.0, 1.0, 0.2), false, 2.0)
 
+	# Pheromone trail overlay — faint purple on player-mined EMPTY tiles (§3.3)
+	for pk in _pheromone_trails:
+		var tc: int = pk.x
+		var tr: int = pk.y
+		if tc >= min_col and tc <= max_col and tr >= min_row and tr <= max_row:
+			var trail_alpha := _pheromone_trails[pk] * 0.22
+			draw_rect(Rect2(tc * CELL_SIZE, tr * CELL_SIZE, CELL_SIZE, CELL_SIZE),
+				Color(0.55, 0.30, 0.80, trail_alpha))
+
+	# Wandering Trader nodes — pulsing gold circle with "T" glyph
+	for trader in _active_traders:
+		var tp: Vector2 = trader["world_pos"]
+		var tc_grid := Vector2i(floori(tp.x / CELL_SIZE), floori(tp.y / CELL_SIZE))
+		if tc_grid.x < min_col or tc_grid.x > max_col or tc_grid.y < min_row or tc_grid.y > max_row:
+			continue
+		var pulse: float = sin(trader["pulse"] * 3.0) * 0.5 + 0.5
+		var trader_color := Color(1.0, 0.75 + pulse * 0.15, 0.0 + pulse * 0.15, 0.90)
+		var cx_px := tc_grid.x * CELL_SIZE + CELL_SIZE * 0.5
+		var cy_px := tc_grid.y * CELL_SIZE + CELL_SIZE * 0.5
+		var radius := CELL_SIZE * 0.40 + pulse * 4.0
+		draw_circle(Vector2(cx_px, cy_px), radius, trader_color)
+		draw_arc(Vector2(cx_px, cy_px), radius + 3.0, 0.0, TAU, 24,
+			Color(1.0, 0.95, 0.50, 0.55 + pulse * 0.35), 2.0)
+		var font := ThemeDB.fallback_font
+		draw_string(font, Vector2(cx_px - 6, cy_px + 8), "T",
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.10, 0.05, 0.00))
+
+	# Sonar ping overlay — expanding wave reveals ore tiles through rock (§3.2)
+	if _sonar_ping_active and _sonar_ping_center.x >= 0:
+		var ping_alpha := 1.0 - _sonar_ping_elapsed / SONAR_PING_DURATION
+		var max_radius := GameManager.get_sonar_ping_radius()
+		var cx := _sonar_ping_center.x
+		var cy := _sonar_ping_center.y
+		var scan_r := int(max_radius) + 2
+		# Glow each ore tile that the expanding wave has already swept over
+		for sc in range(maxi(min_col, cx - scan_r), mini(max_col + 1, cx + scan_r + 1)):
+			for sr in range(maxi(min_row, cy - scan_r), mini(max_row + 1, cy + scan_r + 1)):
+				var stile: int = grid[sc][sr]
+				if stile != TileType.ORE_COPPER and stile != TileType.ORE_COPPER_DEEP \
+				and stile != TileType.ORE_IRON and stile != TileType.ORE_IRON_DEEP \
+				and stile != TileType.ORE_GOLD and stile != TileType.ORE_GOLD_DEEP \
+				and stile != TileType.ORE_GEM and stile != TileType.ORE_GEM_DEEP \
+				and stile != TileType.FUEL_NODE and stile != TileType.FUEL_NODE_FULL:
+					continue
+				var dist := Vector2(sc - cx, sr - cy).length()
+				if dist > _sonar_wave_radius:
+					continue
+				# Glow age: how far behind the wave front this tile is
+				var glow_age := _sonar_wave_radius - dist
+				var glow_alpha := maxf(0.0, ping_alpha - glow_age * 0.12) * 0.80
+				if glow_alpha <= 0.02:
+					continue
+				# Color by ore tier (level 1: uniform green; level 2+: color-coded)
+				var glow_color := Color(0.20, 1.0, 0.40, glow_alpha)
+				if GameManager.mineral_sense_level >= 2:
+					if stile == TileType.ORE_GEM or stile == TileType.ORE_GEM_DEEP:
+						glow_color = Color(0.10, 0.90, 1.00, glow_alpha)
+					elif stile == TileType.ORE_GOLD or stile == TileType.ORE_GOLD_DEEP:
+						glow_color = Color(1.00, 0.85, 0.10, glow_alpha)
+					elif stile == TileType.ORE_IRON or stile == TileType.ORE_IRON_DEEP:
+						glow_color = Color(0.65, 0.65, 1.00, glow_alpha)
+					elif stile == TileType.FUEL_NODE or stile == TileType.FUEL_NODE_FULL:
+						glow_color = Color(0.30, 1.00, 0.30, glow_alpha)
+				draw_rect(Rect2(sc * CELL_SIZE, sr * CELL_SIZE, CELL_SIZE, CELL_SIZE), glow_color)
+		# Expanding wave ring arc
+		var wave_px := _sonar_wave_radius * CELL_SIZE
+		var center_px := Vector2(cx * CELL_SIZE + CELL_SIZE * 0.5, cy * CELL_SIZE + CELL_SIZE * 0.5)
+		if wave_px > 0:
+			draw_arc(center_px, wave_px, 0.0, TAU, 48, Color(0.40, 1.0, 0.60, ping_alpha * 0.55), 2.0)
+
 # ---------------------------------------------------------------------------
 # Process — fuel drain, cursor highlight, flashes
 # ---------------------------------------------------------------------------
@@ -590,7 +762,24 @@ func _process(delta: float) -> void:
 		for k in to_remove:
 			_flash_cells.erase(k)
 
-	if _hub_visible or _game_over or _fuel_shop_visible:
+	# Fade pheromone trails (§3.3)
+	if _pheromone_trails.size() > 0:
+		var to_remove_pt: Array = []
+		for pk in _pheromone_trails:
+			_pheromone_trails[pk] -= PHEROMONE_FADE_RATE * delta
+			if _pheromone_trails[pk] <= 0.0:
+				to_remove_pt.append(pk)
+		for k in to_remove_pt:
+			_pheromone_trails.erase(k)
+
+	# Update sonar ping wave (§3.2)
+	_update_sonar_ping(delta)
+
+	# Pulse wandering traders regardless of menu state
+	for trader in _active_traders:
+		trader["pulse"] += delta
+
+	if _hub_visible or _game_over or _fuel_shop_visible or _trader_shop_visible:
 		return
 
 	# Update cursor highlight
@@ -656,13 +845,16 @@ func _check_exit_zone() -> void:
 # ---------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _hub_visible or _game_over or _fuel_shop_visible:
+	if _hub_visible or _game_over or _fuel_shop_visible or _trader_shop_visible:
 		return
 	if event.is_action_pressed("ui_cancel"):
 		pause_menu.show_menu()
 		return
 	if event.is_action_pressed("interact"):
 		_try_interact()
+		return
+	if event.is_action_pressed("sonar_ping"):
+		_try_sonar_ping()
 
 # ---------------------------------------------------------------------------
 # Mining API — called by PlayerProbe
@@ -722,9 +914,18 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 		if tile in MINEABLE_TILES:
 			var minerals: int = TILE_MINERALS.get(tile, 1)
 			_mine_streak += 1
-			var lucky := tile in ORE_TILES and randf() < LUCKY_STRIKE_CHANCE
+			var lucky_chance := LUCKY_STRIKE_CHANCE * (2.0 if _lucky_compass_active else 1.0)
+			var lucky := tile in ORE_TILES and randf() < lucky_chance
 			if lucky:
 				minerals *= 2
+			# Mining Shroom buff: doubled yield on ore tiles
+			if _shroom_charges > 0 and tile in ORE_TILES:
+				minerals *= 2
+				_shroom_charges -= 1
+			# Fossil forgiveness check (§3.6) — before awarding base minerals
+			_check_fossil(tile, col, row)
+			# Consecutive smelting bonus (§3.5) — awards extra currency internally
+			_process_smelt(tile, minerals)
 			GameManager.add_currency(minerals)
 			EventBus.minerals_earned.emit(minerals)
 			var popup_label: String = "LUCKY!" if lucky else TILE_NAMES.get(tile, "Mineral")
@@ -766,6 +967,8 @@ func _check_streak_milestone() -> void:
 func _mine_cell(col: int, row: int) -> void:
 	grid[col][row] = TileType.EMPTY
 	_set_tile_collision(col, row, false)
+	# Record pheromone trail on player-mined cells (§3.3)
+	_pheromone_trails[Vector2i(col, row)] = 1.0
 
 func _explode_area(center_col: int, center_row: int) -> void:
 	for dc in range(-1, 2):
@@ -845,6 +1048,89 @@ func _shake_camera(intensity: float = 5.0, duration: float = 0.3) -> void:
 	tween.tween_property(camera, "offset", Vector2.ZERO, 0.05)
 
 # ---------------------------------------------------------------------------
+# Sonar ping (§3.2)
+# ---------------------------------------------------------------------------
+
+func _try_sonar_ping() -> void:
+	if _sonar_ping_active or not player_node:
+		return
+	var fuel_cost := GameManager.get_sonar_ping_fuel_cost()
+	if GameManager.current_fuel < fuel_cost:
+		EventBus.ore_mined_popup.emit(0, "No fuel for ping")
+		return
+	GameManager.consume_fuel(fuel_cost)
+	_sonar_ping_active = true
+	_sonar_ping_elapsed = 0.0
+	_sonar_wave_radius = 0.0
+	_sonar_ping_center = player_node.get_grid_pos()
+
+func _update_sonar_ping(delta: float) -> void:
+	if not _sonar_ping_active:
+		return
+	_sonar_ping_elapsed += delta
+	var max_radius := GameManager.get_sonar_ping_radius() * (2.0 if _ancient_map_active else 1.0)
+	_sonar_wave_radius = (_sonar_ping_elapsed / SONAR_PING_DURATION) * max_radius
+	if _sonar_ping_elapsed >= SONAR_PING_DURATION:
+		_sonar_ping_active = false
+
+# ---------------------------------------------------------------------------
+# Consecutive smelting (§3.5)
+# ---------------------------------------------------------------------------
+
+func _process_smelt(tile: int, base_minerals: int) -> void:
+	if not SMELT_ORE_GROUPS.has(tile):
+		# Neutral tile — does not break the chain
+		return
+	var group: String = SMELT_ORE_GROUPS[tile]
+
+	# Check for a cross-ore combo BEFORE updating chain state
+	if _smelt_last_ore_group != "" and _smelt_last_ore_group != group:
+		var combo_key := _smelt_last_ore_group + "+" + group
+		if SMELT_COMBOS.has(combo_key):
+			var combo: Array = SMELT_COMBOS[combo_key]
+			var bonus := maxi(1, roundi(base_minerals * combo[0]))
+			GameManager.add_currency(bonus)
+			EventBus.ore_mined_popup.emit(bonus, combo[1] + "!")
+			# Combo resets the chain
+			_smelt_prev_ore_group = ""
+			_smelt_last_ore_group = group
+			_smelt_chain_count = 1
+			return
+
+	# Same ore: advance chain
+	if group == _smelt_last_ore_group:
+		_smelt_chain_count += 1
+		if _smelt_chain_count == 3:
+			var chain_data: Array = SMELT_CHAIN_BONUSES.get(group, [0.5, "Ingot"])
+			var bonus := maxi(1, roundi(base_minerals * chain_data[0]))
+			GameManager.add_currency(bonus)
+			EventBus.ore_mined_popup.emit(bonus, chain_data[1] + "!")
+	else:
+		# Different ore breaks chain, start fresh
+		_smelt_prev_ore_group = _smelt_last_ore_group
+		_smelt_last_ore_group = group
+		_smelt_chain_count = 1
+
+# ---------------------------------------------------------------------------
+# Fossil forgiveness (§3.6)
+# ---------------------------------------------------------------------------
+
+func _check_fossil(tile: int, _col: int, _row: int) -> void:
+	if not FOSSIL_TYPES.has(tile):
+		_fossil_drought[tile] = _fossil_drought.get(tile, 0) + 1
+		return
+	var drought: int = _fossil_drought.get(tile, 0)
+	var roll_rate := minf(FOSSIL_CAP_RATE, FOSSIL_BASE_RATE + drought * FOSSIL_DROUGHT_SCALE)
+	if randf() < roll_rate:
+		var fossil_data: Dictionary = FOSSIL_TYPES[tile]
+		var minerals: int = fossil_data["minerals"]
+		GameManager.add_currency(minerals)
+		EventBus.ore_mined_popup.emit(minerals, fossil_data["name"] + " Fossil!")
+		_fossil_drought[tile] = 0
+	else:
+		_fossil_drought[tile] = drought + 1
+
+# ---------------------------------------------------------------------------
 # Depth tracking
 # ---------------------------------------------------------------------------
 
@@ -856,6 +1142,7 @@ func _update_depth() -> void:
 		_last_depth = depth
 		EventBus.depth_changed.emit(depth)
 		_check_zone_transition(depth)
+		_check_trader_milestone(depth)
 		# Reset mine streak when surfacing
 		if depth <= 0:
 			_mine_streak = 0
@@ -937,6 +1224,13 @@ func _update_interact_prompt() -> void:
 				var screen_pos := get_viewport().get_canvas_transform() * world_pos
 				player_node.set_prompt_position(screen_pos)
 				return
+	var nearby_trader := _get_nearby_trader()
+	if nearby_trader.size() > 0:
+		var key_name := _get_interact_key_name()
+		player_node.show_prompt("Press %s to trade" % key_name)
+		var screen_pos := get_viewport().get_canvas_transform() * nearby_trader["world_pos"]
+		player_node.set_prompt_position(screen_pos + Vector2(0, -CELL_SIZE))
+		return
 	var nearby_npc: FarmAnimalNPC = _get_nearby_farm_npc()
 	if nearby_npc:
 		var key_name := _get_interact_key_name()
@@ -960,6 +1254,11 @@ func _get_nearby_farm_npc() -> FarmAnimalNPC:
 
 func _try_interact() -> void:
 	if not player_node:
+		return
+	# Wandering Trader takes priority when in range
+	var nearby_trader := _get_nearby_trader()
+	if nearby_trader.size() > 0:
+		_show_trader_shop(nearby_trader)
 		return
 	# Check current + adjacent tiles for refuel station
 	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
@@ -1281,3 +1580,163 @@ func _shop_repair() -> void:
 		player_node.heal(1)
 		SoundManager.play_drill_sound()
 		_show_fuel_station_shop()
+
+# ---------------------------------------------------------------------------
+# Wandering Trader
+# ---------------------------------------------------------------------------
+
+func _check_trader_milestone(depth_row: int) -> void:
+	for i in range(TRADER_DEPTH_MILESTONES.size()):
+		if not _trader_milestones_seen[i] and depth_row >= TRADER_DEPTH_MILESTONES[i]:
+			_trader_milestones_seen[i] = true
+			_spawn_wandering_trader(i + 1)  # tier 1–4
+
+func _spawn_wandering_trader(tier: int) -> void:
+	if not player_node:
+		return
+	# Place the trader a couple of tiles to the right of the player
+	var spawn_pos := player_node.global_position + Vector2(CELL_SIZE * 2.5, 0.0)
+	_active_traders.append({"world_pos": spawn_pos, "tier": tier, "pulse": 0.0})
+	EventBus.ore_mined_popup.emit(0, "Wandering Trader!")
+
+func _get_nearby_trader() -> Dictionary:
+	if not player_node:
+		return {}
+	for trader in _active_traders:
+		if (player_node.global_position - trader["world_pos"]).length() <= TRADER_INTERACT_RADIUS:
+			return trader
+	return {}
+
+func _show_trader_shop(trader: Dictionary) -> void:
+	_current_trader = trader
+	_trader_shop_visible = true
+
+	const VW: int = 1280
+	const VH: int = 720
+	const PANEL_W: int = 480
+	const PX: int = (VW - PANEL_W) / 2
+
+	var tier: int = trader.get("tier", 1)
+	var available_items: Array = []
+	for item in TRADER_ITEMS:
+		if item["tier"] <= tier:
+			available_items.append(item)
+
+	var panel_h: int = 120 + available_items.size() * 54 + 54
+	var py: int = (VH - panel_h) / 2
+
+	_trader_shop_layer = CanvasLayer.new()
+	_trader_shop_layer.layer = 10
+	add_child(_trader_shop_layer)
+
+	var dim := ColorRect.new()
+	dim.position = Vector2.ZERO
+	dim.size = Vector2(VW, VH)
+	dim.color = Color(0.0, 0.0, 0.0, 0.72)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_trader_shop_layer.add_child(dim)
+
+	var border := ColorRect.new()
+	border.position = Vector2(PX - 3, py - 3)
+	border.size = Vector2(PANEL_W + 6, panel_h + 6)
+	border.color = Color(0.85, 0.65, 0.10, 1.0)
+	_trader_shop_layer.add_child(border)
+
+	var panel := ColorRect.new()
+	panel.position = Vector2(PX, py)
+	panel.size = Vector2(PANEL_W, panel_h)
+	panel.color = Color(0.08, 0.06, 0.03, 0.97)
+	_trader_shop_layer.add_child(panel)
+
+	var title := Label.new()
+	title.text = "Wandering Trader  —  Tier %d" % tier
+	title.position = Vector2(PX, py + 10)
+	title.size = Vector2(PANEL_W, 30)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 18)
+	title.modulate = Color(1.0, 0.85, 0.20)
+	_trader_shop_layer.add_child(title)
+
+	var minerals_label := Label.new()
+	minerals_label.text = "Run Minerals: %d" % GameManager.run_mineral_currency
+	minerals_label.position = Vector2(PX, py + 42)
+	minerals_label.size = Vector2(PANEL_W, 22)
+	minerals_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	minerals_label.modulate = Color(1.0, 0.85, 0.2)
+	_trader_shop_layer.add_child(minerals_label)
+
+	const BTN_W: int = PANEL_W - 60
+	const BTN_X: int = PX + 30
+	const BTN_H: int = 44
+	var btn_y := py + 78
+	for item in available_items:
+		var btn := Button.new()
+		btn.text = "%s  —  %s  (%d minerals)" % [item["label"], item["desc"], item["cost"]]
+		btn.position = Vector2(BTN_X, btn_y)
+		btn.size = Vector2(BTN_W, BTN_H)
+		var item_key: String = item["key"]
+		btn.pressed.connect(_trader_purchase.bind(item_key))
+		_trader_shop_layer.add_child(btn)
+		btn_y += BTN_H + 10
+
+	var close_btn := Button.new()
+	close_btn.text = "Farewell"
+	close_btn.position = Vector2(BTN_X, btn_y + 4)
+	close_btn.size = Vector2(BTN_W, BTN_H)
+	close_btn.pressed.connect(_close_trader_shop)
+	_trader_shop_layer.add_child(close_btn)
+
+func _close_trader_shop() -> void:
+	if _trader_shop_layer:
+		_trader_shop_layer.queue_free()
+		_trader_shop_layer = null
+	_trader_shop_visible = false
+	_current_trader = {}
+
+func _trader_purchase(item_key: String) -> void:
+	var item_def: Dictionary = {}
+	for item in TRADER_ITEMS:
+		if item["key"] == item_key:
+			item_def = item
+			break
+	if item_def.is_empty():
+		return
+
+	var cost: int = item_def["cost"]
+	if GameManager.run_mineral_currency < cost:
+		EventBus.ore_mined_popup.emit(0, "Not enough minerals")
+		return
+
+	match item_key:
+		"fuel":
+			GameManager.run_mineral_currency -= cost
+			GameManager.restore_fuel(50)
+			EventBus.ore_mined_popup.emit(0, "Fuel Pack!")
+		"repair":
+			if player_node and player_node.is_at_max_health():
+				EventBus.ore_mined_popup.emit(0, "Already at full HP")
+				return
+			GameManager.run_mineral_currency -= cost
+			player_node.heal(1)
+			EventBus.ore_mined_popup.emit(0, "Carapace Patched!")
+		"shroom":
+			GameManager.run_mineral_currency -= cost
+			_shroom_charges += 12
+			EventBus.ore_mined_popup.emit(0, "Mining Shroom!")
+		"compass":
+			GameManager.run_mineral_currency -= cost
+			_lucky_compass_active = true
+			EventBus.ore_mined_popup.emit(0, "Lucky Compass!")
+		"map":
+			GameManager.run_mineral_currency -= cost
+			_ancient_map_active = true
+			EventBus.ore_mined_popup.emit(0, "Ancient Map!")
+
+	EventBus.minerals_changed.emit(GameManager.run_mineral_currency)
+	SoundManager.play_drill_sound()
+	_close_trader_shop()
+	# Re-open with updated mineral count
+	if _current_trader.size() == 0:
+		_current_trader = _get_nearby_trader()
+	if _current_trader.size() > 0:
+		_show_trader_shop(_current_trader)

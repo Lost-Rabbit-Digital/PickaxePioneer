@@ -37,7 +37,7 @@ func _ready() -> void:
 	EventBus.player_health_changed.emit(health_component.current_health, health_component.max_health)
 
 func _physics_process(delta: float) -> void:
-	if not mining_level or mining_level._game_over or mining_level._hub_visible or mining_level._fuel_shop_visible:
+	if not mining_level or mining_level._game_over or mining_level._hub_visible or mining_level._fuel_shop_visible or mining_level._trader_shop_visible:
 		return
 
 	# Gravity

@@ -10,6 +10,9 @@ extends Control
 var carapace_cost: int = 50
 var legs_cost: int = 50
 var mandibles_cost: int = 50
+var mineral_sense_cost: int = 75
+
+var _sense_button: Button
 
 var welcome_lines: Array[String] = [
 	"Welcome back, worker!",
@@ -26,8 +29,14 @@ func _ready() -> void:
 	hull_button.pressed.connect(_on_carapace_pressed)
 	engine_button.pressed.connect(_on_legs_pressed)
 	drill_button.pressed.connect(_on_mandibles_pressed)
+
+	# Dynamically add Mineral Sense (Sonar Ping) upgrade button
+	_sense_button = Button.new()
+	$Panel/VBoxContainer.add_child(_sense_button)
+	_sense_button.pressed.connect(_on_mineral_sense_pressed)
+
 	_update_ui()
-	
+
 	# Rotate dialogue
 	_update_dialogue()
 	var timer = Timer.new()
@@ -46,13 +55,24 @@ func _update_ui() -> void:
 	]
 
 	var current_fuel_cap := GameManager.get_max_fuel()
-	engine_button.text = "Strengthen Legs Lv%d — Max Fuel: %d → %d (%d Minerals)" % [
-		GameManager.legs_level, current_fuel_cap, current_fuel_cap + 25, legs_cost
+	var current_speed := GameManager.get_max_speed()
+	engine_button.text = "Strengthen Legs Lv%d — Fuel: %d→%d, Speed: %.0f→%.0f (%d Minerals)" % [
+		GameManager.legs_level, current_fuel_cap, current_fuel_cap + 25,
+		current_speed, current_speed + 30.0, legs_cost
 	]
 
 	var current_power := GameManager.get_mandibles_power()
 	drill_button.text = "Sharpen Mandibles Lv%d — Mining Power: %d → %d (%d Minerals)" % [
 		GameManager.mandibles_level, current_power, current_power + 3, mandibles_cost
+	]
+
+	var sense_level := GameManager.mineral_sense_level
+	var sense_radius := GameManager.get_sonar_ping_radius()
+	var sense_radius_next := sense_radius + 3.0
+	var sense_fuel := GameManager.get_sonar_ping_fuel_cost()
+	var sense_fuel_next := maxi(3, sense_fuel - 2)
+	_sense_button.text = "Mineral Sense (Sonar Ping) Lv%d — Radius: %.0f→%.0f tiles, Fuel: %d→%d (%d Minerals)" % [
+		sense_level, sense_radius, sense_radius_next, sense_fuel, sense_fuel_next, mineral_sense_cost
 	]
 
 	info_label.text = "Minerals: %d" % GameManager.mineral_currency
@@ -78,5 +98,13 @@ func _on_mandibles_pressed() -> void:
 		GameManager.mineral_currency -= mandibles_cost
 		GameManager.upgrade_mandibles()
 		mandibles_cost += 25
+		GameManager.save_game()
+		_update_ui()
+
+func _on_mineral_sense_pressed() -> void:
+	if GameManager.mineral_currency >= mineral_sense_cost:
+		GameManager.mineral_currency -= mineral_sense_cost
+		GameManager.upgrade_mineral_sense()
+		mineral_sense_cost += 50
 		GameManager.save_game()
 		_update_ui()
