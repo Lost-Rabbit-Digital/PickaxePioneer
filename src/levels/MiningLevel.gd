@@ -214,6 +214,9 @@ var _tile_hits: Dictionary = {}
 # Per-tile white impact flash (key: Vector2i, value: alpha 0-1, fades in _process)
 var _flash_cells: Dictionary = {}
 
+# Exit station pulse animation time (seconds, increments every frame)
+var _exit_pulse_time: float = 0.0
+
 @onready var player_node = $PlayerProbe
 @onready var pause_menu = $PauseMenu
 
@@ -403,17 +406,24 @@ func _draw() -> void:
 
 			var tile_rect := Rect2(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
 
-			# Exit station gets custom rendering (green square + white border + EXIT label)
+			# Exit station gets custom rendering (pulsing green square + border + EXIT label)
 			if tile == TileType.EXIT_STATION:
-				draw_rect(tile_rect, Color(0.15, 0.55, 0.15))
+				var pulse: float = sin(_exit_pulse_time * 3.0) * 0.5 + 0.5  # 0.0 → 1.0
+				draw_rect(tile_rect, Color(0.10 + pulse * 0.10, 0.40 + pulse * 0.20, 0.10 + pulse * 0.10))
+				var border_alpha := 0.55 + pulse * 0.45
 				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
-					Color.WHITE, false, 2.0)
+					Color(border_alpha, border_alpha, border_alpha), false, 2.0)
+				# Outer glow halo at pulse peak
+				if pulse > 0.6:
+					var glow_alpha: float = (pulse - 0.6) / 0.4 * 0.35
+					draw_rect(Rect2(col * CELL_SIZE - 3, row * CELL_SIZE - 3, CELL_SIZE + 6, CELL_SIZE + 6),
+						Color(0.20, 0.90, 0.20, glow_alpha), false, 3.0)
 				var exit_font := ThemeDB.fallback_font
 				draw_string(exit_font,
 					Vector2(col * CELL_SIZE, row * CELL_SIZE + CELL_SIZE / 2 + 5),
 					"EXIT",
 					HORIZONTAL_ALIGNMENT_CENTER, CELL_SIZE, 13,
-					Color(0.4, 1.0, 0.4))
+					Color(0.35 + pulse * 0.45, 1.0, 0.35 + pulse * 0.20))
 				continue
 
 			# Draw the block sprite, fall back to color if texture not loaded
@@ -489,6 +499,10 @@ func _try_interact() -> void:
 		_show_fuel_station_shop()
 
 func _process(delta: float) -> void:
+	# Advance exit station pulse regardless of game state
+	_exit_pulse_time += delta
+	queue_redraw()
+
 	# Fade impact flashes — runs regardless of hub/game-over state
 	if _flash_cells.size() > 0:
 		var to_remove: Array = []
