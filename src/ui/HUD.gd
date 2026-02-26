@@ -27,6 +27,15 @@ var _milestone_label: Label
 var _milestone_tween: Tween
 var _next_milestone: int = 20
 
+# Surface exit hint — bottom-right, pulses when player is on surface
+var _exit_hint_label: Label
+var _exit_hint_panel: ColorRect
+var _exit_hint_tween: Tween
+
+# Low HP danger warning — bottom-centre, pulses red when HP == 1
+var _low_hp_warning: Label
+var _low_hp_tween: Tween
+
 # Ore colour mapping for the earnings popup
 const ORE_COLORS: Dictionary = {
 	"Copper":      Color(0.80, 0.50, 0.20),
@@ -106,6 +115,32 @@ func _ready() -> void:
 	_milestone_label.add_theme_font_size_override("font_size", 18)
 	$Control.add_child(_milestone_label)
 
+	# Surface exit hint — bottom-right corner, visible when on surface
+	_exit_hint_panel = ColorRect.new()
+	_exit_hint_panel.color = Color(0.0, 0.0, 0.0, 0.55)
+	_exit_hint_panel.position = Vector2(1044, 650)
+	_exit_hint_panel.size = Vector2(228, 32)
+	_exit_hint_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_exit_hint_panel.modulate.a = 0.0
+	$Control.add_child(_exit_hint_panel)
+
+	_exit_hint_label = Label.new()
+	_exit_hint_label.text = "Move right to exit  →"
+	_exit_hint_label.position = Vector2(1048, 655)
+	_exit_hint_label.custom_minimum_size = Vector2(218, 22)
+	_exit_hint_label.modulate = Color(0.30, 1.0, 0.40, 0.0)  # Green, starts invisible
+	_exit_hint_label.add_theme_font_size_override("font_size", 14)
+	$Control.add_child(_exit_hint_label)
+
+	# Low HP danger warning — bottom-centre above the fuel warning, pulses red at 1 HP
+	_low_hp_warning = Label.new()
+	_low_hp_warning.position = Vector2(490, 628)
+	_low_hp_warning.custom_minimum_size = Vector2(300, 24)
+	_low_hp_warning.text = "! CRITICAL DAMAGE — return to surface !"
+	_low_hp_warning.modulate = Color(1.0, 0.10, 0.05, 0.0)  # Red, starts invisible
+	_low_hp_warning.add_theme_font_size_override("font_size", 14)
+	$Control.add_child(_low_hp_warning)
+
 	# Initialize hearts immediately since PlayerProbe emits before HUD connects
 	var max_hp := GameManager.get_max_health()
 	_on_health_changed(max_hp, max_hp)
@@ -143,12 +178,44 @@ func _on_health_changed(current: int, max_hp: int) -> void:
 		health_container.add_child(square)
 		health_squares.append(square)
 
+	# Flash danger warning when critically low HP
+	if current == 1:
+		if not _low_hp_tween or not _low_hp_tween.is_running():
+			_low_hp_tween = create_tween()
+			_low_hp_tween.set_loops()
+			_low_hp_tween.tween_property(_low_hp_warning, "modulate:a", 1.0, 0.25)
+			_low_hp_tween.tween_interval(0.1)
+			_low_hp_tween.tween_property(_low_hp_warning, "modulate:a", 0.1, 0.25)
+			_low_hp_tween.tween_interval(0.1)
+	else:
+		if _low_hp_tween:
+			_low_hp_tween.kill()
+			_low_hp_tween = null
+		_low_hp_warning.modulate.a = 0.0
+
 func _on_depth_changed(depth_rows: int) -> void:
 	if depth_rows <= 0:
 		depth_label.text = "Surface"
 		depth_label.modulate = Color(0.6, 0.85, 1.0, 1.0)
 		_next_milestone = 20  # Reset milestone tracking each time player surfaces
+		# Show pulsing exit hint to guide player toward the EXIT station
+		if not _exit_hint_tween or not _exit_hint_tween.is_running():
+			_exit_hint_tween = create_tween()
+			_exit_hint_tween.set_loops()
+			_exit_hint_tween.tween_property(_exit_hint_label, "modulate:a", 1.0, 0.5)
+			_exit_hint_tween.parallel().tween_property(_exit_hint_panel, "modulate:a", 1.0, 0.5)
+			_exit_hint_tween.tween_interval(1.2)
+			_exit_hint_tween.tween_property(_exit_hint_label, "modulate:a", 0.30, 0.5)
+			_exit_hint_tween.parallel().tween_property(_exit_hint_panel, "modulate:a", 0.30, 0.5)
+			_exit_hint_tween.tween_interval(0.4)
 	else:
+		# Underground — hide exit hint
+		if _exit_hint_tween:
+			_exit_hint_tween.kill()
+			_exit_hint_tween = null
+		_exit_hint_label.modulate.a = 0.0
+		_exit_hint_panel.modulate.a = 0.0
+
 		depth_label.text = "Depth: %dm" % depth_rows
 		# Colour shifts from light blue → orange-red as player goes deeper
 		var t: float = clampf(float(depth_rows) / 80.0, 0.0, 1.0)
