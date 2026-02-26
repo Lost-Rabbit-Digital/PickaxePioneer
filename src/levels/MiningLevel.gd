@@ -928,7 +928,7 @@ func _update_interact_prompt() -> void:
 			return
 	# Check adjacent tiles for refuel station
 	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
-		var check := player_node.get_grid_pos() + offset
+		var check: Vector2i = player_node.get_grid_pos() + offset
 		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
 			if grid[check.x][check.y] == TileType.REFUEL_STATION:
 				var key_name := _get_interact_key_name()
@@ -963,7 +963,7 @@ func _try_interact() -> void:
 		return
 	# Check current + adjacent tiles for refuel station
 	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
-		var check := player_node.get_grid_pos() + offset
+		var check: Vector2i = player_node.get_grid_pos() + offset
 		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
 			if grid[check.x][check.y] == TileType.REFUEL_STATION:
 				_show_fuel_station_shop()
