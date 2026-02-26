@@ -55,8 +55,10 @@ func _update_ui() -> void:
 	]
 
 	var current_fuel_cap := GameManager.get_max_fuel()
-	engine_button.text = "Strengthen Legs Lv%d — Max Fuel: %d → %d (%d Minerals)" % [
-		GameManager.legs_level, current_fuel_cap, current_fuel_cap + 25, legs_cost
+	var current_speed := GameManager.get_max_speed()
+	engine_button.text = "Strengthen Legs Lv%d — Fuel: %d→%d, Speed: %.0f→%.0f (%d Minerals)" % [
+		GameManager.legs_level, current_fuel_cap, current_fuel_cap + 25,
+		current_speed, current_speed + 30.0, legs_cost
 	]
 
 	var current_power := GameManager.get_mandibles_power()

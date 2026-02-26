@@ -52,11 +52,11 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 
 ### Overworld Polish
 - [ ] **Populate overworld settlement nodes** — `settlement_node_3` and `settlement_node_4` exist but lead nowhere. They should launch a small scene (trader encounter, rest stop, side quest) appropriate to their difficulty rating.
-- [ ] **Wandering Trader at depth milestone rows** — appears at rows 32, 64, 96, 128 during a mine run, offering rare items and upgrades. Turns depth goals into in-world events. See docs/mining_game_design_lessons.md §2.
-- [ ] **Rename `NodeType.ASTEROID` to `NodeType.MINE`** and update mine node visuals — currently uses a Godot editor icon as a placeholder sprite.
+- [x] **Wandering Trader at depth milestone rows** — appears at rows 32, 64, 96, 128 during a mine run, offering tier-scaled items (Fuel Cache, Carapace Patch, Mining Shroom, Lucky Compass, Ancient Map). Turns depth goals into in-world events. See docs/mining_game_design_lessons.md §2.
+- [x] **Rename `NodeType.ASTEROID` to `NodeType.MINE`** and update mine node visuals — now uses the ant spritesheet with a gold tint instead of the Godot editor icon.
 
 ### Known Display Bug
-- [ ] **Fix Legs upgrade description in UpgradeMenu** — button text only mentions fuel capacity increase. It also increases move speed (+30 px/s per level). Both effects should be shown.
+- [x] **Fix Legs upgrade description in UpgradeMenu** — button now shows both fuel capacity and move speed increases.
 
 ---
 
@@ -101,7 +101,7 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 
 - [ ] **Extract MiningLevel.gd into focused subsystems** — the file is approaching 1,200 lines. Mining logic, rendering, UI setup, and surface hub are all in one class. Priority extraction targets: `SmeltingSystem`, `FossilSystem`, `SonarSystem`, each as standalone scripts called from MiningLevel.
 - [ ] **Activate the existing StateMachine component in MiningLevel** — `StateMachine.gd` and `State.gd` exist but MiningLevel uses ad-hoc `_hub_visible / _game_over / _fuel_shop_visible` flags instead. Migrating would clean up the `_process` guard chain significantly.
-- [ ] **Fix the "No fuel for ping" popup** — currently emits `ore_mined_popup(0, "No fuel for ping")` which shows "+0 No fuel for ping". It should use a dedicated HUD notification path, not the mineral popup system.
+- [x] **Fix the "No fuel for ping" popup** — HUD now omits the "+0" prefix when `amount == 0`, treating it as a pure notification string.
 
 ---
 

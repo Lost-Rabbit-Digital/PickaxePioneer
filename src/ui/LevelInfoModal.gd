@@ -37,7 +37,7 @@ func show_for_node(node: MapNode) -> void:
 			ore_types_label.visible = false
 			hazards_label.visible = false
 			enter_button.text = "Visit Colony"
-		MapNode.NodeType.ASTEROID:
+		MapNode.NodeType.MINE:
 			type_label.text = "[ Mine ]"
 			type_label.modulate = Color(1.0, 0.8, 0.3)
 			difficulty_label.visible = true
@@ -70,7 +70,7 @@ func _default_description(node: MapNode) -> String:
 	match node.node_type:
 		MapNode.NodeType.STATION:
 			return "Your home colony. Visit the shop to spend minerals on upgrades."
-		MapNode.NodeType.ASTEROID:
+		MapNode.NodeType.MINE:
 			return "A promising mining site. Dig deep to uncover rare ores."
 	return "An unexplored location."
 

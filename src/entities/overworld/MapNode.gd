@@ -5,7 +5,7 @@ extends Area2D
 
 enum NodeType {
 	EMPTY,
-	ASTEROID,
+	MINE,      # was ASTEROID — ordinal kept at 1 so existing .tscn data is unchanged
 	STATION
 }
 
@@ -28,11 +28,13 @@ func _ready() -> void:
 
 func _update_visuals() -> void:
 	label.text = location_name
-	
+
 	match node_type:
-		NodeType.ASTEROID:
-			sprite.texture = preload("res://assets/social_icons/godot_icon_normal.png")
-			sprite.scale = Vector2(0.5, 0.5) # Adjust scale if needed
+		NodeType.MINE:
+			# Use the ant spritesheet as the mine icon (same asset as the player)
+			sprite.texture = preload("res://assets/creatures/red_ant_spritesheet.png")
+			sprite.scale = Vector2(2.5, 2.5)
+			sprite.modulate = Color(1.0, 0.75, 0.20)  # warm gold tint for mines
 		NodeType.STATION:
 			sprite.modulate = Color.CYAN
 		NodeType.EMPTY:
@@ -42,12 +44,10 @@ var neighbors: Array[MapNode] = []
 
 func highlight(active: bool) -> void:
 	if active:
-		sprite.scale = Vector2(1.2, 1.2)
+		sprite.scale = Vector2(1.2, 1.2) if node_type != NodeType.MINE else Vector2(3.0, 3.0)
 		label.modulate = Color.YELLOW
 	else:
-		sprite.scale = Vector2(1.0, 1.0)
-		if node_type == NodeType.ASTEROID:
-			sprite.scale = Vector2(0.5, 0.5)
+		sprite.scale = Vector2(1.0, 1.0) if node_type != NodeType.MINE else Vector2(2.5, 2.5)
 		label.modulate = Color.WHITE
 
 func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
