@@ -56,7 +56,31 @@ const TILE_NAMES: Dictionary = {
 	TileType.ORE_GEM_DEEP:    "Deep Gem",
 	TileType.FUEL_NODE:       "Fuel",
 	TileType.FUEL_NODE_FULL:  "Fuel",
+	TileType.EXPLOSIVE:       "Explosive",
+	TileType.EXPLOSIVE_ARMED: "Armed Explosive",
+	TileType.LAVA:            "Lava",
+	TileType.LAVA_FLOW:       "Lava Flow",
+	TileType.REFUEL_STATION:  "Refuel Station",
+	TileType.SURFACE:         "Surface",
+	TileType.EXIT_STATION:    "Exit Station",
 }
+
+# Tile types that yield minerals when mined — hazards and stations never award minerals
+const MINEABLE_TILES: Array = [
+	TileType.SURFACE_GRASS,
+	TileType.DIRT,
+	TileType.DIRT_DARK,
+	TileType.STONE,
+	TileType.STONE_DARK,
+	TileType.ORE_COPPER,
+	TileType.ORE_COPPER_DEEP,
+	TileType.ORE_IRON,
+	TileType.ORE_IRON_DEEP,
+	TileType.ORE_GOLD,
+	TileType.ORE_GOLD_DEEP,
+	TileType.ORE_GEM,
+	TileType.ORE_GEM_DEEP,
+]
 
 const TILE_COLORS: Dictionary = {
 	TileType.DIRT:           Color(0.45, 0.28, 0.12),  # Brown
@@ -205,6 +229,12 @@ var _fuel_shop_btn_repair: Button
 # Depth tracking — rows below the surface
 var _last_depth: int = 0
 
+# Depth zone tracking (index into DEPTH_ZONE_ROWS; -1 = not yet initialised)
+var _current_zone_idx: int = -1
+
+# Noise generator for ore vein clustering
+var _ore_noise: FastNoiseLite
+
 # Set to true when the game-over overlay is shown to block further input
 var _game_over: bool = false
 
@@ -238,6 +268,12 @@ func _ready() -> void:
 	# Use nearest-neighbor filtering for crisp pixel-art tile textures
 	texture_filter = TEXTURE_FILTER_NEAREST
 
+	# Initialise ore-vein noise (new seed every run for variety)
+	_ore_noise = FastNoiseLite.new()
+	_ore_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	_ore_noise.frequency = 0.06
+	_ore_noise.seed = randi()
+
 	# Load individual block textures from assets/blocks/
 	_load_tile_textures()
 
@@ -264,6 +300,18 @@ func _ready() -> void:
 
 const SURFACE_ROWS: int = 3  # Top 3 rows are surface
 
+# Named depth zones — thresholds are rows below SURFACE_ROWS (i.e. depth_row values).
+# These align with the ore-composition inflection points in _random_tile().
+const DEPTH_ZONE_ROWS   = [0,   16,              41,            71,          101             ]
+const DEPTH_ZONE_NAMES  = ["Topsoil", "Limestone Belt", "Iron Mantle", "Gold Seam", "Crystal Caverns"]
+const DEPTH_ZONE_COLORS = [
+	Color(0.55, 0.40, 0.20),  # Topsoil — warm brown
+	Color(0.65, 0.60, 0.50),  # Limestone Belt — grey-tan
+	Color(0.45, 0.50, 0.55),  # Iron Mantle — cool grey
+	Color(0.80, 0.70, 0.15),  # Gold Seam — golden
+	Color(0.30, 0.65, 0.85),  # Crystal Caverns — icy blue
+]
+
 func _generate_grid() -> void:
 	grid = []
 	for col in range(GRID_COLS):
@@ -277,7 +325,7 @@ func _generate_grid() -> void:
 				column.append(TileType.EMPTY)
 			else:
 				# Mining area — ore richness increases with depth
-				column.append(_random_tile(row))
+				column.append(_random_tile(col, row))
 		grid.append(column)
 
 	# Place refuel station on surface (middle area)
@@ -300,20 +348,23 @@ func _generate_grid() -> void:
 # Depth-weighted random tile: ore density increases dramatically with depth.
 # At the surface ~25% of tiles are ore; at the deepest rows ~55% are ore.
 # Copper/iron dominate shallow layers; gold/gem dominate deep layers.
-func _random_tile(row: int = SURFACE_ROWS) -> TileType:
+# Ore spawns are biased by FastNoiseLite so veins cluster naturally rather than
+# appearing as isolated single tiles (high-noise areas are ore-rich).
+func _random_tile(col: int, row: int) -> TileType:
 	var r := randf()
 	# Depth factor: 0.0 at surface, 1.0 at bottom row
 	var depth := float(row - SURFACE_ROWS) / float(GRID_ROWS - SURFACE_ROWS)
 
 	# Hazard filtering: only spawn hazard types configured for this location.
-	# Hazard budget (10% base + 5%*depth) is split 60% explosives / 40% lava.
-	# Disabling a hazard type removes its share from the budget (those probability
-	# slots fall through to ores/stone, making the mine safer but not emptier).
+	# Hazard budget (8% base + 20%*depth) — much steeper than before so deep runs
+	# have ~28% hazard density, genuinely reshaping accessible paths.
+	# Budget is split 60% explosives / 40% lava.
+	# Disabling a hazard type removes its share from the budget.
 	var allowed_hazards: Array = GameManager.allowed_hazard_types
 	var explosive_ok := allowed_hazards.is_empty() or allowed_hazards.has("Explosives")
 	var lava_ok := allowed_hazards.is_empty() or allowed_hazards.has("Lava")
 
-	var base_hazard := 0.10 + depth * 0.05
+	var base_hazard := 0.08 + depth * 0.20
 	var explosive_bias := base_hazard * 0.6 if explosive_ok else 0.0
 	var lava_bias      := base_hazard * 0.4 if lava_ok      else 0.0
 	var total_hazard   := explosive_bias + lava_bias
@@ -339,12 +390,24 @@ func _random_tile(row: int = SURFACE_ROWS) -> TileType:
 	var gem_chance    := 0.02 + depth * 0.18
 
 	# Restrict spawnable ores to the set shown on the overworld map for this location.
+	# An empty allowed list means "unrestricted" (e.g. free-roam / debug mode).
 	var allowed: Array = GameManager.allowed_ore_types
 	if allowed.size() > 0:
 		if not allowed.has("Copper"): copper_chance = 0.0
 		if not allowed.has("Iron"):   iron_chance   = 0.0
 		if not allowed.has("Gold"):   gold_chance   = 0.0
 		if not allowed.has("Gem"):    gem_chance    = 0.0
+
+	# Noise-based vein clustering: sample a 2-D simplex value and use it to bias
+	# ore density.  High-noise cells (~top 40%) are ore-rich; low-noise cells are
+	# stone/dirt-heavy.  The multiplier ranges 0.3 → 1.7 so the expected ore
+	# fraction across the whole grid is unchanged.
+	var noise_val: float = (_ore_noise.get_noise_2d(float(col), float(row)) + 1.0) * 0.5  # 0..1
+	var ore_mult: float  = 0.3 + noise_val * 1.4
+	copper_chance = maxf(0.0, copper_chance * ore_mult)
+	iron_chance   = maxf(0.0, iron_chance   * ore_mult)
+	gold_chance   = maxf(0.0, gold_chance   * ore_mult)
+	gem_chance    = maxf(0.0, gem_chance    * ore_mult)
 
 	# Deeper tiles are more likely to be "deep" (higher-quality) ore variants
 	var deep_ratio := 0.30 + depth * 0.50   # 30% deep at surface → 80% at bottom
@@ -428,7 +491,11 @@ func _draw() -> void:
 	if max_row >= SURFACE_ROWS:
 		var dirt_top := maxi(min_row, SURFACE_ROWS) * CELL_SIZE
 		var dirt_bottom := (max_row + 1) * CELL_SIZE
-		draw_rect(Rect2(bg_left, dirt_top, bg_width, dirt_bottom - dirt_top), Color(0.08, 0.06, 0.04))
+		# Lerp background from warm dark-brown (shallow) to near-black with a red tint (deep)
+		var mid_row: float = float(min_row + max_row) * 0.5
+		var view_depth_t: float = clamp(float(mid_row - SURFACE_ROWS) / float(GRID_ROWS - SURFACE_ROWS), 0.0, 1.0)
+		var bg_color := Color(0.08, 0.06, 0.04).lerp(Color(0.10, 0.03, 0.05), view_depth_t)
+		draw_rect(Rect2(bg_left, dirt_top, bg_width, dirt_bottom - dirt_top), bg_color)
 
 	# ---- Tile sprites ----
 	for col in range(min_col, max_col + 1):
@@ -669,7 +736,12 @@ func _try_move(dc: int, dr: int) -> void:
 					_damage_player(1)
 					queue_redraw()
 					return
-				if not GameManager.consume_fuel(1):
+				# Fuel cost scales with depth tier: 1 fuel shallow, 2 mid, 3 deep
+				var entry_depth_row := new_row - SURFACE_ROWS
+				var entry_fuel_cost: int = 1
+				if entry_depth_row > 70:   entry_fuel_cost = 3
+				elif entry_depth_row > 40: entry_fuel_cost = 2
+				if not GameManager.consume_fuel(entry_fuel_cost):
 					_on_out_of_fuel()
 					return
 				# Don't move player until the target tile is cleared
@@ -685,7 +757,10 @@ func _try_move(dc: int, dr: int) -> void:
 					is_on_surface = false
 				else:
 					var pos_key := Vector2i(new_col, new_row)
-					var tile_hp: int = TILE_HP.get(new_tile, 6)
+					# Progressive hardness: same tile type is tougher at greater depth
+					var depth_row_s := new_row - SURFACE_ROWS
+					var hardness_mult := 1.0 + (float(depth_row_s) / float(GRID_ROWS)) * 1.5
+					var tile_hp: int = roundi(TILE_HP.get(new_tile, 6) * hardness_mult)
 					var prev_damage: int = _tile_damage.get(pos_key, 0)
 					var hits_so_far: int = _tile_hits.get(pos_key, 0)
 					var new_damage: int = prev_damage + GameManager.get_mandibles_power()
@@ -698,10 +773,12 @@ func _try_move(dc: int, dr: int) -> void:
 						_tile_damage.erase(pos_key)
 						_tile_hits.erase(pos_key)
 						_mine_cell(new_col, new_row)
-						var minerals: int = TILE_MINERALS.get(new_tile, 1)
-						GameManager.add_currency(minerals)
-						EventBus.minerals_earned.emit(minerals)
-						EventBus.ore_mined_popup.emit(minerals, TILE_NAMES.get(new_tile, "Mineral"))
+						# Only award minerals for actual mineable tiles — not hazards or stations
+						if new_tile in MINEABLE_TILES:
+							var minerals: int = TILE_MINERALS.get(new_tile, 1)
+							GameManager.add_currency(minerals)
+							EventBus.minerals_earned.emit(minerals)
+							EventBus.ore_mined_popup.emit(minerals, TILE_NAMES.get(new_tile, "Mineral"))
 						SoundManager.play_drill_sound()
 						player_grid_pos = Vector2i(new_col, new_row)
 						is_on_surface = false
@@ -726,20 +803,24 @@ func _try_move(dc: int, dr: int) -> void:
 			return
 		return
 
-	# Below surface: hazard checks first
-	if tile == TileType.LAVA:
+	# Below surface: hazard checks first — handle both normal and variant forms
+	if tile == TileType.LAVA or tile == TileType.LAVA_FLOW:
 		_damage_player(1)
 		return
 
-	if tile == TileType.EXPLOSIVE:
+	if tile == TileType.EXPLOSIVE or tile == TileType.EXPLOSIVE_ARMED:
 		_mine_cell(new_col, new_row)
 		_explode_area(new_col, new_row)
 		_damage_player(1)
 		queue_redraw()
 		return
 
-	# Fuel cost for underground movement
-	if not GameManager.consume_fuel(1):
+	# Fuel cost scales with depth tier: 1 fuel shallow, 2 mid, 3 deep
+	var move_depth_row := player_grid_pos.y - SURFACE_ROWS
+	var move_fuel_cost: int = 1
+	if move_depth_row > 70:   move_fuel_cost = 3
+	elif move_depth_row > 40: move_fuel_cost = 2
+	if not GameManager.consume_fuel(move_fuel_cost):
 		_on_out_of_fuel()
 		return
 
@@ -768,7 +849,10 @@ func _try_move(dc: int, dr: int) -> void:
 	else:
 		# Minable tile: apply mandibles damage; move in only when destroyed
 		var pos_key := Vector2i(new_col, new_row)
-		var tile_hp: int = TILE_HP.get(tile, 6)
+		# Progressive hardness: same tile type is tougher at greater depth
+		var depth_row_u := new_row - SURFACE_ROWS
+		var hardness_mult_u := 1.0 + (float(depth_row_u) / float(GRID_ROWS)) * 1.5
+		var tile_hp: int = roundi(TILE_HP.get(tile, 6) * hardness_mult_u)
 		var prev_damage: int = _tile_damage.get(pos_key, 0)
 		var hits_so_far: int = _tile_hits.get(pos_key, 0)
 		var new_damage: int = prev_damage + GameManager.get_mandibles_power()
@@ -781,10 +865,12 @@ func _try_move(dc: int, dr: int) -> void:
 			_tile_damage.erase(pos_key)
 			_tile_hits.erase(pos_key)
 			_mine_cell(new_col, new_row)
-			var minerals: int = TILE_MINERALS.get(tile, 1)
-			GameManager.add_currency(minerals)
-			EventBus.minerals_earned.emit(minerals)
-			EventBus.ore_mined_popup.emit(minerals, TILE_NAMES.get(tile, "Mineral"))
+			# Only award minerals for actual mineable tiles — not hazards or stations
+			if tile in MINEABLE_TILES:
+				var minerals: int = TILE_MINERALS.get(tile, 1)
+				GameManager.add_currency(minerals)
+				EventBus.minerals_earned.emit(minerals)
+				EventBus.ore_mined_popup.emit(minerals, TILE_NAMES.get(tile, "Mineral"))
 			SoundManager.play_drill_sound()
 			player_grid_pos = Vector2i(new_col, new_row)
 			player_moved = true
@@ -906,6 +992,49 @@ func _update_depth() -> void:
 	if depth != _last_depth:
 		_last_depth = depth
 		EventBus.depth_changed.emit(depth)
+		_check_zone_transition(depth)
+
+func _check_zone_transition(depth_row: int) -> void:
+	# Find which zone we're in by walking backwards through the thresholds
+	var new_zone_idx := 0
+	for i in range(DEPTH_ZONE_ROWS.size() - 1, -1, -1):
+		if depth_row >= DEPTH_ZONE_ROWS[i]:
+			new_zone_idx = i
+			break
+	if new_zone_idx != _current_zone_idx:
+		_current_zone_idx = new_zone_idx
+		if depth_row > 0:  # No banner on the very first surface row
+			_show_zone_banner(DEPTH_ZONE_NAMES[new_zone_idx], DEPTH_ZONE_COLORS[new_zone_idx])
+
+func _show_zone_banner(zone_name: String, color: Color) -> void:
+	const VW: int = 1280
+	const VH: int = 720
+	const BANNER_H: int = 52
+
+	var layer := CanvasLayer.new()
+	layer.layer = 15
+	add_child(layer)
+
+	var banner := ColorRect.new()
+	banner.size = Vector2(VW, BANNER_H)
+	banner.position = Vector2(0, VH / 2 - BANNER_H / 2)
+	banner.color = Color(0.0, 0.0, 0.0, 0.78)
+	layer.add_child(banner)
+
+	var label := Label.new()
+	label.text = zone_name.to_upper()
+	label.size = Vector2(VW, BANNER_H)
+	label.position = Vector2(0, VH / 2 - BANNER_H / 2)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 26)
+	label.modulate = color
+	layer.add_child(label)
+
+	var tween := create_tween()
+	tween.tween_interval(1.6)
+	tween.tween_property(layer, "modulate:a", 0.0, 0.7)
+	tween.tween_callback(layer.queue_free)
 
 # ---------------------------------------------------------------------------
 # Surface Hub — the mine's shop/bank at the Exit Station
