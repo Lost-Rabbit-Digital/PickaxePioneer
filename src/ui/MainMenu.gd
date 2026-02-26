@@ -1,5 +1,7 @@
 extends Control
 
+const WISHLIST_URL = "https://lost-rabbit-digital.itch.io/pickaxe-pioneer"
+
 @onready var settings_panel: PanelContainer = $SettingsPanel
 @onready var master_slider: HSlider = $SettingsPanel/VBox/MasterRow/MasterSlider
 @onready var music_slider: HSlider = $SettingsPanel/VBox/MusicRow/MusicSlider
@@ -11,6 +13,7 @@ extends Control
 func _ready() -> void:
 	$VBoxContainer/StartButton.pressed.connect(_on_start_pressed)
 	$VBoxContainer/SettingsButton.pressed.connect(_on_settings_pressed)
+	$VBoxContainer/WishlistButton.pressed.connect(_on_wishlist_pressed)
 	$VBoxContainer/QuitButton.pressed.connect(_on_quit_pressed)
 	$SettingsPanel/VBox/CloseButton.pressed.connect(_on_settings_close_pressed)
 
@@ -37,6 +40,9 @@ func _on_quit_pressed() -> void:
 
 func _on_settings_pressed() -> void:
 	settings_panel.show()
+
+func _on_wishlist_pressed() -> void:
+	OS.shell_open(WISHLIST_URL)
 
 func _on_settings_close_pressed() -> void:
 	SettingsManager.save_settings()
