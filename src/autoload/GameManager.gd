@@ -16,6 +16,10 @@ var last_overworld_node_name: String = ""
 # Empty array means all ores can spawn (default behaviour).
 var allowed_ore_types: Array = []
 
+# Hazard types allowed to spawn in the current level instance (set from MapNode.hazard_types).
+# Empty array means all hazards can spawn (default behaviour).
+var allowed_hazard_types: Array = []
+
 # Fuel system
 var current_fuel: int = 100
 

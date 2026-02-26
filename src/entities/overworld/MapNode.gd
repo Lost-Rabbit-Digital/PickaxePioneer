@@ -15,6 +15,7 @@ enum NodeType {
 @export var description: String = ""
 @export var difficulty: int = 1
 @export var ore_types: Array = []
+@export var hazard_types: Array = []
 
 signal node_clicked(node: MapNode)
 
