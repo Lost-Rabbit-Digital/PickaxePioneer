@@ -1,10 +1,22 @@
-[gd_scene load_steps=3 format=3 uid="uid://c8x7k2q5y3z2"]
+[gd_scene load_steps=4 format=3 uid="uid://c8x7k2q5y3z2"]
 
 [ext_resource type="Script" path="res://src/entities/player/PlayerProbe.gd" id="1_probe"]
 [ext_resource type="Script" path="res://src/components/HealthComponent.gd" id="2_health"]
 
-[node name="PlayerProbe" type="Node"]
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
+size = Vector2(56, 60)
+
+[node name="PlayerProbe" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 1
 script = ExtResource("1_probe")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_player")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+scale = Vector2(4, 4)
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("2_health")

@@ -128,7 +128,7 @@ func _ready() -> void:
 	$Control.add_child(_exit_hint_panel)
 
 	_exit_hint_label = Label.new()
-	_exit_hint_label.text = "Move right to exit  →"
+	_exit_hint_label.text = "Walk right to exit  ->"
 	_exit_hint_label.position = Vector2(1048, 655)
 	_exit_hint_label.custom_minimum_size = Vector2(218, 22)
 	_exit_hint_label.modulate = Color(0.30, 1.0, 0.40, 0.0)  # Green, starts invisible
