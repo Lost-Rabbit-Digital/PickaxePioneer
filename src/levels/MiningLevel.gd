@@ -282,6 +282,12 @@ func _generate_grid() -> void:
 	for col in range(GRID_COLS - EXIT_COLS):
 		grid[col][SURFACE_ROWS] = TileType.SURFACE_GRASS
 
+	# Two rows of pure dirt directly below grass — no ores or stones spawn here
+	for col in range(GRID_COLS - EXIT_COLS):
+		grid[col][SURFACE_ROWS + 1] = TileType.DIRT
+	for col in range(GRID_COLS - EXIT_COLS):
+		grid[col][SURFACE_ROWS + 2] = TileType.DIRT
+
 # Depth-weighted random tile: ore density increases dramatically with depth.
 # At the surface ~25% of tiles are ore; at the deepest rows ~55% are ore.
 # Copper/iron dominate shallow layers; gold/gem dominate deep layers.
