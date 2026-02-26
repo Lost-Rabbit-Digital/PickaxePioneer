@@ -78,8 +78,6 @@ func _on_cancel_pressed() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
-	# Consume all input while modal is open
-	get_viewport().set_input_as_handled()
 	if event.is_action_pressed("ui_cancel"):
 		_on_cancel_pressed()
 	elif event.is_action_pressed("ui_accept"):
