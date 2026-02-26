@@ -296,9 +296,9 @@ func _ready() -> void:
 	camera.limit_right  = GRID_COLS * CELL_SIZE
 	camera.limit_bottom = GRID_ROWS * CELL_SIZE
 
-	# Place player at spawn (exit zone, on surface)
-	var spawn_col := GRID_COLS - 1
-	var spawn_row := SURFACE_ROWS - 1
+	# Place player at spawn (col 2, row 2 on surface)
+	var spawn_col := 2
+	var spawn_row := 2
 	player_node.global_position = Vector2(
 		spawn_col * CELL_SIZE + CELL_SIZE * 0.5,
 		spawn_row * CELL_SIZE + CELL_SIZE * 0.5
@@ -382,7 +382,7 @@ func _generate_grid() -> void:
 			if row < SURFACE_ROWS:
 				column.append(TileType.SURFACE)
 			elif col >= GRID_COLS - EXIT_COLS:
-				column.append(TileType.EMPTY)
+				column.append(_random_tile(col, row))
 			else:
 				column.append(_random_tile(col, row))
 		grid.append(column)
