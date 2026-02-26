@@ -40,9 +40,21 @@ func _update_dialogue() -> void:
 	dialogue_label.text = welcome_lines.pick_random()
 
 func _update_ui() -> void:
-	hull_button.text = "Harden Carapace Lv%d (%d Minerals)" % [GameManager.carapace_level, carapace_cost]
-	engine_button.text = "Strengthen Legs Lv%d (%d Minerals)" % [GameManager.legs_level, legs_cost]
-	drill_button.text = "Sharpen Mandibles Lv%d (%d Minerals)" % [GameManager.mandibles_level, mandibles_cost]
+	var current_hp := GameManager.get_max_health()
+	hull_button.text = "Harden Carapace Lv%d — Max HP: %d → %d (%d Minerals)" % [
+		GameManager.carapace_level, current_hp, current_hp + 1, carapace_cost
+	]
+
+	var current_fuel_cap := GameManager.get_max_fuel()
+	engine_button.text = "Strengthen Legs Lv%d — Max Fuel: %d → %d (%d Minerals)" % [
+		GameManager.legs_level, current_fuel_cap, current_fuel_cap + 25, legs_cost
+	]
+
+	var current_power := GameManager.get_mandibles_power()
+	drill_button.text = "Sharpen Mandibles Lv%d — Mining Power: %d → %d (%d Minerals)" % [
+		GameManager.mandibles_level, current_power, current_power + 3, mandibles_cost
+	]
+
 	info_label.text = "Minerals: %d" % GameManager.mineral_currency
 
 func _on_carapace_pressed() -> void:

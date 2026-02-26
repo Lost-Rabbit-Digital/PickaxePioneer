@@ -13,8 +13,10 @@ var run_mineral_currency: int = 0
 var last_overworld_node_name: String = ""
 
 # Fuel system
-var max_fuel: int = 100
 var current_fuel: int = 100
+
+func get_max_fuel() -> int:
+	return 100 + (legs_level * 25)
 
 # Upgrade levels
 var carapace_level: int = 0
@@ -61,9 +63,9 @@ func complete_run() -> void:
 
 func load_mining_level(scene_path: String = "") -> void:
 	run_mineral_currency = 0 # Reset run currency on entry
-	current_fuel = max_fuel # Reset fuel on entry
+	current_fuel = get_max_fuel() # Reset fuel on entry
 	EventBus.minerals_changed.emit(0)
-	EventBus.fuel_changed.emit(current_fuel, max_fuel)
+	EventBus.fuel_changed.emit(current_fuel, get_max_fuel())
 	var path = scene_path if scene_path != "" else "res://src/levels/MiningLevel.tscn"
 	await _transition_to_scene(path)
 
@@ -104,19 +106,19 @@ func consume_fuel(amount: int) -> bool:
 	current_fuel -= amount
 	if current_fuel < 0:
 		current_fuel = 0
-	EventBus.fuel_changed.emit(current_fuel, max_fuel)
+	EventBus.fuel_changed.emit(current_fuel, get_max_fuel())
 	return current_fuel > 0
 
 func restore_fuel(amount: int) -> void:
-	current_fuel = min(current_fuel + amount, max_fuel)
-	EventBus.fuel_changed.emit(current_fuel, max_fuel)
+	current_fuel = min(current_fuel + amount, get_max_fuel())
+	EventBus.fuel_changed.emit(current_fuel, get_max_fuel())
 
 func refuel_completely(cost: int) -> bool:
 	if run_mineral_currency >= cost:
 		run_mineral_currency -= cost
-		current_fuel = max_fuel
+		current_fuel = get_max_fuel()
 		EventBus.minerals_changed.emit(run_mineral_currency)
-		EventBus.fuel_changed.emit(current_fuel, max_fuel)
+		EventBus.fuel_changed.emit(current_fuel, get_max_fuel())
 		return true
 	return false
 

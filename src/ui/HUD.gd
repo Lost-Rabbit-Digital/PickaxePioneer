@@ -110,7 +110,7 @@ func _ready() -> void:
 	var max_hp := GameManager.get_max_health()
 	_on_health_changed(max_hp, max_hp)
 	# Initialize fuel display after all UI elements are created
-	_on_fuel_changed(GameManager.current_fuel, GameManager.max_fuel)
+	_on_fuel_changed(GameManager.current_fuel, GameManager.get_max_fuel())
 
 func _on_minerals_changed(amount: int) -> void:
 	scrap_label.text = "Minerals: %d" % amount
