@@ -218,7 +218,7 @@ func _on_depth_changed(depth_rows: int) -> void:
 
 		depth_label.text = "Depth: %dm" % (depth_rows * 12)
 
-    # Colour shifts from light blue → orange-red as player goes deeper
+	# Colour shifts from light blue → orange-red as player goes deeper
 		var t: float = clampf(float(depth_rows) / 80.0, 0.0, 1.0)
 		depth_label.modulate = Color(0.6 + t * 0.4, 0.85 - t * 0.55, 1.0 - t * 0.8, 1.0)
 
