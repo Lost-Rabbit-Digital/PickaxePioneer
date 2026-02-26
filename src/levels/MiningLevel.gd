@@ -273,7 +273,7 @@ var _exit_pulse_time: float = 0.0
 # Farm animal NPCs — static, non-moving, wiggle when interacted with via E
 var _farm_npcs: Array = []
 var _farm_npc_grid_cols: Array[int] = []
-const FARM_NPC_ROW: int = 1  # Placed on the middle surface row
+const FARM_NPC_ROW: int = 2  # Placed on the middle surface row
 
 func _ready() -> void:
 	var ant_spritesheet := load("res://assets/creatures/red_ant_spritesheet.png") as Texture2D
