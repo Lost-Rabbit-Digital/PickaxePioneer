@@ -12,6 +12,7 @@ extends Node2D
 
 var current_node: MapNode
 var nodes: Array[MapNode] = []
+var _modal: LevelInfoModal = null
 
 # Mine name options for randomization
 var mine_names = [
@@ -32,6 +33,25 @@ var mine_names = [
 	"Obsidian Pit"
 ]
 
+# Difficulty and primary ore info keyed by mine name
+var mine_metadata: Dictionary = {
+	"Iron Mine":     {"difficulty": 1, "ores": ["Iron", "Copper"]},
+	"Gold Mine":     {"difficulty": 3, "ores": ["Gold", "Iron"]},
+	"Copper Mine":   {"difficulty": 1, "ores": ["Copper"]},
+	"Silver Mine":   {"difficulty": 2, "ores": ["Silver", "Copper"]},
+	"Coal Mine":     {"difficulty": 1, "ores": ["Coal", "Stone"]},
+	"Diamond Mine":  {"difficulty": 3, "ores": ["Diamond", "Gold"]},
+	"Platinum Mine": {"difficulty": 3, "ores": ["Platinum", "Gold"]},
+	"Emerald Mine":  {"difficulty": 2, "ores": ["Emerald", "Iron"]},
+	"Ruby Mine":     {"difficulty": 2, "ores": ["Ruby", "Copper"]},
+	"Sapphire Mine": {"difficulty": 2, "ores": ["Sapphire", "Stone"]},
+	"Tin Mine":      {"difficulty": 1, "ores": ["Tin", "Stone"]},
+	"Lead Mine":     {"difficulty": 1, "ores": ["Lead", "Dirt"]},
+	"Uranium Mine":  {"difficulty": 3, "ores": ["Uranium", "Gold"]},
+	"Crystal Cave":  {"difficulty": 2, "ores": ["Crystal", "Iron"]},
+	"Obsidian Pit":  {"difficulty": 3, "ores": ["Obsidian", "Iron"]},
+}
+
 func _ready() -> void:
 	# Start overworld music
 	var music = load("res://assets/music/crickets.mp3")
@@ -39,6 +59,20 @@ func _ready() -> void:
 
 	# Randomize mine nodes
 	_randomize_mines()
+
+	# Set static node metadata
+	city_node.description = "Your home colony. Spend your hard-earned minerals on upgrades to improve your mining operation."
+	settlement_node_3.description = "A small outpost along the mining route."
+	settlement_node_3.difficulty = 1
+	settlement_node_3.ore_types = ["Stone", "Copper"]
+	settlement_node_4.description = "A remote settlement near deeper deposits."
+	settlement_node_4.difficulty = 2
+	settlement_node_4.ore_types = ["Iron", "Stone", "Copper"]
+
+	# Instantiate the level info modal
+	_modal = preload("res://src/ui/LevelInfoModal.tscn").instantiate()
+	add_child(_modal)
+	_modal.confirmed.connect(_on_modal_confirmed)
 
 	# Define connections - create a connected network
 	_connect_nodes(city_node, mine_node_1)
@@ -87,16 +121,23 @@ func _randomize_mines() -> void:
 	# Apply randomization to both mines
 	mine_node_1.location_name = available_names[0]
 	mine_node_1.position = mine_positions[0]
+	_apply_mine_metadata(mine_node_1, available_names[0])
 	mine_node_1._update_visuals()
 
 	if mine_count >= 2:
 		mine_node_2.location_name = available_names[1]
 		mine_node_2.position = mine_positions[1]
+		_apply_mine_metadata(mine_node_2, available_names[1])
 		mine_node_2._update_visuals()
 		mine_node_2.visible = true
 	else:
 		# Hide second mine if only 1 mine is selected
 		mine_node_2.visible = false
+
+func _apply_mine_metadata(node: MapNode, name: String) -> void:
+	var meta: Dictionary = mine_metadata.get(name, {})
+	node.difficulty = meta.get("difficulty", 1)
+	node.ore_types = meta.get("ores", [])
 
 func _connect_nodes(node_a: MapNode, node_b: MapNode) -> void:
 	if not node_a.neighbors.has(node_b):
@@ -162,11 +203,13 @@ func _on_node_clicked(node: MapNode) -> void:
 		_enter_node(node)
 
 func _enter_node(node: MapNode) -> void:
+	_modal.show_for_node(node)
+
+func _on_modal_confirmed(node: MapNode) -> void:
 	GameManager.last_overworld_node_name = node.name
 
 	if node.node_type == MapNode.NodeType.ASTEROID or node.node_type == MapNode.NodeType.STATION:
 		GameManager.load_mining_level(node.scene_path)
-	elif node.node_type == MapNode.NodeType.EMPTY: # City is usually NodeType.STATION or custom
-		# Check if it's the city node specifically by name or type
+	elif node.node_type == MapNode.NodeType.EMPTY:
 		if node.name == "CityNode":
-			GameManager.load_mining_level(node.scene_path) # CityLevel is loaded via same mechanism
+			GameManager.load_mining_level(node.scene_path)

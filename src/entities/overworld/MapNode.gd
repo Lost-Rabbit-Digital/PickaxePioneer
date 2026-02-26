@@ -12,6 +12,9 @@ enum NodeType {
 @export var location_name: String = "Unknown"
 @export var node_type: NodeType = NodeType.EMPTY
 @export var scene_path: String = ""
+@export var description: String = ""
+@export var difficulty: int = 1
+@export var ore_types: Array = []
 
 signal node_clicked(node: MapNode)
 
