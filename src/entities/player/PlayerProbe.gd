@@ -30,6 +30,12 @@ func _ready() -> void:
 func take_damage(amount: int) -> void:
 	health_component.damage(amount)
 
+func heal(amount: int) -> void:
+	health_component.heal(amount)
+
+func is_at_max_health() -> bool:
+	return health_component.current_health >= health_component.max_health
+
 func _on_health_changed(current: int, max_hp: int) -> void:
 	EventBus.player_health_changed.emit(current, max_hp)
 

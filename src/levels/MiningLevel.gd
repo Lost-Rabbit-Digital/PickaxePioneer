@@ -115,23 +115,41 @@ const AUTO_MOVE_INTERVAL: float = 0.15 # Time between repeated steps
 
 # HP per tile type — determines how many hits needed to mine it.
 # Base mandibles power = 5 (get_mandibles_power()). Each upgrade adds 3.
-# Each upgrade level unlocks 1-hit mining for the next ore tier:
-#   Lv0→dirt(1-hit), Lv1→stone(1-hit), Lv2→copper(1-hit), Lv3→iron(1-hit),
-#   Lv5→gold(1-hit), Lv8→gem(1-hit)
+# TILE_MIN_HITS enforces a hard minimum regardless of mandibles upgrade level,
+# ensuring higher-value ores always require proportionally more hits.
 const TILE_HP: Dictionary = {
-	TileType.SURFACE_GRASS:   4,   # Always 1 hit (HP < base power 5)
-	TileType.DIRT:            4,
-	TileType.DIRT_DARK:       4,
-	TileType.STONE:           8,   # 2 hits base; 1 hit at Lv1 (power 8)
-	TileType.STONE_DARK:      10,  # 2 hits base; 1 hit at Lv2 (power 11)
-	TileType.ORE_COPPER:      11,  # 3 hits base; 1 hit at Lv2 (power 11)
-	TileType.ORE_COPPER_DEEP: 13,  # 3 hits base; 1 hit at Lv3 (power 14)
-	TileType.ORE_IRON:        14,  # 3 hits base; 1 hit at Lv3 (power 14)
-	TileType.ORE_IRON_DEEP:   17,  # 4 hits base; 1 hit at Lv4 (power 17)
-	TileType.ORE_GOLD:        20,  # 4 hits base; 1 hit at Lv5 (power 20)
-	TileType.ORE_GOLD_DEEP:   23,  # 5 hits base; 1 hit at Lv6 (power 23)
-	TileType.ORE_GEM:         29,  # 6 hits base; 1 hit at Lv8 (power 29)
-	TileType.ORE_GEM_DEEP:    32,  # 7 hits base; 1 hit at Lv9 (power 32)
+	TileType.SURFACE_GRASS:   4,   # soft terrain — 1 hit
+	TileType.DIRT:            4,   # soft terrain — 1 hit
+	TileType.DIRT_DARK:       4,   # soft terrain — 1 hit
+	TileType.STONE:           8,
+	TileType.STONE_DARK:      10,
+	TileType.ORE_COPPER:      11,
+	TileType.ORE_COPPER_DEEP: 13,
+	TileType.ORE_IRON:        14,
+	TileType.ORE_IRON_DEEP:   17,
+	TileType.ORE_GOLD:        20,
+	TileType.ORE_GOLD_DEEP:   23,
+	TileType.ORE_GEM:         29,
+	TileType.ORE_GEM_DEEP:    32,
+}
+
+# Minimum number of hits required to mine each tile, regardless of mandibles power.
+# Higher-value ores require proportionally more hits to reward the risk of going deeper.
+# Any tile not listed defaults to 2 hits minimum.
+const TILE_MIN_HITS: Dictionary = {
+	TileType.SURFACE_GRASS:   1,
+	TileType.DIRT:            1,
+	TileType.DIRT_DARK:       1,
+	TileType.STONE:           2,
+	TileType.STONE_DARK:      2,
+	TileType.ORE_COPPER:      3,
+	TileType.ORE_COPPER_DEEP: 3,
+	TileType.ORE_IRON:        3,
+	TileType.ORE_IRON_DEEP:   4,
+	TileType.ORE_GOLD:        4,
+	TileType.ORE_GOLD_DEEP:   5,
+	TileType.ORE_GEM:         6,
+	TileType.ORE_GEM_DEEP:    7,
 }
 
 const TILE_MINERALS: Dictionary = {
@@ -173,6 +191,14 @@ var _hub_minerals_label: Label
 var _hub_visible: bool = false
 var _upgrade_layer: CanvasLayer  # Hosts the UpgradeMenu overlay when opened in-mine
 
+# Fuel Station Shop — shown when interacting with the Refuel Station
+var _fuel_shop_layer: CanvasLayer
+var _fuel_shop_visible: bool = false
+var _fuel_shop_minerals_label: Label
+var _fuel_shop_btn_refuel_full: Button
+var _fuel_shop_btn_refuel_half: Button
+var _fuel_shop_btn_repair: Button
+
 # Depth tracking — rows below the surface
 var _last_depth: int = 0
 
@@ -181,6 +207,9 @@ var _game_over: bool = false
 
 # Per-tile damage tracking for multi-hit blocks (key: Vector2i, value: damage dealt)
 var _tile_damage: Dictionary = {}
+
+# Per-tile hit count for enforcing TILE_MIN_HITS (key: Vector2i, value: hits landed)
+var _tile_hits: Dictionary = {}
 
 # Per-tile white impact flash (key: Vector2i, value: alpha 0-1, fades in _process)
 var _flash_cells: Dictionary = {}
@@ -221,6 +250,7 @@ func _ready() -> void:
 	MusicManager.play_music(music)
 	QuestManager.clear_quest()
 	_setup_surface_hub()
+	_setup_fuel_station_shop()
 	queue_redraw()
 
 const SURFACE_ROWS: int = 3  # Top 3 rows are surface
@@ -252,7 +282,9 @@ func _generate_grid() -> void:
 	for col in range(GRID_COLS - EXIT_COLS):
 		grid[col][SURFACE_ROWS] = TileType.SURFACE_GRASS
 
-# Depth-weighted random tile: rarer ores are more common deeper
+# Depth-weighted random tile: ore density increases dramatically with depth.
+# At the surface ~25% of tiles are ore; at the deepest rows ~55% are ore.
+# Copper/iron dominate shallow layers; gold/gem dominate deep layers.
 func _random_tile(row: int = SURFACE_ROWS) -> TileType:
 	var r := randf()
 	# Depth factor: 0.0 at surface, 1.0 at bottom row
@@ -269,29 +301,37 @@ func _random_tile(row: int = SURFACE_ROWS) -> TileType:
 	elif r < hazard_bias + 0.02: return TileType.FUEL_NODE
 	elif r < hazard_bias + 0.03: return TileType.FUEL_NODE_FULL
 
-	# Rare ores (gem/gold) more common at depth
-	var gem_chance   := 0.04 + depth * 0.08
-	var gold_chance  := 0.06 + depth * 0.06
-	var iron_chance  := 0.08
-	var copper_chance := 0.08
+	# Ore chances scale with depth for a dense underground feel:
+	#   copper: fades with depth  (14% → 2%)  — shallow/surface ore
+	#   iron:   stable then tapers (12% → 8%)  — mid-depth ore
+	#   gold:   rises with depth  (4% → 20%)  — deep ore
+	#   gem:    rises steeply     (2% → 20%)  — deepest ore
+	# Total ore at surface: ~25%  |  mid: ~40%  |  bottom: ~50%
+	var copper_chance := 0.14 - depth * 0.12
+	var iron_chance   := 0.12 - depth * 0.04
+	var gold_chance   := 0.04 + depth * 0.16
+	var gem_chance    := 0.02 + depth * 0.18
+
+	# Deeper tiles are more likely to be "deep" (higher-quality) ore variants
+	var deep_ratio := 0.30 + depth * 0.50   # 30% deep at surface → 80% at bottom
 
 	var ore_start := hazard_bias + 0.03
-	if r < ore_start + gem_chance * 0.5:             return TileType.ORE_GEM_DEEP
-	elif r < ore_start + gem_chance:                  return TileType.ORE_GEM
-	elif r < ore_start + gem_chance + gold_chance * 0.5:  return TileType.ORE_GOLD_DEEP
-	elif r < ore_start + gem_chance + gold_chance:    return TileType.ORE_GOLD
-	elif r < ore_start + gem_chance + gold_chance + iron_chance * 0.5:  return TileType.ORE_IRON_DEEP
-	elif r < ore_start + gem_chance + gold_chance + iron_chance:         return TileType.ORE_IRON
-	elif r < ore_start + gem_chance + gold_chance + iron_chance + copper_chance * 0.5: return TileType.ORE_COPPER_DEEP
-	elif r < ore_start + gem_chance + gold_chance + iron_chance + copper_chance:       return TileType.ORE_COPPER
+	if r < ore_start + gem_chance * deep_ratio:                                             return TileType.ORE_GEM_DEEP
+	elif r < ore_start + gem_chance:                                                         return TileType.ORE_GEM
+	elif r < ore_start + gem_chance + gold_chance * deep_ratio:                              return TileType.ORE_GOLD_DEEP
+	elif r < ore_start + gem_chance + gold_chance:                                           return TileType.ORE_GOLD
+	elif r < ore_start + gem_chance + gold_chance + iron_chance * deep_ratio:                return TileType.ORE_IRON_DEEP
+	elif r < ore_start + gem_chance + gold_chance + iron_chance:                             return TileType.ORE_IRON
+	elif r < ore_start + gem_chance + gold_chance + iron_chance + copper_chance * deep_ratio: return TileType.ORE_COPPER_DEEP
+	elif r < ore_start + gem_chance + gold_chance + iron_chance + copper_chance:              return TileType.ORE_COPPER
 
-	# Stone (heavier at depth) vs Dirt (heavier at surface)
-	var stone_chance := 0.10 + depth * 0.30
+	# Stone (increasingly dominant at depth) vs Dirt (surface-heavy)
+	var stone_chance := 0.10 + depth * 0.50
 	var r2 := randf()
-	if r2 < stone_chance * 0.6:  return TileType.STONE_DARK
-	elif r2 < stone_chance:       return TileType.STONE
-	elif r2 < stone_chance + 0.15: return TileType.DIRT_DARK
-	else:                          return TileType.DIRT
+	if r2 < stone_chance * 0.6:    return TileType.STONE_DARK
+	elif r2 < stone_chance:         return TileType.STONE
+	elif r2 < stone_chance + 0.10:  return TileType.DIRT_DARK
+	else:                            return TileType.DIRT
 
 func _load_tile_textures() -> void:
 	# Load each tile's individual block PNG from assets/blocks/
@@ -444,7 +484,7 @@ func _update_interact_prompt() -> void:
 	var current_tile: int = grid[player_grid_pos.x][player_grid_pos.y]
 	if current_tile == TileType.REFUEL_STATION:
 		var key_name := _get_interact_key_name()
-		player_node.show_prompt("Press %s to refuel" % key_name)
+		player_node.show_prompt("Press %s to open shop" % key_name)
 		var world_pos := Vector2(
 			player_grid_pos.x * CELL_SIZE + CELL_SIZE * 0.5,
 			player_grid_pos.y * CELL_SIZE
@@ -456,8 +496,7 @@ func _update_interact_prompt() -> void:
 
 func _try_interact() -> void:
 	if grid[player_grid_pos.x][player_grid_pos.y] == TileType.REFUEL_STATION:
-		if GameManager.refuel_completely(10):
-			SoundManager.play_drill_sound()
+		_show_fuel_station_shop()
 
 func _process(delta: float) -> void:
 	# Advance exit station pulse regardless of game state
@@ -475,8 +514,8 @@ func _process(delta: float) -> void:
 			_flash_cells.erase(k)
 		queue_redraw()
 
-	if _hub_visible or _game_over:
-		return  # Block all movement while the surface hub is open or game-over screen shows
+	if _hub_visible or _game_over or _fuel_shop_visible:
+		return  # Block all movement while the surface hub, shop, or game-over screen is open
 	_update_interact_prompt()
 	# Determine which direction (if any) is currently held
 	var dir := Vector2i.ZERO
@@ -513,8 +552,8 @@ func _process(delta: float) -> void:
 # ---------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _hub_visible or _game_over:
-		return  # Hub or game-over screen captures input
+	if _hub_visible or _game_over or _fuel_shop_visible:
+		return  # Hub, shop, or game-over screen captures input
 	if event.is_action_pressed("ui_cancel"):
 		pause_menu.show_menu()
 		return
@@ -582,11 +621,18 @@ func _try_move(dc: int, dr: int) -> void:
 					is_on_surface = false
 				else:
 					var pos_key := Vector2i(new_col, new_row)
-					var tile_hp: int = TILE_HP.get(new_tile, 1)
-					var new_damage: int = _tile_damage.get(pos_key, 0) + GameManager.get_mandibles_power()
+					var tile_hp: int = TILE_HP.get(new_tile, 6)
+					var prev_damage: int = _tile_damage.get(pos_key, 0)
+					var hits_so_far: int = _tile_hits.get(pos_key, 0)
+					var new_damage: int = prev_damage + GameManager.get_mandibles_power()
+					var min_hits: int = TILE_MIN_HITS.get(new_tile, 2)
+					# Enforce minimum hit count — prevent block from breaking before required hits
+					if hits_so_far + 1 < min_hits and new_damage >= tile_hp:
+						new_damage = tile_hp - 1
 					_flash_cells[pos_key] = 1.0
 					if new_damage >= tile_hp:
 						_tile_damage.erase(pos_key)
+						_tile_hits.erase(pos_key)
 						_mine_cell(new_col, new_row)
 						var minerals: int = TILE_MINERALS.get(new_tile, 1)
 						GameManager.add_currency(minerals)
@@ -597,6 +643,7 @@ func _try_move(dc: int, dr: int) -> void:
 						is_on_surface = false
 					else:
 						_tile_damage[pos_key] = new_damage
+						_tile_hits[pos_key] = hits_so_far + 1
 						SoundManager.play_impact_sound()
 						queue_redraw()
 						return  # Player stays on surface; no camera/depth update needed
@@ -657,11 +704,18 @@ func _try_move(dc: int, dr: int) -> void:
 	else:
 		# Minable tile: apply mandibles damage; move in only when destroyed
 		var pos_key := Vector2i(new_col, new_row)
-		var tile_hp: int = TILE_HP.get(tile, 1)
-		var new_damage: int = _tile_damage.get(pos_key, 0) + GameManager.get_mandibles_power()
+		var tile_hp: int = TILE_HP.get(tile, 6)
+		var prev_damage: int = _tile_damage.get(pos_key, 0)
+		var hits_so_far: int = _tile_hits.get(pos_key, 0)
+		var new_damage: int = prev_damage + GameManager.get_mandibles_power()
+		var min_hits: int = TILE_MIN_HITS.get(tile, 2)
+		# Enforce minimum hit count — prevent block from breaking before required hits
+		if hits_so_far + 1 < min_hits and new_damage >= tile_hp:
+			new_damage = tile_hp - 1
 		_flash_cells[pos_key] = 1.0
 		if new_damage >= tile_hp:
 			_tile_damage.erase(pos_key)
+			_tile_hits.erase(pos_key)
 			_mine_cell(new_col, new_row)
 			var minerals: int = TILE_MINERALS.get(tile, 1)
 			GameManager.add_currency(minerals)
@@ -672,6 +726,7 @@ func _try_move(dc: int, dr: int) -> void:
 			player_moved = true
 		else:
 			_tile_damage[pos_key] = new_damage
+			_tile_hits[pos_key] = hits_so_far + 1
 			SoundManager.play_impact_sound()
 
 	if player_moved:
@@ -939,3 +994,156 @@ func _close_upgrade_overlay() -> void:
 	if _upgrade_layer:
 		_upgrade_layer.queue_free()
 		_upgrade_layer = null
+
+# ---------------------------------------------------------------------------
+# Fuel Station Shop — interactive shop opened when pressing E at REFUEL_STATION
+# ---------------------------------------------------------------------------
+
+const SHOP_REFUEL_FULL_COST: int = 10
+const SHOP_REFUEL_HALF_COST: int = 5
+const SHOP_REPAIR_COST: int = 15
+
+func _setup_fuel_station_shop() -> void:
+	const VW: int = 1280
+	const VH: int = 720
+	const PANEL_W: int = 420
+	const PANEL_H: int = 330
+	const PX: int = (VW - PANEL_W) / 2
+	const PY: int = (VH - PANEL_H) / 2
+
+	_fuel_shop_layer = CanvasLayer.new()
+	_fuel_shop_layer.layer = 10
+	_fuel_shop_layer.visible = false
+	add_child(_fuel_shop_layer)
+
+	# Full-screen semi-transparent backdrop — blocks world input
+	var dim := ColorRect.new()
+	dim.position = Vector2.ZERO
+	dim.size = Vector2(VW, VH)
+	dim.color = Color(0.0, 0.0, 0.0, 0.72)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_fuel_shop_layer.add_child(dim)
+
+	# Coloured border
+	var border := ColorRect.new()
+	border.position = Vector2(PX - 3, PY - 3)
+	border.size = Vector2(PANEL_W + 6, PANEL_H + 6)
+	border.color = Color(0.20, 0.60, 0.90, 1.0)
+	_fuel_shop_layer.add_child(border)
+
+	# Panel background
+	var panel := ColorRect.new()
+	panel.position = Vector2(PX, PY)
+	panel.size = Vector2(PANEL_W, PANEL_H)
+	panel.color = Color(0.07, 0.10, 0.14, 0.97)
+	_fuel_shop_layer.add_child(panel)
+
+	# Title
+	var title := Label.new()
+	title.text = "Fuel Station Shop"
+	title.position = Vector2(PX, PY + 12)
+	title.size = Vector2(PANEL_W, 30)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 20)
+	title.modulate = Color(0.55, 0.85, 1.0)
+	_fuel_shop_layer.add_child(title)
+
+	# Current minerals label
+	_fuel_shop_minerals_label = Label.new()
+	_fuel_shop_minerals_label.position = Vector2(PX, PY + 48)
+	_fuel_shop_minerals_label.size = Vector2(PANEL_W, 24)
+	_fuel_shop_minerals_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_fuel_shop_minerals_label.modulate = Color(1.0, 0.85, 0.2)
+	_fuel_shop_layer.add_child(_fuel_shop_minerals_label)
+
+	# Divider
+	var divider := ColorRect.new()
+	divider.position = Vector2(PX + 20, PY + 80)
+	divider.size = Vector2(PANEL_W - 40, 2)
+	divider.color = Color(0.20, 0.60, 0.90, 0.5)
+	_fuel_shop_layer.add_child(divider)
+
+	const BTN_X: int = PX + 25
+	const BTN_W: int = PANEL_W - 50
+	const BTN_H: int = 48
+
+	# Refuel Full button
+	_fuel_shop_btn_refuel_full = Button.new()
+	_fuel_shop_btn_refuel_full.position = Vector2(BTN_X, PY + 94)
+	_fuel_shop_btn_refuel_full.size = Vector2(BTN_W, BTN_H)
+	_fuel_shop_btn_refuel_full.pressed.connect(_shop_refuel_full)
+	_fuel_shop_layer.add_child(_fuel_shop_btn_refuel_full)
+
+	# Refuel Half button
+	_fuel_shop_btn_refuel_half = Button.new()
+	_fuel_shop_btn_refuel_half.position = Vector2(BTN_X, PY + 152)
+	_fuel_shop_btn_refuel_half.size = Vector2(BTN_W, BTN_H)
+	_fuel_shop_btn_refuel_half.pressed.connect(_shop_refuel_half)
+	_fuel_shop_layer.add_child(_fuel_shop_btn_refuel_half)
+
+	# Repair button
+	_fuel_shop_btn_repair = Button.new()
+	_fuel_shop_btn_repair.position = Vector2(BTN_X, PY + 210)
+	_fuel_shop_btn_repair.size = Vector2(BTN_W, BTN_H)
+	_fuel_shop_btn_repair.pressed.connect(_shop_repair)
+	_fuel_shop_layer.add_child(_fuel_shop_btn_repair)
+
+	# Divider above close
+	var divider2 := ColorRect.new()
+	divider2.position = Vector2(PX + 20, PY + 268)
+	divider2.size = Vector2(PANEL_W - 40, 2)
+	divider2.color = Color(0.20, 0.60, 0.90, 0.5)
+	_fuel_shop_layer.add_child(divider2)
+
+	# Close button
+	var close_btn := Button.new()
+	close_btn.text = "Close Shop"
+	close_btn.position = Vector2(BTN_X + (BTN_W - 180) / 2, PY + 278)
+	close_btn.size = Vector2(180, 40)
+	close_btn.pressed.connect(_hide_fuel_station_shop)
+	_fuel_shop_layer.add_child(close_btn)
+
+func _show_fuel_station_shop() -> void:
+	_fuel_shop_minerals_label.text = "Run Minerals: %d" % GameManager.run_mineral_currency
+	_fuel_shop_btn_refuel_full.text = "Full Refuel  (%d → %d fuel)  — %d minerals" % [
+		GameManager.current_fuel, GameManager.max_fuel, SHOP_REFUEL_FULL_COST]
+	_fuel_shop_btn_refuel_half.text = "Refuel 50%%  (+%d fuel)  — %d minerals" % [
+		GameManager.max_fuel / 2, SHOP_REFUEL_HALF_COST]
+	_fuel_shop_btn_repair.text = "Emergency Repair  (+1 HP)  — %d minerals" % SHOP_REPAIR_COST
+	_fuel_shop_btn_refuel_full.disabled = GameManager.run_mineral_currency < SHOP_REFUEL_FULL_COST \
+		or GameManager.current_fuel >= GameManager.max_fuel
+	_fuel_shop_btn_refuel_half.disabled = GameManager.run_mineral_currency < SHOP_REFUEL_HALF_COST \
+		or GameManager.current_fuel >= GameManager.max_fuel
+	var at_max_hp: bool = player_node != null and player_node.is_at_max_health()
+	_fuel_shop_btn_repair.disabled = GameManager.run_mineral_currency < SHOP_REPAIR_COST or at_max_hp
+	_fuel_shop_layer.visible = true
+	_fuel_shop_visible = true
+
+func _hide_fuel_station_shop() -> void:
+	_fuel_shop_layer.visible = false
+	_fuel_shop_visible = false
+
+func _shop_refuel_full() -> void:
+	if GameManager.run_mineral_currency >= SHOP_REFUEL_FULL_COST:
+		GameManager.run_mineral_currency -= SHOP_REFUEL_FULL_COST
+		GameManager.current_fuel = GameManager.max_fuel
+		EventBus.minerals_changed.emit(GameManager.run_mineral_currency)
+		EventBus.fuel_changed.emit(GameManager.current_fuel, GameManager.max_fuel)
+		SoundManager.play_drill_sound()
+		_show_fuel_station_shop()  # Refresh labels and button states
+
+func _shop_refuel_half() -> void:
+	if GameManager.run_mineral_currency >= SHOP_REFUEL_HALF_COST:
+		GameManager.run_mineral_currency -= SHOP_REFUEL_HALF_COST
+		GameManager.restore_fuel(GameManager.max_fuel / 2)
+		EventBus.minerals_changed.emit(GameManager.run_mineral_currency)
+		SoundManager.play_drill_sound()
+		_show_fuel_station_shop()  # Refresh labels and button states
+
+func _shop_repair() -> void:
+	if GameManager.run_mineral_currency >= SHOP_REPAIR_COST and player_node:
+		GameManager.run_mineral_currency -= SHOP_REPAIR_COST
+		EventBus.minerals_changed.emit(GameManager.run_mineral_currency)
+		player_node.heal(1)
+		SoundManager.play_drill_sound()
+		_show_fuel_station_shop()  # Refresh labels and button states
