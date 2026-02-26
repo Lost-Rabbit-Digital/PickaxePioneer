@@ -1,12 +1,132 @@
 class_name PlayerProbe
-extends Node
+extends CharacterBody2D
 
-# Lightweight player entity for the grid-based mining level.
-# Movement is handled by MiningLevel; this node manages health and signals.
+# Terraria-style CharacterBody2D player for the mining level.
+# Handles gravity, horizontal movement, jumping, and cursor-based mining.
+# MiningLevel provides the grid API for mining and hazard interactions.
+
+const CELL_SIZE: int = 64
+
+# Movement tuning
+var move_speed: float = 280.0
+var jump_velocity: float = -420.0
+var gravity: float = 980.0
+
+# Mining
+var mine_range: float = 4.5  # Range in tiles
+var _mining: bool = false
+var _mine_target: Vector2i = Vector2i(-1, -1)
+var _mine_timer: float = 0.0
+const MINE_INTERVAL: float = 0.18  # Seconds between mining hits
+
+# Reference set by MiningLevel after instantiation
+var mining_level: Node = null
 
 @onready var health_component: HealthComponent = $HealthComponent
+@onready var sprite: Sprite2D = $Sprite2D
 @onready var interact_prompt: Label = $PromptLayer/InteractPrompt
 
+# Facing direction
+var _facing_left: bool = true
+
+func _ready() -> void:
+	add_to_group("player")
+	health_component.health_changed.connect(_on_health_changed)
+	health_component.died.connect(_on_died)
+	move_speed = GameManager.get_max_speed()
+	EventBus.player_health_changed.emit(health_component.current_health, health_component.max_health)
+
+func _physics_process(delta: float) -> void:
+	if not mining_level or mining_level._game_over or mining_level._hub_visible or mining_level._fuel_shop_visible:
+		return
+
+	# Gravity
+	if not is_on_floor():
+		velocity.y += gravity * delta
+	else:
+		if velocity.y > 0:
+			velocity.y = 0
+
+	# Horizontal movement
+	var direction := Input.get_axis("move_left", "move_right")
+	velocity.x = direction * move_speed
+
+	# Flip sprite
+	if direction < 0:
+		_facing_left = true
+		sprite.flip_h = false
+	elif direction > 0:
+		_facing_left = false
+		sprite.flip_h = true
+
+	# Jump
+	if Input.is_action_just_pressed("jump") and is_on_floor():
+		velocity.y = jump_velocity
+
+	move_and_slide()
+
+	# Check hazard contact after moving
+	_check_hazard_contact()
+
+	# Cursor mining
+	_handle_mining(delta)
+
+func _handle_mining(delta: float) -> void:
+	if Input.is_action_pressed("mine"):
+		var mouse_world := get_global_mouse_position()
+		var grid_pos := Vector2i(
+			floori(mouse_world.x / CELL_SIZE),
+			floori(mouse_world.y / CELL_SIZE)
+		)
+
+		# Check range (distance from player center to target tile center)
+		var player_tile := Vector2i(
+			floori(global_position.x / CELL_SIZE),
+			floori(global_position.y / CELL_SIZE)
+		)
+		var dist := Vector2(grid_pos - player_tile).length()
+		if dist > mine_range:
+			_mining = false
+			return
+
+		if grid_pos != _mine_target:
+			_mine_target = grid_pos
+			_mine_timer = 0.0  # Reset timer when switching targets
+
+		_mine_timer += delta
+		if _mine_timer >= MINE_INTERVAL:
+			_mine_timer -= MINE_INTERVAL
+			if mining_level:
+				mining_level.try_mine_at(grid_pos)
+		_mining = true
+	else:
+		_mining = false
+
+func _check_hazard_contact() -> void:
+	if not mining_level:
+		return
+	# Check all cells the player overlaps
+	var player_rect := Rect2(global_position - Vector2(CELL_SIZE * 0.4, CELL_SIZE * 0.4), Vector2(CELL_SIZE * 0.8, CELL_SIZE * 0.8))
+	var min_col := maxi(0, floori(player_rect.position.x / CELL_SIZE))
+	var max_col := mini(mining_level.GRID_COLS - 1, floori(player_rect.end.x / CELL_SIZE))
+	var min_row := maxi(0, floori(player_rect.position.y / CELL_SIZE))
+	var max_row := mini(mining_level.GRID_ROWS - 1, floori(player_rect.end.y / CELL_SIZE))
+
+	for col in range(min_col, max_col + 1):
+		for row in range(min_row, max_row + 1):
+			mining_level.check_player_hazard(col, row)
+
+func get_grid_pos() -> Vector2i:
+	return Vector2i(
+		floori(global_position.x / CELL_SIZE),
+		floori(global_position.y / CELL_SIZE)
+	)
+
+func get_depth_row() -> int:
+	var row := floori(global_position.y / CELL_SIZE)
+	return maxi(0, row - mining_level.SURFACE_ROWS) if mining_level else 0
+
+# Prompt helpers
 func show_prompt(text: String) -> void:
 	interact_prompt.text = text
 	interact_prompt.visible = true
@@ -20,13 +140,7 @@ func set_prompt_position(screen_pos: Vector2) -> void:
 		sz = Vector2(320.0, 32.0)
 	interact_prompt.position = Vector2(screen_pos.x - sz.x * 0.5, screen_pos.y - sz.y - 4.0)
 
-func _ready() -> void:
-	add_to_group("player")
-	health_component.health_changed.connect(_on_health_changed)
-	health_component.died.connect(_on_died)
-	# Re-emit initial state (HealthComponent fires during its own _ready, before our signal connects)
-	EventBus.player_health_changed.emit(health_component.current_health, health_component.max_health)
-
+# Health
 func take_damage(amount: int) -> void:
 	health_component.damage(amount)
 
@@ -40,5 +154,4 @@ func _on_health_changed(current: int, max_hp: int) -> void:
 	EventBus.player_health_changed.emit(current, max_hp)
 
 func _on_died() -> void:
-	# Emit signal so MiningLevel can show a death overlay before transitioning
 	EventBus.player_died.emit()
