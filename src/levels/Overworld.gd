@@ -88,6 +88,9 @@ func _ready() -> void:
 	# Collect all nodes
 	nodes = [city_node, mine_node_1, mine_node_2, settlement_node_3, settlement_node_4]
 
+	# Arrange nodes in a circular formation with random layout
+	_arrange_nodes_in_circle()
+
 	# Connect click signals
 	for node in nodes:
 		node.node_clicked.connect(_on_node_clicked)
@@ -115,28 +118,38 @@ func _randomize_mines() -> void:
 	var available_names = mine_names.duplicate()
 	available_names.shuffle()
 
-	# Randomize positions for mines
-	var mine_positions = [
-		Vector2(600, 200),
-		Vector2(800, 500)
-	]
-	mine_positions.shuffle()
-
-	# Apply randomization to both mines
+	# Apply randomization to both mines (positions set later in _arrange_nodes_in_circle)
 	mine_node_1.location_name = available_names[0]
-	mine_node_1.position = mine_positions[0]
 	_apply_mine_metadata(mine_node_1, available_names[0])
 	mine_node_1._update_visuals()
 
 	if mine_count >= 2:
 		mine_node_2.location_name = available_names[1]
-		mine_node_2.position = mine_positions[1]
 		_apply_mine_metadata(mine_node_2, available_names[1])
 		mine_node_2._update_visuals()
 		mine_node_2.visible = true
 	else:
 		# Hide second mine if only 1 mine is selected
 		mine_node_2.visible = false
+
+func _arrange_nodes_in_circle() -> void:
+	var center := Vector2(640, 360)
+	var radius := 240.0
+	var jitter := deg_to_rad(20.0)
+	var start_angle := randf() * TAU
+
+	# Only position visible nodes so hidden mines don't take up a slot
+	var visible_nodes: Array[MapNode] = []
+	for node in nodes:
+		if node.visible:
+			visible_nodes.append(node)
+
+	visible_nodes.shuffle()
+
+	var base_step := TAU / visible_nodes.size()
+	for i in range(visible_nodes.size()):
+		var angle := start_angle + i * base_step + randf_range(-jitter, jitter)
+		visible_nodes[i].position = center + Vector2(cos(angle), sin(angle)) * radius
 
 func _apply_mine_metadata(node: MapNode, name: String) -> void:
 	var meta: Dictionary = mine_metadata.get(name, {})
