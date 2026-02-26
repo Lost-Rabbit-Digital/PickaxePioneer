@@ -299,16 +299,27 @@ func _random_tile(row: int = SURFACE_ROWS) -> TileType:
 	# Depth factor: 0.0 at surface, 1.0 at bottom row
 	var depth := float(row - SURFACE_ROWS) / float(GRID_ROWS - SURFACE_ROWS)
 
-	# Hazards (10% total, slightly more at depth)
-	var hazard_bias := 0.10 + depth * 0.05
-	if   r < hazard_bias * 0.4:  return TileType.EXPLOSIVE
-	elif r < hazard_bias * 0.6:  return TileType.EXPLOSIVE_ARMED
-	elif r < hazard_bias * 0.8:  return TileType.LAVA
-	elif r < hazard_bias:        return TileType.LAVA_FLOW
+	# Hazard filtering: only spawn hazard types configured for this location.
+	# Hazard budget (10% base + 5%*depth) is split 60% explosives / 40% lava.
+	# Disabling a hazard type removes its share from the budget (those probability
+	# slots fall through to ores/stone, making the mine safer but not emptier).
+	var allowed_hazards: Array = GameManager.allowed_hazard_types
+	var explosive_ok := allowed_hazards.is_empty() or allowed_hazards.has("Explosives")
+	var lava_ok := allowed_hazards.is_empty() or allowed_hazards.has("Lava")
 
-	# Fuel nodes (3%)
-	elif r < hazard_bias + 0.02: return TileType.FUEL_NODE
-	elif r < hazard_bias + 0.03: return TileType.FUEL_NODE_FULL
+	var base_hazard := 0.10 + depth * 0.05
+	var explosive_bias := base_hazard * 0.6 if explosive_ok else 0.0
+	var lava_bias      := base_hazard * 0.4 if lava_ok      else 0.0
+	var total_hazard   := explosive_bias + lava_bias
+
+	if   r < explosive_bias * (2.0 / 3.0):        return TileType.EXPLOSIVE
+	elif r < explosive_bias:                        return TileType.EXPLOSIVE_ARMED
+	elif r < explosive_bias + lava_bias * 0.5:     return TileType.LAVA
+	elif r < total_hazard:                          return TileType.LAVA_FLOW
+
+	# Fuel nodes (3% — always present to help players manage fuel)
+	elif r < total_hazard + 0.02: return TileType.FUEL_NODE
+	elif r < total_hazard + 0.03: return TileType.FUEL_NODE_FULL
 
 	# Ore chances scale with depth for a dense underground feel:
 	#   copper: fades with depth  (14% → 2%)  — shallow/surface ore
@@ -332,7 +343,7 @@ func _random_tile(row: int = SURFACE_ROWS) -> TileType:
 	# Deeper tiles are more likely to be "deep" (higher-quality) ore variants
 	var deep_ratio := 0.30 + depth * 0.50   # 30% deep at surface → 80% at bottom
 
-	var ore_start := hazard_bias + 0.03
+	var ore_start := total_hazard + 0.03
 	if r < ore_start + gem_chance * deep_ratio:                                             return TileType.ORE_GEM_DEEP
 	elif r < ore_start + gem_chance:                                                         return TileType.ORE_GEM
 	elif r < ore_start + gem_chance + gold_chance * deep_ratio:                              return TileType.ORE_GOLD_DEEP

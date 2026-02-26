@@ -12,6 +12,7 @@ signal cancelled
 @onready var description_label: Label = $Control/Panel/MarginContainer/VBox/DescriptionLabel
 @onready var difficulty_label: Label = $Control/Panel/MarginContainer/VBox/DifficultyLabel
 @onready var ore_types_label: Label = $Control/Panel/MarginContainer/VBox/OreTypesLabel
+@onready var hazards_label: Label = $Control/Panel/MarginContainer/VBox/HazardsLabel
 @onready var enter_button: Button = $Control/Panel/MarginContainer/VBox/ButtonsBox/EnterButton
 @onready var cancel_button: Button = $Control/Panel/MarginContainer/VBox/ButtonsBox/CancelButton
 
@@ -34,18 +35,21 @@ func show_for_node(node: MapNode) -> void:
 			type_label.modulate = Color(0.4, 0.8, 1.0)
 			difficulty_label.visible = false
 			ore_types_label.visible = false
+			hazards_label.visible = false
 			enter_button.text = "Visit Colony"
 		MapNode.NodeType.ASTEROID:
 			type_label.text = "[ Mine ]"
 			type_label.modulate = Color(1.0, 0.8, 0.3)
 			difficulty_label.visible = true
 			ore_types_label.visible = node.ore_types.size() > 0
+			hazards_label.visible = node.hazard_types.size() > 0
 			enter_button.text = "Begin Mining"
 		_:
 			type_label.text = "[ Unknown ]"
 			type_label.modulate = Color(1.0, 1.0, 1.0)
 			difficulty_label.visible = false
 			ore_types_label.visible = false
+			hazards_label.visible = false
 			enter_button.text = "Enter Location"
 
 	if difficulty_label.visible:
@@ -56,6 +60,9 @@ func show_for_node(node: MapNode) -> void:
 
 	if ore_types_label.visible:
 		ore_types_label.text = "Ores: " + ", ".join(PackedStringArray(node.ore_types))
+
+	if hazards_label.visible:
+		hazards_label.text = "Hazards: " + ", ".join(PackedStringArray(node.hazard_types))
 
 	show()
 

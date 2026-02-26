@@ -33,24 +33,25 @@ var mine_names = [
 	"Obsidian Pit"
 ]
 
-# Difficulty and primary ore info keyed by mine name.
+# Difficulty, primary ore, and hazard info keyed by mine name.
 # Ore names must match the game's actual tile types: Copper, Iron, Gold, Gem.
+# Hazard names: "Explosives" (explosive tiles), "Lava" (lava tiles).
 var mine_metadata: Dictionary = {
-	"Iron Mine":     {"difficulty": 1, "ores": ["Iron", "Copper"]},
-	"Gold Mine":     {"difficulty": 3, "ores": ["Gold", "Iron"]},
-	"Copper Mine":   {"difficulty": 1, "ores": ["Copper"]},
-	"Silver Mine":   {"difficulty": 2, "ores": ["Iron", "Copper"]},
-	"Coal Mine":     {"difficulty": 1, "ores": ["Copper", "Iron"]},
-	"Diamond Mine":  {"difficulty": 3, "ores": ["Gem", "Gold"]},
-	"Platinum Mine": {"difficulty": 3, "ores": ["Gold", "Gem"]},
-	"Emerald Mine":  {"difficulty": 2, "ores": ["Gem", "Iron"]},
-	"Ruby Mine":     {"difficulty": 2, "ores": ["Gem", "Copper"]},
-	"Sapphire Mine": {"difficulty": 2, "ores": ["Gem", "Iron"]},
-	"Tin Mine":      {"difficulty": 1, "ores": ["Copper"]},
-	"Lead Mine":     {"difficulty": 1, "ores": ["Iron", "Copper"]},
-	"Uranium Mine":  {"difficulty": 3, "ores": ["Gem", "Gold"]},
-	"Crystal Cave":  {"difficulty": 2, "ores": ["Gem", "Iron"]},
-	"Obsidian Pit":  {"difficulty": 3, "ores": ["Iron", "Gem"]},
+	"Iron Mine":     {"difficulty": 1, "ores": ["Iron", "Copper"],  "hazards": ["Explosives"]},
+	"Gold Mine":     {"difficulty": 3, "ores": ["Gold", "Iron"],    "hazards": ["Explosives", "Lava"]},
+	"Copper Mine":   {"difficulty": 1, "ores": ["Copper"],          "hazards": []},
+	"Silver Mine":   {"difficulty": 2, "ores": ["Iron", "Copper"],  "hazards": ["Explosives"]},
+	"Coal Mine":     {"difficulty": 1, "ores": ["Copper", "Iron"],  "hazards": ["Explosives"]},
+	"Diamond Mine":  {"difficulty": 3, "ores": ["Gem", "Gold"],     "hazards": ["Explosives", "Lava"]},
+	"Platinum Mine": {"difficulty": 3, "ores": ["Gold", "Gem"],     "hazards": ["Explosives", "Lava"]},
+	"Emerald Mine":  {"difficulty": 2, "ores": ["Gem", "Iron"],     "hazards": ["Lava"]},
+	"Ruby Mine":     {"difficulty": 2, "ores": ["Gem", "Copper"],   "hazards": ["Lava"]},
+	"Sapphire Mine": {"difficulty": 2, "ores": ["Gem", "Iron"],     "hazards": ["Explosives"]},
+	"Tin Mine":      {"difficulty": 1, "ores": ["Copper"],          "hazards": []},
+	"Lead Mine":     {"difficulty": 1, "ores": ["Iron", "Copper"],  "hazards": []},
+	"Uranium Mine":  {"difficulty": 3, "ores": ["Gem", "Gold"],     "hazards": ["Explosives", "Lava"]},
+	"Crystal Cave":  {"difficulty": 2, "ores": ["Gem", "Iron"],     "hazards": ["Explosives"]},
+	"Obsidian Pit":  {"difficulty": 3, "ores": ["Iron", "Gem"],     "hazards": ["Explosives", "Lava"]},
 }
 
 func _ready() -> void:
@@ -66,9 +67,11 @@ func _ready() -> void:
 	settlement_node_3.description = "A small outpost along the mining route."
 	settlement_node_3.difficulty = 1
 	settlement_node_3.ore_types = ["Copper"]
+	settlement_node_3.hazard_types = []
 	settlement_node_4.description = "A remote settlement near deeper deposits."
 	settlement_node_4.difficulty = 2
 	settlement_node_4.ore_types = ["Iron", "Copper"]
+	settlement_node_4.hazard_types = ["Explosives"]
 
 	# Instantiate the level info modal
 	_modal = preload("res://src/ui/LevelInfoModal.tscn").instantiate()
@@ -139,6 +142,7 @@ func _apply_mine_metadata(node: MapNode, name: String) -> void:
 	var meta: Dictionary = mine_metadata.get(name, {})
 	node.difficulty = meta.get("difficulty", 1)
 	node.ore_types = meta.get("ores", [])
+	node.hazard_types = meta.get("hazards", [])
 
 func _connect_nodes(node_a: MapNode, node_b: MapNode) -> void:
 	if not node_a.neighbors.has(node_b):
@@ -208,6 +212,7 @@ func _enter_node(node: MapNode) -> void:
 func _on_modal_confirmed(node: MapNode) -> void:
 	GameManager.last_overworld_node_name = node.name
 	GameManager.allowed_ore_types = node.ore_types.duplicate()
+	GameManager.allowed_hazard_types = node.hazard_types.duplicate()
 
 	if node.node_type == MapNode.NodeType.ASTEROID or node.node_type == MapNode.NodeType.STATION:
 		GameManager.load_mining_level(node.scene_path)
