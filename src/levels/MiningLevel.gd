@@ -1111,7 +1111,8 @@ func _check_exit_zone() -> void:
 	if player_col < GRID_COLS - EXIT_COLS:
 		has_left_spawn = true
 	if has_left_spawn and player_col >= GRID_COLS - EXIT_COLS and player_row < SURFACE_ROWS:
-		_show_surface_hub()
+		_game_over = true
+		GameManager.complete_run()
 
 # ---------------------------------------------------------------------------
 # Input
