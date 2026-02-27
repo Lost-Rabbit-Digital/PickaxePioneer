@@ -62,8 +62,12 @@ func _physics_process(delta: float) -> void:
 		return
 
 	# Settled chunks don't move — they act as a surface for other chunks to land on.
+	# But if the ground beneath them was removed, resume falling.
 	if is_settled:
-		return
+		if is_on_floor():
+			return
+		is_settled = false
+		collision_layer = 4
 
 	# Gravity — accelerate downward until the chunk lands.
 	if not is_on_floor():
