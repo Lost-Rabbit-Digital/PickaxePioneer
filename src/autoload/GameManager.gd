@@ -10,6 +10,9 @@ enum GameState {
 var current_state: GameState = GameState.MENU
 var mineral_currency: int = 0
 var run_mineral_currency: int = 0
+# Per-ore tracking for run summary (tile_type_id -> count/minerals)
+var run_ore_counts: Dictionary = {}
+var run_ore_earnings: Dictionary = {}
 var last_overworld_node_name: String = ""
 
 # Ores allowed to spawn in the current level instance (set from MapNode.ore_types).
@@ -42,6 +45,10 @@ func add_currency(amount: int) -> void:
 	run_mineral_currency += amount
 	EventBus.minerals_changed.emit(run_mineral_currency)
 
+func track_ore_mined(tile_type: int, minerals: int) -> void:
+	run_ore_counts[tile_type] = run_ore_counts.get(tile_type, 0) + 1
+	run_ore_earnings[tile_type] = run_ore_earnings.get(tile_type, 0) + minerals
+
 func bank_currency() -> void:
 	mineral_currency += run_mineral_currency
 	run_mineral_currency = 0
@@ -61,6 +68,8 @@ func pause_game() -> void:
 
 func lose_run() -> void:
 	run_mineral_currency = 0
+	run_ore_counts.clear()
+	run_ore_earnings.clear()
 	EventBus.minerals_changed.emit(0)
 	await _transition_to_scene("res://src/levels/Overworld.tscn")
 
@@ -72,6 +81,8 @@ func complete_run() -> void:
 
 func load_mining_level(scene_path: String = "") -> void:
 	run_mineral_currency = 0 # Reset run currency on entry
+	run_ore_counts.clear()
+	run_ore_earnings.clear()
 	current_fuel = get_max_fuel() # Reset fuel on entry
 	EventBus.minerals_changed.emit(0)
 	EventBus.fuel_changed.emit(current_fuel, get_max_fuel())
