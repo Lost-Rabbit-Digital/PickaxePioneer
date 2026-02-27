@@ -40,6 +40,7 @@ enum TileType {
 	EXIT_STATION     = 22,
 	BOSS_SEGMENT     = 23,   # Centipede body segment — high HP, awards minerals on death
 	BOSS_CORE        = 24,   # Boss core / head — highest HP, big reward
+	UPGRADE_STATION  = 25,   # Upgrade station — permanent upgrades using banked minerals
 }
 
 const TILE_NAMES: Dictionary = {
@@ -67,6 +68,7 @@ const TILE_NAMES: Dictionary = {
 	TileType.EXIT_STATION:    "Exit Station",
 	TileType.BOSS_SEGMENT:    "Boss Segment",
 	TileType.BOSS_CORE:       "Boss Core",
+	TileType.UPGRADE_STATION: "Upgrade Station",
 }
 
 const MINEABLE_TILES: Array = [
@@ -105,6 +107,7 @@ const TILE_COLORS: Dictionary = {
 	TileType.EXIT_STATION:   Color(0.15, 0.55, 0.15),
 	TileType.BOSS_SEGMENT:   Color(0.55, 0.12, 0.08),
 	TileType.BOSS_CORE:      Color(0.80, 0.05, 0.05),
+	TileType.UPGRADE_STATION: Color(0.50, 0.50, 0.50),
 }
 
 const TILE_TEXTURE_PATHS: Dictionary = {
@@ -129,6 +132,7 @@ const TILE_TEXTURE_PATHS: Dictionary = {
 	TileType.REFUEL_STATION:  "res://assets/blocks/cobblestone_bricks.png",
 	TileType.SURFACE:         "res://assets/blocks/grass_top.png",
 	TileType.SURFACE_GRASS:   "res://assets/blocks/grass_side.png",
+	TileType.UPGRADE_STATION: "res://assets/blocks/cobblestone_bricks.png",
 }
 
 const TILE_HP: Dictionary = {
@@ -329,6 +333,14 @@ var _fuel_shop_btn_refuel_full: Button
 var _fuel_shop_btn_refuel_half: Button
 var _fuel_shop_btn_repair: Button
 
+# Upgrade Station Shop
+var _upgrade_station_layer: CanvasLayer
+var _upgrade_station_visible: bool = false
+var _upgrade_station_minerals_label: Label
+var _upgrade_station_btn_carapace: Button
+var _upgrade_station_btn_legs: Button
+var _upgrade_station_btn_mandibles: Button
+
 # Depth tracking
 var _last_depth: int = 0
 var _current_zone_idx: int = -1
@@ -448,6 +460,7 @@ func _ready() -> void:
 	QuestManager.clear_quest()
 	_setup_surface_hub()
 	_setup_fuel_station_shop()
+	_setup_upgrade_station_shop()
 	_setup_farm_animals()
 
 	# Apply settlement carry-over consumables (purchased at a settlement before this run)
@@ -555,6 +568,7 @@ func _generate_grid() -> void:
 
 	var refuel_col = GRID_COLS / 2
 	grid[refuel_col][SURFACE_ROWS - 1] = TileType.REFUEL_STATION
+	grid[refuel_col - 5][SURFACE_ROWS - 1] = TileType.UPGRADE_STATION
 
 	grid[GRID_COLS - 1][SURFACE_ROWS - 1] = TileType.EXIT_STATION
 
@@ -770,6 +784,10 @@ func _draw() -> void:
 			if tile == TileType.REFUEL_STATION:
 				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
 					Color.WHITE, false, 2.0)
+
+			if tile == TileType.UPGRADE_STATION:
+				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
+					Color(0.40, 1.00, 0.60), false, 2.0)
 
 			# Crack overlay
 			var pk := Vector2i(col, row)
@@ -1135,8 +1153,8 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 	if tile == TileType.LAVA or tile == TileType.LAVA_FLOW:
 		return
 
-	# Refuel station / Exit station — not mineable
-	if tile == TileType.REFUEL_STATION or tile == TileType.EXIT_STATION:
+	# Refuel station / Exit station / Upgrade station — not mineable
+	if tile == TileType.REFUEL_STATION or tile == TileType.EXIT_STATION or tile == TileType.UPGRADE_STATION:
 		return
 
 	# Stone Golem phase resistance — delegated to BossSystem
@@ -1442,6 +1460,13 @@ func _update_interact_prompt() -> void:
 			var screen_pos := get_viewport().get_canvas_transform() * world_pos
 			player_node.set_prompt_position(screen_pos)
 			return
+		if current_tile == TileType.UPGRADE_STATION:
+			var key_name := _get_interact_key_name()
+			player_node.show_prompt("Press %s to upgrade" % key_name)
+			var world_pos := Vector2(player_gp.x * CELL_SIZE + CELL_SIZE * 0.5, player_gp.y * CELL_SIZE)
+			var screen_pos := get_viewport().get_canvas_transform() * world_pos
+			player_node.set_prompt_position(screen_pos)
+			return
 	# Check adjacent tiles for refuel station
 	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
 		var check: Vector2i = player_node.get_grid_pos() + offset
@@ -1449,6 +1474,17 @@ func _update_interact_prompt() -> void:
 			if grid[check.x][check.y] == TileType.REFUEL_STATION:
 				var key_name := _get_interact_key_name()
 				player_node.show_prompt("Press %s to open shop" % key_name)
+				var world_pos := Vector2(check.x * CELL_SIZE + CELL_SIZE * 0.5, check.y * CELL_SIZE)
+				var screen_pos := get_viewport().get_canvas_transform() * world_pos
+				player_node.set_prompt_position(screen_pos)
+				return
+	# Check adjacent tiles for upgrade station
+	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+		var check: Vector2i = player_node.get_grid_pos() + offset
+		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
+			if grid[check.x][check.y] == TileType.UPGRADE_STATION:
+				var key_name := _get_interact_key_name()
+				player_node.show_prompt("Press %s to upgrade" % key_name)
 				var world_pos := Vector2(check.x * CELL_SIZE + CELL_SIZE * 0.5, check.y * CELL_SIZE)
 				var screen_pos := get_viewport().get_canvas_transform() * world_pos
 				player_node.set_prompt_position(screen_pos)
@@ -1495,6 +1531,13 @@ func _try_interact() -> void:
 		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
 			if grid[check.x][check.y] == TileType.REFUEL_STATION:
 				_show_fuel_station_shop()
+				return
+	# Check current + adjacent tiles for upgrade station
+	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+		var check: Vector2i = player_node.get_grid_pos() + offset
+		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
+			if grid[check.x][check.y] == TileType.UPGRADE_STATION:
+				_show_upgrade_station_shop()
 				return
 	var nearby_npc: FarmAnimalNPC = _get_nearby_farm_npc()
 	if nearby_npc:
@@ -1820,6 +1863,152 @@ func _shop_repair() -> void:
 		player_node.heal(1)
 		SoundManager.play_drill_sound()
 		_show_fuel_station_shop()
+
+# ---------------------------------------------------------------------------
+# Upgrade Station Shop
+# ---------------------------------------------------------------------------
+
+func _setup_upgrade_station_shop() -> void:
+	const VW: int = 1280
+	const VH: int = 720
+	const PANEL_W: int = 500
+	const PANEL_H: int = 360
+	const PX: int = (VW - PANEL_W) / 2
+	const PY: int = (VH - PANEL_H) / 2
+
+	_upgrade_station_layer = CanvasLayer.new()
+	_upgrade_station_layer.layer = 10
+	_upgrade_station_layer.visible = false
+	add_child(_upgrade_station_layer)
+
+	var dim := ColorRect.new()
+	dim.position = Vector2.ZERO
+	dim.size = Vector2(VW, VH)
+	dim.color = Color(0.0, 0.0, 0.0, 0.72)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_upgrade_station_layer.add_child(dim)
+
+	var border := ColorRect.new()
+	border.position = Vector2(PX - 3, PY - 3)
+	border.size = Vector2(PANEL_W + 6, PANEL_H + 6)
+	border.color = Color(0.30, 0.85, 0.50, 1.0)
+	_upgrade_station_layer.add_child(border)
+
+	var panel := ColorRect.new()
+	panel.position = Vector2(PX, PY)
+	panel.size = Vector2(PANEL_W, PANEL_H)
+	panel.color = Color(0.07, 0.12, 0.09, 0.97)
+	_upgrade_station_layer.add_child(panel)
+
+	var title := Label.new()
+	title.text = "Upgrade Station"
+	title.position = Vector2(PX, PY + 12)
+	title.size = Vector2(PANEL_W, 30)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 20)
+	title.modulate = Color(0.55, 1.0, 0.70)
+	_upgrade_station_layer.add_child(title)
+
+	_upgrade_station_minerals_label = Label.new()
+	_upgrade_station_minerals_label.position = Vector2(PX, PY + 48)
+	_upgrade_station_minerals_label.size = Vector2(PANEL_W, 24)
+	_upgrade_station_minerals_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_upgrade_station_minerals_label.modulate = Color(1.0, 0.85, 0.2)
+	_upgrade_station_layer.add_child(_upgrade_station_minerals_label)
+
+	var divider := ColorRect.new()
+	divider.position = Vector2(PX + 20, PY + 80)
+	divider.size = Vector2(PANEL_W - 40, 2)
+	divider.color = Color(0.30, 0.85, 0.50, 0.5)
+	_upgrade_station_layer.add_child(divider)
+
+	const BTN_X: int = PX + 25
+	const BTN_W: int = PANEL_W - 50
+	const BTN_H: int = 52
+
+	_upgrade_station_btn_carapace = Button.new()
+	_upgrade_station_btn_carapace.position = Vector2(BTN_X, PY + 94)
+	_upgrade_station_btn_carapace.size = Vector2(BTN_W, BTN_H)
+	_upgrade_station_btn_carapace.pressed.connect(_upgrade_station_buy_carapace)
+	_upgrade_station_layer.add_child(_upgrade_station_btn_carapace)
+
+	_upgrade_station_btn_legs = Button.new()
+	_upgrade_station_btn_legs.position = Vector2(BTN_X, PY + 156)
+	_upgrade_station_btn_legs.size = Vector2(BTN_W, BTN_H)
+	_upgrade_station_btn_legs.pressed.connect(_upgrade_station_buy_legs)
+	_upgrade_station_layer.add_child(_upgrade_station_btn_legs)
+
+	_upgrade_station_btn_mandibles = Button.new()
+	_upgrade_station_btn_mandibles.position = Vector2(BTN_X, PY + 218)
+	_upgrade_station_btn_mandibles.size = Vector2(BTN_W, BTN_H)
+	_upgrade_station_btn_mandibles.pressed.connect(_upgrade_station_buy_mandibles)
+	_upgrade_station_layer.add_child(_upgrade_station_btn_mandibles)
+
+	var divider2 := ColorRect.new()
+	divider2.position = Vector2(PX + 20, PY + 282)
+	divider2.size = Vector2(PANEL_W - 40, 2)
+	divider2.color = Color(0.30, 0.85, 0.50, 0.5)
+	_upgrade_station_layer.add_child(divider2)
+
+	var close_btn := Button.new()
+	close_btn.text = "Close"
+	close_btn.position = Vector2(BTN_X + (BTN_W - 180) / 2, PY + 292)
+	close_btn.size = Vector2(180, 40)
+	close_btn.pressed.connect(_hide_upgrade_station_shop)
+	_upgrade_station_layer.add_child(close_btn)
+
+func _show_upgrade_station_shop() -> void:
+	_upgrade_station_minerals_label.text = "Banked Minerals: %d" % GameManager.mineral_currency
+
+	var carapace_cost := 50 + 25 * GameManager.carapace_level
+	var current_hp := GameManager.get_max_health()
+	_upgrade_station_btn_carapace.text = "Harden Carapace Lv%d — Max HP: %d → %d  (%d Minerals)" % [
+		GameManager.carapace_level, current_hp, current_hp + 1, carapace_cost]
+	_upgrade_station_btn_carapace.disabled = GameManager.mineral_currency < carapace_cost
+
+	var legs_cost := 50 + 25 * GameManager.legs_level
+	var current_fuel_cap := GameManager.get_max_fuel()
+	_upgrade_station_btn_legs.text = "Strengthen Legs Lv%d — Fuel Limit: %d → %d  (%d Minerals)" % [
+		GameManager.legs_level, current_fuel_cap, current_fuel_cap + 25, legs_cost]
+	_upgrade_station_btn_legs.disabled = GameManager.mineral_currency < legs_cost
+
+	var mandibles_cost := 50 + 25 * GameManager.mandibles_level
+	var current_power := GameManager.get_mandibles_power()
+	_upgrade_station_btn_mandibles.text = "Sharpen Mandibles Lv%d — Mining Speed: %d → %d  (%d Minerals)" % [
+		GameManager.mandibles_level, current_power, current_power + 3, mandibles_cost]
+	_upgrade_station_btn_mandibles.disabled = GameManager.mineral_currency < mandibles_cost
+
+	_upgrade_station_layer.visible = true
+	_upgrade_station_visible = true
+
+func _hide_upgrade_station_shop() -> void:
+	_upgrade_station_layer.visible = false
+	_upgrade_station_visible = false
+
+func _upgrade_station_buy_carapace() -> void:
+	var cost := 50 + 25 * GameManager.carapace_level
+	if GameManager.mineral_currency >= cost:
+		GameManager.mineral_currency -= cost
+		GameManager.upgrade_carapace()
+		SoundManager.play_drill_sound()
+		_show_upgrade_station_shop()
+
+func _upgrade_station_buy_legs() -> void:
+	var cost := 50 + 25 * GameManager.legs_level
+	if GameManager.mineral_currency >= cost:
+		GameManager.mineral_currency -= cost
+		GameManager.upgrade_legs()
+		EventBus.fuel_changed.emit(GameManager.current_fuel, GameManager.get_max_fuel())
+		SoundManager.play_drill_sound()
+		_show_upgrade_station_shop()
+
+func _upgrade_station_buy_mandibles() -> void:
+	var cost := 50 + 25 * GameManager.mandibles_level
+	if GameManager.mineral_currency >= cost:
+		GameManager.mineral_currency -= cost
+		GameManager.upgrade_mandibles()
+		SoundManager.play_drill_sound()
+		_show_upgrade_station_shop()
 
 # ---------------------------------------------------------------------------
 # Wandering Trader
