@@ -13,7 +13,7 @@ extends RefCounted
 # Constants
 # ---------------------------------------------------------------------------
 
-const BOSS_MILESTONES: Array[int] = [32, 64, 96, 112]
+const BOSS_MILESTONES: Array[int] = [32, 64, 96, 112, 128]
 const BOSS_DRAIN_MULT: float      = 1.5   # fuel drain multiplier while boss alive
 const BOSS_SEGMENT_COUNT: int     = 12    # body segments for Centipede King
 const BOSS_REWARD_BONUS: int      = 100   # flat mineral bonus on defeat
@@ -23,6 +23,15 @@ const BOSS_TYPE_CENTIPEDE: int = 1
 const BOSS_TYPE_SPIDER: int    = 2
 const BOSS_TYPE_MOLE: int      = 3
 const BOSS_TYPE_GOLEM: int     = 4
+const BOSS_TYPE_ANCIENT: int   = 5
+
+# The Ancient One — three-phase final boss at row 128
+const ANCIENT_VOID_PULSE_INTERVAL: float  = 6.0   # seconds between void pulses (phase 2)
+const ANCIENT_VOID_PULSE_WARNING: float   = 1.5   # warning window before pulse fires
+const ANCIENT_VOID_PULSE_RADIUS: int      = 7     # radius of void pulse collapse
+const ANCIENT_VOID_FILL_CHANCE: float     = 0.40  # probability each empty tile collapses
+const ANCIENT_CORE_RECHARGE_INTERVAL: float = 8.0 # core resets accumulated damage every 8s (phase 3)
+const ANCIENT_DRAIN_MULT: float           = 2.0   # The Ancient One drains fuel at 2× rate
 
 # Blind Mole tremor timings
 const MOLE_TREMOR_INTERVAL: float   = 7.0
@@ -58,16 +67,28 @@ var mole_tremor_warning_timer: float = 0.0
 ## Stone Golem draw state
 var golem_phase: int = 0
 
+## The Ancient One draw state
+var ancient_phase: int = 0               # 0=outer shell, 1=inner ring, 2=core only
+var ancient_void_warning_active: bool = false
+var ancient_void_warning_timer: float = 0.0
+var ancient_core_recharge_warning: bool = false
+
 # ---------------------------------------------------------------------------
 # Private state
 # ---------------------------------------------------------------------------
 
-var _boss_milestones_seen: Array[bool] = [false, false, false, false]
+var _boss_milestones_seen: Array[bool] = [false, false, false, false, false]
 var _boss_spawn_row: int = -1
 var _pending_hints: Array[String] = []
 var _mole_tremor_timer: float = 0.0
 var _mole_center: Vector2i = Vector2i(-1, -1)
 var _golem_segments_this_phase: int = 0
+var _ancient_center: Vector2i = Vector2i(-1, -1)
+var _ancient_outer_positions: Array[Vector2i] = []
+var _ancient_outer_count: int = 0
+var _ancient_inner_count: int = 0
+var _ancient_void_timer: float = 0.0
+var _ancient_core_recharge_timer: float = 0.0
 
 # Grid layout constants injected at setup
 var _grid_cols: int = 96
@@ -112,6 +133,16 @@ func update(delta: float) -> void:
 		return
 	boss_pulse_time += delta
 	_update_blind_mole(delta)
+	_update_ancient_one(delta)
+
+
+## Returns the fuel drain multiplier for the current boss (1.0 if no boss active).
+func get_fuel_drain_mult() -> float:
+	if not boss_active:
+		return 1.0
+	if boss_type == BOSS_TYPE_ANCIENT:
+		return ANCIENT_DRAIN_MULT
+	return BOSS_DRAIN_MULT
 
 
 # ---------------------------------------------------------------------------
@@ -131,6 +162,7 @@ func check_milestone(depth_row: int, player_col: int) -> void:
 				1: _spawn_cave_spider_matriarch(player_col)
 				2: _spawn_blind_mole(player_col)
 				3: _spawn_stone_golem(player_col)
+				4: _spawn_ancient_one(player_col)
 
 
 # ---------------------------------------------------------------------------
@@ -160,9 +192,10 @@ func get_pending_hints() -> Array[String]:
 
 
 ## Called by MiningLevel after a BOSS_SEGMENT or BOSS_CORE tile is fully mined.
-## Handles phase advancement (Golem) and defeat detection.
+## Handles phase advancement (Golem, Ancient One) and defeat detection.
 func on_tile_mined(col: int, row: int, tile_type: int) -> void:
-	boss_tile_positions.erase(Vector2i(col, row))
+	var mined_pos := Vector2i(col, row)
+	boss_tile_positions.erase(mined_pos)
 
 	# Stone Golem: count segments to advance armor phases
 	if boss_active and boss_type == BOSS_TYPE_GOLEM and tile_type == _TILE_BOSS_SEGMENT:
@@ -179,6 +212,27 @@ func on_tile_mined(col: int, row: int, tile_type: int) -> void:
 				_show_banner.call("CORE EXPOSED!", Color(1.00, 0.40, 0.00))
 				EventBus.ore_mined_popup.emit(0, "Strike the core!")
 				_shake_camera.call(8.0, 0.4)
+
+	# Ancient One: track shell phase transitions
+	if boss_active and boss_type == BOSS_TYPE_ANCIENT and tile_type == _TILE_BOSS_SEGMENT:
+		if mined_pos in _ancient_outer_positions:
+			_ancient_outer_positions.erase(mined_pos)
+			_ancient_outer_count -= 1
+			if _ancient_outer_count <= 0 and ancient_phase == 0:
+				ancient_phase = 1
+				_ancient_void_timer = ANCIENT_VOID_PULSE_INTERVAL
+				_show_banner.call("CRYSTALLINE FORM REVEALED!", Color(0.55, 0.10, 0.85))
+				EventBus.ore_mined_popup.emit(0, "Phase 2! Watch for void pulses!")
+				_shake_camera.call(10.0, 0.6)
+		else:
+			_ancient_inner_count -= 1
+			if _ancient_inner_count <= 0 and ancient_phase == 1:
+				ancient_phase = 2
+				ancient_void_warning_active = false
+				_ancient_core_recharge_timer = ANCIENT_CORE_RECHARGE_INTERVAL
+				_show_banner.call("THE ANCIENT CORE EXPOSED!", Color(0.90, 0.70, 1.00))
+				EventBus.ore_mined_popup.emit(0, "Phase 3! Mine fast — it regenerates!")
+				_shake_camera.call(12.0, 0.8)
 
 	if boss_tile_positions.is_empty() and boss_active:
 		_on_boss_defeated()
@@ -307,6 +361,66 @@ func _spawn_stone_golem(player_col: int) -> void:
 	_pending_hints = ["Step 1: Mine " + required + " ore (not the boss!)", "Step 2: Then click the glowing boss tiles!", "Wrong ore type? It blocks all damage!"]
 
 
+func _spawn_ancient_one(player_col: int) -> void:
+	var boss_row := BOSS_MILESTONES[4]
+	var positions: Array[Vector2i] = []
+	var outer_pos: Array[Vector2i] = []
+
+	# Outer shell — 12 segments forming a large elliptical ring (phase 1)
+	var outer_offsets: Array = [
+		Vector2i(-3, -2), Vector2i(-1, -3), Vector2i(1, -3), Vector2i(3, -2),
+		Vector2i(4,  0),  Vector2i(3,  2),  Vector2i(1,  3), Vector2i(-1,  3),
+		Vector2i(-3,  2), Vector2i(-4,  0), Vector2i(-2, -3), Vector2i(2, -3),
+	]
+
+	for offset in outer_offsets:
+		var col: int = clampi(player_col + offset.x, 2, _grid_cols - 3)
+		var row: int = clampi(boss_row + offset.y, _surface_rows + 1, _grid_rows - 2)
+		_grid[col][row] = _TILE_BOSS_SEGMENT
+		_set_collision.call(col, row, true)
+		positions.append(Vector2i(col, row))
+		outer_pos.append(Vector2i(col, row))
+
+	# Inner ring — 8 segments forming a tighter ellipse (phase 2)
+	var inner_offsets: Array = [
+		Vector2i(-2, -1), Vector2i(-1, -2), Vector2i(1, -2), Vector2i(2, -1),
+		Vector2i(2,  1),  Vector2i(1,  2),  Vector2i(-1,  2), Vector2i(-2,  1),
+	]
+
+	for offset in inner_offsets:
+		var col: int = clampi(player_col + offset.x, 2, _grid_cols - 3)
+		var row: int = clampi(boss_row + offset.y, _surface_rows + 1, _grid_rows - 2)
+		_grid[col][row] = _TILE_BOSS_SEGMENT
+		_set_collision.call(col, row, true)
+		positions.append(Vector2i(col, row))
+
+	# Core — centre tile (phase 3)
+	var core_col: int = clampi(player_col, 2, _grid_cols - 3)
+	var core_row: int = clampi(boss_row, _surface_rows + 1, _grid_rows - 2)
+	_grid[core_col][core_row] = _TILE_BOSS_CORE
+	_set_collision.call(core_col, core_row, true)
+	positions.append(Vector2i(core_col, core_row))
+
+	_activate(positions, BOSS_TYPE_ANCIENT, boss_row)
+	_ancient_center = Vector2i(core_col, core_row)
+	_ancient_outer_positions = outer_pos
+	_ancient_outer_count = outer_offsets.size()
+	_ancient_inner_count = inner_offsets.size()
+	ancient_phase = 0
+	_ancient_void_timer = 0.0
+	ancient_void_warning_active = false
+	ancient_core_recharge_warning = false
+
+	_show_banner.call("THE ANCIENT ONE AWAKENS!", Color(0.15, 0.70, 0.90))
+	EventBus.ore_mined_popup.emit(0, "Final boss! Break the outer shell first!")
+	_shake_camera.call(16.0, 1.0)
+	_pending_hints = [
+		"Phase 1: Mine the outer ring of segments!",
+		"Phase 2: Void pulses will seal mined tunnels — keep moving!",
+		"Phase 3: The core regenerates — strike fast!",
+	]
+
+
 func _activate(positions: Array[Vector2i], type: int, spawn_row: int) -> void:
 	boss_tile_positions = positions
 	boss_active = true
@@ -328,7 +442,15 @@ func _on_boss_defeated() -> void:
 	_mole_center = Vector2i(-1, -1)
 	golem_phase = 0
 	_golem_segments_this_phase = 0
+	ancient_phase = 0
+	ancient_void_warning_active = false
+	ancient_core_recharge_warning = false
+	_ancient_center = Vector2i(-1, -1)
+	_ancient_outer_positions.clear()
+	_ancient_outer_count = 0
+	_ancient_inner_count = 0
 
+	GameManager.bosses_defeated_total += 1
 	GameManager.add_currency(BOSS_REWARD_BONUS)
 	EventBus.minerals_earned.emit(BOSS_REWARD_BONUS)
 	EventBus.ore_mined_popup.emit(BOSS_REWARD_BONUS, "Boss defeated!")
@@ -386,13 +508,73 @@ func _execute_mole_tremor() -> void:
 	_shake_camera.call(10.0, 0.5)
 
 
+# ---------------------------------------------------------------------------
+# The Ancient One phase logic
+# ---------------------------------------------------------------------------
+
+func _update_ancient_one(delta: float) -> void:
+	if boss_type != BOSS_TYPE_ANCIENT:
+		return
+
+	# Phase 2: periodic void pulses that reseal mined tunnels near the boss
+	if ancient_phase == 1:
+		if ancient_void_warning_active:
+			ancient_void_warning_timer -= delta
+			if ancient_void_warning_timer <= 0.0:
+				ancient_void_warning_active = false
+				_execute_ancient_void_pulse()
+		else:
+			_ancient_void_timer -= delta
+			if _ancient_void_timer <= 0.0:
+				_ancient_void_timer = ANCIENT_VOID_PULSE_INTERVAL
+				ancient_void_warning_active = true
+				ancient_void_warning_timer = ANCIENT_VOID_PULSE_WARNING
+				EventBus.ore_mined_popup.emit(0, "VOID PULSE INCOMING!")
+				_shake_camera.call(4.0, 0.3)
+
+	# Phase 3: core periodically recharges (resets accumulated hit damage)
+	elif ancient_phase == 2:
+		_ancient_core_recharge_timer -= delta
+		ancient_core_recharge_warning = _ancient_core_recharge_timer <= 2.0
+		if _ancient_core_recharge_timer <= 0.0:
+			_ancient_core_recharge_timer = ANCIENT_CORE_RECHARGE_INTERVAL
+			ancient_core_recharge_warning = false
+			_erase_tile_state.call(_ancient_center)
+			EventBus.ore_mined_popup.emit(0, "Ancient One regenerates!")
+			_shake_camera.call(6.0, 0.4)
+
+
+func _execute_ancient_void_pulse() -> void:
+	var cx := _ancient_center.x
+	var cy := _ancient_center.y
+	var r := ANCIENT_VOID_PULSE_RADIUS
+	var sealed := 0
+
+	for tc in range(maxi(0, cx - r), mini(_grid_cols, cx + r + 1)):
+		for tr in range(maxi(_surface_rows + 1, cy - r), mini(_grid_rows - 1, cy + r + 1)):
+			if _grid[tc][tr] != 0:   # not EMPTY
+				continue
+			var dist := Vector2(tc - cx, tr - cy).length()
+			if dist > float(r):
+				continue
+			if randf() < ANCIENT_VOID_FILL_CHANCE:
+				_grid[tc][tr] = _TILE_DIRT_DARK
+				_set_collision.call(tc, tr, true)
+				_erase_tile_state.call(Vector2i(tc, tr))
+				sealed += 1
+
+	if sealed > 0:
+		EventBus.ore_mined_popup.emit(0, "Void Pulse! " + str(sealed) + " tiles sealed!")
+	_shake_camera.call(8.0, 0.5)
+
+
 ## Reset all state at the start of a new run.
 func reset() -> void:
 	boss_active = false
 	boss_type = BOSS_TYPE_NONE
 	boss_tile_positions.clear()
 	boss_pulse_time = 0.0
-	_boss_milestones_seen = [false, false, false, false]
+	_boss_milestones_seen = [false, false, false, false, false]
 	_boss_spawn_row = -1
 	_mole_tremor_timer = 0.0
 	mole_tremor_warning_active = false
@@ -400,3 +582,13 @@ func reset() -> void:
 	_mole_center = Vector2i(-1, -1)
 	golem_phase = 0
 	_golem_segments_this_phase = 0
+	ancient_phase = 0
+	ancient_void_warning_active = false
+	ancient_void_warning_timer = 0.0
+	ancient_core_recharge_warning = false
+	_ancient_center = Vector2i(-1, -1)
+	_ancient_outer_positions.clear()
+	_ancient_outer_count = 0
+	_ancient_inner_count = 0
+	_ancient_void_timer = 0.0
+	_ancient_core_recharge_timer = 0.0

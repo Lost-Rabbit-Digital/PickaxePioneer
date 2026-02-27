@@ -14,6 +14,13 @@ var mineral_sense_cost: int = 75
 
 var _sense_button: Button
 
+# Gem socket buttons (one per upgrade track)
+var _gem_label: Label
+var _gem_carapace_button: Button
+var _gem_legs_button: Button
+var _gem_mandibles_button: Button
+var _gem_sense_button: Button
+
 var welcome_lines: Array[String] = [
 	"Welcome back, worker!",
 	"Brought minerals from the deep?",
@@ -34,6 +41,27 @@ func _ready() -> void:
 	_sense_button = Button.new()
 	$Panel/VBoxContainer.add_child(_sense_button)
 	_sense_button.pressed.connect(_on_mineral_sense_pressed)
+
+	# Gem Socket section — separator label + 4 socket buttons
+	_gem_label = Label.new()
+	_gem_label.add_theme_color_override("font_color", Color(0.15, 0.85, 0.75))
+	$Panel/VBoxContainer.add_child(_gem_label)
+
+	_gem_carapace_button = Button.new()
+	$Panel/VBoxContainer.add_child(_gem_carapace_button)
+	_gem_carapace_button.pressed.connect(_on_gem_carapace_pressed)
+
+	_gem_legs_button = Button.new()
+	$Panel/VBoxContainer.add_child(_gem_legs_button)
+	_gem_legs_button.pressed.connect(_on_gem_legs_pressed)
+
+	_gem_mandibles_button = Button.new()
+	$Panel/VBoxContainer.add_child(_gem_mandibles_button)
+	_gem_mandibles_button.pressed.connect(_on_gem_mandibles_pressed)
+
+	_gem_sense_button = Button.new()
+	$Panel/VBoxContainer.add_child(_gem_sense_button)
+	_gem_sense_button.pressed.connect(_on_gem_sense_pressed)
 
 	_update_ui()
 
@@ -75,7 +103,37 @@ func _update_ui() -> void:
 		sense_level, sense_radius, sense_radius_next, sense_fuel, sense_fuel_next, mineral_sense_cost
 	]
 
-	info_label.text = "Minerals: %d" % GameManager.mineral_currency
+	info_label.text = "Minerals: %d   |   Gems: %d" % [GameManager.mineral_currency, GameManager.gem_count]
+
+	_gem_label.text = "--- Gem Sockets (cost: %d gems each) ---" % GameManager.GEM_SOCKET_COST
+
+	if GameManager.carapace_gem_socketed:
+		_gem_carapace_button.text = "[SOCKETED] Chitin Gem — +1 Max HP"
+		_gem_carapace_button.disabled = true
+	else:
+		_gem_carapace_button.text = "Socket Chitin Gem into Carapace — +1 Max HP (%d Gems)" % GameManager.GEM_SOCKET_COST
+		_gem_carapace_button.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
+
+	if GameManager.legs_gem_socketed:
+		_gem_legs_button.text = "[SOCKETED] Quickstride Gem — +25 Max Fuel, +15 Speed"
+		_gem_legs_button.disabled = true
+	else:
+		_gem_legs_button.text = "Socket Quickstride Gem into Legs — +25 Fuel, +15 Speed (%d Gems)" % GameManager.GEM_SOCKET_COST
+		_gem_legs_button.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
+
+	if GameManager.mandibles_gem_socketed:
+		_gem_mandibles_button.text = "[SOCKETED] Fracture Gem — +4 Mining Power"
+		_gem_mandibles_button.disabled = true
+	else:
+		_gem_mandibles_button.text = "Socket Fracture Gem into Mandibles — +4 Mining Power (%d Gems)" % GameManager.GEM_SOCKET_COST
+		_gem_mandibles_button.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
+
+	if GameManager.sense_gem_socketed:
+		_gem_sense_button.text = "[SOCKETED] Echo Gem — +3 Sonar Radius"
+		_gem_sense_button.disabled = true
+	else:
+		_gem_sense_button.text = "Socket Echo Gem into Mineral Sense — +3 Sonar Radius (%d Gems)" % GameManager.GEM_SOCKET_COST
+		_gem_sense_button.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
 
 func _on_carapace_pressed() -> void:
 	if GameManager.mineral_currency >= carapace_cost:
@@ -106,5 +164,33 @@ func _on_mineral_sense_pressed() -> void:
 		GameManager.mineral_currency -= mineral_sense_cost
 		GameManager.upgrade_mineral_sense()
 		mineral_sense_cost += 50
+		GameManager.save_game()
+		_update_ui()
+
+func _on_gem_carapace_pressed() -> void:
+	if not GameManager.carapace_gem_socketed and GameManager.gem_count >= GameManager.GEM_SOCKET_COST:
+		GameManager.gem_count -= GameManager.GEM_SOCKET_COST
+		GameManager.carapace_gem_socketed = true
+		GameManager.save_game()
+		_update_ui()
+
+func _on_gem_legs_pressed() -> void:
+	if not GameManager.legs_gem_socketed and GameManager.gem_count >= GameManager.GEM_SOCKET_COST:
+		GameManager.gem_count -= GameManager.GEM_SOCKET_COST
+		GameManager.legs_gem_socketed = true
+		GameManager.save_game()
+		_update_ui()
+
+func _on_gem_mandibles_pressed() -> void:
+	if not GameManager.mandibles_gem_socketed and GameManager.gem_count >= GameManager.GEM_SOCKET_COST:
+		GameManager.gem_count -= GameManager.GEM_SOCKET_COST
+		GameManager.mandibles_gem_socketed = true
+		GameManager.save_game()
+		_update_ui()
+
+func _on_gem_sense_pressed() -> void:
+	if not GameManager.sense_gem_socketed and GameManager.gem_count >= GameManager.GEM_SOCKET_COST:
+		GameManager.gem_count -= GameManager.GEM_SOCKET_COST
+		GameManager.sense_gem_socketed = true
 		GameManager.save_game()
 		_update_ui()
