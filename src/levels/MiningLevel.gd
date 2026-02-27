@@ -679,7 +679,7 @@ func _draw() -> void:
 		var tc: int = pk.x
 		var tr: int = pk.y
 		if tc >= min_col and tc <= max_col and tr >= min_row and tr <= max_row:
-			var trail_alpha := _pheromone_trails[pk] * 0.22
+			var trail_alpha: float = _pheromone_trails[pk] * 0.22
 			draw_rect(Rect2(tc * CELL_SIZE, tr * CELL_SIZE, CELL_SIZE, CELL_SIZE),
 				Color(0.55, 0.30, 0.80, trail_alpha))
 
