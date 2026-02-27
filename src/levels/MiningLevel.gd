@@ -298,7 +298,7 @@ const TRADER_INTERACT_RADIUS: float = 128.0  # px (~2 tiles)
 # Tier-scaled item definitions: [label, description, run_mineral_cost, tier_required]
 const TRADER_ITEMS: Array = [
 	{"key": "energy",    "label": "Energy Cache",      "desc": "+50 Energy",                      "cost": 12, "tier": 1},
-	{"key": "repair",  "label": "Carapace Patch",  "desc": "Restore 1 HP",                  "cost": 18, "tier": 1},
+	{"key": "repair",  "label": "Pelt Patch",       "desc": "Restore 1 HP",                  "cost": 18, "tier": 1},
 	{"key": "shroom",  "label": "Mining Shroom",   "desc": "Next 12 ores yield +100%",       "cost": 30, "tier": 2},
 	{"key": "compass", "label": "Lucky Compass",   "desc": "2× Lucky Strike chance (run)",   "cost": 45, "tier": 3},
 	{"key": "map",     "label": "Ancient Map",     "desc": "2× Sonar radius (run)",          "cost": 65, "tier": 4},
@@ -459,12 +459,11 @@ var _farm_npcs: Array = []
 var _farm_npc_grid_cols: Array[int] = []
 const FARM_NPC_ROW: int = 2  # Placed on the middle surface row
 
+var _pickaxe_texture: Texture2D
+
 func _ready() -> void:
-	var ant_spritesheet := load("res://assets/creatures/red_ant_spritesheet.png") as Texture2D
-	var ant_atlas := AtlasTexture.new()
-	ant_atlas.atlas = ant_spritesheet
-	ant_atlas.region = Rect2(0, 0, 16, 16)
-	player_texture = ant_atlas
+	player_texture = load("res://assets/cat_miner.png") as Texture2D
+	_pickaxe_texture = load("res://assets/pickaxe_effect.png") as Texture2D
 
 	texture_filter = TEXTURE_FILTER_NEAREST
 
@@ -1253,6 +1252,26 @@ func _unhandled_input(event: InputEvent) -> void:
 			sonar_system.try_ping(player_node.get_grid_pos())
 
 # ---------------------------------------------------------------------------
+# Pickaxe throw effect — spawns a pickaxe sprite that flies to the target
+# ---------------------------------------------------------------------------
+
+func _spawn_pickaxe_effect(from: Vector2, to: Vector2) -> void:
+	if not _pickaxe_texture:
+		return
+	var sprite := Sprite2D.new()
+	sprite.texture = _pickaxe_texture
+	sprite.position = from
+	sprite.scale = Vector2(0.5, 0.5)
+	sprite.rotation = from.angle_to_point(to) + PI * 0.25
+	sprite.texture_filter = TEXTURE_FILTER_NEAREST
+	add_child(sprite)
+	var dist := from.distance_to(to)
+	var duration := clampf(dist / 800.0, 0.06, 0.18)
+	var tween := create_tween()
+	tween.tween_property(sprite, "position", to, duration)
+	tween.tween_callback(sprite.queue_free)
+
+# ---------------------------------------------------------------------------
 # Mining API — called by PlayerProbe
 # ---------------------------------------------------------------------------
 
@@ -1265,6 +1284,11 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 	var tile: int = grid[col][row]
 	if tile == TileType.EMPTY or tile == TileType.SURFACE:
 		return
+
+	# Pickaxe throw effect — flies from player to clicked tile
+	if player_node:
+		var target_world := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
+		_spawn_pickaxe_effect(player_node.global_position, target_world)
 
 	# Energy nodes — collect immediately
 	if tile == TileType.ENERGY_NODE or tile == TileType.ENERGY_NODE_FULL:
@@ -2544,7 +2568,7 @@ func _trader_purchase(item_key: String) -> void:
 				return
 			GameManager.run_mineral_currency -= cost
 			player_node.heal(1)
-			EventBus.ore_mined_popup.emit(0, "Carapace Patched!")
+			EventBus.ore_mined_popup.emit(0, "Pelt Patched!")
 		"shroom":
 			GameManager.run_mineral_currency -= cost
 			_shroom_charges += 12

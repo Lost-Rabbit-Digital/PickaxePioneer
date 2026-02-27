@@ -77,7 +77,7 @@ const ORE_COLORS: Dictionary = {
 	# Wandering Trader events
 	"Wandering Trader!":    Color(1.00, 0.75, 0.10),
 	"Energy Pack!":           Color(0.20, 0.90, 0.20),
-	"Carapace Patched!":    Color(0.85, 0.08, 0.08),
+	"Pelt Patched!":        Color(0.85, 0.08, 0.08),
 	"Mining Shroom!":       Color(0.50, 0.90, 0.20),
 	"Lucky Compass!":       Color(1.00, 0.90, 0.10),
 	"Ancient Map!":         Color(0.20, 0.90, 1.00),
