@@ -359,12 +359,17 @@ var _shroom_charges: int = 0       # Mining Shroom: remaining ores with doubled 
 var _lucky_compass_active: bool = false   # Lucky Compass: 2× lucky strike chance
 var _ancient_map_active: bool = false     # Ancient Map: 2× sonar ping radius
 
+# Per-run ore collection counts for inventory display
+var _run_ore_counts: Dictionary = {}  # TileType int -> count mined this run
+
 # Hazard damage cooldown to prevent instant death
 var _hazard_cooldown: float = 0.0
 const HAZARD_COOLDOWN_TIME: float = 1.0
 
 @onready var player_node: PlayerProbe = $PlayerProbe
 @onready var pause_menu = $PauseMenu
+
+var _inventory_screen: InventoryScreen = null
 
 # Farm animal NPCs
 var _farm_npcs: Array = []
@@ -416,6 +421,7 @@ func _ready() -> void:
 	_setup_surface_hub()
 	_setup_fuel_station_shop()
 	_setup_farm_animals()
+	_setup_inventory_screen()
 	queue_redraw()
 
 # ---------------------------------------------------------------------------
@@ -847,6 +853,14 @@ func _check_exit_zone() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if _hub_visible or _game_over or _fuel_shop_visible or _trader_shop_visible:
 		return
+	if event.is_action_pressed("toggle_inventory"):
+		if _inventory_screen:
+			if _inventory_screen.visible:
+				_inventory_screen.close()
+			else:
+				_inventory_screen.open(_run_ore_counts, _shroom_charges,
+					_lucky_compass_active, _ancient_map_active)
+		return
 	if event.is_action_pressed("ui_cancel"):
 		pause_menu.show_menu()
 		return
@@ -922,6 +936,9 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 			if _shroom_charges > 0 and tile in ORE_TILES:
 				minerals *= 2
 				_shroom_charges -= 1
+			# Track ore counts for inventory (ore tiles only)
+			if tile in ORE_TILES:
+				_run_ore_counts[tile] = _run_ore_counts.get(tile, 0) + 1
 			# Fossil forgiveness check (§3.6) — before awarding base minerals
 			_check_fossil(tile, col, row)
 			# Consecutive smelting bonus (§3.5) — awards extra currency internally
@@ -1298,6 +1315,17 @@ func _setup_farm_animals() -> void:
 		add_child(npc)
 		_farm_npcs.append(npc)
 		_farm_npc_grid_cols.append(a["col"])
+
+# ---------------------------------------------------------------------------
+# Inventory Screen
+# ---------------------------------------------------------------------------
+
+func _setup_inventory_screen() -> void:
+	var inv_scene := load("res://src/ui/InventoryScreen.tscn") as PackedScene
+	if inv_scene:
+		_inventory_screen = inv_scene.instantiate() as InventoryScreen
+		_inventory_screen.mining_level = self
+		add_child(_inventory_screen)
 
 # ---------------------------------------------------------------------------
 # Surface Hub
