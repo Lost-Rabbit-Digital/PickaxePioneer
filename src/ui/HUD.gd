@@ -8,8 +8,16 @@ extends CanvasLayer
 @onready var fuel_label: Label = $Control/FuelLabel
 @onready var fuel_bar_container: HBoxContainer = $Control/FuelBarContainer
 
-var health_squares: Array[ColorRect] = []
 var fuel_segments: Array[ColorRect] = []
+
+# Vertical health bars
+const HEALTH_BAR_W: int = 18
+const HEALTH_BAR_H: int = 60
+var health_bars: Array[Control] = []
+var health_bar_fills: Array[ColorRect] = []
+var health_bar_highlights: Array[ColorRect] = []
+var _displayed_health: float = 10.0
+var _health_drain_tween: Tween
 
 var scrap_panel: ColorRect
 var earnings_label: Label
@@ -197,19 +205,92 @@ func _on_ore_mined_popup(amount: int, ore_name: String) -> void:
 	_earnings_tween.tween_property(earnings_label, "modulate:a", 0.0, 0.45)
 	_earnings_tween.parallel().tween_property(_pickup_panel, "modulate:a", 0.0, 0.45)
 
-func _on_health_changed(current: int, max_hp: int) -> void:
-	# Clear previous squares
-	for square in health_squares:
-		square.queue_free()
-	health_squares.clear()
+func _rebuild_health_bars(count: int) -> void:
+	for bar in health_bars:
+		bar.queue_free()
+	health_bars.clear()
+	health_bar_fills.clear()
+	health_bar_highlights.clear()
 
-	# Rebuild squares (filled = red, lost = dark grey)
-	for i in range(max_hp):
-		var square := ColorRect.new()
-		square.custom_minimum_size = Vector2(26, 26)
-		square.color = Color(0.85, 0.08, 0.08, 1.0) if i < current else Color(0.25, 0.25, 0.25, 0.6)
-		health_container.add_child(square)
-		health_squares.append(square)
+	for i in range(count):
+		var bar := Control.new()
+		bar.custom_minimum_size = Vector2(HEALTH_BAR_W, HEALTH_BAR_H)
+		bar.clip_contents = true
+		bar.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+
+		# Dark chamber background
+		var bg := ColorRect.new()
+		bg.color = Color(0.12, 0.12, 0.12, 0.88)
+		bg.position = Vector2.ZERO
+		bg.size = Vector2(HEALTH_BAR_W, HEALTH_BAR_H)
+		bar.add_child(bg)
+
+		# Red fill — anchored to bottom, drains from top
+		var fill := ColorRect.new()
+		fill.color = Color(0.85, 0.08, 0.08, 1.0)
+		fill.position = Vector2.ZERO
+		fill.size = Vector2(HEALTH_BAR_W, HEALTH_BAR_H)
+		bar.add_child(fill)
+
+		# Bright shine line at the top edge of the fill
+		var shine := ColorRect.new()
+		shine.color = Color(1.0, 0.55, 0.55, 0.75)
+		shine.position = Vector2.ZERO
+		shine.size = Vector2(HEALTH_BAR_W, 3)
+		bar.add_child(shine)
+
+		health_container.add_child(bar)
+		health_bars.append(bar)
+		health_bar_fills.append(fill)
+		health_bar_highlights.append(shine)
+
+	_update_health_bar_fills()
+
+func _set_displayed_health(value: float) -> void:
+	_displayed_health = value
+	_update_health_bar_fills()
+
+func _update_health_bar_fills() -> void:
+	for i in range(health_bar_fills.size()):
+		# Bar i (0-indexed) represents the health range (i, i+1)
+		var fill_ratio: float
+		if _displayed_health >= float(i + 1):
+			fill_ratio = 1.0
+		elif _displayed_health <= float(i):
+			fill_ratio = 0.0
+		else:
+			fill_ratio = _displayed_health - float(i)
+
+		var fill_h: float = fill_ratio * float(HEALTH_BAR_H)
+		health_bar_fills[i].size.y = fill_h
+		health_bar_fills[i].position.y = float(HEALTH_BAR_H) - fill_h
+
+		# Shine tracks the top surface of the fill
+		var shine: ColorRect = health_bar_highlights[i]
+		shine.visible = fill_ratio > 0.02
+		if shine.visible:
+			shine.size.y = minf(3.0, fill_h)
+			shine.position.y = float(HEALTH_BAR_H) - fill_h
+
+func _on_health_changed(current: int, max_hp: int) -> void:
+	# Rebuild bar nodes when count changes (first call or stat upgrade)
+	if health_bar_fills.size() != max_hp:
+		_displayed_health = float(current)
+		_rebuild_health_bars(max_hp)
+		# Fall through to update low-HP warning below
+
+	else:
+		# Animate drain (damage) or fill (healing)
+		if _health_drain_tween:
+			_health_drain_tween.kill()
+
+		var is_healing := float(current) > _displayed_health
+		var bars_changing := absf(float(current) - _displayed_health)
+		var speed := 0.15 if is_healing else 0.40
+		var duration := clampf(bars_changing * speed, 0.20, 1.0)
+
+		_health_drain_tween = create_tween()
+		_health_drain_tween.tween_method(_set_displayed_health, _displayed_health, float(current), duration)
 
 	# Flash danger warning when critically low HP
 	if current == 1:
