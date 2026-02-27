@@ -9,6 +9,7 @@ extends Node2D
 @onready var mine_node_2: MapNode = $MineNode2
 @onready var settlement_node_3: MapNode = $SettlementNode3
 @onready var settlement_node_4: MapNode = $SettlementNode4
+@onready var pause_menu: PauseMenu = $PauseMenu
 
 var current_node: MapNode
 var nodes: Array[MapNode] = []
@@ -175,6 +176,13 @@ func _draw() -> void:
 				draw_dashed_line(node.position, neighbor.position, Color(1, 1, 1, 0.5), 2.0, 10.0)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		if _modal and _modal.visible:
+			return  # Let the modal handle its own dismissal
+		pause_menu.show_menu()
+		get_viewport().set_input_as_handled()
+		return
+
 	if event.is_action_pressed("ui_accept"):
 		_enter_node(current_node)
 		return
