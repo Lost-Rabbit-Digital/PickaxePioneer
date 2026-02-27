@@ -6,7 +6,7 @@
 [ext_resource type="AudioStream" uid="uid://cvs22aev4ixy3" path="res://assets/overworld.mp3" id="4_music"]
 [ext_resource type="Texture2D" uid="uid://ccpd0m6gir48o" path="res://assets/bg_wasteland.svg" id="5_bg_wasteland"]
 [ext_resource type="Texture2D" uid="uid://bdwjbhehbvqnc" path="res://assets/dust.svg" id="6_dust"]
-[ext_resource type="PackedScene" uid="uid://pausemenu0123" path="res://src/ui/PauseMenu.tscn" id="7_pausemenu"]
+[ext_resource type="PackedScene" path="res://src/ui/PauseMenu.tscn" id="7_pausemenu"]
 
 [node name="Overworld" type="Node2D"]
 script = ExtResource("1_overworld")

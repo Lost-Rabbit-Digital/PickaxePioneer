@@ -9,7 +9,7 @@ extends Node2D
 @onready var mine_node_2: MapNode = $MineNode2
 @onready var settlement_node_3: MapNode = $SettlementNode3
 @onready var settlement_node_4: MapNode = $SettlementNode4
-@onready var pause_menu: PauseMenu = $PauseMenu
+@onready var pause_menu = $PauseMenu
 
 var current_node: MapNode
 var nodes: Array[MapNode] = []
