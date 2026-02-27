@@ -14,6 +14,7 @@ extends Node2D
 var current_node: MapNode
 var nodes: Array[MapNode] = []
 var _modal: LevelInfoModal = null
+var _pending_node: MapNode = null
 
 # Mine name options for randomization
 var mine_names = [
@@ -64,12 +65,12 @@ func _ready() -> void:
 	_randomize_mines()
 
 	# Set static node metadata
-	city_node.description = "Your home colony. Spend your hard-earned minerals on upgrades to improve your mining operation."
+	city_node.description = "Your home Clowder. Spend your hard-earned minerals on upgrades to improve your mining operation."
 	settlement_node_3.description = "A small outpost along the mining route. Rest, resupply, and prepare for deeper delves."
 	settlement_node_3.difficulty = 1
 	settlement_node_3.ore_types = []
 	settlement_node_3.hazard_types = []
-	settlement_node_4.description = "A remote settlement near deeper deposits. Stock up before venturing into the lower zones."
+	settlement_node_4.description = "A remote camp near deeper deposits. Stock up before venturing into the lower zones."
 	settlement_node_4.difficulty = 2
 	settlement_node_4.ore_types = []
 	settlement_node_4.hazard_types = []
@@ -136,21 +137,31 @@ func _randomize_mines() -> void:
 func _arrange_nodes_in_circle() -> void:
 	var center := Vector2(640, 360)
 	var radius := 240.0
-	var jitter := deg_to_rad(20.0)
+	var jitter := deg_to_rad(12.0)
 	var start_angle := randf() * TAU
 
-	# Only position visible nodes so hidden mines don't take up a slot
-	var visible_nodes: Array[MapNode] = []
-	for node in nodes:
-		if node.visible:
-			visible_nodes.append(node)
+	# Use cycle order so connected nodes sit adjacent on the circle.
+	# The graph forms a cycle: city -> mine1 -> settlement3 -> settlement4 -> mine2 -> city.
+	# Placing nodes in this order means every edge is between neighbours on the
+	# circle, producing a clean polygon instead of a pentagram.
+	var ordered_nodes := _get_cycle_order()
 
-	visible_nodes.shuffle()
-
-	var base_step := TAU / visible_nodes.size()
-	for i in range(visible_nodes.size()):
+	var base_step := TAU / ordered_nodes.size()
+	for i in range(ordered_nodes.size()):
 		var angle := start_angle + i * base_step + randf_range(-jitter, jitter)
-		visible_nodes[i].position = center + Vector2(cos(angle), sin(angle)) * radius
+		ordered_nodes[i].position = center + Vector2(cos(angle), sin(angle)) * radius
+
+func _get_cycle_order() -> Array[MapNode]:
+	# Return visible nodes in the intended cycle order so edges stay on the
+	# perimeter and never cross through the centre.
+	var full_order: Array[MapNode] = [
+		city_node, mine_node_1, settlement_node_3, settlement_node_4, mine_node_2
+	]
+	var result: Array[MapNode] = []
+	for node in full_order:
+		if node.visible:
+			result.append(node)
+	return result
 
 func _apply_mine_metadata(node: MapNode, name: String) -> void:
 	var meta: Dictionary = mine_metadata.get(name, {})
@@ -219,13 +230,61 @@ func _move_selection(direction: Vector2) -> void:
 		caravan.move_to(current_node.position)
 
 func _on_node_clicked(node: MapNode) -> void:
-	if node != current_node:
-		current_node.highlight(false)
-		current_node = node
-		current_node.highlight(true)
-		caravan.move_to(node.position)
-	# Always show the info panel immediately on click
-	_enter_node(node)
+	# Cancel any in-progress travel
+	if caravan.arrived.is_connected(_on_caravan_arrived):
+		caravan.arrived.disconnect(_on_caravan_arrived)
+
+	if node == current_node:
+		_enter_node(node)
+		return
+
+	# Find shortest path through the graph so the caravan walks each segment
+	var path := _find_path(current_node, node)
+
+	current_node.highlight(false)
+	current_node = node
+	current_node.highlight(true)
+
+	# Skip the first node (caravan is already there); collect waypoint positions
+	var waypoints: Array[Vector2] = []
+	for i in range(1, path.size()):
+		waypoints.append(path[i].position)
+
+	_pending_node = node
+	caravan.arrived.connect(_on_caravan_arrived, CONNECT_ONE_SHOT)
+	caravan.move_along_path(waypoints)
+
+func _on_caravan_arrived() -> void:
+	if _pending_node:
+		_enter_node(_pending_node)
+		_pending_node = null
+
+func _find_path(from_node: MapNode, to_node: MapNode) -> Array[MapNode]:
+	# BFS over visible, connected nodes to find the shortest path.
+	if from_node == to_node:
+		return [from_node]
+
+	var queue: Array = [[from_node]]
+	var visited: Array[MapNode] = [from_node]
+
+	while queue.size() > 0:
+		var path: Array = queue.pop_front()
+		var current: MapNode = path[-1]
+
+		for neighbor in current.neighbors:
+			if not neighbor.visible:
+				continue
+			if neighbor == to_node:
+				path.append(neighbor)
+				return path
+			if not visited.has(neighbor):
+				visited.append(neighbor)
+				var new_path := path.duplicate()
+				new_path.append(neighbor)
+				queue.append(new_path)
+
+	# Fallback: direct move if no path found
+	return [from_node, to_node]
 
 func _enter_node(node: MapNode) -> void:
 	_modal.show_for_node(node)

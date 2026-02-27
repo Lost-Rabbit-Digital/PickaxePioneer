@@ -4,7 +4,7 @@
 ## 1. Game Overview
 **Title:** Pickaxe Pioneer
 **Genre:** 2D Side-Scrolling Mining Roguelite
-**Theme:** Underground Ant Colony Mining Adventure
+**Theme:** Underground Cat Civilization Mining Adventure
 **Engine:** Godot 4.5
 **Perspective:** Side-Scrolling 2D (Terraria-style physics)
 **Inspiration:** Motherlode, Supermotherlode, Dwarf Fortress, Path of Exile, ADOM, Noita
@@ -12,48 +12,48 @@
 **Target Platforms:** Steam (Windows/Linux/Mac), Itch.io
 
 ### 1.1 High Concept
-*"Dig deep, gather minerals, return to the colony."*
+*"Dig deep, gather minerals, return to the Clowder."*
 
-You are a red ant venturing out from the colony into the earth below. Each expedition takes you deeper underground through layers of dirt, stone, and precious ore. Manage your energy carefully — go too deep without fuel and you'll be stranded. Mine rare gems from the deepest veins, upgrade your carapace, legs, and mandibles back at the colony, and unravel the mysteries hidden beneath the surface.
+You are a mining cat from the Clowder, venturing into the earth below. Armed with razor-sharp Claws and impossibly sensitive Whiskers, each expedition takes you deeper underground through layers of dirt, stone, and precious ore. Manage your energy carefully — go too deep without energy and you'll be stranded. Mine rare gems from the deepest veins, upgrade your Pelt, Paws, Claws, and Whiskers back at the Clowder, and unravel the mysteries hidden beneath the surface.
 
 **Core Pillars:**
 1. **Risk/Reward Depth Diving:** Every tunnel is a gamble — dig deeper for richer ore or surface early to bank your haul
-2. **Satisfying Progression:** Permanent ant upgrades, colony unlocks, and meta-progression create a sense of growing power
-3. **Environmental Storytelling:** Discover the underground world's secrets through collectible fossils, colony lore, and hidden chambers
-4. **Strategic Exploration:** Grid-based movement and fuel management reward careful planning over recklessness
+2. **Satisfying Progression:** Permanent cat upgrades, Clowder unlocks, and meta-progression create a sense of growing power
+3. **Environmental Storytelling:** Discover the underground world's secrets through collectible fossils, Clowder lore, and hidden chambers
+4. **Strategic Exploration:** Physics-based movement and energy management reward careful planning over recklessness
 
 ## 2. Gameplay Mechanics
 
 ### 2.1 Core Loop
-1. **Hub — The Colony (Surface):**
+1. **Hub — The Clowder (Surface):**
    - View stats, achievements, and total progression
-   - Access the Colony Workshop (permanent ant upgrades: Carapace, Legs, Mandibles, Mineral Sense)
+   - Access the Clowder Workshop (permanent cat upgrades: Pelt, Paws, Claws, Whiskers)
    - Check the Mission Board (daily challenges, bounties, discovery missions)
    - Read collected Fossils and Ancient Inscriptions in the Archive
-   - Interact with colony NPCs for quests and lore
+   - Interact with Clowder NPCs for quests and lore
 
-2. **Overworld — The Anthill Map:**
-   - Node-based navigation between mine entrances, settlement rest stops, and the colony
+2. **Overworld — The Clowder Warren:**
+   - Node-based navigation between mine entrances, settlement rest stops, and the Clowder
    - Multiple mines with varying depth, ore richness, and hazard profiles
    - Each mine node has a name and unique composition (Iron Mine, Gold Vein, Gem Cavern, etc.)
    - Settlement nodes offer pre-run consumables for banked minerals
 
 3. **Settlement — Rest Stop:**
    - Spend banked minerals on run-scoped consumables before entering a mine
-   - Available items: Fuel Cache (+50 starting fuel), Field Repair (+1 HP), Mining Shroom (12 ore-yield charges), Whetstone (+1 mandible power)
+   - Available items: Energy Cache (+50 starting energy), Pelt Patch (+1 HP), Mining Shroom (12 ore-yield charges), Claw Whetstone (+1 claw power)
 
 4. **Mining Run — The Descent:**
    - Spawn at the surface entrance of a mine shaft (96×128 tile grid)
    - Terraria-style physics: gravity, jump, horizontal run; cursor-based mining (left-click within 4.5 tiles)
-   - Fuel depletes with depth; surface movement is free
+   - Energy depletes with depth; surface movement is free
    - Ore value increases dramatically with depth
    - Hazards: lava flows, explosive gas pockets, unstable rock
-   - Fuel Nodes restore energy; the Refuel Station (midpoint) refuels for minerals
+   - Energy Nodes restore energy; the Reenergy Station (midpoint) reenergys for minerals
    - Reach the Exit Station to complete the run and bank your minerals
 
 5. **Post-Run — Return to Colony:**
    - Successful surface return: bank all collected minerals (+ any forager-banked minerals)
-   - Out of fuel or HP → 0: lose all run minerals, return empty to colony
+   - Out of energy or HP → 0: lose all run minerals, return empty to colony
    - Review run statistics and depth reached
    - Unlock new upgrades based on mineral wealth
 
@@ -66,7 +66,7 @@ You are a red ant venturing out from the colony into the earth below. Each exped
 ### 2.2 Run System
 
 **Mineral Types (by tile yield):**
-1. **Soil/Grass** (1 mineral) — Surface layer, no fuel cost
+1. **Soil/Grass** (1 mineral) — Surface layer, no energy cost
 2. **Dirt/Dark Dirt** (1 mineral) — Shallow ground
 3. **Stone/Dark Stone** (2 minerals) — Mid-depth rock
 4. **Copper Ore / Deep Copper** (3–5 minerals) — Early ore deposits
@@ -77,20 +77,20 @@ You are a red ant venturing out from the colony into the earth below. Each exped
 **Hazard Tiles (no mineral yield):**
 - **Explosive / Armed Explosive** — Detonates in a 3×3 radius, deals damage
 - **Lava / Lava Flow** — Instant damage on contact; cannot be mined
-- **Fuel Node / Full Fuel Node** — Restores 10 fuel when mined (bonus resource)
-- **Refuel Station** — Refills fuel to max for a mineral cost (interact with E)
+- **Energy Node / Full Energy Node** — Restores 10 energy when mined (bonus resource)
+- **Reenergy Station** — Refills energy to max for a mineral cost (interact with E)
 
 **Death & Extraction:**
 - **Carapace Destroyed (HP → 0):** Lose ALL collected run minerals, return to colony
-- **Out of Fuel:** Lose ALL collected run minerals, stranded (transported back)
+- **Out of Energy:** Lose ALL collected run minerals, stranded (transported back)
 - **Successful Exit:** Keep everything + depth bonus
-- **Risk Tiers:** Deeper tiles yield far better ore but more hazards and higher fuel cost
+- **Risk Tiers:** Deeper tiles yield far better ore but more hazards and higher energy cost
 
 **Run Modifiers (Unlocked Later):**
 - **Ironworker Mode:** +200% mineral yield, permadeath for entire save
 - **Speed Dig:** Time limit but massive depth bonus
 - **Dark Tunnels:** No minimap, huge mineral multiplier
-- **Lean Rations:** Limited fuel capacity, enormous mineral multipliers
+- **Lean Rations:** Limited energy capacity, enormous mineral multipliers
 
 ### 2.3 Controls
 - **Movement (Terraria-style physics):**
@@ -99,14 +99,14 @@ You are a red ant venturing out from the colony into the earth below. Each exped
 - **Mining:**
   - Left-click: Mine the tile under the cursor (within 4.5-tile range)
 - **Abilities:**
-  - `Q`: Sonar ping (costs fuel; reveals ore in radius through solid rock)
+  - `Q`: Sonar ping (costs energy; reveals ore in radius through solid rock)
   - `F`: Place pheromone marker (directs forager ant)
 - **Interaction:**
-  - `E`: Interact with Refuel Station or NPC
+  - `E`: Interact with Reenergy Station or NPC
   - `Esc`: Pause Menu
 - **HUD Indicators:**
   - Upper-left: Minerals collected this run
-  - Upper-right: Health squares (carapace HP), segmented fuel bar, depth meter
+  - Upper-right: Health squares (carapace HP), segmented energy bar, depth meter
 
 ### 2.4 Entities
 
@@ -115,9 +115,9 @@ The ant is a red forager from the colony, controlled directly by the player. Mov
 
 **Ant Stats (affected by upgrades):**
 - **Carapace (Health):** Base 3 HP; +1 per Carapace upgrade level
-- **Legs (Speed/Fuel):** +30 px/s move speed **and** +25 max fuel per level
+- **Legs (Speed/Energy):** +30 px/s move speed **and** +25 max energy per level
 - **Mandibles (Mining Power):** +3 mining power per level; affects damage to tough tiles and boss weak points
-- **Mineral Sense:** Increases sonar ping radius and reduces fuel cost per activation
+- **Mineral Sense:** Increases sonar ping radius and reduces energy cost per activation
 
 #### Upgrades (Colony Workshop)
 Four permanent upgrade tracks, each with scaling mineral costs (+25 per level):
@@ -127,8 +127,8 @@ Four permanent upgrade tracks, each with scaling mineral costs (+25 per level):
    - Effect: +1 max HP per level (base: 3 HP)
 
 2. **Strengthen Legs** (base cost: 50 minerals)
-   - Builds leg muscle for faster movement and greater fuel endurance
-   - Effect: +30 px/s move speed **and** +25 max fuel per level
+   - Builds leg muscle for faster movement and greater energy endurance
+   - Effect: +30 px/s move speed **and** +25 max energy per level
 
 3. **Sharpen Mandibles** (base cost: 50 minerals)
    - Hones the ant's digging claws to a razor edge
@@ -136,13 +136,13 @@ Four permanent upgrade tracks, each with scaling mineral costs (+25 per level):
 
 4. **Mineral Sense** (base cost: 50 minerals)
    - Refines the ant's antennae sensitivity for deeper sonar reads
-   - Effect: Larger sonar ping radius and lower fuel cost per activation per level
+   - Effect: Larger sonar ping radius and lower energy cost per activation per level
 
 #### Mine Tiles
 See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 - Shallow (rows 3–30): Mostly dirt, occasional copper
 - Mid-depth (rows 30–70): Stone, iron, explosive hazards increase
-- Deep (rows 70–128): Gold, gems, heavy hazards, fuel nodes become critical
+- Deep (rows 70–128): Gold, gems, heavy hazards, energy nodes become critical
 
 #### NPCs
 1. **The Queen** (Colony Hub): Main upgrade vendor, story guide
@@ -168,10 +168,10 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 **Visual Polish:**
 - Sky blue background for surface rows
 - Dark near-black background for underground
-- White border highlights on interactable tiles (Refuel Station, Exit Station)
+- White border highlights on interactable tiles (Reenergy Station, Exit Station)
 - Green EXIT label on Exit Station
 - Health: Red squares (filled) / dark grey (lost HP)
-- Fuel: 10-segment green bar, greying out as fuel depletes
+- Energy: 10-segment green bar, greying out as energy depletes
 
 **Particle Systems (Planned):**
 - Dirt spray when digging
@@ -197,9 +197,9 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 - **Digging:** Crunching, grinding tone (mandible buzz) — `play_drill_sound()`
 - **Mineral Pickup:** Satisfying "clink" chime
 - **Explosion:** Deep impact boom — `play_explosion_sound()`
-- **Fuel Restore:** Bubbly replenishment tone
+- **Energy Restore:** Bubbly replenishment tone
 - **Damage:** Chitinous impact crack
-- **Fuel Low Warning:** Anxious cricket chirp
+- **Energy Low Warning:** Anxious cricket chirp
 
 **Audio Mix:**
 - Clear priority: critical SFX > music > ambient
@@ -219,7 +219,7 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 - Bustling ant colony at the surface
 - Tunnels lined with amber and bioluminescent fungi
 - Colony members with idle animations and ambient chatter
-- Safe zone — no fuel cost, no hazards
+- Safe zone — no energy cost, no hazards
 
 **NPC Interactions:**
 - Story-driven dialogue about the colony's need for deeper minerals
@@ -236,7 +236,7 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 **Mine Nodes (Progressively Deeper/Richer):**
 1. **Surface Mound (Node 1)** — Tutorial mine, shallow, mostly dirt and copper
 2. **Iron Seam (Node 2)** — First real challenge, iron ore abundant, some explosives
-3. **Gold Canyon (Node 3)** — Deep gold veins, lava appears, fuel management critical
+3. **Gold Canyon (Node 3)** — Deep gold veins, lava appears, energy management critical
 4. **Gem Cavern (Node 4)** — Maximum depth, gem ore, high hazard density
 5. **Ancient Chamber (Node 5)** — Boss encounter, legendary fossil rewards
 6. **The Deep (Node 6)** — Final mine, all hazards combined, ultimate gem deposits
@@ -245,7 +245,7 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 - **Rich Vein:** High ore density, low hazards
 - **Hazard Zone:** High hazards, bonus mineral multiplier
 - **Ancient Site:** Special fossil collectibles, moderate mining
-- **Supply Cache:** Fuel nodes abundant, prepare for deep dive
+- **Supply Cache:** Energy nodes abundant, prepare for deep dive
 - **Boss Encounter:** Elite creature guarding legendary rewards
 
 ### 4.3 Mining Level (Procedural Generation)
@@ -253,14 +253,14 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 - **Right 2 columns:** Exit zone (spawn point and return corridor)
 - **Row 0–2:** Surface layer (sky blue, free movement)
 - **Row 3:** Grass surface row (1 mineral each)
-- **Rows 4–127:** Underground (1 fuel per tile entered)
-- **Mid-column:** Refuel Station on surface row
+- **Rows 4–127:** Underground (1 energy per tile entered)
+- **Mid-column:** Reenergy Station on surface row
 - **Far-right surface:** Exit Station (ends run, banks minerals)
 
 **Procedural Tile Distribution:**
 - Depth-weighted: rarer ores become significantly more common deeper
 - Hazard rate: 10% at surface edge, grows to 15% at max depth
-- Fuel Nodes: ~3% of tiles throughout, critical for deep runs
+- Energy Nodes: ~3% of tiles throughout, critical for deep runs
 - Stone density increases with depth (more resistant to quick clear)
 
 **Camera System:**
@@ -270,14 +270,14 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 **Extraction System:**
 - Reach the Exit Station on the surface layer to complete run
 - All collected minerals are banked via the Run Summary screen
-- Die or run out of fuel → lose run minerals, return to overworld
+- Die or run out of energy → lose run minerals, return to overworld
 
 ## 5. Progression System
 
 ### 5.1 Mineral Economy
 **Primary Currency: Minerals**
 - Collected by mining tiles underground
-- Lost if the ant dies or runs out of fuel
+- Lost if the ant dies or runs out of energy
 - Banked permanently on successful exit
 - Used for all colony upgrades
 
@@ -293,12 +293,12 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 | Upgrade | Stat | Base Cost | Per Level | Max Levels |
 |---------|------|-----------|-----------|-----------|
 | Harden Carapace | +1 Max HP | 50 minerals | +25 minerals | 10 |
-| Strengthen Legs | +30 px/s speed & +25 max fuel | 50 minerals | +25 minerals | 10 |
+| Strengthen Legs | +30 px/s speed & +25 max energy | 50 minerals | +25 minerals | 10 |
 | Sharpen Mandibles | +3 mining power | 50 minerals | +25 minerals | 10 |
-| Mineral Sense | Larger sonar radius, lower fuel/ping | 50 minerals | +25 minerals | 10 |
+| Mineral Sense | Larger sonar radius, lower energy/ping | 50 minerals | +25 minerals | 10 |
 
 **Future Upgrade Tracks (Planned):**
-- **Fuel Sac:** Increases max fuel capacity
+- **Energy Sac:** Increases max energy capacity
 - **Mineral Sense:** Shows ore richness of adjacent tiles (passive)
 - **Colony Bond:** Buffs near other rescued worker ants
 
@@ -307,7 +307,7 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 **Tier 1** (1–5 Colony Points Each):
 - Ore Nose: +10% mineral yield from all tiles
 - Thick Shell: +5% max HP
-- Efficient Stride: −5% fuel consumption
+- Efficient Stride: −5% energy consumption
 - Quick Mandibles: −10% between-tile dig delay
 - Lucky Find: +2% chance to find Rare Crystals
 
@@ -315,14 +315,14 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 - Deep Sense: Reveal tile types one step ahead
 - Armored Segments: +15% damage reduction
 - Venom Mandibles: Chain-mine explosive tiles safely
-- Extended Fuel Sac: +25% max fuel capacity
+- Extended Energy Sac: +25% max energy capacity
 - Treasure Instinct: Highlight fossil locations
 
 **Tier 3** (10–20 Points Each):
 - Master Forager: +50% all mineral gains
 - Indestructible Carapace: Auto-survive one fatal hit per run
 - Deep Sight: Full tile map visible from surface
-- Extraction Savings: Keep 25% of minerals even on fuel death
+- Extraction Savings: Keep 25% of minerals even on energy death
 - Colony Hero: +30% minerals near colony entrance
 
 ## 6. Story & Lore
@@ -345,7 +345,7 @@ Each fossil reveals lore about the earth's deep history and grants bonus colony 
 1. **The Centipede King** (Iron Seam) — HP: 500, multi-segment body
    - Reward: Unlock Gold Canyon + Deep Mine Sense ability
 2. **Cave Spider Matriarch** (Gold Canyon) — HP: 800, web-laying ranged attacks
-   - Reward: Unlock Gem Cavern + Extended Fuel Sac upgrade
+   - Reward: Unlock Gem Cavern + Extended Energy Sac upgrade
 3. **The Blind Mole** (Gem Cavern) — HP: 1200, massive AOE tremor attacks
    - Reward: Unlock Ancient Chamber + Venom Mandibles upgrade
 4. **Stone Golem** (Ancient Chamber) — HP: 1500, rock-armored phases
@@ -371,16 +371,16 @@ res://
 ```
 
 ### 7.2 Key Systems
-- **GameManager:** Game state, scene transitions, mineral currency, 4 upgrade tracks, fuel, settlement carry-overs
-- **EventBus:** Decoupled signals (minerals_changed, minerals_earned, fuel_changed, player_health_changed, player_died)
-- **MiningLevel:** Terraria-style physics world, procedural tile generation, cursor mining, fuel logic; delegates to subsystems below
+- **GameManager:** Game state, scene transitions, mineral currency, 4 upgrade tracks, energy, settlement carry-overs
+- **EventBus:** Decoupled signals (minerals_changed, minerals_earned, energy_changed, player_health_changed, player_died)
+- **MiningLevel:** Terraria-style physics world, procedural tile generation, cursor mining, energy logic; delegates to subsystems below
 - **SmeltingSystem:** Consecutive ore chain bonuses and alloy combos
 - **FossilSystem:** Fossil drop probability with forgiveness pity counter per block type
-- **SonarSystem:** Sonar ping — radial ore detection, fuel cost per activation
+- **SonarSystem:** Sonar ping — radial ore detection, energy cost per activation
 - **ForagerSystem:** Forager ant companion — collects 40% ore yield, auto-banks when full
-- **BossSystem:** Five depth-milestone boss encounters; fuel pressure, phase management
+- **BossSystem:** Five depth-milestone boss encounters; energy pressure, phase management
 - **UpgradeMenu:** Colony Workshop UI — Carapace / Legs / Mandibles / Mineral Sense upgrades
-- **HUD:** Minerals counter, health squares, segmented fuel bar, depth meter, milestone banners
+- **HUD:** Minerals counter, health squares, segmented energy bar, depth meter, milestone banners
 
 ### 7.3 Save System
 Persistent save via JSON (`user://save_data.json`):
@@ -395,15 +395,15 @@ Persistent save via JSON (`user://save_data.json`):
 |------|-----------|
 | **Minerals** | Primary currency — what the ant collects by mining tiles |
 | **Carapace** | Ant's exoskeleton; determines max HP |
-| **Legs** | Ant's movement system; determines speed and future fuel efficiency |
+| **Legs** | Ant's movement system; determines speed and future energy efficiency |
 | **Mandibles** | Ant's digging claws; determines mining power |
-| **Fuel** | The ant's energy reserve; depletes by 1 per underground tile entered |
+| **Energy** | The ant's energy reserve; depletes by 1 per underground tile entered |
 | **Run** | One mining expedition from colony surface → underground → return |
 | **Colony** | The hub area; safe zone where upgrades are purchased |
 | **Overworld** | The map of mine entrances and paths between them |
 | **Exit Station** | The mine exit on the surface layer; completing a run requires reaching it |
-| **Refuel Station** | Mid-mine surface point; refuels for a mineral cost |
-| **Fuel Node** | Underground tile that restores 10 fuel when mined |
+| **Reenergy Station** | Mid-mine surface point; reenergys for a mineral cost |
+| **Energy Node** | Underground tile that restores 10 energy when mined |
 | **Depth** | How many rows below surface the ant has reached; higher depth = richer ore |
 | **Fossil** | Permanent story collectible found underground; never lost on death |
 | **Mine Shaft** | A specific mine node on the overworld map |
@@ -422,14 +422,14 @@ Persistent save via JSON (`user://save_data.json`):
 - Mine 100/500/1000 total tiles
 - Reach max depth (row 128) in a single run
 - Mine a gem ore tile for the first time
-- Complete a run without using the Refuel Station
+- Complete a run without using the Reenergy Station
 - Mine 10 tiles in a single second (mandibles speed)
 
 **Survival (10):**
 - Complete a run with 1 HP remaining
 - Complete a run without taking any damage
 - Survive an explosion (be adjacent to one)
-- Escape with 0 fuel remaining
+- Escape with 0 energy remaining
 - Complete 10 runs in a row without dying
 
 **Collection (10):**

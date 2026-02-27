@@ -83,9 +83,9 @@ dropped, preventing perpetual bad luck. Over 150 artifacts map to engaging progr
 ---
 
 ### Motherload (2004 Flash Original)
-**What it does well:** The genre blueprint. Fuel system as session timer. Escalating ore value
+**What it does well:** The genre blueprint. Energy system as session timer. Escalating ore value
 with depth. Cargo hold as mid-run pressure valve (can only carry N minerals before forced
-surface). Underground fuel nodes as strategic relief. Secret upgrades discovered by mining
+surface). Underground energy nodes as strategic relief. Secret upgrades discovered by mining
 specific unusual tiles, not listed in the shop. Depth-milestone cash bonuses (Mr. Natas at
 -500ft and -1000ft). The 99-cycle prestige system.
 
@@ -93,14 +93,14 @@ specific unusual tiles, not listed in the shop. Depth-milestone cash bonuses (Mr
 playthrough), thin narrative payoff relative to the mystery it builds.
 
 **Takeaways for PickaxePioneer:**
-- Our fuel system is a direct lineage from Motherload — validated by 20 years of player
+- Our energy system is a direct lineage from Motherload — validated by 20 years of player
   affection. The design is fundamentally sound.
 - **Some fossils and upgrades should only be found by mining specific unusual tile patterns**,
   not as random drops. Discovery through action is more memorable than random reward.
 - The **Wandering Trader NPC** (already in the GDD) should appear specifically at depth
   milestone rows (32, 64, 96, 128) as an in-world reward for depth achievement, not just a
   random event.
-- Consider adding a **cargo/abdomen limit** as a pressure system separate from fuel — see
+- Consider adding a **cargo/abdomen limit** as a pressure system separate from energy — see
   Section 3.7 for trade-off analysis.
 
 ---
@@ -109,7 +109,7 @@ playthrough), thin narrative payoff relative to the mystery it builds.
 **What it does well:** The **consecutive smelting system** — mine ore A then ore B immediately
 after, auto-smelt into higher-value ore C. Chain vs. combo distinction: same ore type mined
 consecutively multiplies value, while two different ore types combined become a new alloy. Items
-(bombs, fuel) don't break chains, so mid-chain exploration is allowed. Over 150 bomb-based
+(bombs, energy) don't break chains, so mid-chain exploration is allowed. Over 150 bomb-based
 puzzles built on top of the mining loop. Shared narrative with branching choices.
 
 **What it does poorly:**
@@ -117,7 +117,7 @@ puzzles built on top of the mining loop. Shared narrative with branching choices
   (combat positioning, HP management with no prior preparation). The ending felt like a
   different game.
 - No online multiplayer limited co-op reach significantly.
-- Shared fuel gauge in co-op means the weakest player dictates when everyone must surface.
+- Shared energy gauge in co-op means the weakest player dictates when everyone must surface.
 
 **Takeaways for PickaxePioneer:**
 - The **smelting system** (already high-priority in development_notes) must preserve the
@@ -125,10 +125,10 @@ puzzles built on top of the mining loop. Shared narrative with branching choices
   Mine copper → copper → copper = bronze ingot; mine iron → gold = alloy. The player must
   plan their path to execute the sequence. (See Section 3.5.)
 - **Boss encounters must use the same toolkit as mining.** The Centipede King, Cave Spider
-  Matriarch, and all others must be defeated using grid movement, fuel management, mandibles,
+  Matriarch, and all others must be defeated using grid movement, energy management, mandibles,
   explosives — not a separate combat paradigm. This is a critical constraint to enforce during
   boss design.
-- If multiplayer is ever added, **independent fuel pools per player** with optional resource
+- If multiplayer is ever added, **independent energy pools per player** with optional resource
   sharing actions beats forced synchronization. Online support must be day-one.
 
 ---
@@ -139,7 +139,7 @@ These ideas from the research confirm our existing direction is correct:
 
 | Mechanic | Source Validation | Our Status |
 |---|---|---|
-| Fuel as session timer | Motherload (20+ years), Coal LLC | ✅ Implemented |
+| Energy as session timer | Motherload (20+ years), Coal LLC | ✅ Implemented |
 | Depth = ore rarity gradient | All five games | ✅ Implemented |
 | Banked minerals + permanent upgrades | Coal LLC failure teaches this | ✅ Implemented |
 | Procedural map per run | Super Motherload, Coal LLC | ✅ Implemented |
@@ -190,7 +190,7 @@ Instead, the planned **Mineral Sense** upgrade becomes a **sonar ping**:
 - Hotkey (default: `Q`) activates a radial pulse centered on the ant
 - Ore-bearing tiles within the sense radius emit a brief shimmer/glow through solid rock
 - Higher upgrade level = larger radius and longer glow duration
-- Costs a small amount of fuel per activation (10 fuel per ping at base)
+- Costs a small amount of energy per activation (10 energy per ping at base)
 - Direction and approximate richness indicated by glow intensity — not exact tile type
 
 This creates the exploration-tension that fog of war provides without blinding the player or
@@ -199,12 +199,12 @@ through rock is thematically grounded in real ant biology.
 
 **Upgrade Tiers:**
 
-| Tier | Radius | Fuel Cost | Distinguishes |
+| Tier | Radius | Energy Cost | Distinguishes |
 |---|---|---|---|
-| 1 | 4 tiles | 10 fuel | Ore vs no ore |
-| 2 | 7 tiles | 8 fuel | Ore tier (common/rare) |
-| 3 | 12 tiles | 6 fuel | Specific ore type |
-| 4 (Research Tree) | 18 tiles | 3 fuel | Fossils, fuel nodes, hazards |
+| 1 | 4 tiles | 10 energy | Ore vs no ore |
+| 2 | 7 tiles | 8 energy | Ore tier (common/rare) |
+| 3 | 12 tiles | 6 energy | Specific ore type |
+| 4 (Research Tree) | 18 tiles | 3 energy | Fossils, energy nodes, hazards |
 
 ---
 
@@ -288,7 +288,7 @@ in sequence.
 - Players who figure out the crossover point gain a significant efficiency edge
 
 **Mandibles upgrade tie-in:** Higher mandibles level increases mining speed, making it easier
-to stay "in the vein" and maintain chains before fuel forces a direction change.
+to stay "in the vein" and maintain chains before energy forces a direction change.
 
 ---
 
@@ -307,7 +307,7 @@ players can spend hours in fossil-eligible zones without a find, which feels pun
 
 **Additional fossil design rule (from Motherload):** Some fossils should *only* be discoverable
 by mining a specific unusual tile pattern or context (e.g., a 2×3 cluster of gem tiles in
-zone 5, or mining three fuel nodes in sequence). These "secret" fossils reward exploration
+zone 5, or mining three energy nodes in sequence). These "secret" fossils reward exploration
 and attention over random chance.
 
 ---
@@ -316,14 +316,14 @@ and attention over random chance.
 *Inspired by: Motherload's cargo bay mechanic*
 
 Motherload's cargo bay added a mid-run pressure valve: when full, you must surface or dump.
-PickaxePioneer currently relies on **fuel** as the sole pressure to surface.
+PickaxePioneer currently relies on **energy** as the sole pressure to surface.
 
-**Analysis:** Adding cargo capacity on top of fuel creates double-pressure that may feel
-oppressive rather than strategic. Fuel already forces surface decisions. Cargo capacity would
+**Analysis:** Adding cargo capacity on top of energy creates double-pressure that may feel
+oppressive rather than strategic. Energy already forces surface decisions. Cargo capacity would
 only add value if:
 - Forager ants (3.4) replace the need to return yourself — cargo cap creates push/pull with
   forager efficiency
-- The Abdomen upgrade track provides meaningful differentiation from Fuel Sac
+- The Abdomen upgrade track provides meaningful differentiation from Energy Sac
 
 **Recommendation:** Hold this mechanic. Revisit after forager ant system is implemented —
 if foragers make surfacing too painless, abdomen capacity becomes the counterbalance.
@@ -363,7 +363,7 @@ different skill set from everything the game had taught. Players called it "a di
 
 **PickaxePioneer constraint:** Every boss encounter must be defeatable using only:
 - Grid-based movement the player already knows
-- Fuel management (time pressure)
+- Energy management (time pressure)
 - Mandibles mining power (deal damage by mining boss-adjacent tiles or weak points)
 - Existing hazard mechanics (explosives, lava) repurposed as tools
 
@@ -371,8 +371,8 @@ different skill set from everything the game had taught. Players called it "a di
 
 | Boss | Mechanic Integration |
 |---|---|
-| **Centipede King** | Multi-segment body blocks tunnels; player mines around segments to isolate and collapse sections; fuel drain increased during encounter |
-| **Cave Spider Matriarch** | Web tiles spawn and block paths; player mines or uses explosives to clear them; getting trapped = fuel death pressure |
+| **Centipede King** | Multi-segment body blocks tunnels; player mines around segments to isolate and collapse sections; energy drain increased during encounter |
+| **Cave Spider Matriarch** | Web tiles spawn and block paths; player mines or uses explosives to clear them; getting trapped = energy death pressure |
 | **The Blind Mole** | Tremor AOE collapses sections of the map; player must use engineering (reinforce tiles) and movement prediction to survive |
 | **Stone Golem** | Armored phases require specific ore-tool sequence to crack armor; uses the smelting system logic |
 | **The Ancient One** | Three-phase final boss; each phase adds a layer (web + tremor + armor) — tests mastery of all previous boss lessons |
@@ -384,7 +384,7 @@ different skill set from everything the game had taught. Players called it "a di
 | Anti-Pattern | Source | Mitigation |
 |---|---|---|
 | Worker AI destroys player-carved paths | Coal LLC | Pheromone trail system + zone assignment |
-| Boss requires unrelated skills | Super Motherload | Bosses use grid movement + mandibles + fuel tools only |
+| Boss requires unrelated skills | Super Motherload | Bosses use grid movement + mandibles + energy tools only |
 | Entity count destroys framerate | Coal LLC | Cap rendered worker ants; aggregate at high counts |
 | Upgrade tree endgame feels time-gated | Kin and Quarry | Playtest Research Tree tier-3 costs; no artificial stretch |
 | Core loop fatigues when automation dominates | Galactic Mining Corp | Manual mining run must stay intrinsically fun at hour 20 |

@@ -17,7 +17,7 @@ The mechanical core stays entirely intact — only terminology, art, and narrati
 **High Concept (replaces current):**
 > *"Dig deep, gather minerals, return to the Clowder."*
 >
-> You are a mining cat from the Clowder. Armed with razor-sharp Claws and impossibly sensitive Whiskers, venture into the earth to bring back precious ore. Manage your stamina carefully — go too deep without fuel and you'll be stranded. Strengthen your Pelt, Paws, Claws, and Whiskers back at the Clowder, and uncover the ancient secrets buried in the deep.
+> You are a mining cat from the Clowder. Armed with razor-sharp Claws and impossibly sensitive Whiskers, venture into the earth to bring back precious ore. Manage your stamina carefully — go too deep without energy and you'll be stranded. Strengthen your Pelt, Paws, Claws, and Whiskers back at the Clowder, and uncover the ancient secrets buried in the deep.
 
 ---
 
@@ -31,7 +31,7 @@ The mechanical core stays entirely intact — only terminology, art, and narrati
 | Anthill Map | Clowder Warren | Overworld map name |
 | Carapace | Pelt | HP/armor upgrade track |
 | Mandibles | Claws | Mining power upgrade track |
-| Legs | Paws | Speed + fuel capacity upgrade track |
+| Legs | Paws | Speed + energy capacity upgrade track |
 | Mineral Sense | Whiskers | Sonar/ore-detection upgrade track |
 | Forager Ant | Scout Cat | Companion system |
 | Queen | Matriarch | Faction leader NPC |
@@ -48,7 +48,7 @@ The mechanical core stays entirely intact — only terminology, art, and narrati
 | Whetstone | Claw Whetstone | Settlement consumable |
 | Forager Rations | Scout Snacks | Settlement consumable |
 | Chitin Gem | Fur Gem | Gem socket (+1 Max HP) |
-| Quickstride Gem | Swift Paw Gem | Gem socket (+25 Fuel, +15 Speed) |
+| Quickstride Gem | Swift Paw Gem | Gem socket (+25 Energy, +15 Speed) |
 | Fracture Gem | Razor Claw Gem | Gem socket (+4 Mining Power) |
 | Echo Gem | Whisker Gem | Gem socket (+3 Sonar Radius) |
 | Centipede King | Giant Rat King | Boss 1 (row 32) — classic cat nemesis |
@@ -139,7 +139,7 @@ var messages: Array[String] = [
     "I miss the upper galleries.",
     "Who digs these side tunnels?",
     "My whiskers are tingling...",
-    "Anyone got a spare fuel cell?",
+    "Anyone got a spare energy cell?",
     "The Matriarch wants more.",
     "Just one more run...",
     "Did you hear that rumbling?",
@@ -391,7 +391,7 @@ Pre-Launch Polish:
 
 The following systems are mechanically sound and need zero changes — only their labels/strings need updating where noted above:
 
-- All mining mechanics (cursor mining, fuel drain, depth zones)
+- All mining mechanics (cursor mining, energy drain, depth zones)
 - Smelting chain system (`SmeltingSystem.gd`)
 - Fossil system (`FossilSystem.gd`)
 - Sonar/ping system (`SonarSystem.gd`)

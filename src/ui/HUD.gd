@@ -1,24 +1,24 @@
 class_name HUD
 extends CanvasLayer
 
-# HUD — displays Minerals total (upper-left), health squares and fuel gauge (upper-right).
+# HUD — displays Ore Capacity (upper-left), health squares and energy gauge (upper-right).
 
 @onready var scrap_label: Label = $Control/ScrapLabel
 @onready var health_container: HBoxContainer = $Control/HealthContainer
-@onready var fuel_label: Label = $Control/FuelLabel
-@onready var fuel_bar_container: HBoxContainer = $Control/FuelBarContainer
+@onready var energy_label: Label = $Control/EnergyLabel
+@onready var energy_bar_container: HBoxContainer = $Control/EnergyBarContainer
 
-var fuel_bars: Array[Control] = []
-var fuel_bar_fills: Array[ColorRect] = []
-var fuel_bar_highlights: Array[ColorRect] = []
+var energy_bars: Array[Control] = []
+var energy_bar_fills: Array[ColorRect] = []
+var energy_bar_highlights: Array[ColorRect] = []
 
 # Vertical health bars
 const HEALTH_BAR_W: int = 18
 const HEALTH_BAR_H: int = 60
 
-# Vertical fuel bars (same style as health bars)
-const FUEL_BAR_W: int = 18
-const FUEL_BAR_H: int = 60
+# Vertical energy bars (same style as health bars)
+const ENERGY_BAR_W: int = 18
+const ENERGY_BAR_H: int = 60
 var health_bars: Array[Control] = []
 var health_bar_fills: Array[ColorRect] = []
 var health_bar_highlights: Array[ColorRect] = []
@@ -30,11 +30,13 @@ var earnings_label: Label
 var _pickup_panel: ColorRect
 var depth_label: Label
 var depth_panel: ColorRect
+var dollars_label: Label
+var dollars_panel: ColorRect
 var _earnings_tween: Tween
 
-# Low fuel warning
-var _low_fuel_warning: Label
-var _low_fuel_tween: Tween
+# Low energy warning
+var _low_energy_warning: Label
+var _low_energy_tween: Tween
 
 # Depth milestone banner
 var _milestone_label: Label
@@ -60,7 +62,7 @@ const ORE_COLORS: Dictionary = {
 	"Deep Gold":   Color(0.90, 0.75, 0.05),
 	"Gem":         Color(0.15, 0.85, 0.75),
 	"Deep Gem":    Color(0.10, 0.75, 0.65),
-	"Fuel":        Color(0.20, 0.90, 0.20),
+	"Energy":        Color(0.20, 0.90, 0.20),
 	"LUCKY!":          Color(1.0,  1.0,  0.30),   # Bright yellow for lucky double-strikes
 	"Discovery!":      Color(0.20, 0.90, 0.90),   # Teal for first zone visit
 	"Streak!":         Color(1.0,  0.60, 0.10),   # Orange for consecutive dig milestones
@@ -73,11 +75,11 @@ const ORE_COLORS: Dictionary = {
 	"Gilded Steel!":    Color(1.00, 0.80, 0.30),
 	"Fool's Gold!":     Color(0.90, 0.75, 0.20),
 	# Sonar ping / system notifications
-	"No fuel for ping":     Color(0.80, 0.20, 0.10),
+	"No energy for ping":     Color(0.80, 0.20, 0.10),
 	# Wandering Trader events
 	"Wandering Trader!":    Color(1.00, 0.75, 0.10),
-	"Fuel Pack!":           Color(0.20, 0.90, 0.20),
-	"Carapace Patched!":    Color(0.85, 0.08, 0.08),
+	"Energy Pack!":           Color(0.20, 0.90, 0.20),
+	"Pelt Patched!":        Color(0.85, 0.08, 0.08),
 	"Mining Shroom!":       Color(0.50, 0.90, 0.20),
 	"Lucky Compass!":       Color(1.00, 0.90, 0.10),
 	"Ancient Map!":         Color(0.20, 0.90, 1.00),
@@ -98,15 +100,16 @@ const ORE_COLORS: Dictionary = {
 func _ready() -> void:
 	EventBus.minerals_changed.connect(_on_minerals_changed)
 	EventBus.player_health_changed.connect(_on_health_changed)
-	EventBus.fuel_changed.connect(_on_fuel_changed)
+	EventBus.energy_changed.connect(_on_energy_changed)
 	EventBus.ore_mined_popup.connect(_on_ore_mined_popup)
 	EventBus.depth_changed.connect(_on_depth_changed)
+	EventBus.dollars_changed.connect(_on_dollars_changed)
 
 	# Semi-transparent black background panel behind the minerals label
 	scrap_panel = ColorRect.new()
 	scrap_panel.color = Color(0.0, 0.0, 0.0, 0.55)
 	scrap_panel.position = Vector2(8, 8)
-	scrap_panel.size = Vector2(148, 34)
+	scrap_panel.size = Vector2(172, 34)
 	scrap_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	$Control.add_child(scrap_panel)
 	$Control.move_child(scrap_panel, 0)  # Draw behind everything else
@@ -143,14 +146,30 @@ func _ready() -> void:
 	depth_label.modulate = Color(0.6, 0.85, 1.0, 1.0)  # Light blue tint
 	$Control.add_child(depth_label)
 
-	# Low fuel warning — bottom-centre, pulses red when fuel <= 20 %
-	_low_fuel_warning = Label.new()
-	_low_fuel_warning.position = Vector2(540, 656)
-	_low_fuel_warning.custom_minimum_size = Vector2(200, 28)
-	_low_fuel_warning.text = "! LOW FUEL !"
-	_low_fuel_warning.modulate = Color(1.0, 0.2, 0.1, 0.0)  # Red, starts invisible
-	_low_fuel_warning.add_theme_font_size_override("font_size", 18)
-	$Control.add_child(_low_fuel_warning)
+	# Background panel behind the dollars label
+	dollars_panel = ColorRect.new()
+	dollars_panel.color = Color(0.0, 0.0, 0.0, 0.55)
+	dollars_panel.position = Vector2(8, 102)
+	dollars_panel.size = Vector2(148, 30)
+	dollars_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$Control.add_child(dollars_panel)
+
+	# Dollars label — shows the player's persistent dollar balance
+	dollars_label = Label.new()
+	dollars_label.position = Vector2(12, 106)
+	dollars_label.custom_minimum_size = Vector2(136, 22)
+	dollars_label.text = "$%d" % GameManager.dollars
+	dollars_label.modulate = Color(0.30, 1.0, 0.40, 1.0)  # Green tint
+	$Control.add_child(dollars_label)
+
+	# Low energy warning — bottom-centre, pulses red when energy <= 20 %
+	_low_energy_warning = Label.new()
+	_low_energy_warning.position = Vector2(540, 656)
+	_low_energy_warning.custom_minimum_size = Vector2(200, 28)
+	_low_energy_warning.text = "! LOW ENERGY !"
+	_low_energy_warning.modulate = Color(1.0, 0.2, 0.1, 0.0)  # Red, starts invisible
+	_low_energy_warning.add_theme_font_size_override("font_size", 18)
+	$Control.add_child(_low_energy_warning)
 
 	# Depth milestone banner — top-centre, fades in/out on each 20 m milestone
 	_milestone_label = Label.new()
@@ -178,7 +197,7 @@ func _ready() -> void:
 	_exit_hint_label.add_theme_font_size_override("font_size", 14)
 	$Control.add_child(_exit_hint_label)
 
-	# Low HP danger warning — bottom-centre above the fuel warning, pulses red at 1 HP
+	# Low HP danger warning — bottom-centre above the energy warning, pulses red at 1 HP
 	_low_hp_warning = Label.new()
 	_low_hp_warning.position = Vector2(490, 628)
 	_low_hp_warning.custom_minimum_size = Vector2(300, 24)
@@ -190,11 +209,17 @@ func _ready() -> void:
 	# Initialize hearts immediately since PlayerProbe emits before HUD connects
 	var max_hp := GameManager.get_max_health()
 	_on_health_changed(max_hp, max_hp)
-	# Initialize fuel display after all UI elements are created
-	_on_fuel_changed(GameManager.current_fuel, GameManager.get_max_fuel())
+	# Initialize energy display after all UI elements are created
+	_on_energy_changed(GameManager.current_energy, GameManager.get_max_energy())
 
-func _on_minerals_changed(amount: int) -> void:
-	scrap_label.text = "Minerals: %d" % amount
+func _on_minerals_changed(_amount: int) -> void:
+	var ore_count := 0
+	for count in GameManager.run_ore_counts.values():
+		ore_count += count
+	scrap_label.text = "Capacity: %d/%d" % [ore_count, GameManager.MAX_ORE_CAPACITY]
+
+func _on_dollars_changed(amount: int) -> void:
+	dollars_label.text = "$%d" % amount
 
 # Called when a tile is mined — shows a coloured "+X OreName" popup.
 func _on_ore_mined_popup(amount: int, ore_name: String) -> void:
@@ -347,28 +372,28 @@ func _on_depth_changed(depth_rows: int) -> void:
 			_show_milestone_banner("Depth: %dm" % (_next_milestone * 12))
 			_next_milestone += 20
 
-func _on_fuel_changed(current_fuel: int, max_fuel: int) -> void:
-	fuel_label.text = "Fuel: %d/%d" % [current_fuel, max_fuel]
+func _on_energy_changed(current_energy: int, max_energy: int) -> void:
+	energy_label.text = "Energy: %d/%d" % [current_energy, max_energy]
 
-	var fuel_ratio := float(current_fuel) / float(max_fuel)
-	var is_low_fuel := current_fuel > 0 and fuel_ratio <= 0.2
+	var energy_ratio := float(current_energy) / float(max_energy)
+	var is_low_energy := current_energy > 0 and energy_ratio <= 0.2
 
 	# Clear previous bars
-	for bar in fuel_bars:
+	for bar in energy_bars:
 		bar.queue_free()
-	fuel_bars.clear()
-	fuel_bar_fills.clear()
-	fuel_bar_highlights.clear()
+	energy_bars.clear()
+	energy_bar_fills.clear()
+	energy_bar_highlights.clear()
 
 	# Rebuild as 10 vertical chambers matching health bar style
 	var segments := 10
-	var fuel_per_segment := float(max_fuel) / float(segments)
-	var fill_color := Color(1.0, 0.30, 0.05, 1.0) if is_low_fuel else Color(0.20, 0.80, 0.20, 1.0)
-	var shine_color := Color(1.0, 0.65, 0.40, 0.75) if is_low_fuel else Color(0.60, 1.0, 0.60, 0.75)
+	var energy_per_segment := float(max_energy) / float(segments)
+	var fill_color := Color(1.0, 0.30, 0.05, 1.0) if is_low_energy else Color(0.20, 0.80, 0.20, 1.0)
+	var shine_color := Color(1.0, 0.65, 0.40, 0.75) if is_low_energy else Color(0.60, 1.0, 0.60, 0.75)
 
 	for i in range(segments):
 		var bar := Control.new()
-		bar.custom_minimum_size = Vector2(FUEL_BAR_W, FUEL_BAR_H)
+		bar.custom_minimum_size = Vector2(ENERGY_BAR_W, ENERGY_BAR_H)
 		bar.clip_contents = true
 		bar.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 
@@ -376,25 +401,25 @@ func _on_fuel_changed(current_fuel: int, max_fuel: int) -> void:
 		var bg := ColorRect.new()
 		bg.color = Color(0.12, 0.12, 0.12, 0.88)
 		bg.position = Vector2.ZERO
-		bg.size = Vector2(FUEL_BAR_W, FUEL_BAR_H)
+		bg.size = Vector2(ENERGY_BAR_W, ENERGY_BAR_H)
 		bar.add_child(bg)
 
-		# Fuel fill — anchored to bottom, drains from top
-		var seg_min := float(i) * fuel_per_segment
-		var seg_max := float(i + 1) * fuel_per_segment
+		# Energy fill — anchored to bottom, drains from top
+		var seg_min := float(i) * energy_per_segment
+		var seg_max := float(i + 1) * energy_per_segment
 		var fill_ratio: float
-		if float(current_fuel) >= seg_max:
+		if float(current_energy) >= seg_max:
 			fill_ratio = 1.0
-		elif float(current_fuel) <= seg_min:
+		elif float(current_energy) <= seg_min:
 			fill_ratio = 0.0
 		else:
-			fill_ratio = (float(current_fuel) - seg_min) / fuel_per_segment
+			fill_ratio = (float(current_energy) - seg_min) / energy_per_segment
 
-		var fill_h: float = fill_ratio * float(FUEL_BAR_H)
+		var fill_h: float = fill_ratio * float(ENERGY_BAR_H)
 		var fill := ColorRect.new()
 		fill.color = fill_color
-		fill.position = Vector2(0.0, float(FUEL_BAR_H) - fill_h)
-		fill.size = Vector2(FUEL_BAR_W, fill_h)
+		fill.position = Vector2(0.0, float(ENERGY_BAR_H) - fill_h)
+		fill.size = Vector2(ENERGY_BAR_W, fill_h)
 		bar.add_child(fill)
 
 		# Bright shine line at the top edge of the fill
@@ -402,29 +427,29 @@ func _on_fuel_changed(current_fuel: int, max_fuel: int) -> void:
 		shine.color = shine_color
 		shine.visible = fill_ratio > 0.02
 		if shine.visible:
-			shine.position = Vector2(0.0, float(FUEL_BAR_H) - fill_h)
-			shine.size = Vector2(FUEL_BAR_W, minf(3.0, fill_h))
+			shine.position = Vector2(0.0, float(ENERGY_BAR_H) - fill_h)
+			shine.size = Vector2(ENERGY_BAR_W, minf(3.0, fill_h))
 		bar.add_child(shine)
 
-		fuel_bar_container.add_child(bar)
-		fuel_bars.append(bar)
-		fuel_bar_fills.append(fill)
-		fuel_bar_highlights.append(shine)
+		energy_bar_container.add_child(bar)
+		energy_bars.append(bar)
+		energy_bar_fills.append(fill)
+		energy_bar_highlights.append(shine)
 
-	# Pulsing "! LOW FUEL !" warning
-	if is_low_fuel:
-		if not _low_fuel_tween or not _low_fuel_tween.is_running():
-			_low_fuel_tween = create_tween()
-			_low_fuel_tween.set_loops()
-			_low_fuel_tween.tween_property(_low_fuel_warning, "modulate:a", 1.0, 0.4)
-			_low_fuel_tween.tween_interval(0.15)
-			_low_fuel_tween.tween_property(_low_fuel_warning, "modulate:a", 0.15, 0.4)
-			_low_fuel_tween.tween_interval(0.15)
+	# Pulsing "! LOW ENERGY !" warning
+	if is_low_energy:
+		if not _low_energy_tween or not _low_energy_tween.is_running():
+			_low_energy_tween = create_tween()
+			_low_energy_tween.set_loops()
+			_low_energy_tween.tween_property(_low_energy_warning, "modulate:a", 1.0, 0.4)
+			_low_energy_tween.tween_interval(0.15)
+			_low_energy_tween.tween_property(_low_energy_warning, "modulate:a", 0.15, 0.4)
+			_low_energy_tween.tween_interval(0.15)
 	else:
-		if _low_fuel_tween:
-			_low_fuel_tween.kill()
-			_low_fuel_tween = null
-		_low_fuel_warning.modulate.a = 0.0
+		if _low_energy_tween:
+			_low_energy_tween.kill()
+			_low_energy_tween = null
+		_low_energy_warning.modulate.a = 0.0
 
 func _show_milestone_banner(text: String) -> void:
 	_milestone_label.text = text

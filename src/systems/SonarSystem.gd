@@ -18,15 +18,15 @@ var wave_radius: float = 0.0
 
 
 ## Attempt to fire a sonar ping at the player's current grid position.
-## Consumes fuel via GameManager; emits a popup if insufficient.
+## Consumes energy via GameManager; emits a popup if insufficient.
 func try_ping(player_grid_pos: Vector2i) -> void:
 	if ping_active:
 		return
-	var fuel_cost := GameManager.get_sonar_ping_fuel_cost()
-	if GameManager.current_fuel < fuel_cost:
-		EventBus.ore_mined_popup.emit(0, "No fuel for ping")
+	var energy_cost := GameManager.get_sonar_ping_energy_cost()
+	if GameManager.current_energy < energy_cost:
+		EventBus.ore_mined_popup.emit(0, "No energy for ping")
 		return
-	GameManager.consume_fuel(fuel_cost)
+	GameManager.consume_energy(energy_cost)
 	ping_active = true
 	ping_elapsed = 0.0
 	wave_radius = 0.0

@@ -10,9 +10,13 @@ enum GameState {
 var current_state: GameState = GameState.MENU
 var mineral_currency: int = 0
 var run_mineral_currency: int = 0
+var dollars: int = 0  # Persistent currency earned by selling bars at the smeltery
 # Per-ore tracking for run summary (tile_type_id -> count/minerals)
 var run_ore_counts: Dictionary = {}
 var run_ore_earnings: Dictionary = {}
+
+# Maximum number of ore pieces the player can carry per run
+const MAX_ORE_CAPACITY: int = 50
 var last_overworld_node_name: String = ""
 
 # Ores allowed to spawn in the current level instance (set from MapNode.ore_types).
@@ -23,15 +27,15 @@ var allowed_ore_types: Array = []
 # Empty array means all hazards can spawn (default behaviour).
 var allowed_hazard_types: Array = []
 
-# Fuel system
-var current_fuel: int = 100
+# Energy system
+var current_energy: int = 100
 
-func get_max_fuel() -> int:
+func get_max_energy() -> int:
 	return 100 + (legs_level * 25) + (25 if legs_gem_socketed else 0)
 
 # Settlement carry-over bonuses (applied on next mine entry, then cleared)
-var settlement_fuel_bonus: int = 0       # extra starting fuel from Fuel Cache purchase
-var settlement_forager_bonus: int = 0    # extra forager carry capacity for one run
+var settlement_energy_bonus: int = 0       # extra starting energy from Energy Cache purchase
+var settlement_forager_bonus: int = 0    # extra scout cat carry capacity for one run
 var settlement_shroom_charges: int = 0   # Mining Shroom charges pre-purchased
 var settlement_mandible_bonus: int = 0   # temporary +N mandible power for one run
 
@@ -45,7 +49,7 @@ var mineral_sense_level: int = 0
 var gem_count: int = 0                       # unspent gems in the colony's stockpile
 const GEM_SOCKET_COST: int = 3              # gems required to fill one socket slot
 var carapace_gem_socketed: bool = false      # +1 max HP
-var legs_gem_socketed: bool = false          # +25 max fuel, +15 move speed
+var legs_gem_socketed: bool = false          # +25 max energy, +15 move speed
 var mandibles_gem_socketed: bool = false     # +4 mining power
 var sense_gem_socketed: bool = false         # +3 sonar ping radius
 
@@ -65,7 +69,7 @@ var deepest_row_reached: int = 0         # deepest grid row ever reached
 
 # Chamber built flags (persisted to save)
 var fungus_garden_built: bool = false    # +10% mineral yield from all tiles
-var brood_chamber_built: bool = false    # forager carry cap +20
+var brood_chamber_built: bool = false    # scout cat carry cap +20
 var armory_built: bool = false           # explosive radius +1
 var nursery_vault_built: bool = false    # fossil find rate +5% base
 var deep_antenna_built: bool = false     # sonar radius +3
@@ -79,6 +83,11 @@ func _ready() -> void:
 func add_currency(amount: int) -> void:
 	run_mineral_currency += amount
 	EventBus.minerals_changed.emit(run_mineral_currency)
+
+func add_dollars(amount: int) -> void:
+	dollars += amount
+	EventBus.dollars_changed.emit(dollars)
+	save_game()
 
 func track_ore_mined(tile_type: int, minerals: int) -> void:
 	run_ore_counts[tile_type] = run_ore_counts.get(tile_type, 0) + 1
@@ -119,16 +128,16 @@ func load_mining_level(scene_path: String = "") -> void:
 	run_mineral_currency = 0 # Reset run currency on entry
 	run_ore_counts.clear()
 	run_ore_earnings.clear()
-	current_fuel = get_max_fuel() # Reset fuel on entry
+	current_energy = get_max_energy() # Reset energy on entry
 
 	# Apply settlement carry-over bonuses then clear them
-	if settlement_fuel_bonus > 0:
-		current_fuel = mini(current_fuel + settlement_fuel_bonus, get_max_fuel() + settlement_fuel_bonus)
-		settlement_fuel_bonus = 0
+	if settlement_energy_bonus > 0:
+		current_energy = mini(current_energy + settlement_energy_bonus, get_max_energy() + settlement_energy_bonus)
+		settlement_energy_bonus = 0
 	# shroom / mandible / forager bonuses are consumed by MiningLevel on entry
 
 	EventBus.minerals_changed.emit(0)
-	EventBus.fuel_changed.emit(current_fuel, get_max_fuel())
+	EventBus.energy_changed.emit(current_energy, get_max_energy())
 	var path = scene_path if scene_path != "" else "res://src/levels/MiningLevel.tscn"
 	await _transition_to_scene(path)
 
@@ -173,7 +182,7 @@ func get_sonar_ping_radius() -> float:
 func get_mineral_yield_mult() -> float:
 	return 1.10 if fungus_garden_built else 1.0
 
-## Bonus carry capacity added to the Forager Ant (Brood Chamber).
+## Bonus carry capacity added to the Scout Cat (Kitten Den).
 func get_forager_carry_bonus() -> int:
 	return 20 if brood_chamber_built else 0
 
@@ -185,7 +194,7 @@ func get_explosive_radius_bonus() -> int:
 func get_fossil_rate_bonus() -> float:
 	return 0.05 if nursery_vault_built else 0.0
 
-func get_sonar_ping_fuel_cost() -> int:
+func get_sonar_ping_energy_cost() -> int:
 	return maxi(3, 10 - mineral_sense_level * 2)
 
 func get_max_health() -> int:
@@ -197,37 +206,38 @@ func get_max_speed() -> float:
 func get_mandibles_power() -> int:
 	return 5 + (mandibles_level * 3) + (4 if mandibles_gem_socketed else 0)
 
-func consume_fuel(amount: int) -> bool:
-	current_fuel -= amount
-	if current_fuel < 0:
-		current_fuel = 0
-	EventBus.fuel_changed.emit(current_fuel, get_max_fuel())
-	return current_fuel > 0
+func consume_energy(amount: int) -> bool:
+	current_energy -= amount
+	if current_energy < 0:
+		current_energy = 0
+	EventBus.energy_changed.emit(current_energy, get_max_energy())
+	return current_energy > 0
 
-func restore_fuel(amount: int) -> void:
-	current_fuel = min(current_fuel + amount, get_max_fuel())
-	EventBus.fuel_changed.emit(current_fuel, get_max_fuel())
+func restore_energy(amount: int) -> void:
+	current_energy = min(current_energy + amount, get_max_energy())
+	EventBus.energy_changed.emit(current_energy, get_max_energy())
 
-func refuel_completely(cost: int) -> bool:
+func reenergy_completely(cost: int) -> bool:
 	if run_mineral_currency >= cost:
 		run_mineral_currency -= cost
-		current_fuel = get_max_fuel()
+		current_energy = get_max_energy()
 		EventBus.minerals_changed.emit(run_mineral_currency)
-		EventBus.fuel_changed.emit(current_fuel, get_max_fuel())
+		EventBus.energy_changed.emit(current_energy, get_max_energy())
 		return true
 	return false
 
-func is_out_of_fuel() -> bool:
-	return current_fuel <= 0
+func is_out_of_energy() -> bool:
+	return current_energy <= 0
 
 func save_game() -> void:
 	var save_data = {
 		"mineral_currency": mineral_currency,
+		"dollars": dollars,
 		"carapace_level": carapace_level,
 		"legs_level": legs_level,
 		"mandibles_level": mandibles_level,
 		"mineral_sense_level": mineral_sense_level,
-		"settlement_fuel_bonus": settlement_fuel_bonus,
+		"settlement_energy_bonus": settlement_energy_bonus,
 		"settlement_forager_bonus": settlement_forager_bonus,
 		"settlement_shroom_charges": settlement_shroom_charges,
 		"settlement_mandible_bonus": settlement_mandible_bonus,
@@ -268,11 +278,12 @@ func load_game() -> void:
 		if error == OK:
 			var data = json.data
 			mineral_currency = data.get("mineral_currency", 0)
+			dollars = data.get("dollars", 0)
 			carapace_level = data.get("carapace_level", 0)
 			legs_level = data.get("legs_level", 0)
 			mandibles_level = data.get("mandibles_level", 0)
 			mineral_sense_level = data.get("mineral_sense_level", 0)
-			settlement_fuel_bonus = data.get("settlement_fuel_bonus", 0)
+			settlement_energy_bonus = data.get("settlement_energy_bonus", 0)
 			settlement_forager_bonus = data.get("settlement_forager_bonus", 0)
 			settlement_shroom_charges = data.get("settlement_shroom_charges", 0)
 			settlement_mandible_bonus = data.get("settlement_mandible_bonus", 0)

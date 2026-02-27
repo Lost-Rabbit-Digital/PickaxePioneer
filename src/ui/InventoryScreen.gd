@@ -21,8 +21,8 @@ const ORE_ORDER: Array = [
 
 # Artifact plant icons: one distinct plant per trader item key
 const ARTIFACT_DEFS: Dictionary = {
-	"fuel":    {"label": "Fuel Cache",     "desc": "+50 Fuel",               "plant": "res://assets/blocks/plants/cattail.png",       "color": Color(0.20, 0.90, 0.20)},
-	"repair":  {"label": "Carapace Patch", "desc": "Restored 1 HP",          "plant": "res://assets/blocks/plants/aloe.png",           "color": Color(0.85, 0.08, 0.08)},
+	"energy":    {"label": "Energy Cache",     "desc": "+50 Energy",               "plant": "res://assets/blocks/plants/cattail.png",       "color": Color(0.20, 0.90, 0.20)},
+	"repair":  {"label": "Pelt Patch",     "desc": "Restored 1 HP",          "plant": "res://assets/blocks/plants/aloe.png",           "color": Color(0.85, 0.08, 0.08)},
 	"shroom":  {"label": "Mining Shroom",  "desc": "x2 Ore Yield",           "plant": "res://assets/blocks/plants/mushroom_brown.png", "color": Color(0.50, 0.90, 0.20)},
 	"compass": {"label": "Lucky Compass",  "desc": "x2 Lucky Strike",        "plant": "res://assets/blocks/plants/dandelion.png",      "color": Color(1.00, 0.90, 0.10)},
 	"map":     {"label": "Ancient Map",    "desc": "x2 Sonar Radius",        "plant": "res://assets/blocks/plants/fern.png",           "color": Color(0.20, 0.90, 1.00)},
@@ -238,25 +238,25 @@ func _draw_equipment(parent: Control, x: int, y: int, w: int) -> int:
 	# Equipment icon colors (colored squares since no dedicated art)
 	var items := [
 		{
-			"label": "Carapace",
+			"label": "Pelt",
 			"color": Color(0.85, 0.18, 0.18),
 			"level": GameManager.carapace_level,
 			"stat": "Max HP: %d" % GameManager.get_max_health(),
 		},
 		{
-			"label": "Legs",
+			"label": "Paws",
 			"color": Color(0.30, 0.70, 1.00),
 			"level": GameManager.legs_level,
-			"stat": "Fuel: %d  Spd: %d" % [GameManager.get_max_fuel(), int(GameManager.get_max_speed())],
+			"stat": "Energy: %d  Spd: %d" % [GameManager.get_max_energy(), int(GameManager.get_max_speed())],
 		},
 		{
-			"label": "Mandibles",
+			"label": "Claws",
 			"color": Color(0.95, 0.65, 0.15),
 			"level": GameManager.mandibles_level,
 			"stat": "Power: %d" % GameManager.get_mandibles_power(),
 		},
 		{
-			"label": "Mineral Sense",
+			"label": "Whiskers",
 			"color": Color(0.20, 0.90, 0.90),
 			"level": GameManager.mineral_sense_level,
 			"stat": "Radius: %.0ft" % GameManager.get_sonar_ping_radius(),

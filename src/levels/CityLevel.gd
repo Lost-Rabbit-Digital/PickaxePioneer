@@ -14,31 +14,31 @@ const RIGHT_X: int = LEFT_X + PANEL_W + GAP           # 650
 
 const CHAMBERS: Array = [
 	{
-		"key": "fungus_garden", "name": "Fungus Garden",
+		"key": "fungus_garden", "name": "Fishmonger's Larder",
 		"effect": "+10% mineral yield",
 		"unlock_label": "Bank 500 minerals total to unlock",
 		"cost_const": "CHAMBER_COST_FUNGUS_GARDEN", "built_prop": "fungus_garden_built",
 	},
 	{
-		"key": "brood_chamber", "name": "Brood Chamber",
-		"effect": "Forager carry +20",
+		"key": "brood_chamber", "name": "Kitten Den",
+		"effect": "Scout Cat carry +20",
 		"unlock_label": "Defeat first boss to unlock",
 		"cost_const": "CHAMBER_COST_BROOD_CHAMBER", "built_prop": "brood_chamber_built",
 	},
 	{
-		"key": "armory", "name": "Armory",
+		"key": "armory", "name": "Claw Sharpening Post",
 		"effect": "Blast radius +1 tile",
 		"unlock_label": "Bank 1000 minerals total to unlock",
 		"cost_const": "CHAMBER_COST_ARMORY", "built_prop": "armory_built",
 	},
 	{
-		"key": "nursery_vault", "name": "Nursery Vault",
+		"key": "nursery_vault", "name": "Heritage Vault",
 		"effect": "+5% fossil find rate",
 		"unlock_label": "Find 10 fossils total to unlock",
 		"cost_const": "CHAMBER_COST_NURSERY_VAULT", "built_prop": "nursery_vault_built",
 	},
 	{
-		"key": "deep_antenna", "name": "Deep Antenna Array",
+		"key": "deep_antenna", "name": "Whisker Array",
 		"effect": "Sonar radius +3 tiles",
 		"unlock_label": "Reach row 96 in a run to unlock",
 		"cost_const": "CHAMBER_COST_DEEP_ANTENNA", "built_prop": "deep_antenna_built",
@@ -89,11 +89,11 @@ func _build_upgrades_panel() -> void:
 	_panel_border(px, py)
 	_panel_body(px, py)
 
-	var title := _label("Base City — Upgrades", px, py + 12, PANEL_W, 30, 20)
+	var title := _label("Clowder Workshop — Upgrades", px, py + 12, PANEL_W, 30, 20)
 	title.modulate = Color(1.0, 0.80, 0.35)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	var sub := _label("Spend minerals to permanently strengthen your colony.", px, py + 48, PANEL_W, 22)
+	var sub := _label("Spend minerals to permanently strengthen your Clowder.", px, py + 48, PANEL_W, 22)
 	sub.modulate = Color(0.70, 0.65, 0.55)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
@@ -143,7 +143,7 @@ func _build_chambers_panel() -> void:
 	_panel_border(px, py)
 	_panel_body(px, py)
 
-	var title := _label("Colony Chambers", px, py + 12, PANEL_W, 30, 20)
+	var title := _label("Clowder Chambers", px, py + 12, PANEL_W, 30, 20)
 	title.modulate = Color(1.0, 0.80, 0.35)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
@@ -221,26 +221,26 @@ func _button(x: int, y: int, w: int, h: int, text: String, callback: Callable) -
 
 # ── UI refresh ────────────────────────────────────────────────────────────────
 func _update_ui() -> void:
-	_minerals_label.text = "Banked Minerals: %d   |   Gems: %d" % [
-		GameManager.mineral_currency, GameManager.gem_count]
+	_minerals_label.text = "Dollars: $%d   |   Gems: %d" % [
+		GameManager.dollars, GameManager.gem_count]
 
 	var hp    := GameManager.get_max_health()
-	var fuel  := GameManager.get_max_fuel()
+	var energy  := GameManager.get_max_energy()
 	var spd   := GameManager.get_max_speed()
 	var power := GameManager.get_mandibles_power()
 	var r     := GameManager.get_sonar_ping_radius()
-	var fc    := GameManager.get_sonar_ping_fuel_cost()
+	var fc    := GameManager.get_sonar_ping_energy_cost()
 
-	_btn_carapace.text  = "Harden Carapace Lv%d  —  HP %d → %d  (%d minerals)" % [
+	_btn_carapace.text  = "Thicken Pelt Lv%d  —  HP %d → %d  ($%d)" % [
 		GameManager.carapace_level, hp, hp + 1, _carapace_cost]
-	_btn_legs.text      = "Strengthen Legs Lv%d  —  Fuel %d → %d, Speed %.0f → %.0f  (%d minerals)" % [
-		GameManager.legs_level, fuel, fuel + 25, spd, spd + 30.0, _legs_cost]
-	_btn_mandibles.text = "Sharpen Mandibles Lv%d  —  Power %d → %d  (%d minerals)" % [
+	_btn_legs.text      = "Strengthen Paws Lv%d  —  Energy %d → %d, Speed %.0f → %.0f  ($%d)" % [
+		GameManager.legs_level, energy, energy + 25, spd, spd + 30.0, _legs_cost]
+	_btn_mandibles.text = "Sharpen Claws Lv%d  —  Power %d → %d  ($%d)" % [
 		GameManager.mandibles_level, power, power + 3, _mandibles_cost]
-	_btn_sense.text     = "Mineral Sense Lv%d  —  Radius %.0f → %.0f tiles, Fuel %d → %d  (%d minerals)" % [
+	_btn_sense.text     = "Refine Whiskers Lv%d  —  Radius %.0f → %.0f tiles, Energy %d → %d  ($%d)" % [
 		GameManager.mineral_sense_level, r, r + 3.0, fc, maxi(3, fc - 2), _sense_cost]
 
-	var m := GameManager.mineral_currency
+	var m := GameManager.dollars
 	_btn_carapace.disabled  = m < _carapace_cost
 	_btn_legs.disabled      = m < _legs_cost
 	_btn_mandibles.disabled = m < _mandibles_cost
@@ -248,31 +248,31 @@ func _update_ui() -> void:
 
 	# Gem sockets
 	if GameManager.carapace_gem_socketed:
-		_btn_gem_carapace.text = "[SOCKETED]  Chitin Gem — +1 Max HP"
+		_btn_gem_carapace.text = "[SOCKETED]  Fur Gem — +1 Max HP"
 		_btn_gem_carapace.disabled = true
 	else:
-		_btn_gem_carapace.text = "Socket Chitin Gem — +1 Max HP  (%d gems)" % GameManager.GEM_SOCKET_COST
+		_btn_gem_carapace.text = "Socket Fur Gem — +1 Max HP  (%d gems)" % GameManager.GEM_SOCKET_COST
 		_btn_gem_carapace.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
 
 	if GameManager.legs_gem_socketed:
-		_btn_gem_legs.text = "[SOCKETED]  Quickstride Gem — +25 Fuel, +15 Speed"
+		_btn_gem_legs.text = "[SOCKETED]  Swift Paw Gem — +25 Energy, +15 Speed"
 		_btn_gem_legs.disabled = true
 	else:
-		_btn_gem_legs.text = "Socket Quickstride Gem — +25 Fuel, +15 Speed  (%d gems)" % GameManager.GEM_SOCKET_COST
+		_btn_gem_legs.text = "Socket Swift Paw Gem — +25 Energy, +15 Speed  (%d gems)" % GameManager.GEM_SOCKET_COST
 		_btn_gem_legs.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
 
 	if GameManager.mandibles_gem_socketed:
-		_btn_gem_mandibles.text = "[SOCKETED]  Fracture Gem — +4 Mining Power"
+		_btn_gem_mandibles.text = "[SOCKETED]  Razor Claw Gem — +4 Mining Power"
 		_btn_gem_mandibles.disabled = true
 	else:
-		_btn_gem_mandibles.text = "Socket Fracture Gem — +4 Mining Power  (%d gems)" % GameManager.GEM_SOCKET_COST
+		_btn_gem_mandibles.text = "Socket Razor Claw Gem — +4 Mining Power  (%d gems)" % GameManager.GEM_SOCKET_COST
 		_btn_gem_mandibles.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
 
 	if GameManager.sense_gem_socketed:
-		_btn_gem_sense.text = "[SOCKETED]  Echo Gem — +3 Sonar Radius"
+		_btn_gem_sense.text = "[SOCKETED]  Whisker Gem — +3 Sonar Radius"
 		_btn_gem_sense.disabled = true
 	else:
-		_btn_gem_sense.text = "Socket Echo Gem — +3 Sonar Radius  (%d gems)" % GameManager.GEM_SOCKET_COST
+		_btn_gem_sense.text = "Socket Whisker Gem — +3 Sonar Radius  (%d gems)" % GameManager.GEM_SOCKET_COST
 		_btn_gem_sense.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
 
 
@@ -282,46 +282,50 @@ func _set_status(msg: String) -> void:
 
 # ── Upgrade purchases ─────────────────────────────────────────────────────────
 func _on_carapace_pressed() -> void:
-	if GameManager.mineral_currency < _carapace_cost:
+	if GameManager.dollars < _carapace_cost:
 		return
-	GameManager.mineral_currency -= _carapace_cost
+	GameManager.dollars -= _carapace_cost
+	EventBus.dollars_changed.emit(GameManager.dollars)
 	GameManager.upgrade_carapace()
 	_carapace_cost += 25
 	GameManager.save_game()
-	_set_status("Carapace hardened!")
+	_set_status("Pelt thickened!")
 	_update_ui()
 
 
 func _on_legs_pressed() -> void:
-	if GameManager.mineral_currency < _legs_cost:
+	if GameManager.dollars < _legs_cost:
 		return
-	GameManager.mineral_currency -= _legs_cost
+	GameManager.dollars -= _legs_cost
+	EventBus.dollars_changed.emit(GameManager.dollars)
 	GameManager.upgrade_legs()
 	_legs_cost += 25
 	GameManager.save_game()
-	_set_status("Legs strengthened!")
+	_set_status("Paws strengthened!")
 	_update_ui()
 
 
 func _on_mandibles_pressed() -> void:
-	if GameManager.mineral_currency < _mandibles_cost:
+	if GameManager.dollars < _mandibles_cost:
 		return
-	GameManager.mineral_currency -= _mandibles_cost
+	GameManager.dollars -= _mandibles_cost
+	EventBus.dollars_changed.emit(GameManager.dollars)
 	GameManager.upgrade_mandibles()
 	_mandibles_cost += 25
 	GameManager.save_game()
-	_set_status("Mandibles sharpened!")
+	_set_status("Claws sharpened!")
 	_update_ui()
 
 
 func _on_sense_pressed() -> void:
-	if GameManager.mineral_currency < _sense_cost:
+	if GameManager.dollars < _sense_cost:
 		return
-	GameManager.mineral_currency -= _sense_cost
+	GameManager.dollars -= _sense_cost
+	EventBus.dollars_changed.emit(GameManager.dollars)
 	GameManager.upgrade_mineral_sense()
 	_sense_cost += 50
 	GameManager.save_game()
-	_set_status("Mineral sense enhanced!")
+	_set_status("Whiskers refined!")
 	_update_ui()
 
 
@@ -332,7 +336,7 @@ func _on_gem_carapace_pressed() -> void:
 	GameManager.gem_count -= GameManager.GEM_SOCKET_COST
 	GameManager.carapace_gem_socketed = true
 	GameManager.save_game()
-	_set_status("Chitin Gem socketed!")
+	_set_status("Fur Gem socketed!")
 	_update_ui()
 
 
@@ -342,7 +346,7 @@ func _on_gem_legs_pressed() -> void:
 	GameManager.gem_count -= GameManager.GEM_SOCKET_COST
 	GameManager.legs_gem_socketed = true
 	GameManager.save_game()
-	_set_status("Quickstride Gem socketed!")
+	_set_status("Swift Paw Gem socketed!")
 	_update_ui()
 
 
@@ -352,7 +356,7 @@ func _on_gem_mandibles_pressed() -> void:
 	GameManager.gem_count -= GameManager.GEM_SOCKET_COST
 	GameManager.mandibles_gem_socketed = true
 	GameManager.save_game()
-	_set_status("Fracture Gem socketed!")
+	_set_status("Razor Claw Gem socketed!")
 	_update_ui()
 
 
@@ -362,7 +366,7 @@ func _on_gem_sense_pressed() -> void:
 	GameManager.gem_count -= GameManager.GEM_SOCKET_COST
 	GameManager.sense_gem_socketed = true
 	GameManager.save_game()
-	_set_status("Echo Gem socketed!")
+	_set_status("Whisker Gem socketed!")
 	_update_ui()
 
 
@@ -386,14 +390,14 @@ func _refresh_chamber_panel() -> void:
 		var cost_val: int  = GameManager.get(chamber["cost_const"])
 		var unlocked: bool = _is_chamber_unlocked(chamber["key"])
 
-		btn.disabled = built or not unlocked or GameManager.mineral_currency < cost_val
+		btn.disabled = built or not unlocked or GameManager.dollars < cost_val
 
 		if built:
 			btn.text = "[BUILT]  %s\n%s" % [chamber["name"], chamber["effect"]]
 		elif not unlocked:
 			btn.text = "[LOCKED]  %s\n%s\n%s" % [chamber["name"], chamber["effect"], chamber["unlock_label"]]
 		else:
-			btn.text = "Build %s  —  %s\nCost: %d minerals" % [chamber["name"], chamber["effect"], cost_val]
+			btn.text = "Build %s  —  %s\nCost: $%d" % [chamber["name"], chamber["effect"], cost_val]
 
 
 func _on_chamber_pressed(key: String) -> void:
@@ -402,9 +406,10 @@ func _on_chamber_pressed(key: String) -> void:
 			continue
 		var built: bool   = GameManager.get(chamber["built_prop"])
 		var cost_val: int = GameManager.get(chamber["cost_const"])
-		if built or not _is_chamber_unlocked(key) or GameManager.mineral_currency < cost_val:
+		if built or not _is_chamber_unlocked(key) or GameManager.dollars < cost_val:
 			return
-		GameManager.mineral_currency -= cost_val
+		GameManager.dollars -= cost_val
+		EventBus.dollars_changed.emit(GameManager.dollars)
 		GameManager.set(chamber["built_prop"], true)
 		GameManager.save_game()
 		_set_status("%s constructed!" % chamber["name"])
