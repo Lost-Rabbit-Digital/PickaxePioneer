@@ -76,7 +76,7 @@ func show_for_node(node: MapNode) -> void:
 func _default_description(node: MapNode) -> String:
 	match node.node_type:
 		MapNode.NodeType.STATION:
-			return "Your home colony. Visit the shop to spend minerals on upgrades."
+			return "Your home Clowder. Visit the workshop to spend minerals on upgrades."
 		MapNode.NodeType.MINE:
 			return "A promising mining site. Dig deep to uncover rare ores."
 		MapNode.NodeType.SETTLEMENT:

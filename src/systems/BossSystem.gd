@@ -15,23 +15,23 @@ extends RefCounted
 
 const BOSS_MILESTONES: Array[int] = [32, 64, 96, 112, 128]
 const BOSS_DRAIN_MULT: float      = 1.5   # energy drain multiplier while boss alive
-const BOSS_SEGMENT_COUNT: int     = 12    # body segments for Centipede King
+const BOSS_SEGMENT_COUNT: int     = 12    # body segments for Giant Rat King
 const BOSS_REWARD_BONUS: int      = 100   # flat mineral bonus on defeat
 
 const BOSS_TYPE_NONE: int      = 0
-const BOSS_TYPE_CENTIPEDE: int = 1
+const BOSS_TYPE_GIANT_RAT: int = 1
 const BOSS_TYPE_SPIDER: int    = 2
 const BOSS_TYPE_MOLE: int      = 3
 const BOSS_TYPE_GOLEM: int     = 4
 const BOSS_TYPE_ANCIENT: int   = 5
 
-# The Ancient One — three-phase final boss at row 128
+# The Ancient Hound — three-phase final boss at row 128
 const ANCIENT_VOID_PULSE_INTERVAL: float  = 6.0   # seconds between void pulses (phase 2)
 const ANCIENT_VOID_PULSE_WARNING: float   = 1.5   # warning window before pulse fires
 const ANCIENT_VOID_PULSE_RADIUS: int      = 7     # radius of void pulse collapse
 const ANCIENT_VOID_FILL_CHANCE: float     = 0.40  # probability each empty tile collapses
 const ANCIENT_CORE_RECHARGE_INTERVAL: float = 8.0 # core resets accumulated damage every 8s (phase 3)
-const ANCIENT_DRAIN_MULT: float           = 2.0   # The Ancient One drains energy at 2× rate
+const ANCIENT_DRAIN_MULT: float           = 2.0   # The Ancient Hound drains energy at 2× rate
 
 # Blind Mole tremor timings
 const MOLE_TREMOR_INTERVAL: float   = 7.0
@@ -67,7 +67,7 @@ var mole_tremor_warning_timer: float = 0.0
 ## Stone Golem draw state
 var golem_phase: int = 0
 
-## The Ancient One draw state
+## The Ancient Hound draw state
 var ancient_phase: int = 0               # 0=outer shell, 1=inner ring, 2=core only
 var ancient_void_warning_active: bool = false
 var ancient_void_warning_timer: float = 0.0
@@ -158,7 +158,7 @@ func check_milestone(depth_row: int, player_col: int) -> void:
 		if not _boss_milestones_seen[i] and depth_row >= BOSS_MILESTONES[i]:
 			_boss_milestones_seen[i] = true
 			match i:
-				0: _spawn_centipede_king(player_col)
+				0: _spawn_giant_rat_king(player_col)
 				1: _spawn_cave_spider_matriarch(player_col)
 				2: _spawn_blind_mole(player_col)
 				3: _spawn_stone_golem(player_col)
@@ -242,7 +242,7 @@ func on_tile_mined(col: int, row: int, tile_type: int) -> void:
 # Spawn helpers
 # ---------------------------------------------------------------------------
 
-func _spawn_centipede_king(player_col: int) -> void:
+func _spawn_giant_rat_king(player_col: int) -> void:
 	var boss_row := BOSS_MILESTONES[0]
 	var positions: Array[Vector2i] = []
 	var half := BOSS_SEGMENT_COUNT / 2
@@ -261,8 +261,8 @@ func _spawn_centipede_king(player_col: int) -> void:
 			_set_collision.call(col, boss_row + 1, true)
 			positions.append(Vector2i(col, boss_row + 1))
 
-	_activate(positions, BOSS_TYPE_CENTIPEDE, boss_row)
-	_show_banner.call("CENTIPEDE KING AWAKENS!", Color(0.90, 0.10, 0.05))
+	_activate(positions, BOSS_TYPE_GIANT_RAT, boss_row)
+	_show_banner.call("GIANT RAT KING AWAKENS!", Color(0.90, 0.10, 0.05))
 	EventBus.ore_mined_popup.emit(0, "Boss! Mine all segments to defeat it!")
 	_shake_camera.call(8.0, 0.4)
 	_pending_hints = ["Click each glowing tile to chip away at it!", "Defeat the boss to restore energy!"]
@@ -411,7 +411,7 @@ func _spawn_ancient_one(player_col: int) -> void:
 	ancient_void_warning_active = false
 	ancient_core_recharge_warning = false
 
-	_show_banner.call("THE ANCIENT ONE AWAKENS!", Color(0.15, 0.70, 0.90))
+	_show_banner.call("THE ANCIENT HOUND AWAKENS!", Color(0.15, 0.70, 0.90))
 	EventBus.ore_mined_popup.emit(0, "Final boss! Break the outer shell first!")
 	_shake_camera.call(16.0, 1.0)
 	_pending_hints = [
@@ -509,7 +509,7 @@ func _execute_mole_tremor() -> void:
 
 
 # ---------------------------------------------------------------------------
-# The Ancient One phase logic
+# The Ancient Hound phase logic
 # ---------------------------------------------------------------------------
 
 func _update_ancient_one(delta: float) -> void:

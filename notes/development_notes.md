@@ -1,8 +1,8 @@
 
 # What is Pickaxe Pioneer?
-Pickaxe Pioneer is a Terraria-style side-scrolling underground mining roguelite where you play as a red ant digging for minerals deep in the earth. Inspired by [Motherlode](https://www.miniclip.com/games/motherlode/en/) and [Supermotherlode](https://store.steampowered.com/app/269110/Super_Motherload/), the game combines physics-based movement with cursor-driven mining, depth-based risk/reward, and permanent colony upgrades between runs.
+Pickaxe Pioneer is a Terraria-style side-scrolling underground mining roguelite where you play as a mining cat digging for minerals deep in the earth. Inspired by [Motherlode](https://www.miniclip.com/games/motherlode/en/) and [Supermotherlode](https://store.steampowered.com/app/269110/Super_Motherload/), the game combines physics-based movement with cursor-driven mining, depth-based risk/reward, and permanent Clowder upgrades between runs.
 
-You select a mine from the overworld map, descend into procedurally generated tunnels, and dig through layers of dirt, stone, and increasingly rare ore. Energy (energy) is finite — go too deep and you'll be stranded. Successfully surfacing banks your minerals for permanent upgrades: harden your Carapace, strengthen your Legs, sharpen your Mandibles, and refine your Mineral Sense.
+You select a mine from the overworld map, descend into procedurally generated tunnels, and dig through layers of dirt, stone, and increasingly rare ore. Energy is finite — go too deep and you'll be stranded. Successfully surfacing banks your minerals for permanent upgrades: thicken your Pelt, strengthen your Paws, sharpen your Claws, and refine your Whiskers.
 
 The game draws design inspiration from [Dwarf Fortress](http://www.bay12games.com/dwarves/), [Path of Exile](https://store.steampowered.com/app/238960/Path_of_Exile/), [ADOM](https://www.adom.de/home/index.html), and [Noita](https://store.steampowered.com/app/881100/Noita/) — particularly their systems of *permanent progression*, *resource management*, *usage-based skill growth*, and *depth-based risk/reward*.
 
@@ -16,12 +16,12 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 **Scenes and systems that exist:**
 - `Overworld.gd` — clickable map with 1–2 randomised mine nodes, 2 settlement nodes, city node, caravan movement, ore/hazard filtering per mine node
 - `CityLevel.gd` — banks currency on entry; hosts UpgradeMenu; minimal stub (return button only)
-- `SettlementLevel.gd` — rest stop between runs; spends banked `mineral_currency` on 4 pre-run consumables: Energy Cache (+50 starting energy), Forager Rations (+20 forager carry cap), Mining Shroom (12 ore-yield charges), Whetstone (+1 mandible power). Bonuses persist via `GameManager` settlement fields, applied on mine entry and cleared.
-- `MiningLevel.gd` — 96×128 tile grid; Terraria-style CharacterBody2D physics; cursor mining; multi-hit system; energy drain by depth; zone banners; sonar ping; smelting chains; fossil forgiveness; pheromone trails; wandering trader; forager ant companion; random cave rooms
+- `SettlementLevel.gd` — rest stop between runs; spends banked `mineral_currency` on 4 pre-run consumables: Energy Cache (+50 starting energy), Forager Rations (+20 forager carry cap), Mining Shroom (12 ore-yield charges), Claw Whetstone (+1 claw power). Bonuses persist via `GameManager` settlement fields, applied on mine entry and cleared.
+- `MiningLevel.gd` — 96×128 tile grid; Terraria-style CharacterBody2D physics; cursor mining; multi-hit system; energy drain by depth; zone banners; sonar ping; smelting chains; fossil forgiveness; pheromone trails; wandering trader; scout cat companion; random cave rooms
 - `RunSummary.gd` — end-of-run screen; handles mineral banking and overworld return
 - `LevelInfoModal.gd` — location info panel shown on overworld node click before entering
-- `ChatterManager.gd` + `ChatBubble.gd` — ambient ant NPC chatter bubbles (flavor, tips, lore)
-- `GameManager.gd` — save/load; upgrades (Carapace, Legs, Mandibles, Mineral Sense); energy; currency; scene transitions; settlement carry-over fields
+- `ChatterManager.gd` + `ChatBubble.gd` — ambient cat NPC chatter bubbles (flavor, tips, lore)
+- `GameManager.gd` — save/load; upgrades (Pelt, Paws, Claws, Whiskers); energy; currency; scene transitions; settlement carry-over fields
 - `UpgradeMenu.gd` — 4 upgrade tracks with escalating mineral costs
 - `HUD.gd` — health squares, segmented energy bar, depth meter, popup system, milestone banners, low-energy/low-hp warnings
 - `StateMachine.gd` + `State.gd` — generic state machine component (used but underutilised)
@@ -34,7 +34,7 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 - Mining is **cursor-based**: left-click within range to mine; `mine_range` is flat 4.5 tiles.
 - `MapNode.NodeType` has four values: `EMPTY` (0), `MINE` (1), `STATION` (2), `SETTLEMENT` (3). Settlement nodes load `SettlementLevel.tscn`; mine nodes load `MiningLevel.tscn`; city loads `CityLevel.tscn`.
 - `Legs` upgrade increases **both** max energy capacity (+25/level) **and** move speed (+30 px/s per level).
-- The **Forager Ant** is a programmatic entity rendered in `MiningLevel._draw()` — not a separate scene. It takes 40% of ore yield, carries up to 30 minerals (base), returns to surface and banks directly into `mineral_currency` when full.
+- The **Scout Cat** is a programmatic entity rendered in `MiningLevel._draw()` — not a separate scene. It takes 40% of ore yield, carries up to 30 minerals (base), returns to surface and banks directly into `mineral_currency` when full.
 - **Cave rooms** are generated via `_generate_cave_rooms()` after `_generate_grid()` each run: 6–10 elliptical open chambers with ore-rich walls scaled to depth.
 - `MiningLevel.gd` is now ~1,970 lines. All planned subsystem extractions are complete: `SmeltingSystem`, `FossilSystem`, `SonarSystem`, `ForagerSystem`, and `BossSystem` all live in `src/systems/` as `RefCounted` classes.
 
@@ -43,20 +43,20 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 ## High Priority
 
 ### Core Gameplay Depth
-- [x] **Implement single Forager Ant companion** — follows player, auto-collects 40% of ore yield, returns to surface when carry capacity (30 minerals) is full, deposits directly to banked `mineral_currency` (safe from death). Rendered as amber circle with carry bar in MiningLevel._draw(). See docs/mining_game_design_lessons.md §3.4
+- [x] **Implement single Scout Cat companion** — follows player, auto-collects 40% of ore yield, returns to surface when carry capacity (30 minerals) is full, deposits directly to banked `mineral_currency` (safe from death). Rendered as amber circle with carry bar in MiningLevel._draw(). See docs/mining_game_design_lessons.md §3.4
 - [x] **Add underground boss encounters** — milestone rooms at specific depth rows. No separate combat system; defeated using existing mining tools. Energy drains 2.5× while a boss is alive; defeating one rewards 100 minerals + 30 energy. See docs/mining_game_design_lessons.md §4
-  - *Centipede King (row 32):* [x] two-row horizontal body (12 segments + core); mine through the body to reach and destroy the core; energy pressure increases during encounter
+  - *Giant Rat King (row 32):* [x] two-row horizontal body (12 segments + core); mine through the body to reach and destroy the core; energy pressure increases during encounter
   - *Cave Spider Matriarch (row 64):* [x] diamond/cross pattern body spawned below player; mine segments to reach and destroy the core
   - *The Blind Mole (row 96):* [x] tremor AoE collapses nearby empty tiles; warning overlay telegraphs incoming tremor; brown screen-edge pulse on warning
   - *Stone Golem (row 112):* [x] three ore-phase armor (copper → iron → gold); resists damage until player last-mined the required ore; phase label drawn near core; ARMOR CRACKED banner on phase advance
-  - *The Ancient One (row 128):* [x] three-phase final boss — Phase 1: outer stone-shell ring (12 segments, teal); Phase 2: crystalline inner ring (8 segments, purple) with periodic void pulses that reseal mined tunnels; Phase 3: exposed core (white/gold) that regenerates every 8 s if not mined down quickly. 2× energy drain throughout.
-- [x] **Gem socketing system** — ORE_GEM/ORE_GEM_DEEP tiles now award 1–2 gem items immediately on mining (primary value; mineral yield reduced to 5/8). `GameManager.gem_count` tracks stockpile. Four permanent gem socket slots in UpgradeMenu (cost: 3 gems each): Chitin Gem (+1 Max HP), Quickstride Gem (+25 Energy, +15 Speed), Fracture Gem (+4 Mining Power), Echo Gem (+3 Sonar Radius). Socketed bonuses apply via updated stat getters; saved/loaded with game data.
-- [x] **Develop colony passive skill tree** — Colony Chamber system (see Medium Priority) provides the first tier of milestone-gated passive progression: 5 buildable rooms with distinct run-wide bonuses, each unlocked by a gameplay milestone. Gem socketing adds a second orthogonal layer (4 socket slots across upgrade tracks).
+  - *The Ancient Hound (row 128):* [x] three-phase final boss — Phase 1: outer stone-shell ring (12 segments, teal); Phase 2: crystalline inner ring (8 segments, purple) with periodic void pulses that reseal mined tunnels; Phase 3: exposed core (white/gold) that regenerates every 8 s if not mined down quickly. 2× energy drain throughout.
+- [x] **Gem socketing system** — ORE_GEM/ORE_GEM_DEEP tiles now award 1–2 gem items immediately on mining (primary value; mineral yield reduced to 5/8). `GameManager.gem_count` tracks stockpile. Four permanent gem socket slots in UpgradeMenu (cost: 3 gems each): Fur Gem (+1 Max HP), Swift Paw Gem (+25 Energy, +15 Speed), Razor Claw Gem (+4 Mining Power), Whisker Gem (+3 Sonar Radius). Socketed bonuses apply via updated stat getters; saved/loaded with game data.
+- [x] **Develop Clowder passive skill tree** — Clowder Chamber system (see Medium Priority) provides the first tier of milestone-gated passive progression: 5 buildable rooms with distinct run-wide bonuses, each unlocked by a gameplay milestone. Gem socketing adds a second orthogonal layer (4 socket slots across upgrade tracks).
 
 ### Overworld Polish
-- [x] **Populate overworld settlement nodes** — `settlement_node_3` and `settlement_node_4` now launch `SettlementLevel.tscn`. Players spend banked minerals on Energy Cache (+50 starting energy), Field Repair (+1 HP), Mining Shroom (12 charges), and Whetstone (+1 mandible power). Bonuses persist via `GameManager` into the next mine run.
-- [x] **Wandering Trader at depth milestone rows** — appears at rows 32, 64, 96, 128 during a mine run, offering tier-scaled items (Energy Cache, Carapace Patch, Mining Shroom, Lucky Compass, Ancient Map). Turns depth goals into in-world events. See docs/mining_game_design_lessons.md §2.
-- [x] **Rename `NodeType.ASTEROID` to `NodeType.MINE`** and update mine node visuals — now uses the ant spritesheet with a gold tint instead of the Godot editor icon.
+- [x] **Populate overworld settlement nodes** — `settlement_node_3` and `settlement_node_4` now launch `SettlementLevel.tscn`. Players spend banked minerals on Energy Cache (+50 starting energy), Pelt Patch (+1 HP), Mining Shroom (12 charges), and Claw Whetstone (+1 claw power). Bonuses persist via `GameManager` into the next mine run.
+- [x] **Wandering Trader at depth milestone rows** — appears at rows 32, 64, 96, 128 during a mine run, offering tier-scaled items (Energy Cache, Pelt Patch, Mining Shroom, Lucky Compass, Ancient Map). Turns depth goals into in-world events. See docs/mining_game_design_lessons.md §2.
+- [x] **Rename `NodeType.ASTEROID` to `NodeType.MINE`** and update mine node visuals — now uses the cat_miner sprite with a gold tint instead of the Godot editor icon.
 
 ### Known Display Bug
 - [x] **Fix Legs upgrade description in UpgradeMenu** — button now shows both energy capacity and move speed increases.

@@ -13,9 +13,9 @@ const VH: int = 720
 # Consumables pre-purchased here persist into the next mine run via GameManager
 # Costs are in banked mineral_currency (not run_mineral_currency)
 const COST_ENERGY_CACHE: int    = 20   # +50 starting energy next run
-const COST_RATIONS: int       = 25   # +20 forager carry capacity next run
+const COST_RATIONS: int       = 25   # +20 scout cat carry capacity next run
 const COST_SHROOM: int        = 35   # 12 shroom charges next run
-const COST_SHARPENING: int    = 30   # +1 mandible power for one run (temporary)
+const COST_SHARPENING: int    = 30   # +1 claw power for one run (temporary)
 
 var _location_name: String = "Settlement"
 var _minerals_label: Label
@@ -76,7 +76,7 @@ func _build_ui() -> void:
 
 	# Subtitle / flavour
 	var subtitle := Label.new()
-	subtitle.text = "A small outpost where miners rest and resupply."
+	subtitle.text = "A small outpost where cat miners rest and resupply."
 	subtitle.position = Vector2(px, py + 46)
 	subtitle.size = Vector2(PANEL_W, 22)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -122,7 +122,7 @@ func _build_ui() -> void:
 	by += BTN_GAP
 
 	_btn_rations = _make_button(canvas, bx, by, bw, BTN_H,
-		"Forager Rations  —  +20 forager carry capacity next run  (%d minerals)" % COST_RATIONS,
+		"Scout Snacks  —  +20 scout cat carry capacity next run  (%d minerals)" % COST_RATIONS,
 		_buy_rations)
 	by += BTN_GAP
 
@@ -132,7 +132,7 @@ func _build_ui() -> void:
 	by += BTN_GAP
 
 	_btn_sharpen = _make_button(canvas, bx, by, bw, BTN_H,
-		"Whetstone  —  +1 Mandible power next run  (%d minerals)" % COST_SHARPENING,
+		"Claw Whetstone  —  +1 Claw power next run  (%d minerals)" % COST_SHARPENING,
 		_buy_sharpening)
 	by += BTN_GAP
 
@@ -194,7 +194,7 @@ func _buy_rations() -> void:
 	GameManager.mineral_currency -= COST_RATIONS
 	GameManager.settlement_forager_bonus += 20
 	GameManager.save_game()
-	_set_status("+20 forager carry capacity next run!")
+	_set_status("+20 Scout Cat carry capacity next run!")
 	_refresh_minerals()
 	_update_button_states()
 
@@ -214,7 +214,7 @@ func _buy_sharpening() -> void:
 	GameManager.mineral_currency -= COST_SHARPENING
 	GameManager.settlement_mandible_bonus += 1
 	GameManager.save_game()
-	_set_status("+1 Mandible power next run!")
+	_set_status("+1 Claw power next run!")
 	_refresh_minerals()
 	_update_button_states()
 

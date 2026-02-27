@@ -4,7 +4,7 @@
 ## 1. Game Overview
 **Title:** Pickaxe Pioneer
 **Genre:** 2D Side-Scrolling Mining Roguelite
-**Theme:** Underground Ant Colony Mining Adventure
+**Theme:** Underground Cat Civilization Mining Adventure
 **Engine:** Godot 4.5
 **Perspective:** Side-Scrolling 2D (Terraria-style physics)
 **Inspiration:** Motherlode, Supermotherlode, Dwarf Fortress, Path of Exile, ADOM, Noita
@@ -12,35 +12,35 @@
 **Target Platforms:** Steam (Windows/Linux/Mac), Itch.io
 
 ### 1.1 High Concept
-*"Dig deep, gather minerals, return to the colony."*
+*"Dig deep, gather minerals, return to the Clowder."*
 
-You are a red ant venturing out from the colony into the earth below. Each expedition takes you deeper underground through layers of dirt, stone, and precious ore. Manage your energy carefully — go too deep without energy and you'll be stranded. Mine rare gems from the deepest veins, upgrade your carapace, legs, and mandibles back at the colony, and unravel the mysteries hidden beneath the surface.
+You are a mining cat from the Clowder, venturing into the earth below. Armed with razor-sharp Claws and impossibly sensitive Whiskers, each expedition takes you deeper underground through layers of dirt, stone, and precious ore. Manage your energy carefully — go too deep without energy and you'll be stranded. Mine rare gems from the deepest veins, upgrade your Pelt, Paws, Claws, and Whiskers back at the Clowder, and unravel the mysteries hidden beneath the surface.
 
 **Core Pillars:**
 1. **Risk/Reward Depth Diving:** Every tunnel is a gamble — dig deeper for richer ore or surface early to bank your haul
-2. **Satisfying Progression:** Permanent ant upgrades, colony unlocks, and meta-progression create a sense of growing power
-3. **Environmental Storytelling:** Discover the underground world's secrets through collectible fossils, colony lore, and hidden chambers
-4. **Strategic Exploration:** Grid-based movement and energy management reward careful planning over recklessness
+2. **Satisfying Progression:** Permanent cat upgrades, Clowder unlocks, and meta-progression create a sense of growing power
+3. **Environmental Storytelling:** Discover the underground world's secrets through collectible fossils, Clowder lore, and hidden chambers
+4. **Strategic Exploration:** Physics-based movement and energy management reward careful planning over recklessness
 
 ## 2. Gameplay Mechanics
 
 ### 2.1 Core Loop
-1. **Hub — The Colony (Surface):**
+1. **Hub — The Clowder (Surface):**
    - View stats, achievements, and total progression
-   - Access the Colony Workshop (permanent ant upgrades: Carapace, Legs, Mandibles, Mineral Sense)
+   - Access the Clowder Workshop (permanent cat upgrades: Pelt, Paws, Claws, Whiskers)
    - Check the Mission Board (daily challenges, bounties, discovery missions)
    - Read collected Fossils and Ancient Inscriptions in the Archive
-   - Interact with colony NPCs for quests and lore
+   - Interact with Clowder NPCs for quests and lore
 
-2. **Overworld — The Anthill Map:**
-   - Node-based navigation between mine entrances, settlement rest stops, and the colony
+2. **Overworld — The Clowder Warren:**
+   - Node-based navigation between mine entrances, settlement rest stops, and the Clowder
    - Multiple mines with varying depth, ore richness, and hazard profiles
    - Each mine node has a name and unique composition (Iron Mine, Gold Vein, Gem Cavern, etc.)
    - Settlement nodes offer pre-run consumables for banked minerals
 
 3. **Settlement — Rest Stop:**
    - Spend banked minerals on run-scoped consumables before entering a mine
-   - Available items: Energy Cache (+50 starting energy), Field Repair (+1 HP), Mining Shroom (12 ore-yield charges), Whetstone (+1 mandible power)
+   - Available items: Energy Cache (+50 starting energy), Pelt Patch (+1 HP), Mining Shroom (12 ore-yield charges), Claw Whetstone (+1 claw power)
 
 4. **Mining Run — The Descent:**
    - Spawn at the surface entrance of a mine shaft (96×128 tile grid)

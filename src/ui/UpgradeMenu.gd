@@ -22,13 +22,13 @@ var _gem_mandibles_button: Button
 var _gem_sense_button: Button
 
 var welcome_lines: Array[String] = [
-	"Welcome back, worker!",
+	"Welcome back, miner!",
 	"Brought minerals from the deep?",
-	"The Queen demands only the finest upgrades.",
-	"No refunds — the colony needs every mineral.",
-	"These mandibles won't sharpen themselves.",
-	"Stronger legs, deeper mines.",
-	"Fresh chitin plating, just for you.",
+	"The Matriarch demands only the finest upgrades.",
+	"No refunds — the Clowder needs every mineral.",
+	"These claws won't sharpen themselves.",
+	"Stronger paws, deeper mines.",
+	"Fresh pelt plating, just for you.",
 	"The tunnels go ever deeper..."
 ]
 
@@ -78,19 +78,19 @@ func _update_dialogue() -> void:
 
 func _update_ui() -> void:
 	var current_hp := GameManager.get_max_health()
-	hull_button.text = "Harden Carapace Lv%d — Max HP: %d → %d (%d Minerals)" % [
+	hull_button.text = "Thicken Pelt Lv%d — Max HP: %d → %d (%d Minerals)" % [
 		GameManager.carapace_level, current_hp, current_hp + 1, carapace_cost
 	]
 
 	var current_energy_cap := GameManager.get_max_energy()
 	var current_speed := GameManager.get_max_speed()
-	engine_button.text = "Strengthen Legs Lv%d — Energy: %d→%d, Speed: %.0f→%.0f (%d Minerals)" % [
+	engine_button.text = "Strengthen Paws Lv%d — Energy: %d→%d, Speed: %.0f→%.0f (%d Minerals)" % [
 		GameManager.legs_level, current_energy_cap, current_energy_cap + 25,
 		current_speed, current_speed + 30.0, legs_cost
 	]
 
 	var current_power := GameManager.get_mandibles_power()
-	drill_button.text = "Sharpen Mandibles Lv%d — Mining Power: %d → %d (%d Minerals)" % [
+	drill_button.text = "Sharpen Claws Lv%d — Mining Power: %d → %d (%d Minerals)" % [
 		GameManager.mandibles_level, current_power, current_power + 3, mandibles_cost
 	]
 
@@ -99,7 +99,7 @@ func _update_ui() -> void:
 	var sense_radius_next := sense_radius + 3.0
 	var sense_energy := GameManager.get_sonar_ping_energy_cost()
 	var sense_energy_next := maxi(3, sense_energy - 2)
-	_sense_button.text = "Mineral Sense (Sonar Ping) Lv%d — Radius: %.0f→%.0f tiles, Energy: %d→%d (%d Minerals)" % [
+	_sense_button.text = "Refine Whiskers (Sonar Ping) Lv%d — Radius: %.0f→%.0f tiles, Energy: %d→%d (%d Minerals)" % [
 		sense_level, sense_radius, sense_radius_next, sense_energy, sense_energy_next, mineral_sense_cost
 	]
 
@@ -108,31 +108,31 @@ func _update_ui() -> void:
 	_gem_label.text = "--- Gem Sockets (cost: %d gems each) ---" % GameManager.GEM_SOCKET_COST
 
 	if GameManager.carapace_gem_socketed:
-		_gem_carapace_button.text = "[SOCKETED] Chitin Gem — +1 Max HP"
+		_gem_carapace_button.text = "[SOCKETED] Fur Gem — +1 Max HP"
 		_gem_carapace_button.disabled = true
 	else:
-		_gem_carapace_button.text = "Socket Chitin Gem into Carapace — +1 Max HP (%d Gems)" % GameManager.GEM_SOCKET_COST
+		_gem_carapace_button.text = "Socket Fur Gem into Pelt — +1 Max HP (%d Gems)" % GameManager.GEM_SOCKET_COST
 		_gem_carapace_button.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
 
 	if GameManager.legs_gem_socketed:
-		_gem_legs_button.text = "[SOCKETED] Quickstride Gem — +25 Max Energy, +15 Speed"
+		_gem_legs_button.text = "[SOCKETED] Swift Paw Gem — +25 Max Energy, +15 Speed"
 		_gem_legs_button.disabled = true
 	else:
-		_gem_legs_button.text = "Socket Quickstride Gem into Legs — +25 Energy, +15 Speed (%d Gems)" % GameManager.GEM_SOCKET_COST
+		_gem_legs_button.text = "Socket Swift Paw Gem into Paws — +25 Energy, +15 Speed (%d Gems)" % GameManager.GEM_SOCKET_COST
 		_gem_legs_button.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
 
 	if GameManager.mandibles_gem_socketed:
-		_gem_mandibles_button.text = "[SOCKETED] Fracture Gem — +4 Mining Power"
+		_gem_mandibles_button.text = "[SOCKETED] Razor Claw Gem — +4 Mining Power"
 		_gem_mandibles_button.disabled = true
 	else:
-		_gem_mandibles_button.text = "Socket Fracture Gem into Mandibles — +4 Mining Power (%d Gems)" % GameManager.GEM_SOCKET_COST
+		_gem_mandibles_button.text = "Socket Razor Claw Gem into Claws — +4 Mining Power (%d Gems)" % GameManager.GEM_SOCKET_COST
 		_gem_mandibles_button.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
 
 	if GameManager.sense_gem_socketed:
-		_gem_sense_button.text = "[SOCKETED] Echo Gem — +3 Sonar Radius"
+		_gem_sense_button.text = "[SOCKETED] Whisker Gem — +3 Sonar Radius"
 		_gem_sense_button.disabled = true
 	else:
-		_gem_sense_button.text = "Socket Echo Gem into Mineral Sense — +3 Sonar Radius (%d Gems)" % GameManager.GEM_SOCKET_COST
+		_gem_sense_button.text = "Socket Whisker Gem into Whiskers — +3 Sonar Radius (%d Gems)" % GameManager.GEM_SOCKET_COST
 		_gem_sense_button.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
 
 func _on_carapace_pressed() -> void:

@@ -1,6 +1,6 @@
 # Pickaxe Pioneer
 
-A 2D Terraria-style underground mining roguelite where you play as a red ant digging for minerals deep in the earth.
+A 2D Terraria-style underground mining roguelite where you play as a mining cat digging for minerals deep in the earth.
 
 **Engine:** Godot 4.5 | **Genre:** Mining Roguelite | **Target:** Steam / Itch.io ($3–5)
 
@@ -8,7 +8,7 @@ A 2D Terraria-style underground mining roguelite where you play as a red ant dig
 
 ## Concept
 
-You are a red forager ant venturing out from your colony into the earth below. Each expedition takes you deeper underground through procedurally generated layers of dirt, stone, and precious ore. Manage your energy carefully — go too deep without energy and you'll be stranded. Mine rare gems from the deepest veins, upgrade your Carapace, Legs, Mandibles, and Mineral Sense back at the colony, and unravel the mysteries buried beneath the surface.
+You are a mining cat from the Clowder, venturing into the earth below. Each expedition takes you deeper underground through procedurally generated layers of dirt, stone, and precious ore. Manage your energy carefully — go too deep without energy and you'll be stranded. Mine rare gems from the deepest veins, upgrade your Pelt, Paws, Claws, and Whiskers back at the Clowder, and unravel the mysteries buried beneath the surface.
 
 Inspired by [Motherload](https://www.miniclip.com/games/motherlode/en/), [Super Motherload](https://store.steampowered.com/app/269110/Super_Motherload/), [Dwarf Fortress](http://www.bay12games.com/dwarves/), [Path of Exile](https://store.steampowered.com/app/238960/Path_of_Exile/), [ADOM](https://www.adom.de/home/index.html), and [Noita](https://store.steampowered.com/app/881100/Noita/).
 
@@ -16,9 +16,9 @@ Inspired by [Motherload](https://www.miniclip.com/games/motherlode/en/), [Super 
 
 ## Gameplay Loop
 
-1. **Colony (Hub)** — Bank minerals, purchase permanent upgrades (Carapace / Legs / Mandibles / Mineral Sense), talk to NPCs
-2. **Overworld Map** — Navigate between mine entrances, settlement rest stops, and the colony
-3. **Settlement** — Spend banked minerals on pre-run consumables (Energy Cache, Field Repair, Mining Shroom, Whetstone)
+1. **Clowder (Hub)** — Bank minerals, purchase permanent upgrades (Pelt / Paws / Claws / Whiskers), talk to NPCs
+2. **Overworld Map** — Navigate between mine entrances, settlement rest stops, and the Clowder
+3. **Settlement** — Spend banked minerals on pre-run consumables (Energy Cache, Pelt Patch, Mining Shroom, Claw Whetstone)
 4. **Mining Run** — Descend into a 96×128-tile procedural mine; Terraria-style physics; cursor-based mining; energy depletes with depth; sonar ping, smelting chains, fossil finds, boss encounters
 5. **Run Summary** — Bank collected minerals on successful exit; lose run minerals if energy runs out or HP hits 0
 

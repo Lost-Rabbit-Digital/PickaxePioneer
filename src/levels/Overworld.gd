@@ -64,12 +64,12 @@ func _ready() -> void:
 	_randomize_mines()
 
 	# Set static node metadata
-	city_node.description = "Your home colony. Spend your hard-earned minerals on upgrades to improve your mining operation."
+	city_node.description = "Your home Clowder. Spend your hard-earned minerals on upgrades to improve your mining operation."
 	settlement_node_3.description = "A small outpost along the mining route. Rest, resupply, and prepare for deeper delves."
 	settlement_node_3.difficulty = 1
 	settlement_node_3.ore_types = []
 	settlement_node_3.hazard_types = []
-	settlement_node_4.description = "A remote settlement near deeper deposits. Stock up before venturing into the lower zones."
+	settlement_node_4.description = "A remote camp near deeper deposits. Stock up before venturing into the lower zones."
 	settlement_node_4.difficulty = 2
 	settlement_node_4.ore_types = []
 	settlement_node_4.hazard_types = []
