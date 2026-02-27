@@ -853,6 +853,18 @@ func _draw() -> void:
 				core_border = Color(0.80, 0.60, 0.20, 0.55 + boss_pulse * 0.30)
 				seg_fill    = Color(0.40, 0.25, 0.05, 0.18 + boss_pulse * 0.18)
 				seg_border  = Color(0.60, 0.40, 0.10, 0.40 + boss_pulse * 0.25)
+			BossSystem.BOSS_TYPE_ANCIENT:
+				# Colour shifts by phase: teal (shell) → purple (crystal) → white/gold (core)
+				var ancient_phase_colors: Array = [
+					[Color(0.10, 0.60, 0.80), Color(0.30, 0.90, 1.00)],  # phase 0 teal/cyan
+					[Color(0.55, 0.10, 0.80), Color(0.78, 0.40, 1.00)],  # phase 1 purple/violet
+					[Color(0.90, 0.90, 1.00), Color(1.00, 1.00, 0.60)],  # phase 2 white/gold
+				]
+				var ap := clampi(boss_system.ancient_phase, 0, ancient_phase_colors.size() - 1)
+				core_fill   = Color(ancient_phase_colors[ap][0], 0.35 + boss_pulse * 0.30)
+				core_border = Color(ancient_phase_colors[ap][1], 0.60 + boss_pulse * 0.30)
+				seg_fill    = Color(ancient_phase_colors[ap][0], 0.20 + boss_pulse * 0.20)
+				seg_border  = Color(ancient_phase_colors[ap][1], 0.45 + boss_pulse * 0.25)
 			BossSystem.BOSS_TYPE_GOLEM:
 				# Colour shifts with each armor phase
 				var phase_colors: Array = [
@@ -917,6 +929,51 @@ func _draw() -> void:
 				var gfont := ThemeDB.fallback_font
 				draw_string(gfont, label_px, golem_label,
 					HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1.0, 0.95, 0.50, 0.90))
+
+		# Ancient One: void-pulse warning — purple screen-edge pulse (phase 2)
+		if boss_system.boss_type == BossSystem.BOSS_TYPE_ANCIENT \
+				and boss_system.ancient_void_warning_active:
+			var void_ratio := 1.0 - (boss_system.ancient_void_warning_timer / BossSystem.ANCIENT_VOID_PULSE_WARNING)
+			var void_a := void_ratio * 0.45
+			var void_color := Color(0.50, 0.05, 0.80, void_a)
+			draw_rect(Rect2(min_col * CELL_SIZE, min_row * CELL_SIZE,
+				(max_col - min_col + 1) * CELL_SIZE, 8), void_color)
+			draw_rect(Rect2(min_col * CELL_SIZE, max_row * CELL_SIZE,
+				(max_col - min_col + 1) * CELL_SIZE, 8), void_color)
+			draw_rect(Rect2(min_col * CELL_SIZE, min_row * CELL_SIZE,
+				8, (max_row - min_row + 1) * CELL_SIZE), void_color)
+			draw_rect(Rect2(max_col * CELL_SIZE, min_row * CELL_SIZE,
+				8, (max_row - min_row + 1) * CELL_SIZE), void_color)
+
+		# Ancient One: core recharge warning — white pulsing ring around the core (phase 3)
+		if boss_system.boss_type == BossSystem.BOSS_TYPE_ANCIENT \
+				and boss_system.ancient_core_recharge_warning:
+			for bp3 in boss_system.boss_tile_positions:
+				if bp3.x >= 0 and bp3.x < GRID_COLS \
+						and bp3.y >= 0 and bp3.y < GRID_ROWS \
+						and grid[bp3.x][bp3.y] == TileType.BOSS_CORE:
+					var recharge_a := (sin(boss_system.boss_pulse_time * 9.0) * 0.5 + 0.5) * 0.50
+					var ring_rect := Rect2(
+						(bp3.x - 2) * CELL_SIZE, (bp3.y - 2) * CELL_SIZE,
+						5 * CELL_SIZE, 5 * CELL_SIZE)
+					draw_rect(ring_rect, Color(1.0, 1.0, 0.80, recharge_a), false, 3.0)
+					break
+
+		# Ancient One: phase label near core
+		if boss_system.boss_type == BossSystem.BOSS_TYPE_ANCIENT:
+			var ancient_phase_labels := ["SHELL PHASE", "CRYSTAL PHASE", "CORE PHASE"]
+			var al := ancient_phase_labels[clampi(boss_system.ancient_phase, 0, ancient_phase_labels.size() - 1)]
+			var label_px2 := Vector2(-9999.0, -9999.0)
+			for bp4 in boss_system.boss_tile_positions:
+				if bp4.x >= 0 and bp4.x < GRID_COLS \
+						and bp4.y >= 0 and bp4.y < GRID_ROWS \
+						and grid[bp4.x][bp4.y] == TileType.BOSS_CORE:
+					label_px2 = Vector2(bp4.x * CELL_SIZE - 44, bp4.y * CELL_SIZE - 22)
+					break
+			if label_px2.x > -9000.0:
+				var afont := ThemeDB.fallback_font
+				draw_string(afont, label_px2, al,
+					HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.80, 0.55, 1.00, 0.90))
 
 	# Forager Ant companion — amber circle with carry indicator (§3.4)
 	# State is read from forager_system; draw calls remain in MiningLevel._draw()
@@ -1059,7 +1116,7 @@ func _process(delta: float) -> void:
 		var depth_row := player_node.get_depth_row()
 		if depth_row > 0:
 			var depth_ratio := float(depth_row) / float(GRID_ROWS - SURFACE_ROWS)
-			var boss_mult := BOSS_DRAIN_MULT if boss_system.boss_active else 1.0
+			var boss_mult := boss_system.get_fuel_drain_mult()
 			var drain_rate := (FUEL_DRAIN_BASE + depth_ratio * FUEL_DRAIN_DEPTH_MULT) * boss_mult
 			_fuel_drain_accum += drain_rate * delta
 			if _fuel_drain_accum >= 1.0:

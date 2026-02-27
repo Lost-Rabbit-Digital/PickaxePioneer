@@ -49,7 +49,7 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
   - *Cave Spider Matriarch (row 64):* [x] diamond/cross pattern body spawned below player; mine segments to reach and destroy the core
   - *The Blind Mole (row 96):* [x] tremor AoE collapses nearby empty tiles; warning overlay telegraphs incoming tremor; brown screen-edge pulse on warning
   - *Stone Golem (row 112):* [x] three ore-phase armor (copper → iron → gold); resists damage until player last-mined the required ore; phase label drawn near core; ARMOR CRACKED banner on phase advance
-  - *The Ancient One (row 128):* [ ] three-phase final boss — pending
+  - *The Ancient One (row 128):* [x] three-phase final boss — Phase 1: outer stone-shell ring (12 segments, teal); Phase 2: crystalline inner ring (8 segments, purple) with periodic void pulses that reseal mined tunnels; Phase 3: exposed core (white/gold) that regenerates every 8 s if not mined down quickly. 2× fuel drain throughout.
 - [ ] **Gem socketing system** — slot gems found during runs into upgrade slots for special passive effects (PoE affix inspiration). Requires gems to be collectible items, not just ore tiles with mineral value.
 - [ ] **Develop colony passive skill tree** — deeper progression beyond the 4 current upgrade tracks. Current tracks (Carapace, Legs, Mandibles, Mineral Sense) are the first tier; the skill tree gates further specialisation behind milestone unlocks.
 
