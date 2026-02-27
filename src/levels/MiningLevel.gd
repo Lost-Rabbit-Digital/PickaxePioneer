@@ -247,7 +247,7 @@ const FOSSIL_TYPES: Dictionary = {
 # ---------------------------------------------------------------------------
 # Sonar ping system (§3.2)
 # ---------------------------------------------------------------------------
-const SONAR_PING_DURATION: float = 3.0  # seconds until ping fades
+const SONAR_PING_DURATION: float = 3.0  # seconds until ping fades — also defined in SonarSystem
 
 # ---------------------------------------------------------------------------
 # Wandering Trader system
@@ -298,50 +298,9 @@ const FUEL_DRAIN_DEPTH_MULT: float = 2.0 # Extra drain per depth ratio
 var _fuel_drain_accum: float = 0.0
 
 # ---------------------------------------------------------------------------
-# Boss encounter system (§4)
-# Bosses spawn at milestone depth rows. Each uses only existing mining tools.
+# Boss encounter system (§4) — logic lives in BossSystem.gd
 # ---------------------------------------------------------------------------
-const BOSS_MILESTONES: Array[int]  = [32, 64, 96, 112]
-const BOSS_DRAIN_MULT: float       = 1.5   # fuel drain multiplier while boss is alive
-const BOSS_SEGMENT_COUNT: int      = 12    # body segments per centipede encounter
-const BOSS_REWARD_BONUS: int       = 100   # flat mineral bonus on defeat (on top of tile drops)
-
-# Boss type identifiers
-const BOSS_TYPE_NONE: int       = 0
-const BOSS_TYPE_CENTIPEDE: int  = 1
-const BOSS_TYPE_SPIDER: int     = 2
-const BOSS_TYPE_MOLE: int       = 3
-const BOSS_TYPE_GOLEM: int      = 4
-
-var _boss_milestones_seen: Array[bool] = [false, false, false, false]
-var _boss_active: bool = false
-var _boss_spawn_row: int = -1
-var _boss_tile_positions: Array[Vector2i] = []   # remaining live boss tiles
-var _boss_pulse_time: float = 0.0
-var _boss_type: int = BOSS_TYPE_NONE
-
-# ---------------------------------------------------------------------------
-# Blind Mole tremor system (boss 3, row 96)
-# ---------------------------------------------------------------------------
-const MOLE_TREMOR_INTERVAL: float  = 7.0   # seconds between tremors
-const MOLE_TREMOR_WARNING: float   = 1.8   # warning duration before tremor hits
-const MOLE_TREMOR_RADIUS: int      = 10    # grid tiles radius of collapse AoE
-const MOLE_TREMOR_FILL_CHANCE: float = 0.55  # probability empty tile collapses per tremor
-
-var _mole_tremor_timer: float = 0.0
-var _mole_tremor_warning_active: bool = false
-var _mole_tremor_warning_timer: float = 0.0
-var _mole_center: Vector2i = Vector2i(-1, -1)
-
-# ---------------------------------------------------------------------------
-# Stone Golem phase system (boss 4, row 112)
-# ---------------------------------------------------------------------------
-# Three ore phases — player must last-mine the required ore type to deal damage
-const GOLEM_PHASE_ORES: Array[String] = ["copper", "iron", "gold"]
-const GOLEM_SEGMENTS_PER_PHASE: int   = 5  # segments to destroy before phase advances
-
-var _golem_phase: int = 0           # 0=copper phase, 1=iron phase, 2=gold phase
-var _golem_segments_this_phase: int = 0   # segments mined in current phase
+const BOSS_DRAIN_MULT: float = 1.5   # fuel drain multiplier while boss is alive
 
 var grid: Array = []
 var has_left_spawn: bool = false
@@ -392,17 +351,20 @@ var _cursor_grid_pos: Vector2i = Vector2i(-1, -1)
 var _pheromone_trails: Dictionary = {}
 const PHEROMONE_FADE_RATE: float = 0.025  # alpha units/sec (~40 s full fade
 
-# Sonar ping state (§3.2)
-var _sonar_ping_active: bool = false
-var _sonar_ping_elapsed: float = 0.0
-var _sonar_ping_center: Vector2i = Vector2i(-1, -1)
-var _sonar_wave_radius: float = 0.0
+# Sonar ping subsystem (§3.2) — logic lives in SonarSystem.gd
+var sonar_system: SonarSystem = SonarSystem.new()
 
 # Consecutive smelting subsystem (§3.5) — logic lives in SmeltingSystem.gd
 var smelt_system: SmeltingSystem = SmeltingSystem.new()
 
 # Fossil forgiveness subsystem (§3.6) — logic lives in FossilSystem.gd
 var fossil_system: FossilSystem = FossilSystem.new()
+
+# Boss encounter subsystem (§4) — logic lives in BossSystem.gd
+var boss_system: BossSystem = BossSystem.new()
+
+# Forager Ant subsystem (§3.4) — logic lives in ForagerSystem.gd
+var forager_system: ForagerSystem = ForagerSystem.new()
 
 # Wandering Trader state
 # Each entry: {world_pos: Vector2, tier: int, pulse: float}
@@ -418,22 +380,8 @@ var _lucky_compass_active: bool = false   # Lucky Compass: 2× lucky strike chan
 var _ancient_map_active: bool = false     # Ancient Map: 2× sonar ping radius
 
 # ---------------------------------------------------------------------------
-# Forager Ant companion (§3.4)
-# The forager follows the player underground, auto-collects a share of mined
-# ore, and returns to the surface when full — banking those minerals safely
-# even if the player later dies.
+# Forager Ant companion (§3.4) — logic lives in ForagerSystem.gd
 # ---------------------------------------------------------------------------
-const FORAGER_CAPACITY_BASE: int = 30
-const FORAGER_MOVE_SPEED: float = 140.0     # px/s while following/returning
-const FORAGER_DEPOSIT_DELAY: float = 1.8    # seconds at surface before returning underground
-const FORAGER_COLLECT_RADIUS: float = 80.0  # px radius within which forager sweeps up ore chunks
-const FORAGER_COLLECT_INTERVAL: float = 0.25  # seconds between chunk-sweep passes
-
-var _forager_world_pos: Vector2 = Vector2.ZERO
-var _forager_state: String = "follow"   # "follow" | "return" | "deposit"
-var _forager_carry: int = 0
-var _forager_capacity: int = FORAGER_CAPACITY_BASE
-var _forager_collect_timer: float = 0.0
 
 # Settlement whetstone bonus: temporary +N mandible power for this run only
 var _settlement_mandible_bonus: int = 0
@@ -510,16 +458,26 @@ func _ready() -> void:
 	if GameManager.settlement_mandible_bonus > 0:
 		_settlement_mandible_bonus = GameManager.settlement_mandible_bonus
 		GameManager.settlement_mandible_bonus = 0
+	var forager_bonus: int = 0
 	if GameManager.settlement_forager_bonus > 0:
-		_forager_capacity += GameManager.settlement_forager_bonus
+		forager_bonus = GameManager.settlement_forager_bonus
 		GameManager.settlement_forager_bonus = 0
 
-	# Spawn forager near the player's starting position
-	_forager_world_pos = Vector2(
+	# Initialise ForagerSystem near the player's starting position
+	var forager_spawn := Vector2(
 		(spawn_col + 2) * CELL_SIZE + CELL_SIZE * 0.5,
 		spawn_row * CELL_SIZE + CELL_SIZE * 0.5
 	)
-	_forager_capacity = FORAGER_CAPACITY_BASE
+	forager_system.setup(forager_spawn, forager_bonus)
+
+	# Initialise BossSystem with grid reference and MiningLevel callbacks
+	boss_system.setup(
+		grid, GRID_COLS, GRID_ROWS, SURFACE_ROWS,
+		func(c, r, solid): _set_tile_collision(c, r, solid),
+		func(text, color): _show_zone_banner(text, color),
+		func(intensity, duration): _shake_camera(intensity, duration),
+		func(pos): _tile_damage.erase(pos); _tile_hits.erase(pos)
+	)
 
 	_setup_inventory_screen()
 	queue_redraw()
@@ -862,34 +820,35 @@ func _draw() -> void:
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.10, 0.05, 0.00))
 
 	# Boss tile pulse overlay — pulsing glow on remaining boss tiles (§4)
-	if _boss_active and not _boss_tile_positions.is_empty():
-		var boss_pulse := sin(_boss_pulse_time * 4.5) * 0.5 + 0.5
+	# State is read from boss_system; draw calls remain in MiningLevel._draw()
+	if boss_system.boss_active and not boss_system.boss_tile_positions.is_empty():
+		var boss_pulse := sin(boss_system.boss_pulse_time * 4.5) * 0.5 + 0.5
 
 		# Choose boss tile colours based on boss type
 		var core_fill := Color(1.0, 0.05, 0.05, 0.28 + boss_pulse * 0.28)
 		var core_border := Color(1.0, 0.80, 0.10, 0.50 + boss_pulse * 0.30)
 		var seg_fill := Color(0.85, 0.15, 0.05, 0.18 + boss_pulse * 0.18)
 		var seg_border := Color(0.70, 0.20, 0.05, 0.40 + boss_pulse * 0.25)
-		match _boss_type:
-			BOSS_TYPE_MOLE:
+		match boss_system.boss_type:
+			BossSystem.BOSS_TYPE_MOLE:
 				core_fill   = Color(0.50, 0.30, 0.08, 0.30 + boss_pulse * 0.28)
 				core_border = Color(0.80, 0.60, 0.20, 0.55 + boss_pulse * 0.30)
 				seg_fill    = Color(0.40, 0.25, 0.05, 0.18 + boss_pulse * 0.18)
 				seg_border  = Color(0.60, 0.40, 0.10, 0.40 + boss_pulse * 0.25)
-			BOSS_TYPE_GOLEM:
+			BossSystem.BOSS_TYPE_GOLEM:
 				# Colour shifts with each armor phase
 				var phase_colors: Array = [
 					[Color(0.80, 0.50, 0.20), Color(0.95, 0.70, 0.40)],  # copper phase
 					[Color(0.55, 0.55, 0.65), Color(0.75, 0.75, 0.90)],  # iron phase
 					[Color(1.00, 0.85, 0.10), Color(1.00, 1.00, 0.50)],  # gold phase
 				]
-				var pi := clampi(_golem_phase, 0, phase_colors.size() - 1)
+				var pi := clampi(boss_system.golem_phase, 0, phase_colors.size() - 1)
 				core_fill   = Color(phase_colors[pi][0], 0.30 + boss_pulse * 0.28)
 				core_border = Color(phase_colors[pi][1], 0.55 + boss_pulse * 0.30)
 				seg_fill    = Color(phase_colors[pi][0], 0.18 + boss_pulse * 0.18)
 				seg_border  = Color(phase_colors[pi][1], 0.40 + boss_pulse * 0.25)
 
-		for bp in _boss_tile_positions:
+		for bp in boss_system.boss_tile_positions:
 			if bp.x < min_col or bp.x > max_col or bp.y < min_row or bp.y > max_row:
 				continue
 			var btile: int = grid[bp.x][bp.y]
@@ -912,8 +871,8 @@ func _draw() -> void:
 				(max_col - min_col + 1) * CELL_SIZE, 4), Color(1.0, 0.0, 0.0, vignette_a))
 
 		# Blind Mole: tremor warning overlay — brown screen-edge pulse
-		if _boss_type == BOSS_TYPE_MOLE and _mole_tremor_warning_active:
-			var warn_ratio := 1.0 - (_mole_tremor_warning_timer / MOLE_TREMOR_WARNING)
+		if boss_system.boss_type == BossSystem.BOSS_TYPE_MOLE and boss_system.mole_tremor_warning_active:
+			var warn_ratio := 1.0 - (boss_system.mole_tremor_warning_timer / BossSystem.MOLE_TREMOR_WARNING)
 			var warn_a := warn_ratio * 0.35
 			var warn_color := Color(0.55, 0.30, 0.05, warn_a)
 			draw_rect(Rect2(min_col * CELL_SIZE, min_row * CELL_SIZE,
@@ -926,13 +885,12 @@ func _draw() -> void:
 				8, (max_row - min_row + 1) * CELL_SIZE), warn_color)
 
 		# Stone Golem: show required ore type indicator near the golem core
-		if _boss_type == BOSS_TYPE_GOLEM and _golem_phase < GOLEM_PHASE_ORES.size():
-			var golem_label := "Mine: " + GOLEM_PHASE_ORES[_golem_phase].capitalize()
+		if boss_system.boss_type == BossSystem.BOSS_TYPE_GOLEM \
+				and boss_system.golem_phase < BossSystem.GOLEM_PHASE_ORES.size():
+			var golem_label := "Mine: " + BossSystem.GOLEM_PHASE_ORES[boss_system.golem_phase].capitalize()
 			var label_px := Vector2(-9999.0, -9999.0)
-			# Find core tile to draw label near
-			for bp2 in _boss_tile_positions:
-				if not _boss_tile_positions.is_empty() \
-						and bp2.x >= 0 and bp2.x < GRID_COLS \
+			for bp2 in boss_system.boss_tile_positions:
+				if bp2.x >= 0 and bp2.x < GRID_COLS \
 						and bp2.y >= 0 and bp2.y < GRID_ROWS \
 						and grid[bp2.x][bp2.y] == TileType.BOSS_CORE:
 					label_px = Vector2(bp2.x * CELL_SIZE - 40, bp2.y * CELL_SIZE - 22)
@@ -943,13 +901,14 @@ func _draw() -> void:
 					HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1.0, 0.95, 0.50, 0.90))
 
 	# Forager Ant companion — amber circle with carry indicator (§3.4)
-	var fg := _forager_world_pos
+	# State is read from forager_system; draw calls remain in MiningLevel._draw()
+	var fg := forager_system.world_pos
 	var fg_col := floori(fg.x / CELL_SIZE)
 	var fg_row := floori(fg.y / CELL_SIZE)
 	if fg_col >= min_col - 1 and fg_col <= max_col + 1 and fg_row >= min_row - 1 and fg_row <= max_row + 1:
-		var carry_ratio := float(_forager_carry) / float(max(_forager_capacity, 1))
+		var carry_ratio := float(forager_system.carry) / float(max(forager_system.capacity, 1))
 		var forager_color: Color
-		match _forager_state:
+		match forager_system.state:
 			"follow":
 				forager_color = Color(0.95, 0.65, 0.05, 0.92)
 			"return":
@@ -970,11 +929,12 @@ func _draw() -> void:
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.10, 0.05, 0.00))
 
 	# Sonar ping overlay — expanding wave reveals ore tiles through rock (§3.2)
-	if _sonar_ping_active and _sonar_ping_center.x >= 0:
-		var ping_alpha := 1.0 - _sonar_ping_elapsed / SONAR_PING_DURATION
+	# State is read from sonar_system; draw calls remain in MiningLevel._draw()
+	if sonar_system.ping_active and sonar_system.ping_center.x >= 0:
+		var ping_alpha := 1.0 - sonar_system.ping_elapsed / SonarSystem.PING_DURATION
 		var max_radius := GameManager.get_sonar_ping_radius()
-		var cx := _sonar_ping_center.x
-		var cy := _sonar_ping_center.y
+		var cx := sonar_system.ping_center.x
+		var cy := sonar_system.ping_center.y
 		var scan_r := int(max_radius) + 2
 		# Glow each ore tile that the expanding wave has already swept over
 		for sc in range(maxi(min_col, cx - scan_r), mini(max_col + 1, cx + scan_r + 1)):
@@ -987,10 +947,10 @@ func _draw() -> void:
 				and stile != TileType.FUEL_NODE and stile != TileType.FUEL_NODE_FULL:
 					continue
 				var dist := Vector2(sc - cx, sr - cy).length()
-				if dist > _sonar_wave_radius:
+				if dist > sonar_system.wave_radius:
 					continue
 				# Glow age: how far behind the wave front this tile is
-				var glow_age := _sonar_wave_radius - dist
+				var glow_age := sonar_system.wave_radius - dist
 				var glow_alpha := maxf(0.0, ping_alpha - glow_age * 0.12) * 0.80
 				if glow_alpha <= 0.02:
 					continue
@@ -1007,7 +967,7 @@ func _draw() -> void:
 						glow_color = Color(0.30, 1.00, 0.30, glow_alpha)
 				draw_rect(Rect2(sc * CELL_SIZE, sr * CELL_SIZE, CELL_SIZE, CELL_SIZE), glow_color)
 		# Expanding wave ring arc
-		var wave_px := _sonar_wave_radius * CELL_SIZE
+		var wave_px := sonar_system.wave_radius * CELL_SIZE
 		var center_px := Vector2(cx * CELL_SIZE + CELL_SIZE * 0.5, cy * CELL_SIZE + CELL_SIZE * 0.5)
 		if wave_px > 0:
 			draw_arc(center_px, wave_px, 0.0, TAU, 48, Color(0.40, 1.0, 0.60, ping_alpha * 0.55), 2.0)
@@ -1040,18 +1000,19 @@ func _process(delta: float) -> void:
 		for k in to_remove_pt:
 			_pheromone_trails.erase(k)
 
-	# Update sonar ping wave (§3.2)
-	_update_sonar_ping(delta)
+	# Update sonar ping wave (§3.2) — delegated to SonarSystem
+	sonar_system.update(delta, 2.0 if _ancient_map_active else 1.0)
 
-	# Pulse wandering traders and boss tiles regardless of menu state
+	# Pulse wandering traders and boss system regardless of menu state
 	for trader in _active_traders:
 		trader["pulse"] += delta
-	if _boss_active:
-		_boss_pulse_time += delta
-		_update_blind_mole(delta)
+	boss_system.update(delta)
 
 	# Update forager regardless of menu state so it can animate returning home
-	_update_forager(delta)
+	var _surface_deposit_pos := Vector2(46.0 * CELL_SIZE, (SURFACE_ROWS - 1) * CELL_SIZE + CELL_SIZE * 0.5)
+	forager_system.update(delta, player_node.global_position if player_node else Vector2.ZERO, _surface_deposit_pos)
+	if forager_system.sweep_due:
+		_forager_do_sweep()
 
 	if _hub_visible or _game_over or _fuel_shop_visible or _trader_shop_visible:
 		return
@@ -1080,7 +1041,7 @@ func _process(delta: float) -> void:
 		var depth_row := player_node.get_depth_row()
 		if depth_row > 0:
 			var depth_ratio := float(depth_row) / float(GRID_ROWS - SURFACE_ROWS)
-			var boss_mult := BOSS_DRAIN_MULT if _boss_active else 1.0
+			var boss_mult := BOSS_DRAIN_MULT if boss_system.boss_active else 1.0
 			var drain_rate := (FUEL_DRAIN_BASE + depth_ratio * FUEL_DRAIN_DEPTH_MULT) * boss_mult
 			_fuel_drain_accum += drain_rate * delta
 			if _fuel_drain_accum >= 1.0:
@@ -1138,7 +1099,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_try_interact()
 		return
 	if event.is_action_pressed("sonar_ping"):
-		_try_sonar_ping()
+		if player_node:
+			sonar_system.try_ping(player_node.get_grid_pos())
 
 # ---------------------------------------------------------------------------
 # Mining API — called by PlayerProbe
@@ -1177,17 +1139,12 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 	if tile == TileType.REFUEL_STATION or tile == TileType.EXIT_STATION:
 		return
 
-	# Stone Golem phase resistance — boss tiles only take damage when player last mined
-	# the required ore type for the current armor phase.
-	if _boss_active and _boss_type == BOSS_TYPE_GOLEM \
-			and (tile == TileType.BOSS_SEGMENT or tile == TileType.BOSS_CORE):
-		if _golem_phase < GOLEM_PHASE_ORES.size():
-			var required := GOLEM_PHASE_ORES[_golem_phase]
-			if smelt_system.last_ore_group != required:
-				EventBus.ore_mined_popup.emit(0,
-					"Resists! Mine " + required.capitalize() + " ore first!")
-				SoundManager.play_impact_sound()
-				return
+	# Stone Golem phase resistance — delegated to BossSystem
+	if not boss_system.can_mine_boss_tile(tile, smelt_system.last_ore_group):
+		EventBus.ore_mined_popup.emit(0,
+			"Resists! Mine " + BossSystem.GOLEM_PHASE_ORES[boss_system.golem_phase].capitalize() + " ore first!")
+		SoundManager.play_impact_sound()
+		return
 
 	# Normal mineable tile — multi-hit system
 	var pos_key := Vector2i(col, row)
@@ -1207,28 +1164,9 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 		_tile_damage.erase(pos_key)
 		_tile_hits.erase(pos_key)
 		_mine_cell(col, row)
-		# Boss tile tracking — check defeat after removal from grid
+		# Boss tile tracking — delegated to BossSystem
 		if tile == TileType.BOSS_SEGMENT or tile == TileType.BOSS_CORE:
-			_boss_tile_positions.erase(Vector2i(col, row))
-			# Stone Golem: count mined segments to advance armor phases
-			if _boss_active and _boss_type == BOSS_TYPE_GOLEM \
-					and tile == TileType.BOSS_SEGMENT:
-				_golem_segments_this_phase += 1
-				if _golem_segments_this_phase >= GOLEM_SEGMENTS_PER_PHASE:
-					_golem_segments_this_phase = 0
-					_golem_phase += 1
-					if _golem_phase < GOLEM_PHASE_ORES.size():
-						var next_ore := GOLEM_PHASE_ORES[_golem_phase].capitalize()
-						_show_zone_banner("ARMOR CRACKED!", Color(0.85, 0.70, 0.20))
-						EventBus.ore_mined_popup.emit(0, "Now mine " + next_ore + "!")
-						_shake_camera(8.0, 0.4)
-					else:
-						# All armor phases complete — core is fully exposed
-						_show_zone_banner("CORE EXPOSED!", Color(1.00, 0.40, 0.00))
-						EventBus.ore_mined_popup.emit(0, "Strike the core!")
-						_shake_camera(8.0, 0.4)
-			if _boss_tile_positions.is_empty() and _boss_active:
-				_on_boss_defeated()
+			boss_system.on_tile_mined(col, row, tile)
 		if tile in MINEABLE_TILES:
 			var minerals: int = TILE_MINERALS.get(tile, 1)
 			_mine_streak += 1
@@ -1399,30 +1337,11 @@ func _shake_camera(intensity: float = 5.0, duration: float = 0.3) -> void:
 	tween.tween_property(camera, "offset", Vector2.ZERO, 0.05)
 
 # ---------------------------------------------------------------------------
-# Sonar ping (§3.2)
+# Sonar ping (§3.2) — delegated to SonarSystem
 # ---------------------------------------------------------------------------
-
-func _try_sonar_ping() -> void:
-	if _sonar_ping_active or not player_node:
-		return
-	var fuel_cost := GameManager.get_sonar_ping_fuel_cost()
-	if GameManager.current_fuel < fuel_cost:
-		EventBus.ore_mined_popup.emit(0, "No fuel for ping")
-		return
-	GameManager.consume_fuel(fuel_cost)
-	_sonar_ping_active = true
-	_sonar_ping_elapsed = 0.0
-	_sonar_wave_radius = 0.0
-	_sonar_ping_center = player_node.get_grid_pos()
-
-func _update_sonar_ping(delta: float) -> void:
-	if not _sonar_ping_active:
-		return
-	_sonar_ping_elapsed += delta
-	var max_radius := GameManager.get_sonar_ping_radius() * (2.0 if _ancient_map_active else 1.0)
-	_sonar_wave_radius = (_sonar_ping_elapsed / SONAR_PING_DURATION) * max_radius
-	if _sonar_ping_elapsed >= SONAR_PING_DURATION:
-		_sonar_ping_active = false
+# sonar_system.try_ping(player_grid_pos) is called from _unhandled_input().
+# sonar_system.update(delta, mult) is called from _process().
+# See src/systems/SonarSystem.gd.
 
 # ---------------------------------------------------------------------------
 # Consecutive smelting (§3.5) — delegated to SmeltingSystem
@@ -1449,7 +1368,10 @@ func _update_depth() -> void:
 		EventBus.depth_changed.emit(depth)
 		_check_zone_transition(depth)
 		_check_trader_milestone(depth)
-		_check_boss_milestone(depth)
+		boss_system.check_milestone(depth, player_node.get_grid_pos().x)
+		var _boss_hints := boss_system.get_pending_hints()
+		if not _boss_hints.is_empty():
+			_queue_boss_hints(_boss_hints)
 		# Reset mine streak when surfacing
 		if depth <= 0:
 			_mine_streak = 0
@@ -1904,245 +1826,20 @@ func _shop_repair() -> void:
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-# Boss encounter system (§4)
+# Boss encounter system (§4) — delegated to BossSystem
 # ---------------------------------------------------------------------------
+# boss_system.check_milestone(depth, player_col) is called from _update_depth().
+# boss_system.update(delta) is called from _process().
+# boss_system.can_mine_boss_tile(tile, last_ore) and
+# boss_system.on_tile_mined(col, row, tile) are called from try_mine_at().
+# Hint queuing (uses await) lives here; BossSystem exposes get_pending_hints().
+# See src/systems/BossSystem.gd.
 
-# Shows a sequence of hint popups with a delay between each, so new players
-# understand boss mechanics without being overwhelmed all at once.
+## Shows a sequence of hint popups with a delay between each.
 func _queue_boss_hints(hints: Array) -> void:
 	for hint in hints:
 		await get_tree().create_timer(2.0).timeout
 		EventBus.ore_mined_popup.emit(0, hint)
-
-func _check_boss_milestone(depth_row: int) -> void:
-	if _boss_active:
-		return  # Only one boss at a time
-	for i in range(BOSS_MILESTONES.size()):
-		if not _boss_milestones_seen[i] and depth_row >= BOSS_MILESTONES[i]:
-			_boss_milestones_seen[i] = true
-			match i:
-				0: _spawn_centipede_king()
-				1: _spawn_cave_spider_matriarch()
-				2: _spawn_blind_mole()
-				3: _spawn_stone_golem()
-
-func _spawn_centipede_king() -> void:
-	if not player_node:
-		return
-	var player_col := player_node.get_grid_pos().x
-	var boss_row := BOSS_MILESTONES[0]
-
-	# Build a two-row centipede body: head row + shorter underbelly row
-	var positions: Array[Vector2i] = []
-	var half := BOSS_SEGMENT_COUNT / 2
-
-	for dc in range(-half, half + 1):
-		var col: int = clamp(player_col + dc, 2, GRID_COLS - 3)
-		var tile_type := TileType.BOSS_CORE if dc == 0 else TileType.BOSS_SEGMENT
-		grid[col][boss_row] = tile_type
-		_set_tile_collision(col, boss_row, true)
-		positions.append(Vector2i(col, boss_row))
-
-	# Underbelly — shorter row one tile below, no core
-	for dc in range(-half + 2, half - 1):
-		var col: int = clamp(player_col + dc, 2, GRID_COLS - 3)
-		if grid[col][boss_row + 1] != TileType.SURFACE and grid[col][boss_row + 1] != TileType.EXIT_STATION:
-			grid[col][boss_row + 1] = TileType.BOSS_SEGMENT
-			_set_tile_collision(col, boss_row + 1, true)
-			positions.append(Vector2i(col, boss_row + 1))
-
-	_boss_tile_positions = positions
-	_boss_active = true
-	_boss_spawn_row = boss_row
-	_boss_type = BOSS_TYPE_CENTIPEDE
-	_boss_pulse_time = 0.0
-
-	_show_zone_banner("CENTIPEDE KING AWAKENS!", Color(0.90, 0.10, 0.05))
-	EventBus.ore_mined_popup.emit(0, "Boss! Mine all segments to defeat it!")
-	_shake_camera(8.0, 0.4)
-	_queue_boss_hints(["Click each glowing tile to chip away at it!", "Defeat the boss to restore fuel!"])
-
-func _spawn_cave_spider_matriarch() -> void:
-	if not player_node:
-		return
-	var player_col := player_node.get_grid_pos().x
-	var boss_row := BOSS_MILESTONES[1]
-	var positions: Array[Vector2i] = []
-
-	# Spider body — cross/diamond pattern centred on player column
-	var offsets: Array = [
-		Vector2i(0, 0),   # core (head)
-		Vector2i(-1, 0), Vector2i(1, 0),  # body
-		Vector2i(0, -1), Vector2i(0, 1),  # legs vertical
-		Vector2i(-2, 0), Vector2i(2, 0),  # leg tips horizontal
-		Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1),  # web corners
-	]
-
-	for offset in offsets:
-		var col: int = clamp(player_col + offset.x, 2, GRID_COLS - 3)
-		var row: int = clamp(boss_row + offset.y, SURFACE_ROWS + 1, GRID_ROWS - 2)
-		var tile_type := TileType.BOSS_CORE if offset == Vector2i(0, 0) else TileType.BOSS_SEGMENT
-		grid[col][row] = tile_type
-		_set_tile_collision(col, row, true)
-		positions.append(Vector2i(col, row))
-
-	_boss_tile_positions = positions
-	_boss_active = true
-	_boss_spawn_row = boss_row
-	_boss_type = BOSS_TYPE_SPIDER
-	_boss_pulse_time = 0.0
-
-	_show_zone_banner("CAVE SPIDER MATRIARCH!", Color(0.60, 0.10, 0.80))
-	EventBus.ore_mined_popup.emit(0, "Boss! Mine all body parts to defeat it!")
-	_shake_camera(8.0, 0.4)
-	_queue_boss_hints(["Click each glowing segment to chip away at it!", "Defeat the boss to restore fuel!"])
-
-func _on_boss_defeated() -> void:
-	_boss_active = false
-	_boss_tile_positions.clear()
-	_boss_type = BOSS_TYPE_NONE
-	# Reset Blind Mole state
-	_mole_tremor_timer = 0.0
-	_mole_tremor_warning_active = false
-	_mole_center = Vector2i(-1, -1)
-	# Reset Stone Golem state
-	_golem_phase = 0
-	_golem_segments_this_phase = 0
-	GameManager.add_currency(BOSS_REWARD_BONUS)
-	EventBus.minerals_earned.emit(BOSS_REWARD_BONUS)
-	EventBus.ore_mined_popup.emit(BOSS_REWARD_BONUS, "Boss defeated!")
-	_show_zone_banner("BOSS DEFEATED!", Color(0.30, 1.00, 0.40))
-	GameManager.restore_fuel(50)
-	EventBus.ore_mined_popup.emit(50, "Fuel restored!")
-	_shake_camera(14.0, 0.6)
-
-func _spawn_blind_mole() -> void:
-	if not player_node:
-		return
-	var player_col := player_node.get_grid_pos().x
-	var boss_row := BOSS_MILESTONES[2]   # row 96
-	var positions: Array[Vector2i] = []
-
-	# Mole body — large oval cluster centred at boss_row
-	var offsets: Array = [
-		Vector2i(0, 0),                                              # core
-		Vector2i(-1, 0), Vector2i(1, 0),                            # mid row
-		Vector2i(-2, 0), Vector2i(2, 0),
-		Vector2i(0, -1), Vector2i(0, 1),                            # vertical centre
-		Vector2i(-1, -1), Vector2i(1, -1),                          # top arc
-		Vector2i(-1,  1), Vector2i(1,  1),                          # bottom arc
-		Vector2i(-2, -1), Vector2i(2, -1),                          # wide shoulders
-		Vector2i(-2,  1), Vector2i(2,  1),
-		Vector2i(0, -2), Vector2i(0,  2),                           # snout / tail tips
-	]
-
-	for offset in offsets:
-		var col: int = clamp(player_col + offset.x, 2, GRID_COLS - 3)
-		var row: int = clamp(boss_row + offset.y, SURFACE_ROWS + 1, GRID_ROWS - 2)
-		var tile_type := TileType.BOSS_CORE if offset == Vector2i(0, 0) else TileType.BOSS_SEGMENT
-		grid[col][row] = tile_type
-		_set_tile_collision(col, row, true)
-		positions.append(Vector2i(col, row))
-
-	_boss_tile_positions = positions
-	_boss_active = true
-	_boss_spawn_row = boss_row
-	_boss_type = BOSS_TYPE_MOLE
-	_boss_pulse_time = 0.0
-	_mole_center = Vector2i(player_col, boss_row)
-	_mole_tremor_timer = MOLE_TREMOR_INTERVAL  # first tremor after full interval
-
-	_show_zone_banner("THE BLIND MOLE STIRS!", Color(0.55, 0.35, 0.10))
-	EventBus.ore_mined_popup.emit(0, "Boss! Mine all segments to defeat it!")
-	_shake_camera(12.0, 0.6)
-	_queue_boss_hints(["Watch for TREMOR warnings — get clear!", "Tremors refill mined tunnels around the boss!", "Defeat the boss to restore fuel!"])
-
-
-func _update_blind_mole(delta: float) -> void:
-	if not _boss_active or _boss_type != BOSS_TYPE_MOLE:
-		return
-
-	if _mole_tremor_warning_active:
-		_mole_tremor_warning_timer -= delta
-		if _mole_tremor_warning_timer <= 0.0:
-			_mole_tremor_warning_active = false
-			_execute_mole_tremor()
-		return
-
-	_mole_tremor_timer -= delta
-	if _mole_tremor_timer <= 0.0:
-		_mole_tremor_timer = MOLE_TREMOR_INTERVAL
-		_mole_tremor_warning_active = true
-		_mole_tremor_warning_timer = MOLE_TREMOR_WARNING
-		EventBus.ore_mined_popup.emit(0, "TREMOR INCOMING!")
-		_shake_camera(5.0, 0.3)
-
-
-func _execute_mole_tremor() -> void:
-	# Collapse a portion of empty tiles within the tremor radius back to dirt
-	var cx := _mole_center.x
-	var cy := _mole_center.y
-	var r := MOLE_TREMOR_RADIUS
-	var collapsed := 0
-	for tc in range(maxi(0, cx - r), mini(GRID_COLS, cx + r + 1)):
-		for tr in range(maxi(SURFACE_ROWS + 1, cy - r), mini(GRID_ROWS - 1, cy + r + 1)):
-			if grid[tc][tr] != TileType.EMPTY:
-				continue
-			var dist := Vector2(tc - cx, tr - cy).length()
-			if dist > float(r):
-				continue
-			if randf() < MOLE_TREMOR_FILL_CHANCE:
-				var new_tile := TileType.DIRT_DARK if tr > SURFACE_ROWS + 8 else TileType.DIRT
-				grid[tc][tr] = new_tile
-				_set_tile_collision(tc, tr, true)
-				# Erase any stored damage on refilled tile
-				_tile_damage.erase(Vector2i(tc, tr))
-				_tile_hits.erase(Vector2i(tc, tr))
-				collapsed += 1
-	if collapsed > 0:
-		queue_redraw()
-	EventBus.ore_mined_popup.emit(0, "Tremor! " + str(collapsed) + " tiles collapsed!")
-	_shake_camera(10.0, 0.5)
-
-
-func _spawn_stone_golem() -> void:
-	if not player_node:
-		return
-	var player_col := player_node.get_grid_pos().x
-	var boss_row := BOSS_MILESTONES[3]   # row 112
-	var positions: Array[Vector2i] = []
-
-	# Golem body — thick rectangular armoured form
-	var offsets: Array = [
-		Vector2i(0, 0),                                              # core
-		Vector2i(-1, 0), Vector2i(1, 0), Vector2i(-2, 0), Vector2i(2, 0),   # top row
-		Vector2i(-1, 1), Vector2i(0, 1), Vector2i(1, 1),            # mid row
-		Vector2i(-2, 1), Vector2i(2, 1),
-		Vector2i(-1, 2), Vector2i(0, 2), Vector2i(1, 2),            # leg row
-		Vector2i(-1,-1), Vector2i(0,-1), Vector2i(1,-1),            # shoulders
-	]
-
-	for offset in offsets:
-		var col: int = clamp(player_col + offset.x, 2, GRID_COLS - 3)
-		var row: int = clamp(boss_row + offset.y, SURFACE_ROWS + 1, GRID_ROWS - 2)
-		var tile_type := TileType.BOSS_CORE if offset == Vector2i(0, 0) else TileType.BOSS_SEGMENT
-		grid[col][row] = tile_type
-		_set_tile_collision(col, row, true)
-		positions.append(Vector2i(col, row))
-
-	_boss_tile_positions = positions
-	_boss_active = true
-	_boss_spawn_row = boss_row
-	_boss_type = BOSS_TYPE_GOLEM
-	_boss_pulse_time = 0.0
-	_golem_phase = 0
-	_golem_segments_this_phase = 0
-
-	var required := GOLEM_PHASE_ORES[0].capitalize()
-	_show_zone_banner("STONE GOLEM AWAKENS!", Color(0.60, 0.55, 0.45))
-	EventBus.ore_mined_popup.emit(0, "Armor boss! Mine nearby ore to unlock damage!")
-	_shake_camera(14.0, 0.8)
-	_queue_boss_hints(["Step 1: Mine " + required + " ore (not the boss!)", "Step 2: Then click the glowing boss tiles!", "Wrong ore type? It blocks all damage!"])
 
 
 func _check_trader_milestone(depth_row: int) -> void:
@@ -2254,68 +1951,21 @@ func _close_trader_shop() -> void:
 	_current_trader = {}
 
 # ---------------------------------------------------------------------------
-# Forager Ant movement and banking (§3.4)
+# Forager Ant movement and banking (§3.4) — delegated to ForagerSystem
 # ---------------------------------------------------------------------------
+# forager_system.update(delta, player_pos, surface_deposit_pos) is called from _process().
+# Ore chunk sweeping uses get_tree() so it stays here; ForagerSystem tracks the timer and carry.
+# See src/systems/ForagerSystem.gd.
 
-func _update_forager(delta: float) -> void:
-	if not player_node or _game_over:
-		return
-	match _forager_state:
-		"follow":
-			# Hover a tile behind and above the player
-			var target := player_node.global_position + Vector2(-CELL_SIZE * 1.2, -CELL_SIZE * 0.5)
-			_forager_world_pos = _forager_world_pos.move_toward(target, FORAGER_MOVE_SPEED * delta)
-			# Periodically sweep up nearby ore chunks
-			_forager_collect_timer -= delta
-			if _forager_collect_timer <= 0.0:
-				_forager_collect_timer = FORAGER_COLLECT_INTERVAL
-				_forager_sweep_chunks()
-		"return":
-			# Fly toward the left-centre surface strip to deposit
-			var surface_y := (SURFACE_ROWS - 1) * CELL_SIZE + CELL_SIZE * 0.5
-			var deposit_x := 46.0 * CELL_SIZE
-			var target := Vector2(deposit_x, surface_y)
-			_forager_world_pos = _forager_world_pos.move_toward(target, FORAGER_MOVE_SPEED * 1.8 * delta)
-			if _forager_world_pos.distance_to(target) < 12.0:
-				_forager_deposit()
-		"deposit":
-			# Stay put; timer ticks in _process below
-			pass
-
-	# Deposit timer — counted here so it works regardless of hub/shop state
-	if _forager_state == "deposit":
-		# Repurpose _forager_capacity as a timer storage trick; use a dedicated var instead
-		pass  # handled inline in _forager_deposit()
-
-# Scan for ore chunks near the forager and collect them into its carry.
-func _forager_sweep_chunks() -> void:
+## Scan for ore chunks near the forager and let ForagerSystem collect them.
+func _forager_do_sweep() -> void:
 	var chunks := get_tree().get_nodes_in_group("ore_chunk")
+	var nearby: Array = []
 	for chunk in chunks:
-		if not is_instance_valid(chunk):
-			continue
-		if _forager_world_pos.distance_to(chunk.global_position) < FORAGER_COLLECT_RADIUS:
-			_forager_carry = mini(_forager_carry + chunk.value, _forager_capacity)
-			chunk.collect_silent()
-			if _forager_carry >= _forager_capacity:
-				_forager_start_return()
-				return
-
-func _forager_start_return() -> void:
-	_forager_state = "return"
-	EventBus.ore_mined_popup.emit(0, "Forager heading home!")
-
-func _forager_deposit() -> void:
-	# Bank the carry directly to mineral_currency (bypasses run risk)
-	if _forager_carry > 0:
-		GameManager.mineral_currency += _forager_carry
-		EventBus.ore_mined_popup.emit(_forager_carry, "Forager banked!")
-		_forager_carry = 0
-	_forager_state = "deposit"
-	# After a short pause return underground via a timer
-	await get_tree().create_timer(FORAGER_DEPOSIT_DELAY).timeout
-	if not is_instance_valid(self):
-		return
-	_forager_state = "follow"
+		if is_instance_valid(chunk) \
+				and forager_system.world_pos.distance_to(chunk.global_position) < ForagerSystem.COLLECT_RADIUS:
+			nearby.append(chunk)
+	forager_system.sweep_chunks(nearby)
 
 func _trader_purchase(item_key: String) -> void:
 	var item_def: Dictionary = {}
