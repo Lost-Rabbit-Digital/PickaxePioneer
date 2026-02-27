@@ -121,7 +121,7 @@ const TILE_TEXTURE_PATHS: Dictionary = {
 	TileType.ORE_GEM:         "res://assets/blocks/amethyst.png",
 	TileType.ORE_GEM_DEEP:    "res://assets/blocks/obsidian.png",
 	TileType.EXPLOSIVE:       "res://assets/blocks/eucalyptus_log_top.png",
-	TileType.EXPLOSIVE_ARMED: "res://assets/blocks/eucalyptus_log_side.png",
+	TileType.EXPLOSIVE_ARMED: "res://assets/blocks/eucalyptus_log_top.png",
 	TileType.LAVA:            "res://assets/blocks/sand_ugly_3.png",
 	TileType.LAVA_FLOW:       "res://assets/blocks/sand_ugly_3.png",
 	TileType.FUEL_NODE:       "res://assets/blocks/limestone.png",
