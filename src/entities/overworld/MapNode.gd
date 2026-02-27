@@ -32,8 +32,7 @@ func _update_visuals() -> void:
 
 	match node_type:
 		NodeType.MINE:
-			# Use the ant spritesheet as the mine icon (same asset as the player)
-			sprite.texture = preload("res://assets/creatures/red_ant_spritesheet.png")
+			sprite.texture = preload("res://assets/blocks/glass.png")
 			sprite.scale = Vector2(2.5, 2.5)
 			sprite.modulate = Color(1.0, 0.75, 0.20)  # warm gold tint for mines
 		NodeType.STATION:
