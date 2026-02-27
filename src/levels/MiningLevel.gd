@@ -1398,6 +1398,12 @@ func _explode_area(center_col: int, center_row: int) -> void:
 			var nc := center_col + dc
 			var nr := center_row + dr
 			if nc >= 0 and nc < GRID_COLS and nr >= 0 and nr < GRID_ROWS:
+				var tile: int = grid[nc][nr]
+				if tile in ORE_TILES:
+					var minerals: int = roundi(TILE_MINERALS.get(tile, 1) * GameManager.get_mineral_yield_mult())
+					var world_pos := Vector2(nc * CELL_SIZE + CELL_SIZE * 0.5, nr * CELL_SIZE + CELL_SIZE * 0.5)
+					_spawn_ore_chunks(tile, minerals, world_pos)
+					GameManager.track_ore_mined(tile, minerals)
 				grid[nc][nr] = TileType.EMPTY
 				_set_tile_collision(nc, nr, false)
 	SoundManager.play_explosion_sound()
