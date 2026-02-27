@@ -17,7 +17,7 @@ var mine_range: float = 4.5  # Range in tiles
 var _mining: bool = false
 var _mine_target: Vector2i = Vector2i(-1, -1)
 var _mine_timer: float = 0.0
-const MINE_INTERVAL: float = 0.18  # Seconds between mining hits
+const MINE_INTERVAL: float = 0.12  # Seconds between mining hits
 
 # Reference set by MiningLevel after instantiation
 var mining_level: Node = null
@@ -35,6 +35,12 @@ const JETPACK_THRUST: float = -220.0     # Upward velocity applied each frame wh
 const JETPACK_FUEL_RATE: float = 5.0     # Fuel units consumed per second while thrusting
 var _jetpack_active: bool = false
 var _jetpack_fuel_accum: float = 0.0
+
+# Sprint — hold Shift for 1.5× speed, costs extra fuel
+const SPRINT_MULT: float = 1.5
+const SPRINT_FUEL_RATE: float = 4.0     # Fuel units consumed per second while sprinting
+var _sprinting: bool = false
+var _sprint_fuel_accum: float = 0.0
 
 @onready var jetpack_sprite: Sprite2D = $JetpackSprite
 
@@ -56,9 +62,23 @@ func _physics_process(delta: float) -> void:
 		if velocity.y > 0:
 			velocity.y = 0
 
+	# Sprint — Shift held, burns fuel, boosts horizontal speed
+	_sprinting = Input.is_action_pressed("sprint") and GameManager.current_fuel > 0
+	var effective_speed := move_speed * (SPRINT_MULT if _sprinting else 1.0)
+
 	# Horizontal movement
 	var direction := Input.get_axis("move_left", "move_right")
-	velocity.x = direction * move_speed
+	velocity.x = direction * effective_speed
+
+	# Sprint fuel drain (only while actually moving)
+	if _sprinting and abs(direction) > 0.1:
+		_sprint_fuel_accum += SPRINT_FUEL_RATE * delta
+		if _sprint_fuel_accum >= 1.0:
+			var to_consume := int(_sprint_fuel_accum)
+			_sprint_fuel_accum -= to_consume
+			GameManager.consume_fuel(to_consume)
+	else:
+		_sprint_fuel_accum = 0.0
 
 	# Flip sprite
 	if direction < 0:
@@ -73,9 +93,10 @@ func _physics_process(delta: float) -> void:
 		velocity.y = jump_velocity
 
 	# Jetpack thrust — hold jump while airborne to fly upward, consumes fuel
+	# Sprint also boosts vertical thrust by 20% when airborne
 	_jetpack_active = false
 	if has_jetpack and not is_on_floor() and Input.is_action_pressed("jump") and GameManager.current_fuel > 0:
-		velocity.y = JETPACK_THRUST
+		velocity.y = JETPACK_THRUST * (1.2 if _sprinting else 1.0)
 		_jetpack_active = true
 		_jetpack_fuel_accum += JETPACK_FUEL_RATE * delta
 		if _jetpack_fuel_accum >= 1.0:
@@ -120,7 +141,7 @@ func _handle_mining(delta: float) -> void:
 
 		if grid_pos != _mine_target:
 			_mine_target = grid_pos
-			_mine_timer = 0.0  # Reset timer when switching targets
+			_mine_timer = MINE_INTERVAL  # Pre-fill so first hit fires immediately
 
 		_mine_timer += delta
 		if _mine_timer >= MINE_INTERVAL:

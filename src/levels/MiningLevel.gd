@@ -1285,6 +1285,7 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 		_tile_damage[pos_key] = new_damage
 		_tile_hits[pos_key] = hits_so_far + 1
 		SoundManager.play_impact_sound()
+		_shake_camera(1.5, 0.07)
 
 # Called by PlayerProbe when it overlaps a hazard tile
 func check_player_hazard(col: int, row: int) -> void:
