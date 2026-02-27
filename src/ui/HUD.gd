@@ -8,11 +8,17 @@ extends CanvasLayer
 @onready var fuel_label: Label = $Control/FuelLabel
 @onready var fuel_bar_container: HBoxContainer = $Control/FuelBarContainer
 
-var fuel_segments: Array[ColorRect] = []
+var fuel_bars: Array[Control] = []
+var fuel_bar_fills: Array[ColorRect] = []
+var fuel_bar_highlights: Array[ColorRect] = []
 
 # Vertical health bars
 const HEALTH_BAR_W: int = 18
 const HEALTH_BAR_H: int = 60
+
+# Vertical fuel bars (same style as health bars)
+const FUEL_BAR_W: int = 18
+const FUEL_BAR_H: int = 60
 var health_bars: Array[Control] = []
 var health_bar_fills: Array[ColorRect] = []
 var health_bar_highlights: Array[ColorRect] = []
@@ -347,24 +353,63 @@ func _on_fuel_changed(current_fuel: int, max_fuel: int) -> void:
 	var fuel_ratio := float(current_fuel) / float(max_fuel)
 	var is_low_fuel := current_fuel > 0 and fuel_ratio <= 0.2
 
-	# Clear previous segments
-	for segment in fuel_segments:
-		segment.queue_free()
-	fuel_segments.clear()
+	# Clear previous bars
+	for bar in fuel_bars:
+		bar.queue_free()
+	fuel_bars.clear()
+	fuel_bar_fills.clear()
+	fuel_bar_highlights.clear()
 
-	# Rebuild fuel bar with 10 segments (each = 10 fuel)
+	# Rebuild as 10 vertical chambers matching health bar style
 	var segments := 10
+	var fuel_per_segment := float(max_fuel) / float(segments)
+	var fill_color := Color(1.0, 0.30, 0.05, 1.0) if is_low_fuel else Color(0.20, 0.80, 0.20, 1.0)
+	var shine_color := Color(1.0, 0.65, 0.40, 0.75) if is_low_fuel else Color(0.60, 1.0, 0.60, 0.75)
+
 	for i in range(segments):
-		var segment := ColorRect.new()
-		segment.custom_minimum_size = Vector2(20, 20)
-		var filled: bool = i < (current_fuel / 10)
-		if filled:
-			# Orange-red tint when fuel is critically low
-			segment.color = Color(1.0, 0.30, 0.05, 1.0) if is_low_fuel else Color(0.20, 0.80, 0.20, 1.0)
+		var bar := Control.new()
+		bar.custom_minimum_size = Vector2(FUEL_BAR_W, FUEL_BAR_H)
+		bar.clip_contents = true
+		bar.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+
+		# Dark chamber background
+		var bg := ColorRect.new()
+		bg.color = Color(0.12, 0.12, 0.12, 0.88)
+		bg.position = Vector2.ZERO
+		bg.size = Vector2(FUEL_BAR_W, FUEL_BAR_H)
+		bar.add_child(bg)
+
+		# Fuel fill — anchored to bottom, drains from top
+		var seg_min := float(i) * fuel_per_segment
+		var seg_max := float(i + 1) * fuel_per_segment
+		var fill_ratio: float
+		if float(current_fuel) >= seg_max:
+			fill_ratio = 1.0
+		elif float(current_fuel) <= seg_min:
+			fill_ratio = 0.0
 		else:
-			segment.color = Color(0.25, 0.25, 0.25, 0.6)
-		fuel_bar_container.add_child(segment)
-		fuel_segments.append(segment)
+			fill_ratio = (float(current_fuel) - seg_min) / fuel_per_segment
+
+		var fill_h: float = fill_ratio * float(FUEL_BAR_H)
+		var fill := ColorRect.new()
+		fill.color = fill_color
+		fill.position = Vector2(0.0, float(FUEL_BAR_H) - fill_h)
+		fill.size = Vector2(FUEL_BAR_W, fill_h)
+		bar.add_child(fill)
+
+		# Bright shine line at the top edge of the fill
+		var shine := ColorRect.new()
+		shine.color = shine_color
+		shine.visible = fill_ratio > 0.02
+		if shine.visible:
+			shine.position = Vector2(0.0, float(FUEL_BAR_H) - fill_h)
+			shine.size = Vector2(FUEL_BAR_W, minf(3.0, fill_h))
+		bar.add_child(shine)
+
+		fuel_bar_container.add_child(bar)
+		fuel_bars.append(bar)
+		fuel_bar_fills.append(fill)
+		fuel_bar_highlights.append(shine)
 
 	# Pulsing "! LOW FUEL !" warning
 	if is_low_fuel:
