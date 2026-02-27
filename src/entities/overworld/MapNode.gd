@@ -5,8 +5,9 @@ extends Area2D
 
 enum NodeType {
 	EMPTY,
-	MINE,      # was ASTEROID — ordinal kept at 1 so existing .tscn data is unchanged
-	STATION
+	MINE,       # was ASTEROID — ordinal kept at 1 so existing .tscn data is unchanged
+	STATION,
+	SETTLEMENT  # overworld rest-stop / trader node
 }
 
 @export var location_name: String = "Unknown"
@@ -36,6 +37,8 @@ func _update_visuals() -> void:
 			sprite.modulate = Color(1.0, 0.75, 0.20)  # warm gold tint for mines
 		NodeType.STATION:
 			sprite.modulate = Color.CYAN
+		NodeType.SETTLEMENT:
+			sprite.modulate = Color(0.85, 0.60, 1.0)  # soft purple for settlements
 		NodeType.EMPTY:
 			sprite.modulate = Color.WHITE
 
@@ -43,10 +46,10 @@ var neighbors: Array[MapNode] = []
 
 func highlight(active: bool) -> void:
 	if active:
-		sprite.scale = Vector2(1.2, 1.2) if node_type != NodeType.MINE else Vector2(3.0, 3.0)
+		sprite.scale = Vector2(3.0, 3.0) if node_type == NodeType.MINE else Vector2(1.2, 1.2)
 		label.modulate = Color.YELLOW
 	else:
-		sprite.scale = Vector2(1.0, 1.0) if node_type != NodeType.MINE else Vector2(2.5, 2.5)
+		sprite.scale = Vector2(2.5, 2.5) if node_type == NodeType.MINE else Vector2(1.0, 1.0)
 		label.modulate = Color.WHITE
 
 func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:

@@ -44,6 +44,13 @@ func show_for_node(node: MapNode) -> void:
 			ore_types_label.visible = node.ore_types.size() > 0
 			hazards_label.visible = node.hazard_types.size() > 0
 			enter_button.text = "Enter"
+		MapNode.NodeType.SETTLEMENT:
+			type_label.text = "[ Settlement ]"
+			type_label.modulate = Color(0.85, 0.60, 1.0)
+			difficulty_label.visible = false
+			ore_types_label.visible = false
+			hazards_label.visible = false
+			enter_button.text = "Visit Settlement"
 		_:
 			type_label.text = "[ Unknown ]"
 			type_label.modulate = Color(1.0, 1.0, 1.0)
@@ -72,6 +79,8 @@ func _default_description(node: MapNode) -> String:
 			return "Your home colony. Visit the shop to spend minerals on upgrades."
 		MapNode.NodeType.MINE:
 			return "A promising mining site. Dig deep to uncover rare ores."
+		MapNode.NodeType.SETTLEMENT:
+			return "A rest stop. Spend banked minerals on supplies for your next run."
 	return "An unexplored location."
 
 func _on_enter_pressed() -> void:

@@ -65,14 +65,14 @@ func _ready() -> void:
 
 	# Set static node metadata
 	city_node.description = "Your home colony. Spend your hard-earned minerals on upgrades to improve your mining operation."
-	settlement_node_3.description = "A small outpost along the mining route."
+	settlement_node_3.description = "A small outpost along the mining route. Rest, resupply, and prepare for deeper delves."
 	settlement_node_3.difficulty = 1
-	settlement_node_3.ore_types = ["Copper"]
+	settlement_node_3.ore_types = []
 	settlement_node_3.hazard_types = []
-	settlement_node_4.description = "A remote settlement near deeper deposits."
+	settlement_node_4.description = "A remote settlement near deeper deposits. Stock up before venturing into the lower zones."
 	settlement_node_4.difficulty = 2
-	settlement_node_4.ore_types = ["Iron", "Copper"]
-	settlement_node_4.hazard_types = ["Explosives"]
+	settlement_node_4.ore_types = []
+	settlement_node_4.hazard_types = []
 
 	# Instantiate the level info modal
 	_modal = preload("res://src/ui/LevelInfoModal.tscn").instantiate()
@@ -237,6 +237,8 @@ func _on_modal_confirmed(node: MapNode) -> void:
 
 	if node.node_type == MapNode.NodeType.MINE or node.node_type == MapNode.NodeType.STATION:
 		GameManager.load_mining_level(node.scene_path)
+	elif node.node_type == MapNode.NodeType.SETTLEMENT:
+		GameManager.load_settlement_level(node.scene_path)
 	elif node.node_type == MapNode.NodeType.EMPTY:
 		if node.name == "CityNode":
 			GameManager.load_mining_level(node.scene_path)
