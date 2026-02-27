@@ -41,6 +41,7 @@ enum TileType {
 	BOSS_SEGMENT     = 23,   # Centipede body segment — high HP, awards minerals on death
 	BOSS_CORE        = 24,   # Boss core / head — highest HP, big reward
 	UPGRADE_STATION  = 25,   # Upgrade station — permanent upgrades using banked minerals
+	SMELTERY_STATION = 26,   # Smeltery — smelt ores into bars and sell them
 }
 
 const TILE_NAMES: Dictionary = {
@@ -69,6 +70,7 @@ const TILE_NAMES: Dictionary = {
 	TileType.BOSS_SEGMENT:    "Boss Segment",
 	TileType.BOSS_CORE:       "Boss Core",
 	TileType.UPGRADE_STATION: "Upgrade Station",
+	TileType.SMELTERY_STATION: "Smeltery",
 }
 
 const MINEABLE_TILES: Array = [
@@ -108,6 +110,7 @@ const TILE_COLORS: Dictionary = {
 	TileType.BOSS_SEGMENT:   Color(0.55, 0.12, 0.08),
 	TileType.BOSS_CORE:      Color(0.80, 0.05, 0.05),
 	TileType.UPGRADE_STATION: Color(0.50, 0.50, 0.50),
+	TileType.SMELTERY_STATION: Color(0.50, 0.50, 0.50),
 }
 
 const TILE_TEXTURE_PATHS: Dictionary = {
@@ -133,6 +136,7 @@ const TILE_TEXTURE_PATHS: Dictionary = {
 	TileType.SURFACE:         "res://assets/blocks/grass_top.png",
 	TileType.SURFACE_GRASS:   "res://assets/blocks/grass_side.png",
 	TileType.UPGRADE_STATION: "res://assets/blocks/cobblestone_bricks.png",
+	TileType.SMELTERY_STATION: "res://assets/blocks/cobblestone_bricks.png",
 }
 
 const TILE_HP: Dictionary = {
@@ -228,6 +232,36 @@ const SMELT_COMBOS: Dictionary = {
 	"gold+iron":   [2.00, "Gilded Steel"],
 	"copper+gold": [1.50, "Fool's Gold"],
 	"gold+copper": [1.50, "Fool's Gold"],
+}
+
+# ---------------------------------------------------------------------------
+# Smeltery building — ore-to-bar conversion and bar selling
+# ---------------------------------------------------------------------------
+const SMELTERY_ORE_GROUPS_ORDER: Array = ["copper", "iron", "gold", "gem"]
+const SMELTERY_ORE_GROUP_TILES: Dictionary = {
+	"copper": [TileType.ORE_COPPER, TileType.ORE_COPPER_DEEP],
+	"iron":   [TileType.ORE_IRON, TileType.ORE_IRON_DEEP],
+	"gold":   [TileType.ORE_GOLD, TileType.ORE_GOLD_DEEP],
+	"gem":    [TileType.ORE_GEM, TileType.ORE_GEM_DEEP],
+}
+const SMELTERY_ORES_PER_BAR: int = 3   # ores consumed per bar smelted
+const SMELTERY_BAR_SELL_VALUES: Dictionary = {
+	"copper": 15,
+	"iron":   30,
+	"gold":   50,
+	"gem":    75,
+}
+const SMELTERY_BAR_NAMES: Dictionary = {
+	"copper": "Copper Bar",
+	"iron":   "Iron Bar",
+	"gold":   "Gold Bar",
+	"gem":    "Gem Bar",
+}
+const SMELTERY_GROUP_COLORS: Dictionary = {
+	"copper": Color(0.80, 0.50, 0.20),
+	"iron":   Color(0.65, 0.65, 0.72),
+	"gold":   Color(1.00, 0.85, 0.10),
+	"gem":    Color(0.15, 0.85, 0.75),
 }
 
 # ---------------------------------------------------------------------------
@@ -340,6 +374,16 @@ var _upgrade_station_minerals_label: Label
 var _upgrade_station_btn_carapace: Button
 var _upgrade_station_btn_legs: Button
 var _upgrade_station_btn_mandibles: Button
+
+# Smeltery Station
+var _smeltery_layer: CanvasLayer
+var _smeltery_visible: bool = false
+var _smeltery_minerals_label: Label
+var _smeltery_ore_labels: Dictionary = {}       # ore_group -> Label showing ore count
+var _smeltery_bar_labels: Dictionary = {}       # ore_group -> Label showing bar count
+var _smeltery_smelt_btns: Dictionary = {}       # ore_group -> Button to smelt
+var _smeltery_sell_btns: Dictionary = {}        # ore_group -> Button to sell bars
+var _run_bar_counts: Dictionary = {}            # ore_group -> int (bars smelted this run)
 
 # Depth tracking
 var _last_depth: int = 0
@@ -461,6 +505,7 @@ func _ready() -> void:
 	_setup_surface_hub()
 	_setup_fuel_station_shop()
 	_setup_upgrade_station_shop()
+	_setup_smeltery_shop()
 	_setup_farm_animals()
 
 	# Apply settlement carry-over consumables (purchased at a settlement before this run)
@@ -569,6 +614,7 @@ func _generate_grid() -> void:
 	var refuel_col = GRID_COLS / 2
 	grid[refuel_col][SURFACE_ROWS - 1] = TileType.REFUEL_STATION
 	grid[refuel_col - 5][SURFACE_ROWS - 1] = TileType.UPGRADE_STATION
+	grid[refuel_col + 5][SURFACE_ROWS - 1] = TileType.SMELTERY_STATION
 
 	grid[GRID_COLS - 1][SURFACE_ROWS - 1] = TileType.EXIT_STATION
 
@@ -788,6 +834,10 @@ func _draw() -> void:
 			if tile == TileType.UPGRADE_STATION:
 				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
 					Color(0.40, 1.00, 0.60), false, 2.0)
+
+			if tile == TileType.SMELTERY_STATION:
+				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
+					Color(1.0, 0.55, 0.0), false, 2.0)
 
 			# Crack overlay
 			var pk := Vector2i(col, row)
@@ -1089,7 +1139,7 @@ func _process(delta: float) -> void:
 	if forager_system.sweep_due:
 		_forager_do_sweep()
 
-	if _hub_visible or _game_over or _fuel_shop_visible or _trader_shop_visible:
+	if _hub_visible or _game_over or _fuel_shop_visible or _trader_shop_visible or _smeltery_visible:
 		return
 
 	# Update cursor highlight
@@ -1157,7 +1207,7 @@ func _check_exit_zone() -> void:
 # ---------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _hub_visible or _game_over or _fuel_shop_visible or _trader_shop_visible:
+	if _hub_visible or _game_over or _fuel_shop_visible or _trader_shop_visible or _smeltery_visible:
 		return
 	if event.is_action_pressed("toggle_inventory"):
 		if _inventory_screen:
@@ -1210,8 +1260,8 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 	if tile == TileType.LAVA or tile == TileType.LAVA_FLOW:
 		return
 
-	# Refuel station / Exit station / Upgrade station — not mineable
-	if tile == TileType.REFUEL_STATION or tile == TileType.EXIT_STATION or tile == TileType.UPGRADE_STATION:
+	# Refuel station / Exit station / Upgrade station / Smeltery — not mineable
+	if tile == TileType.REFUEL_STATION or tile == TileType.EXIT_STATION or tile == TileType.UPGRADE_STATION or tile == TileType.SMELTERY_STATION:
 		return
 
 	# Stone Golem phase resistance — delegated to BossSystem
@@ -1535,6 +1585,13 @@ func _update_interact_prompt() -> void:
 			var screen_pos := get_viewport().get_canvas_transform() * world_pos
 			player_node.set_prompt_position(screen_pos)
 			return
+		if current_tile == TileType.SMELTERY_STATION:
+			var key_name := _get_interact_key_name()
+			player_node.show_prompt("Press %s to open smeltery" % key_name)
+			var world_pos := Vector2(player_gp.x * CELL_SIZE + CELL_SIZE * 0.5, player_gp.y * CELL_SIZE)
+			var screen_pos := get_viewport().get_canvas_transform() * world_pos
+			player_node.set_prompt_position(screen_pos)
+			return
 	# Check adjacent tiles for refuel station
 	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
 		var check: Vector2i = player_node.get_grid_pos() + offset
@@ -1553,6 +1610,17 @@ func _update_interact_prompt() -> void:
 			if grid[check.x][check.y] == TileType.UPGRADE_STATION:
 				var key_name := _get_interact_key_name()
 				player_node.show_prompt("Press %s to upgrade" % key_name)
+				var world_pos := Vector2(check.x * CELL_SIZE + CELL_SIZE * 0.5, check.y * CELL_SIZE)
+				var screen_pos := get_viewport().get_canvas_transform() * world_pos
+				player_node.set_prompt_position(screen_pos)
+				return
+	# Check adjacent tiles for smeltery station
+	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+		var check: Vector2i = player_node.get_grid_pos() + offset
+		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
+			if grid[check.x][check.y] == TileType.SMELTERY_STATION:
+				var key_name := _get_interact_key_name()
+				player_node.show_prompt("Press %s to open smeltery" % key_name)
 				var world_pos := Vector2(check.x * CELL_SIZE + CELL_SIZE * 0.5, check.y * CELL_SIZE)
 				var screen_pos := get_viewport().get_canvas_transform() * world_pos
 				player_node.set_prompt_position(screen_pos)
@@ -1606,6 +1674,13 @@ func _try_interact() -> void:
 		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
 			if grid[check.x][check.y] == TileType.UPGRADE_STATION:
 				_show_upgrade_station_shop()
+				return
+	# Check current + adjacent tiles for smeltery station
+	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+		var check: Vector2i = player_node.get_grid_pos() + offset
+		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
+			if grid[check.x][check.y] == TileType.SMELTERY_STATION:
+				_show_smeltery_shop()
 				return
 	var nearby_npc: FarmAnimalNPC = _get_nearby_farm_npc()
 	if nearby_npc:
@@ -2077,6 +2152,195 @@ func _upgrade_station_buy_mandibles() -> void:
 		GameManager.upgrade_mandibles()
 		SoundManager.play_drill_sound()
 		_show_upgrade_station_shop()
+
+# ---------------------------------------------------------------------------
+# Smeltery Shop
+# ---------------------------------------------------------------------------
+
+func _get_ore_group_count(ore_group: String) -> int:
+	var total := 0
+	for tile_type in SMELTERY_ORE_GROUP_TILES[ore_group]:
+		total += _run_ore_counts.get(tile_type, 0)
+	return total
+
+func _consume_ores_for_smelt(ore_group: String, count: int) -> void:
+	var remaining := count
+	for tile_type in SMELTERY_ORE_GROUP_TILES[ore_group]:
+		var have: int = _run_ore_counts.get(tile_type, 0)
+		if have <= 0:
+			continue
+		var take := mini(have, remaining)
+		_run_ore_counts[tile_type] = have - take
+		remaining -= take
+		if remaining <= 0:
+			break
+
+func _setup_smeltery_shop() -> void:
+	const VW: int = 1280
+	const VH: int = 720
+	const PANEL_W: int = 520
+	const PANEL_H: int = 420
+	const PX: int = (VW - PANEL_W) / 2
+	const PY: int = (VH - PANEL_H) / 2
+
+	_smeltery_layer = CanvasLayer.new()
+	_smeltery_layer.layer = 10
+	_smeltery_layer.visible = false
+	add_child(_smeltery_layer)
+
+	var dim := ColorRect.new()
+	dim.position = Vector2.ZERO
+	dim.size = Vector2(VW, VH)
+	dim.color = Color(0.0, 0.0, 0.0, 0.72)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_smeltery_layer.add_child(dim)
+
+	var border := ColorRect.new()
+	border.position = Vector2(PX - 3, PY - 3)
+	border.size = Vector2(PANEL_W + 6, PANEL_H + 6)
+	border.color = Color(1.0, 0.55, 0.0, 1.0)
+	_smeltery_layer.add_child(border)
+
+	var panel := ColorRect.new()
+	panel.position = Vector2(PX, PY)
+	panel.size = Vector2(PANEL_W, PANEL_H)
+	panel.color = Color(0.12, 0.08, 0.04, 0.97)
+	_smeltery_layer.add_child(panel)
+
+	var title := Label.new()
+	title.text = "Smeltery"
+	title.position = Vector2(PX, PY + 10)
+	title.size = Vector2(PANEL_W, 30)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 22)
+	title.modulate = Color(1.0, 0.65, 0.15)
+	_smeltery_layer.add_child(title)
+
+	_smeltery_minerals_label = Label.new()
+	_smeltery_minerals_label.position = Vector2(PX, PY + 40)
+	_smeltery_minerals_label.size = Vector2(PANEL_W, 22)
+	_smeltery_minerals_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_smeltery_minerals_label.modulate = Color(1.0, 0.85, 0.2)
+	_smeltery_layer.add_child(_smeltery_minerals_label)
+
+	var divider := ColorRect.new()
+	divider.position = Vector2(PX + 15, PY + 68)
+	divider.size = Vector2(PANEL_W - 30, 2)
+	divider.color = Color(1.0, 0.55, 0.0, 0.5)
+	_smeltery_layer.add_child(divider)
+
+	# Header row
+	var hdr_ores := Label.new()
+	hdr_ores.text = "Ores"
+	hdr_ores.position = Vector2(PX + 15, PY + 76)
+	hdr_ores.size = Vector2(80, 20)
+	hdr_ores.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hdr_ores.modulate = Color(0.8, 0.8, 0.8)
+	_smeltery_layer.add_child(hdr_ores)
+
+	var hdr_bars := Label.new()
+	hdr_bars.text = "Bars"
+	hdr_bars.position = Vector2(PX + 260, PY + 76)
+	hdr_bars.size = Vector2(80, 20)
+	hdr_bars.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hdr_bars.modulate = Color(0.8, 0.8, 0.8)
+	_smeltery_layer.add_child(hdr_bars)
+
+	# Per-ore-group rows: [OreLabel] [SmeltBtn] [BarLabel] [SellBtn]
+	var row_y := PY + 100
+	const ROW_H: int = 58
+	for ore_group in SMELTERY_ORE_GROUPS_ORDER:
+		var group_color: Color = SMELTERY_GROUP_COLORS[ore_group]
+
+		var ore_label := Label.new()
+		ore_label.position = Vector2(PX + 15, row_y + 4)
+		ore_label.size = Vector2(90, 24)
+		ore_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		ore_label.modulate = group_color
+		_smeltery_layer.add_child(ore_label)
+		_smeltery_ore_labels[ore_group] = ore_label
+
+		var smelt_btn := Button.new()
+		smelt_btn.position = Vector2(PX + 110, row_y)
+		smelt_btn.size = Vector2(140, 36)
+		smelt_btn.pressed.connect(_smeltery_smelt.bind(ore_group))
+		_smeltery_layer.add_child(smelt_btn)
+		_smeltery_smelt_btns[ore_group] = smelt_btn
+
+		var bar_label := Label.new()
+		bar_label.position = Vector2(PX + 260, row_y + 4)
+		bar_label.size = Vector2(90, 24)
+		bar_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		bar_label.modulate = group_color
+		_smeltery_layer.add_child(bar_label)
+		_smeltery_bar_labels[ore_group] = bar_label
+
+		var sell_btn := Button.new()
+		sell_btn.position = Vector2(PX + 355, row_y)
+		sell_btn.size = Vector2(150, 36)
+		sell_btn.pressed.connect(_smeltery_sell.bind(ore_group))
+		_smeltery_layer.add_child(sell_btn)
+		_smeltery_sell_btns[ore_group] = sell_btn
+
+		row_y += ROW_H
+
+	var divider2 := ColorRect.new()
+	divider2.position = Vector2(PX + 15, row_y + 4)
+	divider2.size = Vector2(PANEL_W - 30, 2)
+	divider2.color = Color(1.0, 0.55, 0.0, 0.5)
+	_smeltery_layer.add_child(divider2)
+
+	var close_btn := Button.new()
+	close_btn.text = "Close Smeltery"
+	close_btn.position = Vector2(PX + (PANEL_W - 200) / 2, row_y + 16)
+	close_btn.size = Vector2(200, 40)
+	close_btn.pressed.connect(_hide_smeltery_shop)
+	_smeltery_layer.add_child(close_btn)
+
+func _show_smeltery_shop() -> void:
+	_smeltery_minerals_label.text = "Run Minerals: %d" % GameManager.run_mineral_currency
+
+	for ore_group in SMELTERY_ORE_GROUPS_ORDER:
+		var ore_count := _get_ore_group_count(ore_group)
+		var bar_count: int = _run_bar_counts.get(ore_group, 0)
+		var bar_name: String = SMELTERY_BAR_NAMES[ore_group]
+		var sell_value: int = SMELTERY_BAR_SELL_VALUES[ore_group]
+
+		_smeltery_ore_labels[ore_group].text = "%s: %d" % [ore_group.capitalize(), ore_count]
+		_smeltery_smelt_btns[ore_group].text = "Smelt (%d ore)" % SMELTERY_ORES_PER_BAR
+		_smeltery_smelt_btns[ore_group].disabled = ore_count < SMELTERY_ORES_PER_BAR
+
+		_smeltery_bar_labels[ore_group].text = "%s: %d" % [bar_name, bar_count]
+		_smeltery_sell_btns[ore_group].text = "Sell (+%d)" % sell_value
+		_smeltery_sell_btns[ore_group].disabled = bar_count <= 0
+
+	_smeltery_layer.visible = true
+	_smeltery_visible = true
+
+func _hide_smeltery_shop() -> void:
+	_smeltery_layer.visible = false
+	_smeltery_visible = false
+
+func _smeltery_smelt(ore_group: String) -> void:
+	var ore_count := _get_ore_group_count(ore_group)
+	if ore_count < SMELTERY_ORES_PER_BAR:
+		return
+	_consume_ores_for_smelt(ore_group, SMELTERY_ORES_PER_BAR)
+	_run_bar_counts[ore_group] = _run_bar_counts.get(ore_group, 0) + 1
+	SoundManager.play_drill_sound()
+	EventBus.ore_mined_popup.emit(0, SMELTERY_BAR_NAMES[ore_group] + " smelted!")
+	_show_smeltery_shop()
+
+func _smeltery_sell(ore_group: String) -> void:
+	var bar_count: int = _run_bar_counts.get(ore_group, 0)
+	if bar_count <= 0:
+		return
+	var sell_value: int = SMELTERY_BAR_SELL_VALUES[ore_group]
+	_run_bar_counts[ore_group] = bar_count - 1
+	GameManager.add_currency(sell_value)
+	SoundManager.play_pickup_sound()
+	EventBus.ore_mined_popup.emit(sell_value, SMELTERY_BAR_NAMES[ore_group] + " sold!")
+	_show_smeltery_shop()
 
 # ---------------------------------------------------------------------------
 # Wandering Trader
