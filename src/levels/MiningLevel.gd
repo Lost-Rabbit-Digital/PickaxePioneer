@@ -1280,9 +1280,9 @@ func _setup_farm_animals() -> void:
 	if not npc_scene:
 		return
 	var animals := [
-		{"name": "Chicken", "texture_path": "res://assets/chicken.svg", "col": 4},
-		{"name": "Sheep",   "texture_path": "res://assets/sheep.svg",   "col": 8},
-		{"name": "Pig",     "texture_path": "res://assets/pig.svg",     "col": 12},
+		{"name": "Chicken", "texture_path": "res://assets/creatures/chicken_spritesheet.png", "col": 4},
+		{"name": "Sheep",   "texture_path": "res://assets/creatures/sheep_spritesheet.png",   "col": 8},
+		{"name": "Pig",     "texture_path": "res://assets/creatures/pig_spritesheet.png",     "col": 12},
 	]
 	for a in animals:
 		var npc := npc_scene.instantiate() as FarmAnimalNPC
