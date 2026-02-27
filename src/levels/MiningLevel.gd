@@ -38,6 +38,8 @@ enum TileType {
 	SURFACE          = 20,
 	SURFACE_GRASS    = 21,
 	EXIT_STATION     = 22,
+	BOSS_SEGMENT     = 23,   # Centipede body segment — high HP, awards minerals on death
+	BOSS_CORE        = 24,   # Boss core / head — highest HP, big reward
 }
 
 const TILE_NAMES: Dictionary = {
@@ -63,6 +65,8 @@ const TILE_NAMES: Dictionary = {
 	TileType.REFUEL_STATION:  "Refuel Station",
 	TileType.SURFACE:         "Surface",
 	TileType.EXIT_STATION:    "Exit Station",
+	TileType.BOSS_SEGMENT:    "Centipede Segment",
+	TileType.BOSS_CORE:       "Centipede King",
 }
 
 const MINEABLE_TILES: Array = [
@@ -73,6 +77,7 @@ const MINEABLE_TILES: Array = [
 	TileType.ORE_IRON, TileType.ORE_IRON_DEEP,
 	TileType.ORE_GOLD, TileType.ORE_GOLD_DEEP,
 	TileType.ORE_GEM, TileType.ORE_GEM_DEEP,
+	TileType.BOSS_SEGMENT, TileType.BOSS_CORE,
 ]
 
 const TILE_COLORS: Dictionary = {
@@ -98,6 +103,8 @@ const TILE_COLORS: Dictionary = {
 	TileType.SURFACE:        Color(0.35, 0.35, 0.35),
 	TileType.SURFACE_GRASS:  Color(0.25, 0.50, 0.25),
 	TileType.EXIT_STATION:   Color(0.15, 0.55, 0.15),
+	TileType.BOSS_SEGMENT:   Color(0.55, 0.12, 0.08),
+	TileType.BOSS_CORE:      Color(0.80, 0.05, 0.05),
 }
 
 const TILE_TEXTURE_PATHS: Dictionary = {
@@ -138,6 +145,8 @@ const TILE_HP: Dictionary = {
 	TileType.ORE_GOLD_DEEP:   23,
 	TileType.ORE_GEM:         29,
 	TileType.ORE_GEM_DEEP:    32,
+	TileType.BOSS_SEGMENT:    14,
+	TileType.BOSS_CORE:       28,
 }
 
 const TILE_MIN_HITS: Dictionary = {
@@ -154,6 +163,8 @@ const TILE_MIN_HITS: Dictionary = {
 	TileType.ORE_GOLD_DEEP:   5,
 	TileType.ORE_GEM:         6,
 	TileType.ORE_GEM_DEEP:    7,
+	TileType.BOSS_SEGMENT:    3,
+	TileType.BOSS_CORE:       5,
 }
 
 const TILE_MINERALS: Dictionary = {
@@ -170,6 +181,8 @@ const TILE_MINERALS: Dictionary = {
 	TileType.ORE_GOLD_DEEP:   15,
 	TileType.ORE_GEM:         20,
 	TileType.ORE_GEM_DEEP:    30,
+	TileType.BOSS_SEGMENT:    10,
+	TileType.BOSS_CORE:       75,
 }
 
 const ORE_TILES: Array = [
@@ -265,6 +278,7 @@ const SOLID_TILES: Array = [
 	TileType.LAVA, TileType.LAVA_FLOW,
 	TileType.FUEL_NODE, TileType.FUEL_NODE_FULL,
 	TileType.SURFACE_GRASS,
+	TileType.BOSS_SEGMENT, TileType.BOSS_CORE,
 ]
 
 # Depth zones
@@ -282,6 +296,21 @@ const DEPTH_ZONE_COLORS = [
 const FUEL_DRAIN_BASE: float = 1.0      # 1 fuel/sec on surface
 const FUEL_DRAIN_DEPTH_MULT: float = 2.0 # Extra drain per depth ratio
 var _fuel_drain_accum: float = 0.0
+
+# ---------------------------------------------------------------------------
+# Boss encounter system (§4)
+# Bosses spawn at milestone depth rows. Each uses only existing mining tools.
+# ---------------------------------------------------------------------------
+const BOSS_MILESTONES: Array[int]  = [32, 64, 96, 112]
+const BOSS_DRAIN_MULT: float       = 2.5   # fuel drain multiplier while boss is alive
+const BOSS_SEGMENT_COUNT: int      = 12    # body segments per centipede encounter
+const BOSS_REWARD_BONUS: int       = 100   # flat mineral bonus on defeat (on top of tile drops)
+
+var _boss_milestones_seen: Array[bool] = [false, false, false, false]
+var _boss_active: bool = false
+var _boss_spawn_row: int = -1
+var _boss_tile_positions: Array[Vector2i] = []   # remaining live boss tiles
+var _boss_pulse_time: float = 0.0
 
 var grid: Array = []
 var has_left_spawn: bool = false
@@ -795,6 +824,30 @@ func _draw() -> void:
 		draw_string(font, Vector2(cx_px - 6, cy_px + 8), "T",
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.10, 0.05, 0.00))
 
+	# Boss tile pulse overlay — pulsing glow on remaining boss tiles (§4)
+	if _boss_active and not _boss_tile_positions.is_empty():
+		var boss_pulse := sin(_boss_pulse_time * 4.5) * 0.5 + 0.5
+		for bp in _boss_tile_positions:
+			if bp.x < min_col or bp.x > max_col or bp.y < min_row or bp.y > max_row:
+				continue
+			var btile: int = grid[bp.x][bp.y]
+			if btile != TileType.BOSS_SEGMENT and btile != TileType.BOSS_CORE:
+				continue
+			var brect := Rect2(bp.x * CELL_SIZE, bp.y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+			if btile == TileType.BOSS_CORE:
+				draw_rect(brect, Color(1.0, 0.05, 0.05, 0.28 + boss_pulse * 0.28))
+				draw_rect(brect, Color(1.0, 0.80, 0.10, 0.50 + boss_pulse * 0.30), false, 2.5)
+			else:
+				draw_rect(brect, Color(0.85, 0.15, 0.05, 0.18 + boss_pulse * 0.18))
+				draw_rect(brect, Color(0.70, 0.20, 0.05, 0.40 + boss_pulse * 0.25), false, 1.5)
+		# Boss fuel-drain warning — red vignette flicker on screen edges
+		if boss_pulse > 0.75:
+			var vignette_a := (boss_pulse - 0.75) / 0.25 * 0.12
+			draw_rect(Rect2(min_col * CELL_SIZE, min_row * CELL_SIZE,
+				(max_col - min_col + 1) * CELL_SIZE, 4), Color(1.0, 0.0, 0.0, vignette_a))
+			draw_rect(Rect2(min_col * CELL_SIZE, max_row * CELL_SIZE,
+				(max_col - min_col + 1) * CELL_SIZE, 4), Color(1.0, 0.0, 0.0, vignette_a))
+
 	# Forager Ant companion — amber circle with carry indicator (§3.4)
 	var fg := _forager_world_pos
 	var fg_col := floori(fg.x / CELL_SIZE)
@@ -896,9 +949,11 @@ func _process(delta: float) -> void:
 	# Update sonar ping wave (§3.2)
 	_update_sonar_ping(delta)
 
-	# Pulse wandering traders regardless of menu state
+	# Pulse wandering traders and boss tiles regardless of menu state
 	for trader in _active_traders:
 		trader["pulse"] += delta
+	if _boss_active:
+		_boss_pulse_time += delta
 
 	# Update forager regardless of menu state so it can animate returning home
 	_update_forager(delta)
@@ -930,7 +985,8 @@ func _process(delta: float) -> void:
 		var depth_row := player_node.get_depth_row()
 		if depth_row > 0:
 			var depth_ratio := float(depth_row) / float(GRID_ROWS - SURFACE_ROWS)
-			var drain_rate := FUEL_DRAIN_BASE + depth_ratio * FUEL_DRAIN_DEPTH_MULT
+			var boss_mult := BOSS_DRAIN_MULT if _boss_active else 1.0
+			var drain_rate := (FUEL_DRAIN_BASE + depth_ratio * FUEL_DRAIN_DEPTH_MULT) * boss_mult
 			_fuel_drain_accum += drain_rate * delta
 			if _fuel_drain_accum >= 1.0:
 				var drain_amount := int(_fuel_drain_accum)
@@ -1035,6 +1091,11 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 		_tile_damage.erase(pos_key)
 		_tile_hits.erase(pos_key)
 		_mine_cell(col, row)
+		# Boss tile tracking — check defeat after removal from grid
+		if tile == TileType.BOSS_SEGMENT or tile == TileType.BOSS_CORE:
+			_boss_tile_positions.erase(Vector2i(col, row))
+			if _boss_tile_positions.is_empty() and _boss_active:
+				_on_boss_defeated()
 		if tile in MINEABLE_TILES:
 			var minerals: int = TILE_MINERALS.get(tile, 1)
 			_mine_streak += 1
@@ -1274,6 +1335,7 @@ func _update_depth() -> void:
 		EventBus.depth_changed.emit(depth)
 		_check_zone_transition(depth)
 		_check_trader_milestone(depth)
+		_check_boss_milestone(depth)
 		# Reset mine streak when surfacing
 		if depth <= 0:
 			_mine_streak = 0
@@ -1715,6 +1777,99 @@ func _shop_repair() -> void:
 # ---------------------------------------------------------------------------
 # Wandering Trader
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Boss encounter system (§4)
+# ---------------------------------------------------------------------------
+
+func _check_boss_milestone(depth_row: int) -> void:
+	if _boss_active:
+		return  # Only one boss at a time
+	for i in range(BOSS_MILESTONES.size()):
+		if not _boss_milestones_seen[i] and depth_row >= BOSS_MILESTONES[i]:
+			_boss_milestones_seen[i] = true
+			match i:
+				0: _spawn_centipede_king()
+				1: _spawn_cave_spider_matriarch()
+				2, 3: pass  # Blind Mole / Stone Golem — coming soon
+
+func _spawn_centipede_king() -> void:
+	if not player_node:
+		return
+	var player_col := player_node.get_grid_pos().x
+	var boss_row := BOSS_MILESTONES[0]
+
+	# Build a two-row centipede body: head row + shorter underbelly row
+	var positions: Array[Vector2i] = []
+	var half := BOSS_SEGMENT_COUNT / 2
+
+	for dc in range(-half, half + 1):
+		var col := clamp(player_col + dc, 2, GRID_COLS - 3)
+		var tile_type := TileType.BOSS_CORE if dc == 0 else TileType.BOSS_SEGMENT
+		grid[col][boss_row] = tile_type
+		_set_tile_collision(col, boss_row, true)
+		positions.append(Vector2i(col, boss_row))
+
+	# Underbelly — shorter row one tile below, no core
+	for dc in range(-half + 2, half - 1):
+		var col := clamp(player_col + dc, 2, GRID_COLS - 3)
+		if grid[col][boss_row + 1] != TileType.SURFACE and grid[col][boss_row + 1] != TileType.EXIT_STATION:
+			grid[col][boss_row + 1] = TileType.BOSS_SEGMENT
+			_set_tile_collision(col, boss_row + 1, true)
+			positions.append(Vector2i(col, boss_row + 1))
+
+	_boss_tile_positions = positions
+	_boss_active = true
+	_boss_spawn_row = boss_row
+	_boss_pulse_time = 0.0
+
+	_show_zone_banner("CENTIPEDE KING AWAKENS!", Color(0.90, 0.10, 0.05))
+	EventBus.ore_mined_popup.emit(0, "Boss! Fuel drains faster!")
+	_shake_camera(8.0, 0.4)
+
+func _spawn_cave_spider_matriarch() -> void:
+	if not player_node:
+		return
+	var player_col := player_node.get_grid_pos().x
+	var boss_row := BOSS_MILESTONES[1]
+	var positions: Array[Vector2i] = []
+
+	# Spider body — cross/diamond pattern centred on player column
+	var offsets: Array = [
+		Vector2i(0, 0),   # core (head)
+		Vector2i(-1, 0), Vector2i(1, 0),  # body
+		Vector2i(0, -1), Vector2i(0, 1),  # legs vertical
+		Vector2i(-2, 0), Vector2i(2, 0),  # leg tips horizontal
+		Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1),  # web corners
+	]
+
+	for offset in offsets:
+		var col := clamp(player_col + offset.x, 2, GRID_COLS - 3)
+		var row := clamp(boss_row + offset.y, SURFACE_ROWS + 1, GRID_ROWS - 2)
+		var tile_type := TileType.BOSS_CORE if offset == Vector2i(0, 0) else TileType.BOSS_SEGMENT
+		grid[col][row] = tile_type
+		_set_tile_collision(col, row, true)
+		positions.append(Vector2i(col, row))
+
+	_boss_tile_positions = positions
+	_boss_active = true
+	_boss_spawn_row = boss_row
+	_boss_pulse_time = 0.0
+
+	_show_zone_banner("CAVE SPIDER MATRIARCH!", Color(0.60, 0.10, 0.80))
+	EventBus.ore_mined_popup.emit(0, "Boss! Fuel drains faster!")
+	_shake_camera(8.0, 0.4)
+
+func _on_boss_defeated() -> void:
+	_boss_active = false
+	_boss_tile_positions.clear()
+	GameManager.add_currency(BOSS_REWARD_BONUS)
+	EventBus.minerals_earned.emit(BOSS_REWARD_BONUS)
+	EventBus.ore_mined_popup.emit(BOSS_REWARD_BONUS, "Boss defeated!")
+	_show_zone_banner("BOSS DEFEATED!", Color(0.30, 1.00, 0.40))
+	GameManager.restore_fuel(30)
+	EventBus.ore_mined_popup.emit(30, "Fuel restored!")
+	_shake_camera(14.0, 0.6)
 
 func _check_trader_milestone(depth_row: int) -> void:
 	for i in range(TRADER_DEPTH_MILESTONES.size()):

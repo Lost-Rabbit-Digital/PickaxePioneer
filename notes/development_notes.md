@@ -11,16 +11,17 @@ The game draws design inspiration from [Dwarf Fortress](http://www.bay12games.co
 ## Current Architecture (as of Feb 2026)
 Understanding what's actually built prevents re-implementing or mis-scoping tasks.
 
-**Game loop:** MainMenu → Overworld map → Mine selection modal → MiningLevel → Run Summary → Overworld
+**Game loop:** MainMenu → Overworld map → Mine/Settlement/City selection modal → MiningLevel (or SettlementLevel / CityLevel) → Run Summary → Overworld
 
 **Scenes and systems that exist:**
-- `Overworld.gd` — clickable map with 1–2 randomised mine nodes, 2 settlement stubs, city node, caravan movement, ore/hazard filtering per node
-- `CityLevel.gd` — banks currency on entry; minimal stub (return button only)
-- `MiningLevel.gd` — 96×128 tile grid; Terraria-style CharacterBody2D physics; cursor mining; multi-hit system; fuel drain by depth; zone banners; sonar ping; smelting chains; fossil forgiveness; pheromone trails
+- `Overworld.gd` — clickable map with 1–2 randomised mine nodes, 2 settlement nodes, city node, caravan movement, ore/hazard filtering per mine node
+- `CityLevel.gd` — banks currency on entry; hosts UpgradeMenu; minimal stub (return button only)
+- `SettlementLevel.gd` — rest stop between runs; spends banked `mineral_currency` on 4 pre-run consumables: Fuel Cache (+50 starting fuel), Forager Rations (+20 forager carry cap), Mining Shroom (12 ore-yield charges), Whetstone (+1 mandible power). Bonuses persist via `GameManager` settlement fields, applied on mine entry and cleared.
+- `MiningLevel.gd` — 96×128 tile grid; Terraria-style CharacterBody2D physics; cursor mining; multi-hit system; fuel drain by depth; zone banners; sonar ping; smelting chains; fossil forgiveness; pheromone trails; wandering trader; forager ant companion; random cave rooms
 - `RunSummary.gd` — end-of-run screen; handles mineral banking and overworld return
-- `LevelInfoModal.gd` — mine info panel shown on overworld node click before entering
+- `LevelInfoModal.gd` — location info panel shown on overworld node click before entering
 - `ChatterManager.gd` + `ChatBubble.gd` — ambient ant NPC chatter bubbles (flavor, tips, lore)
-- `GameManager.gd` — save/load; upgrades (Carapace, Legs, Mandibles, Mineral Sense); fuel; currency; scene transitions
+- `GameManager.gd` — save/load; upgrades (Carapace, Legs, Mandibles, Mineral Sense); fuel; currency; scene transitions; settlement carry-over fields
 - `UpgradeMenu.gd` — 4 upgrade tracks with escalating mineral costs
 - `HUD.gd` — health squares, segmented fuel bar, depth meter, popup system, milestone banners, low-fuel/low-hp warnings
 - `StateMachine.gd` + `State.gd` — generic state machine component (used but underutilised)
@@ -30,10 +31,12 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 
 **Key design facts for new tasks:**
 - Player movement is **Terraria-style physics** (gravity, jump, horizontal run). Not grid-based. All boss and companion designs must account for this.
-- Mining is **cursor-based**: left-click within range to mine; range scales with nothing yet (mine_range is flat 4.5 tiles).
-- `MapNode.NodeType.ASTEROID` is the mine node type — the name is a legacy artefact from an earlier space-themed design. The asteroids minigame no longer exists.
-- Settlement nodes (`settlement_node_3`, `settlement_node_4`) exist on the overworld but have no associated scene. They are visual stubs only.
-- `Legs` upgrade increases **both** max fuel capacity (+25 per level) **and** move speed (+30 px/s per level). The UpgradeMenu currently only describes the fuel half — this is a known display bug.
+- Mining is **cursor-based**: left-click within range to mine; `mine_range` is flat 4.5 tiles.
+- `MapNode.NodeType` has four values: `EMPTY` (0), `MINE` (1), `STATION` (2), `SETTLEMENT` (3). Settlement nodes load `SettlementLevel.tscn`; mine nodes load `MiningLevel.tscn`; city loads `CityLevel.tscn`.
+- `Legs` upgrade increases **both** max fuel capacity (+25/level) **and** move speed (+30 px/s per level).
+- The **Forager Ant** is a programmatic entity rendered in `MiningLevel._draw()` — not a separate scene. It takes 40% of ore yield, carries up to 30 minerals (base), returns to surface and banks directly into `mineral_currency` when full.
+- **Cave rooms** are generated via `_generate_cave_rooms()` after `_generate_grid()` each run: 6–10 elliptical open chambers with ore-rich walls scaled to depth.
+- `MiningLevel.gd` is now ~1,600+ lines. Extraction of `SmeltingSystem`, `FossilSystem`, `SonarSystem`, and `ForagerSystem` into subsystems is an ongoing priority.
 
 ---
 
@@ -41,12 +44,12 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 
 ### Core Gameplay Depth
 - [x] **Implement single Forager Ant companion** — follows player, auto-collects 40% of ore yield, returns to surface when carry capacity (30 minerals) is full, deposits directly to banked `mineral_currency` (safe from death). Rendered as amber circle with carry bar in MiningLevel._draw(). See docs/mining_game_design_lessons.md §3.4
-- [ ] **Add underground boss encounters** — milestone rooms at specific depth rows (e.g., rows 32, 64, 96). Must be defeatable using only Terraria-style movement + fuel management + cursor-mining mandibles + existing hazard tools. No separate combat system. See docs/mining_game_design_lessons.md §4
-  - *Centipede King (row 32):* multi-segment body blocks tunnels; mine around segments to isolate and collapse sections; fuel drain increased during encounter
-  - *Cave Spider Matriarch (row 64):* web tiles spawn and block paths; mine or explosive-clear them; fuel death pressure
-  - *The Blind Mole (row 96):* tremor AoE collapses map sections; use movement prediction and existing terrain to survive
-  - *Stone Golem (row 112):* armoured phases require specific ore-type mining sequence to crack; integrates smelting-chain logic
-  - *The Ancient One (row 128):* three-phase final boss layering all prior mechanics
+- [x] **Add underground boss encounters** — milestone rooms at specific depth rows. No separate combat system; defeated using existing mining tools. Fuel drains 2.5× while a boss is alive; defeating one rewards 100 minerals + 30 fuel. See docs/mining_game_design_lessons.md §4
+  - *Centipede King (row 32):* [x] two-row horizontal body (12 segments + core); mine through the body to reach and destroy the core; fuel pressure increases during encounter
+  - *Cave Spider Matriarch (row 64):* [x] diamond/cross pattern body spawned below player; mine segments to reach and destroy the core
+  - *The Blind Mole (row 96):* [ ] tremor AoE collapses map sections — framework in place, spawn logic pending
+  - *Stone Golem (row 112):* [ ] armoured phases requiring specific ore-type mining sequence — pending
+  - *The Ancient One (row 128):* [ ] three-phase final boss — pending
 - [ ] **Gem socketing system** — slot gems found during runs into upgrade slots for special passive effects (PoE affix inspiration). Requires gems to be collectible items, not just ore tiles with mineral value.
 - [ ] **Develop colony passive skill tree** — deeper progression beyond the 4 current upgrade tracks. Current tracks (Carapace, Legs, Mandibles, Mineral Sense) are the first tier; the skill tree gates further specialisation behind milestone unlocks.
 
