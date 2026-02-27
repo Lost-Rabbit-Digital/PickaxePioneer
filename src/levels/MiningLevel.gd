@@ -944,6 +944,7 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 			# Consecutive smelting bonus (§3.5) — awards extra currency internally
 			_process_smelt(tile, minerals)
 			GameManager.add_currency(minerals)
+			GameManager.track_ore_mined(tile, minerals)
 			EventBus.minerals_earned.emit(minerals)
 			var popup_label: String = "LUCKY!" if lucky else TILE_NAMES.get(tile, "Mineral")
 			EventBus.ore_mined_popup.emit(minerals, popup_label)
