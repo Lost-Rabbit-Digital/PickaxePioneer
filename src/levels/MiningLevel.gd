@@ -359,6 +359,25 @@ var _shroom_charges: int = 0       # Mining Shroom: remaining ores with doubled 
 var _lucky_compass_active: bool = false   # Lucky Compass: 2× lucky strike chance
 var _ancient_map_active: bool = false     # Ancient Map: 2× sonar ping radius
 
+# ---------------------------------------------------------------------------
+# Forager Ant companion (§3.4)
+# The forager follows the player underground, auto-collects a share of mined
+# ore, and returns to the surface when full — banking those minerals safely
+# even if the player later dies.
+# ---------------------------------------------------------------------------
+const FORAGER_CAPACITY_BASE: int = 30
+const FORAGER_COLLECT_RATIO: float = 0.40   # fraction of mined ore yield taken by forager
+const FORAGER_MOVE_SPEED: float = 140.0     # px/s while following/returning
+const FORAGER_DEPOSIT_DELAY: float = 1.8    # seconds at surface before returning underground
+
+var _forager_world_pos: Vector2 = Vector2.ZERO
+var _forager_state: String = "follow"   # "follow" | "return" | "deposit"
+var _forager_carry: int = 0
+var _forager_capacity: int = FORAGER_CAPACITY_BASE
+
+# Settlement whetstone bonus: temporary +N mandible power for this run only
+var _settlement_mandible_bonus: int = 0
+
 # Hazard damage cooldown to prevent instant death
 var _hazard_cooldown: float = 0.0
 const HAZARD_COOLDOWN_TIME: float = 1.0
@@ -387,6 +406,7 @@ func _ready() -> void:
 
 	_load_tile_textures()
 	_generate_grid()
+	_generate_cave_rooms()
 	_setup_collision_tilemap()
 	_sync_collision_tilemap()
 
@@ -416,6 +436,26 @@ func _ready() -> void:
 	_setup_surface_hub()
 	_setup_fuel_station_shop()
 	_setup_farm_animals()
+
+	# Apply settlement carry-over consumables (purchased at a settlement before this run)
+	if GameManager.settlement_shroom_charges > 0:
+		_shroom_charges += GameManager.settlement_shroom_charges
+		GameManager.settlement_shroom_charges = 0
+		EventBus.ore_mined_popup.emit(0, "Shroom charges ready!")
+	if GameManager.settlement_mandible_bonus > 0:
+		_settlement_mandible_bonus = GameManager.settlement_mandible_bonus
+		GameManager.settlement_mandible_bonus = 0
+	if GameManager.settlement_forager_bonus > 0:
+		_forager_capacity += GameManager.settlement_forager_bonus
+		GameManager.settlement_forager_bonus = 0
+
+	# Spawn forager near the player's starting position
+	_forager_world_pos = Vector2(
+		(spawn_col + 2) * CELL_SIZE + CELL_SIZE * 0.5,
+		spawn_row * CELL_SIZE + CELL_SIZE * 0.5
+	)
+	_forager_capacity = FORAGER_CAPACITY_BASE
+
 	queue_redraw()
 
 # ---------------------------------------------------------------------------
@@ -501,6 +541,60 @@ func _generate_grid() -> void:
 		grid[col][SURFACE_ROWS + 1] = TileType.DIRT
 	for col in range(GRID_COLS - EXIT_COLS):
 		grid[col][SURFACE_ROWS + 2] = TileType.DIRT
+
+func _generate_cave_rooms() -> void:
+	# Carve open cavern chambers underground for exploration variety (dev notes: Medium Priority)
+	# Each chamber is an ellipse with ore-rich walls.
+	var num_rooms := randi_range(6, 10)
+	for _i in range(num_rooms):
+		var room_col := randi_range(5, GRID_COLS - 8)
+		var room_row := randi_range(SURFACE_ROWS + 6, GRID_ROWS - 8)
+		var half_w := randi_range(3, 7)
+		var half_h := randi_range(2, 4)
+
+		# Carve the interior empty space
+		for dc in range(-half_w, half_w + 1):
+			for dr in range(-half_h, half_h + 1):
+				var ell := float(dc * dc) / float(half_w * half_w) + float(dr * dr) / float(half_h * half_h)
+				if ell <= 0.85:
+					var nc := room_col + dc
+					var nr := room_row + dr
+					if nc >= 1 and nc < GRID_COLS - 1 and nr >= SURFACE_ROWS + 1 and nr < GRID_ROWS - 1:
+						grid[nc][nr] = TileType.EMPTY
+
+		# Seed ore pockets around the edge of the carved room
+		var depth := float(room_row - SURFACE_ROWS) / float(GRID_ROWS - SURFACE_ROWS)
+		for dc in range(-half_w - 1, half_w + 2):
+			for dr in range(-half_h - 1, half_h + 2):
+				var ell := float(dc * dc) / float(half_w * half_w) + float(dr * dr) / float(half_h * half_h)
+				if ell > 0.85 and ell <= 1.35:
+					var nc := room_col + dc
+					var nr := room_row + dr
+					if nc >= 1 and nc < GRID_COLS - 1 and nr >= SURFACE_ROWS + 1 and nr < GRID_ROWS - 1:
+						if randf() < 0.38:
+							var ore_tile := _depth_scaled_ore(depth)
+							if ore_tile != TileType.EMPTY:
+								grid[nc][nr] = ore_tile
+
+func _depth_scaled_ore(depth: float) -> TileType:
+	# Returns a depth-appropriate ore tile for cave room walls (respects allowed_ore_types)
+	var allowed: Array = GameManager.allowed_ore_types
+	var tiers: Array = []
+	if depth > 0.65:
+		if allowed.is_empty() or allowed.has("Gem"):   tiers.append(TileType.ORE_GEM_DEEP)
+		if allowed.is_empty() or allowed.has("Gold"):  tiers.append(TileType.ORE_GOLD_DEEP)
+		if allowed.is_empty() or allowed.has("Iron"):  tiers.append(TileType.ORE_IRON_DEEP)
+	elif depth > 0.35:
+		if allowed.is_empty() or allowed.has("Gold"):  tiers.append(TileType.ORE_GOLD)
+		if allowed.is_empty() or allowed.has("Iron"):  tiers.append(TileType.ORE_IRON_DEEP)
+		if allowed.is_empty() or allowed.has("Copper"): tiers.append(TileType.ORE_COPPER_DEEP)
+	else:
+		if allowed.is_empty() or allowed.has("Iron"):   tiers.append(TileType.ORE_IRON)
+		if allowed.is_empty() or allowed.has("Copper"): tiers.append(TileType.ORE_COPPER_DEEP)
+		if allowed.is_empty() or allowed.has("Copper"): tiers.append(TileType.ORE_COPPER)
+	if tiers.is_empty():
+		return TileType.EMPTY
+	return tiers[randi() % tiers.size()]
 
 func _random_tile(col: int, row: int) -> TileType:
 	var r := randf()
@@ -701,6 +795,33 @@ func _draw() -> void:
 		draw_string(font, Vector2(cx_px - 6, cy_px + 8), "T",
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.10, 0.05, 0.00))
 
+	# Forager Ant companion — amber circle with carry indicator (§3.4)
+	var fg := _forager_world_pos
+	var fg_col := floori(fg.x / CELL_SIZE)
+	var fg_row := floori(fg.y / CELL_SIZE)
+	if fg_col >= min_col - 1 and fg_col <= max_col + 1 and fg_row >= min_row - 1 and fg_row <= max_row + 1:
+		var carry_ratio := float(_forager_carry) / float(max(_forager_capacity, 1))
+		var forager_color: Color
+		match _forager_state:
+			"follow":
+				forager_color = Color(0.95, 0.65, 0.05, 0.92)
+			"return":
+				forager_color = Color(0.55, 0.90, 0.30, 0.95)  # green when heading home
+			_:  # deposit
+				forager_color = Color(0.30, 0.70, 1.00, 0.85)  # blue while depositing
+		draw_circle(fg, 10.0, forager_color)
+		# Carry bar above the forager
+		var bar_w := 26.0
+		var bar_h := 4.0
+		var bar_x := fg.x - bar_w * 0.5
+		var bar_y := fg.y - 18.0
+		draw_rect(Rect2(bar_x, bar_y, bar_w, bar_h), Color(0.15, 0.15, 0.15, 0.80))
+		draw_rect(Rect2(bar_x, bar_y, bar_w * carry_ratio, bar_h), Color(0.95, 0.80, 0.05, 0.90))
+		# "F" glyph
+		var fnt := ThemeDB.fallback_font
+		draw_string(fnt, Vector2(fg.x - 4.0, fg.y + 6.0), "F",
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.10, 0.05, 0.00))
+
 	# Sonar ping overlay — expanding wave reveals ore tiles through rock (§3.2)
 	if _sonar_ping_active and _sonar_ping_center.x >= 0:
 		var ping_alpha := 1.0 - _sonar_ping_elapsed / SONAR_PING_DURATION
@@ -778,6 +899,9 @@ func _process(delta: float) -> void:
 	# Pulse wandering traders regardless of menu state
 	for trader in _active_traders:
 		trader["pulse"] += delta
+
+	# Update forager regardless of menu state so it can animate returning home
+	_update_forager(delta)
 
 	if _hub_visible or _game_over or _fuel_shop_visible or _trader_shop_visible:
 		return
@@ -900,7 +1024,7 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 	var tile_hp: int = roundi(TILE_HP.get(tile, 6) * hardness_mult)
 	var prev_damage: int = _tile_damage.get(pos_key, 0)
 	var hits_so_far: int = _tile_hits.get(pos_key, 0)
-	var new_damage: int = prev_damage + GameManager.get_mandibles_power()
+	var new_damage: int = prev_damage + GameManager.get_mandibles_power() + _settlement_mandible_bonus
 	var min_hits: int = TILE_MIN_HITS.get(tile, 2)
 
 	if hits_so_far + 1 < min_hits and new_damage >= tile_hp:
@@ -924,6 +1048,13 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 				_shroom_charges -= 1
 			# Fossil forgiveness check (§3.6) — before awarding base minerals
 			_check_fossil(tile, col, row)
+			# Forager Ant takes its share of ore minerals (§3.4)
+			if _forager_state == "follow" and tile in ORE_TILES:
+				var forager_share := roundi(float(minerals) * FORAGER_COLLECT_RATIO)
+				minerals -= forager_share
+				_forager_carry = mini(_forager_carry + forager_share, _forager_capacity)
+				if _forager_carry >= _forager_capacity:
+					_forager_start_return()
 			# Consecutive smelting bonus (§3.5) — awards extra currency internally
 			_process_smelt(tile, minerals)
 			GameManager.add_currency(minerals)
@@ -1692,6 +1823,52 @@ func _close_trader_shop() -> void:
 		_trader_shop_layer = null
 	_trader_shop_visible = false
 	_current_trader = {}
+
+# ---------------------------------------------------------------------------
+# Forager Ant movement and banking (§3.4)
+# ---------------------------------------------------------------------------
+
+func _update_forager(delta: float) -> void:
+	if not player_node or _game_over:
+		return
+	match _forager_state:
+		"follow":
+			# Hover a tile behind and above the player
+			var target := player_node.global_position + Vector2(-CELL_SIZE * 1.2, -CELL_SIZE * 0.5)
+			_forager_world_pos = _forager_world_pos.move_toward(target, FORAGER_MOVE_SPEED * delta)
+		"return":
+			# Fly toward the left-centre surface strip to deposit
+			var surface_y := (SURFACE_ROWS - 1) * CELL_SIZE + CELL_SIZE * 0.5
+			var deposit_x := 46.0 * CELL_SIZE
+			var target := Vector2(deposit_x, surface_y)
+			_forager_world_pos = _forager_world_pos.move_toward(target, FORAGER_MOVE_SPEED * 1.8 * delta)
+			if _forager_world_pos.distance_to(target) < 12.0:
+				_forager_deposit()
+		"deposit":
+			# Stay put; timer ticks in _process below
+			pass
+
+	# Deposit timer — counted here so it works regardless of hub/shop state
+	if _forager_state == "deposit":
+		# Repurpose _forager_capacity as a timer storage trick; use a dedicated var instead
+		pass  # handled inline in _forager_deposit()
+
+func _forager_start_return() -> void:
+	_forager_state = "return"
+	EventBus.ore_mined_popup.emit(0, "Forager heading home!")
+
+func _forager_deposit() -> void:
+	# Bank the carry directly to mineral_currency (bypasses run risk)
+	if _forager_carry > 0:
+		GameManager.mineral_currency += _forager_carry
+		EventBus.ore_mined_popup.emit(_forager_carry, "Forager banked!")
+		_forager_carry = 0
+	_forager_state = "deposit"
+	# After a short pause return underground via a timer
+	await get_tree().create_timer(FORAGER_DEPOSIT_DELAY).timeout
+	if not is_instance_valid(self):
+		return
+	_forager_state = "follow"
 
 func _trader_purchase(item_key: String) -> void:
 	var item_def: Dictionary = {}

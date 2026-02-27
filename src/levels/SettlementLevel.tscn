@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://settlementlevel01"]
+
+[ext_resource type="Script" path="res://src/levels/SettlementLevel.gd" id="1_script"]
+
+[node name="SettlementLevel" type="Node2D"]
+script = ExtResource("1_script")

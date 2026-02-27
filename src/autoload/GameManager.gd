@@ -26,6 +26,12 @@ var current_fuel: int = 100
 func get_max_fuel() -> int:
 	return 100 + (legs_level * 25)
 
+# Settlement carry-over bonuses (applied on next mine entry, then cleared)
+var settlement_fuel_bonus: int = 0       # extra starting fuel from Fuel Cache purchase
+var settlement_forager_bonus: int = 0    # extra forager carry capacity for one run
+var settlement_shroom_charges: int = 0   # Mining Shroom charges pre-purchased
+var settlement_mandible_bonus: int = 0   # temporary +N mandible power for one run
+
 # Upgrade levels
 var carapace_level: int = 0
 var legs_level: int = 0
@@ -73,10 +79,21 @@ func complete_run() -> void:
 func load_mining_level(scene_path: String = "") -> void:
 	run_mineral_currency = 0 # Reset run currency on entry
 	current_fuel = get_max_fuel() # Reset fuel on entry
+
+	# Apply settlement carry-over bonuses then clear them
+	if settlement_fuel_bonus > 0:
+		current_fuel = mini(current_fuel + settlement_fuel_bonus, get_max_fuel() + settlement_fuel_bonus)
+		settlement_fuel_bonus = 0
+	# shroom / mandible / forager bonuses are consumed by MiningLevel on entry
+
 	EventBus.minerals_changed.emit(0)
 	EventBus.fuel_changed.emit(current_fuel, get_max_fuel())
 	var path = scene_path if scene_path != "" else "res://src/levels/MiningLevel.tscn"
 	await _transition_to_scene(path)
+
+func load_settlement_level(scene_path: String) -> void:
+	# Visit a settlement without resetting run state — player keeps banked minerals
+	await _transition_to_scene(scene_path)
 
 func load_overworld() -> void:
 	await _transition_to_scene("res://src/levels/Overworld.tscn")
@@ -151,7 +168,11 @@ func save_game() -> void:
 		"carapace_level": carapace_level,
 		"legs_level": legs_level,
 		"mandibles_level": mandibles_level,
-		"mineral_sense_level": mineral_sense_level
+		"mineral_sense_level": mineral_sense_level,
+		"settlement_fuel_bonus": settlement_fuel_bonus,
+		"settlement_forager_bonus": settlement_forager_bonus,
+		"settlement_shroom_charges": settlement_shroom_charges,
+		"settlement_mandible_bonus": settlement_mandible_bonus,
 	}
 	
 	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -179,6 +200,10 @@ func load_game() -> void:
 			legs_level = data.get("legs_level", 0)
 			mandibles_level = data.get("mandibles_level", 0)
 			mineral_sense_level = data.get("mineral_sense_level", 0)
+			settlement_fuel_bonus = data.get("settlement_fuel_bonus", 0)
+			settlement_forager_bonus = data.get("settlement_forager_bonus", 0)
+			settlement_shroom_charges = data.get("settlement_shroom_charges", 0)
+			settlement_mandible_bonus = data.get("settlement_mandible_bonus", 0)
 			print("Game loaded")
 		else:
 			print("Failed to parse save file")

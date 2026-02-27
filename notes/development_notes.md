@@ -40,7 +40,7 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 ## High Priority
 
 ### Core Gameplay Depth
-- [ ] **Implement single Forager Ant companion** — follows player, auto-collects minerals, auto-returns to surface when carry capacity full. This is the next step in the §3.4/§3.1 worker ant sequence. Pathfinding must follow pheromone trail data (already rendered). See docs/mining_game_design_lessons.md §3.4
+- [x] **Implement single Forager Ant companion** — follows player, auto-collects 40% of ore yield, returns to surface when carry capacity (30 minerals) is full, deposits directly to banked `mineral_currency` (safe from death). Rendered as amber circle with carry bar in MiningLevel._draw(). See docs/mining_game_design_lessons.md §3.4
 - [ ] **Add underground boss encounters** — milestone rooms at specific depth rows (e.g., rows 32, 64, 96). Must be defeatable using only Terraria-style movement + fuel management + cursor-mining mandibles + existing hazard tools. No separate combat system. See docs/mining_game_design_lessons.md §4
   - *Centipede King (row 32):* multi-segment body blocks tunnels; mine around segments to isolate and collapse sections; fuel drain increased during encounter
   - *Cave Spider Matriarch (row 64):* web tiles spawn and block paths; mine or explosive-clear them; fuel death pressure
@@ -51,7 +51,7 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 - [ ] **Develop colony passive skill tree** — deeper progression beyond the 4 current upgrade tracks. Current tracks (Carapace, Legs, Mandibles, Mineral Sense) are the first tier; the skill tree gates further specialisation behind milestone unlocks.
 
 ### Overworld Polish
-- [ ] **Populate overworld settlement nodes** — `settlement_node_3` and `settlement_node_4` exist but lead nowhere. They should launch a small scene (trader encounter, rest stop, side quest) appropriate to their difficulty rating.
+- [x] **Populate overworld settlement nodes** — `settlement_node_3` and `settlement_node_4` now launch `SettlementLevel.tscn`. Players spend banked minerals on Fuel Cache (+50 starting fuel), Field Repair (+1 HP), Mining Shroom (12 charges), and Whetstone (+1 mandible power). Bonuses persist via `GameManager` into the next mine run.
 - [x] **Wandering Trader at depth milestone rows** — appears at rows 32, 64, 96, 128 during a mine run, offering tier-scaled items (Fuel Cache, Carapace Patch, Mining Shroom, Lucky Compass, Ancient Map). Turns depth goals into in-world events. See docs/mining_game_design_lessons.md §2.
 - [x] **Rename `NodeType.ASTEROID` to `NodeType.MINE`** and update mine node visuals — now uses the ant spritesheet with a gold tint instead of the Godot editor icon.
 
@@ -75,7 +75,7 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 - [ ] **Make some fossils discoverable only via specific mining patterns** — not random drops. Examples: a 2×3 cluster of gem tiles, mining three fuel nodes in sequence. Rewards attentive play. See docs/mining_game_design_lessons.md §3.6
 
 ### World and Environment
-- [ ] **Add random open cave rooms** — occasional larger hollow chambers with concentrated ore pockets. Breaks up the uniform tile density and rewards exploration.
+- [x] **Add random open cave rooms** — 6–10 elliptical chambers per run carved into the underground grid, with ore-rich walls scaled to depth (iron/copper in shallow zones, gold/gem deep). Implemented via `_generate_cave_rooms()` in MiningLevel after initial grid generation.
 - [ ] **Add tools that reduce specific hazards** — consumables or upgrades that counter lava (fire-resistant gel), explosives (blast dampener), etc. Expands build diversity.
 - [ ] **Implement a dynamic weather system affecting surface layers** — rain softens topsoil tile hardness; heat bakes stone. Scoped to the surface zone (rows 0–15) to limit implementation scope.
 
