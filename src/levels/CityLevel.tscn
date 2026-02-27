@@ -1,8 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://citylevel8aa"]
+[gd_scene load_steps=5 format=3 uid="uid://citylevel8aa"]
 
 [ext_resource type="Script" path="res://src/levels/CityLevel.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://bg_wasteland_svg" path="res://assets/bg_wasteland.svg" id="2_bg"]
-[ext_resource type="PackedScene" uid="uid://upgrademenu123" path="res://src/ui/UpgradeMenu.tscn" id="3_upgrade"]
 [ext_resource type="Script" path="res://src/systems/ChatterManager.gd" id="4_chatter"]
 [ext_resource type="PackedScene" uid="uid://chatbubble123" path="res://src/ui/ChatBubble.tscn" id="5_bubble"]
 [ext_resource type="AudioStream" uid="uid://city_mp3" path="res://assets/city.mp3" id="6_music"]
@@ -22,32 +21,7 @@ centered = false
 region_enabled = true
 region_rect = Rect2(0, 0, 1280, 720)
 
-[node name="Label" type="Label" parent="."]
-offset_left = 440.0
-offset_top = 50.0
-offset_right = 840.0
-offset_bottom = 100.0
-text = "Base City"
-horizontal_alignment = 1
-vertical_alignment = 1
-
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
-
-[node name="UpgradeMenu" parent="CanvasLayer" instance=ExtResource("3_upgrade")]
-
-[node name="ReturnButton" type="Button" parent="CanvasLayer"]
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -140.0
-offset_top = -50.0
-offset_right = -20.0
-offset_bottom = -19.0
-grow_horizontal = 0
-grow_vertical = 0
-text = "Return to Map"
 
 [node name="ChatterManager" type="Node" parent="CanvasLayer"]
 script = ExtResource("4_chatter")
@@ -58,5 +32,3 @@ spawn_area = Rect2(50, 50, 1180, 620)
 stream = ExtResource("6_music")
 autoplay = true
 bus = &"Music"
-
-[connection signal="pressed" from="CanvasLayer/ReturnButton" to="." method="_on_return_button_pressed"]
