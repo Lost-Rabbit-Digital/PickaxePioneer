@@ -29,6 +29,15 @@ var mining_level: Node = null
 # Facing direction
 var _facing_left: bool = true
 
+# Jetpack
+var has_jetpack: bool = true
+const JETPACK_THRUST: float = -220.0     # Upward velocity applied each frame while thrusting
+const JETPACK_FUEL_RATE: float = 5.0     # Fuel units consumed per second while thrusting
+var _jetpack_active: bool = false
+var _jetpack_fuel_accum: float = 0.0
+
+@onready var jetpack_sprite: Sprite2D = $JetpackSprite
+
 func _ready() -> void:
 	add_to_group("player")
 	health_component.health_changed.connect(_on_health_changed)
@@ -63,6 +72,21 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("jump") and is_on_floor():
 		velocity.y = jump_velocity
 
+	# Jetpack thrust — hold jump while airborne to fly upward, consumes fuel
+	_jetpack_active = false
+	if has_jetpack and not is_on_floor() and Input.is_action_pressed("jump") and GameManager.current_fuel > 0:
+		velocity.y = JETPACK_THRUST
+		_jetpack_active = true
+		_jetpack_fuel_accum += JETPACK_FUEL_RATE * delta
+		if _jetpack_fuel_accum >= 1.0:
+			var to_consume := int(_jetpack_fuel_accum)
+			_jetpack_fuel_accum -= to_consume
+			GameManager.consume_fuel(to_consume)
+
+	# Sync jetpack sprite with player facing and active state
+	jetpack_sprite.flip_h = sprite.flip_h
+	jetpack_sprite.modulate = Color(1.0, 0.5, 0.1) if _jetpack_active else Color(1, 1, 1, 1)
+
 	move_and_slide()
 
 	# Check hazard contact after moving
@@ -72,6 +96,11 @@ func _physics_process(delta: float) -> void:
 	_handle_mining(delta)
 
 func _handle_mining(delta: float) -> void:
+	# No mining while flying with the jetpack
+	if has_jetpack and not is_on_floor():
+		_mining = false
+		return
+
 	if Input.is_action_pressed("mine"):
 		var mouse_world := get_global_mouse_position()
 		var grid_pos := Vector2i(
