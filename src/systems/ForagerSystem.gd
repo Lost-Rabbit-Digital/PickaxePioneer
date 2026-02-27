@@ -1,7 +1,7 @@
 class_name ForagerSystem
 extends RefCounted
 
-## Forager Ant companion system (§3.4)
+## Scout Cat companion system (§3.4)
 ## Follows the player underground, sweeps up nearby ore chunks that were
 ## scattered by the ore-breaking mechanic, and returns to the surface when
 ## full — banking those minerals safely even if the player later dies.
@@ -95,7 +95,7 @@ var is_full: bool:
 ## Begin the return journey to the surface.
 func start_return() -> void:
 	state = "return"
-	EventBus.ore_mined_popup.emit(0, "Forager heading home!")
+	EventBus.ore_mined_popup.emit(0, "Scout Cat heading home!")
 
 
 ## Reset carry and state at the start of a new run.
@@ -112,7 +112,7 @@ func reset(spawn_pos: Vector2, bonus_capacity: int) -> void:
 func _do_deposit() -> void:
 	if carry > 0:
 		GameManager.mineral_currency += carry
-		EventBus.ore_mined_popup.emit(carry, "Forager banked!")
+		EventBus.ore_mined_popup.emit(carry, "Scout Cat banked!")
 		carry = 0
 	state = "deposit"
 	_deposit_timer = DEPOSIT_DELAY

@@ -38,7 +38,7 @@ enum TileType {
 	SURFACE          = 20,
 	SURFACE_GRASS    = 21,
 	EXIT_STATION     = 22,
-	BOSS_SEGMENT     = 23,   # Centipede body segment — high HP, awards minerals on death
+	BOSS_SEGMENT     = 23,   # Boss body segment — high HP, awards minerals on death
 	BOSS_CORE        = 24,   # Boss core / head — highest HP, big reward
 	UPGRADE_STATION  = 25,   # Upgrade station — permanent upgrades using banked minerals
 	SMELTERY_STATION = 26,   # Smeltery — smelt ores into bars and sell them
@@ -1049,7 +1049,7 @@ func _draw() -> void:
 				draw_string(afont, label_px2, al,
 					HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.80, 0.55, 1.00, 0.90))
 
-	# Forager Ant companion — amber circle with carry indicator (§3.4)
+	# Scout Cat companion — amber circle with carry indicator (§3.4)
 	# State is read from forager_system; draw calls remain in MiningLevel._draw()
 	var fg := forager_system.world_pos
 	var fg_col := floori(fg.x / CELL_SIZE)
@@ -1740,6 +1740,7 @@ func _try_interact() -> void:
 	var nearby_npc: FarmAnimalNPC = _get_nearby_farm_npc()
 	if nearby_npc:
 		nearby_npc.wiggle()
+		EventBus.ore_mined_popup.emit(0, nearby_npc.get_pet_message())
 
 # ---------------------------------------------------------------------------
 # Farm animals

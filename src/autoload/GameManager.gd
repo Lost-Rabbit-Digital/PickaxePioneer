@@ -31,7 +31,7 @@ func get_max_energy() -> int:
 
 # Settlement carry-over bonuses (applied on next mine entry, then cleared)
 var settlement_energy_bonus: int = 0       # extra starting energy from Energy Cache purchase
-var settlement_forager_bonus: int = 0    # extra forager carry capacity for one run
+var settlement_forager_bonus: int = 0    # extra scout cat carry capacity for one run
 var settlement_shroom_charges: int = 0   # Mining Shroom charges pre-purchased
 var settlement_mandible_bonus: int = 0   # temporary +N mandible power for one run
 
@@ -65,7 +65,7 @@ var deepest_row_reached: int = 0         # deepest grid row ever reached
 
 # Chamber built flags (persisted to save)
 var fungus_garden_built: bool = false    # +10% mineral yield from all tiles
-var brood_chamber_built: bool = false    # forager carry cap +20
+var brood_chamber_built: bool = false    # scout cat carry cap +20
 var armory_built: bool = false           # explosive radius +1
 var nursery_vault_built: bool = false    # fossil find rate +5% base
 var deep_antenna_built: bool = false     # sonar radius +3
@@ -173,7 +173,7 @@ func get_sonar_ping_radius() -> float:
 func get_mineral_yield_mult() -> float:
 	return 1.10 if fungus_garden_built else 1.0
 
-## Bonus carry capacity added to the Forager Ant (Brood Chamber).
+## Bonus carry capacity added to the Scout Cat (Kitten Den).
 func get_forager_carry_bonus() -> int:
 	return 20 if brood_chamber_built else 0
 

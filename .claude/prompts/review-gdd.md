@@ -4,6 +4,8 @@ description: Review the game design document and suggest next implementation ste
 
 # Review Game Design Document
 
+> **Game context:** Pickaxe Pioneer has been rethemed from ants to **cats**. The player is a mining cat from the **Clowder**. Key terminology: Pelt (HP), Paws (speed/fuel), Claws (mining power), Whiskers (sonar), Scout Cat (companion), Matriarch (faction leader), Clowder Warren (overworld map). When reviewing the GDD or suggesting tasks, use cat terminology exclusively.
+
 Please review the current Game Design Document at `docs/game_design_document.md` and provide:
 
 1. **Current Implementation Status:**

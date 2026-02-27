@@ -122,7 +122,7 @@ func _build_ui() -> void:
 	by += BTN_GAP
 
 	_btn_rations = _make_button(canvas, bx, by, bw, BTN_H,
-		"Scout Rations  —  +20 scout cat carry capacity next run  (%d minerals)" % COST_RATIONS,
+		"Scout Snacks  —  +20 scout cat carry capacity next run  (%d minerals)" % COST_RATIONS,
 		_buy_rations)
 	by += BTN_GAP
 
@@ -194,7 +194,7 @@ func _buy_rations() -> void:
 	GameManager.mineral_currency -= COST_RATIONS
 	GameManager.settlement_forager_bonus += 20
 	GameManager.save_game()
-	_set_status("+20 scout cat carry capacity next run!")
+	_set_status("+20 Scout Cat carry capacity next run!")
 	_refresh_minerals()
 	_update_button_states()
 

@@ -6,6 +6,8 @@ description: Create a new enemy type with complete implementation
 
 Please implement a new enemy type for Pickaxe Pioneer following these specifications:
 
+> **Game context:** The player character is a **mining cat** from the **Clowder**. Enemies should be underground creatures that feel like natural cat nemeses (rats, moles, bats, snakes, etc.). Use cat terminology in all flavor strings. Do NOT use ant/colony/queen/mandible/carapace terminology.
+
 ## Enemy Details (to be filled by user)
 - **Name:** [Enemy name, e.g., "Armored Mutant"]
 - **Tier:** [1-3, determines difficulty]
