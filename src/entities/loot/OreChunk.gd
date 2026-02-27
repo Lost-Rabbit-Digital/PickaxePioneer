@@ -8,6 +8,11 @@ extends CharacterBody2D
 const GRAVITY: float = 600.0
 const CHUNK_SIZE: float = 20.0
 const COLLECT_DIST: float = 30.0
+# Speed threshold below which a grounded chunk is considered at rest.
+const SETTLE_SPEED_THRESHOLD: float = 5.0
+# Bitmask for the "settled ore" physics layer (Layer 4 = value 8).
+# Settled chunks join this layer so in-flight chunks can land on top of them.
+const SETTLED_LAYER: int = 8
 
 # Ore type → chunk colour (mirrors MiningLevel.TILE_COLORS)
 const CHUNK_COLORS: Dictionary = {
@@ -24,13 +29,14 @@ const CHUNK_COLORS: Dictionary = {
 ## Set by MiningLevel before adding to the scene tree.
 var ore_type: int = 0
 var value: int = 1
+var is_settled: bool = false
 
 func _ready() -> void:
 	add_to_group("ore_chunk")
 	# Layer 3 (value 4): loot layer — does not block terrain or the player.
-	# Mask  1 (value 1): collides with TileMapLayer terrain so it can land.
+	# Mask includes terrain (1) and settled ore (8) so chunks can land on each other.
 	collision_layer = 4
-	collision_mask = 1
+	collision_mask = 1 | SETTLED_LAYER
 
 	var shape := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
@@ -48,21 +54,36 @@ func _draw() -> void:
 	draw_rect(Rect2(-half, -half, CHUNK_SIZE * 0.45, CHUNK_SIZE * 0.45), color.lightened(0.45))
 
 func _physics_process(delta: float) -> void:
-	# Gravity — accelerate downward until the chunk lands.
-	if not is_on_floor():
-		velocity.y += GRAVITY * delta
-	else:
-		velocity.y = 0.0
-		velocity.x = move_toward(velocity.x, 0.0, 250.0 * delta)
-
-	# Collect when the player physically walks onto the chunk.
+	# Collect when the player physically walks onto the chunk (settled or not).
 	var players := get_tree().get_nodes_in_group("player")
 	if players.size() > 0 and \
 			global_position.distance_to(players[0].global_position) < COLLECT_DIST:
 		collect()
 		return
 
+	# Settled chunks don't move — they act as a surface for other chunks to land on.
+	if is_settled:
+		return
+
+	# Gravity — accelerate downward until the chunk lands.
+	if not is_on_floor():
+		velocity.y += GRAVITY * delta
+	else:
+		velocity.y = 0.0
+		velocity.x = move_toward(velocity.x, 0.0, 250.0 * delta)
+		# Once horizontal motion dies out, settle and join the stacking layer.
+		if abs(velocity.x) < SETTLE_SPEED_THRESHOLD:
+			_settle()
+			return
+
 	move_and_slide()
+
+# Transition to the settled state: stop moving and join the settled-ore collision
+# layer so future falling chunks can land on top of this one, forming a pile.
+func _settle() -> void:
+	is_settled = true
+	velocity = Vector2.ZERO
+	collision_layer = 4 | SETTLED_LAYER
 
 # Collected by the player — adds value to run currency and plays a sound.
 func collect() -> void:
