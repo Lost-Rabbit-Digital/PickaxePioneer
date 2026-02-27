@@ -24,9 +24,9 @@ res://
 -   **Pattern:** Singleton (Autoload).
 -   **Key State:**
     -   `mineral_currency` — persistently banked minerals (saved to disk)
-    -   `run_mineral_currency` — minerals collected in the current run (lost on death/fuel-out)
+    -   `run_mineral_currency` — minerals collected in the current run (lost on death/energy-out)
     -   `carapace_level`, `legs_level`, `mandibles_level`, `mineral_sense_level` — upgrade levels (0–10)
-    -   `current_fuel`, `max_fuel` — ant's energy reserves for the current run
+    -   `current_energy`, `max_energy` — ant's energy reserves for the current run
     -   Settlement carry-over fields — consumable bonuses applied on mine entry and cleared after use
 
 ### 2.2 EventBus (`src/autoload/EventBus.gd`)
@@ -36,7 +36,7 @@ res://
     -   `game_state_changed(new_state)` — game state transitions
     -   `minerals_changed(amount)` — run mineral total updated (UI refresh)
     -   `minerals_earned(amount)` — individual tile mined (popup animation trigger)
-    -   `fuel_changed(current, max)` — fuel bar refresh
+    -   `energy_changed(current, max)` — energy bar refresh
     -   `player_health_changed(current, max)` — health squares refresh
     -   `player_died` — ant killed signal
     -   `ore_mined(type, amount)` — deprecated, kept for compatibility
@@ -96,15 +96,15 @@ We use Godot's node composition to mimic ECS patterns. Entities are composed of 
 -   **Layers:**
     -   Rows 0–2: Surface (sky blue, free movement)
     -   Row 3: Grass (1 mineral, free movement)
-    -   Rows 4–127: Underground (fuel depletes by depth)
--   **Key Tile Types:** EMPTY, DIRT, STONE, ORE_COPPER through ORE_GEM_DEEP, EXPLOSIVE, LAVA, FUEL_NODE, REFUEL_STATION, EXIT_STATION, SURFACE, SURFACE_GRASS
+    -   Rows 4–127: Underground (energy depletes by depth)
+-   **Key Tile Types:** EMPTY, DIRT, STONE, ORE_COPPER through ORE_GEM_DEEP, EXPLOSIVE, LAVA, ENERGY_NODE, REENERGY_STATION, EXIT_STATION, SURFACE, SURFACE_GRASS
 -   **Procedural Generation:** `_generate_grid()` depth-weighted tile placement + `_generate_cave_rooms()` carves 6–10 elliptical open chambers with ore-rich walls
 -   **Camera:** `Camera2D` follows the ant with map boundary limits; viewport culling for performance
 -   **Size:** ~1,970 lines. All major subsystems extracted to `src/systems/`.
 
 ### 4.3 SettlementLevel (`src/levels/SettlementLevel.gd / .tscn`)
 -   **Purpose:** Rest stop between runs. Players spend banked `mineral_currency` on pre-run consumables.
--   **Consumables:** Fuel Cache (+50 starting fuel), Field Repair (+1 HP), Mining Shroom (12 ore-yield charges), Whetstone (+1 mandible power).
+-   **Consumables:** Energy Cache (+50 starting energy), Field Repair (+1 HP), Mining Shroom (12 ore-yield charges), Whetstone (+1 mandible power).
 -   **On Purchase:** Bonuses stored in `GameManager` settlement fields, applied on mine entry and cleared.
 
 ### 4.4 Colony Level (`src/levels/CityLevel.gd / .tscn`)
@@ -119,9 +119,9 @@ All implemented as `RefCounted` classes with clean interfaces. `MiningLevel` del
 |--------|------|---------------|
 | SmeltingSystem | `SmeltingSystem.gd` | Consecutive ore chain bonuses and alloy combos (Super Motherload–inspired) |
 | FossilSystem | `FossilSystem.gd` | Fossil drop probability with forgiveness pity mechanic (drought counter per block type) |
-| SonarSystem | `SonarSystem.gd` | Sonar ping — radial ore shimmer through solid rock, fuel-cost per activation |
+| SonarSystem | `SonarSystem.gd` | Sonar ping — radial ore shimmer through solid rock, energy-cost per activation |
 | ForagerSystem | `ForagerSystem.gd` | Forager ant companion: takes 40% ore yield, carries up to 30 minerals, auto-banks on return |
-| BossSystem | `BossSystem.gd` | Boss encounter logic — five depth-milestone bosses, fuel-drain pressure, phase management |
+| BossSystem | `BossSystem.gd` | Boss encounter logic — five depth-milestone bosses, energy-drain pressure, phase management |
 | ChatterManager | `ChatterManager.gd` | Ambient NPC chatter bubble text pool and timing |
 
 ## 6. UI Systems (`src/ui/`)
@@ -130,7 +130,7 @@ All implemented as `RefCounted` classes with clean interfaces. `MiningLevel` del
 |------|---------|
 | `MainMenu` | Title screen — New Game, Continue, Settings; animated parallax background |
 | `UpgradeMenu` | Colony Workshop — Carapace/Legs/Mandibles/Mineral Sense upgrades |
-| `HUD` | In-run display — minerals counter, health squares, segmented fuel bar, depth meter, milestone banners, low-fuel/low-HP warnings |
+| `HUD` | In-run display — minerals counter, health squares, segmented energy bar, depth meter, milestone banners, low-energy/low-HP warnings |
 | `PauseMenu` | In-run pause — Resume, Settings, Abandon Run |
 | `RunSummary` | Post-run — minerals collected, return to Overworld |
 | `LevelInfoModal` | Overworld node info panel shown before entering a mine, settlement, or city |
@@ -147,17 +147,17 @@ All implemented as `RefCounted` classes with clean interfaces. `MiningLevel` del
     -   `EventBus.minerals_earned.emit(minerals)` triggers HUD popup.
     -   FossilSystem rolls for fossil drop on each mined tile.
     -   Hazard tiles deal damage or trigger explosions.
-    -   Fuel nodes call `GameManager.restore_fuel(10)`.
+    -   Energy nodes call `GameManager.restore_energy(10)`.
     -   Exit Station reached → `GameManager.complete_run()` → RunSummary screen.
-3.  **Fuel Depletion:**
-    -   Underground movement drains fuel by depth.
-    -   At 0 fuel → `_on_out_of_fuel()` → `GameManager.lose_run()` → lose run minerals.
+3.  **Energy Depletion:**
+    -   Underground movement drains energy by depth.
+    -   At 0 energy → `_on_out_of_energy()` → `GameManager.lose_run()` → lose run minerals.
 4.  **Forager Ant:**
     -   ForagerSystem takes 40% of each ore yield; carries up to 30 minerals (base).
     -   When full, forager returns to surface and banks directly into `mineral_currency` (safe from death).
 5.  **Boss Encounters:**
     -   BossSystem triggers at milestone rows (32, 64, 96, 112, 128).
-    -   Fuel drains 2.5× while a boss is alive; defeating rewards 100 minerals + 30 fuel.
+    -   Energy drains 2.5× while a boss is alive; defeating rewards 100 minerals + 30 energy.
 6.  **Upgrade Purchase (Colony Workshop):**
     -   `UpgradeMenu` deducts `mineral_currency` and calls `upgrade_carapace/legs/mandibles/mineral_sense()`.
     -   `GameManager.save_game()` persists to `user://save_data.json`.

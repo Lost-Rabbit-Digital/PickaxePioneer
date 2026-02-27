@@ -8,7 +8,7 @@ A 2D Terraria-style underground mining roguelite where you play as a red ant dig
 
 ## Concept
 
-You are a red forager ant venturing out from your colony into the earth below. Each expedition takes you deeper underground through procedurally generated layers of dirt, stone, and precious ore. Manage your fuel carefully — go too deep without energy and you'll be stranded. Mine rare gems from the deepest veins, upgrade your Carapace, Legs, Mandibles, and Mineral Sense back at the colony, and unravel the mysteries buried beneath the surface.
+You are a red forager ant venturing out from your colony into the earth below. Each expedition takes you deeper underground through procedurally generated layers of dirt, stone, and precious ore. Manage your energy carefully — go too deep without energy and you'll be stranded. Mine rare gems from the deepest veins, upgrade your Carapace, Legs, Mandibles, and Mineral Sense back at the colony, and unravel the mysteries buried beneath the surface.
 
 Inspired by [Motherload](https://www.miniclip.com/games/motherlode/en/), [Super Motherload](https://store.steampowered.com/app/269110/Super_Motherload/), [Dwarf Fortress](http://www.bay12games.com/dwarves/), [Path of Exile](https://store.steampowered.com/app/238960/Path_of_Exile/), [ADOM](https://www.adom.de/home/index.html), and [Noita](https://store.steampowered.com/app/881100/Noita/).
 
@@ -18,9 +18,9 @@ Inspired by [Motherload](https://www.miniclip.com/games/motherlode/en/), [Super 
 
 1. **Colony (Hub)** — Bank minerals, purchase permanent upgrades (Carapace / Legs / Mandibles / Mineral Sense), talk to NPCs
 2. **Overworld Map** — Navigate between mine entrances, settlement rest stops, and the colony
-3. **Settlement** — Spend banked minerals on pre-run consumables (Fuel Cache, Field Repair, Mining Shroom, Whetstone)
-4. **Mining Run** — Descend into a 96×128-tile procedural mine; Terraria-style physics; cursor-based mining; fuel depletes with depth; sonar ping, smelting chains, fossil finds, boss encounters
-5. **Run Summary** — Bank collected minerals on successful exit; lose run minerals if fuel runs out or HP hits 0
+3. **Settlement** — Spend banked minerals on pre-run consumables (Energy Cache, Field Repair, Mining Shroom, Whetstone)
+4. **Mining Run** — Descend into a 96×128-tile procedural mine; Terraria-style physics; cursor-based mining; energy depletes with depth; sonar ping, smelting chains, fossil finds, boss encounters
+5. **Run Summary** — Bank collected minerals on successful exit; lose run minerals if energy runs out or HP hits 0
 
 ---
 
@@ -33,7 +33,7 @@ Inspired by [Motherload](https://www.miniclip.com/games/motherlode/en/), [Super 
 | Mine tile | Left-click (within 4.5-tile range) |
 | Sonar ping | `Q` |
 | Pheromone marker | `F` |
-| Interact / Refuel | `E` |
+| Interact / Reenergy | `E` |
 | Pause | `Esc` |
 
 ---
@@ -65,7 +65,7 @@ res://
 
 | System | File | Description |
 |--------|------|-------------|
-| GameManager | `src/autoload/GameManager.gd` | Game state, save/load, mineral currency, upgrade levels, fuel |
+| GameManager | `src/autoload/GameManager.gd` | Game state, save/load, mineral currency, upgrade levels, energy |
 | EventBus | `src/autoload/EventBus.gd` | Global signal bus for decoupled communication |
 | MiningLevel | `src/levels/MiningLevel.gd` | Core gameplay — physics movement, cursor mining, grid world, all run logic |
 | SmeltingSystem | `src/systems/SmeltingSystem.gd` | Consecutive ore chain bonuses and alloy combos |
@@ -74,7 +74,7 @@ res://
 | ForagerSystem | `src/systems/ForagerSystem.gd` | Forager ant companion — auto-collects ore, banks when full |
 | BossSystem | `src/systems/BossSystem.gd` | Boss encounter logic for all five depth-milestone bosses |
 | UpgradeMenu | `src/ui/UpgradeMenu.gd` | Colony Workshop — 4 upgrade tracks with escalating costs |
-| HUD | `src/ui/HUD.gd` | In-run display — minerals, health, fuel bar, depth meter, banners |
+| HUD | `src/ui/HUD.gd` | In-run display — minerals, health, energy bar, depth meter, banners |
 
 ---
 
@@ -83,9 +83,9 @@ res://
 | Track | Effect per Level | Base Cost |
 |-------|-----------------|-----------|
 | Harden Carapace | +1 max HP | 50 minerals |
-| Strengthen Legs | +30 px/s move speed **and** +25 max fuel | 50 minerals |
+| Strengthen Legs | +30 px/s move speed **and** +25 max energy | 50 minerals |
 | Sharpen Mandibles | +3 mining power | 50 minerals |
-| Mineral Sense | Larger sonar ping radius, lower fuel cost per ping | 50 minerals |
+| Mineral Sense | Larger sonar ping radius, lower energy cost per ping | 50 minerals |
 
 All tracks scale by +25 minerals per level; max level 10.
 

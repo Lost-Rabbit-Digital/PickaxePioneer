@@ -225,19 +225,19 @@ func _update_ui() -> void:
 		GameManager.mineral_currency, GameManager.gem_count]
 
 	var hp    := GameManager.get_max_health()
-	var fuel  := GameManager.get_max_fuel()
+	var energy  := GameManager.get_max_energy()
 	var spd   := GameManager.get_max_speed()
 	var power := GameManager.get_mandibles_power()
 	var r     := GameManager.get_sonar_ping_radius()
-	var fc    := GameManager.get_sonar_ping_fuel_cost()
+	var fc    := GameManager.get_sonar_ping_energy_cost()
 
 	_btn_carapace.text  = "Harden Carapace Lv%d  —  HP %d → %d  (%d minerals)" % [
 		GameManager.carapace_level, hp, hp + 1, _carapace_cost]
-	_btn_legs.text      = "Strengthen Legs Lv%d  —  Fuel %d → %d, Speed %.0f → %.0f  (%d minerals)" % [
-		GameManager.legs_level, fuel, fuel + 25, spd, spd + 30.0, _legs_cost]
+	_btn_legs.text      = "Strengthen Legs Lv%d  —  Energy %d → %d, Speed %.0f → %.0f  (%d minerals)" % [
+		GameManager.legs_level, energy, energy + 25, spd, spd + 30.0, _legs_cost]
 	_btn_mandibles.text = "Sharpen Mandibles Lv%d  —  Power %d → %d  (%d minerals)" % [
 		GameManager.mandibles_level, power, power + 3, _mandibles_cost]
-	_btn_sense.text     = "Mineral Sense Lv%d  —  Radius %.0f → %.0f tiles, Fuel %d → %d  (%d minerals)" % [
+	_btn_sense.text     = "Mineral Sense Lv%d  —  Radius %.0f → %.0f tiles, Energy %d → %d  (%d minerals)" % [
 		GameManager.mineral_sense_level, r, r + 3.0, fc, maxi(3, fc - 2), _sense_cost]
 
 	var m := GameManager.mineral_currency
@@ -255,10 +255,10 @@ func _update_ui() -> void:
 		_btn_gem_carapace.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
 
 	if GameManager.legs_gem_socketed:
-		_btn_gem_legs.text = "[SOCKETED]  Quickstride Gem — +25 Fuel, +15 Speed"
+		_btn_gem_legs.text = "[SOCKETED]  Quickstride Gem — +25 Energy, +15 Speed"
 		_btn_gem_legs.disabled = true
 	else:
-		_btn_gem_legs.text = "Socket Quickstride Gem — +25 Fuel, +15 Speed  (%d gems)" % GameManager.GEM_SOCKET_COST
+		_btn_gem_legs.text = "Socket Quickstride Gem — +25 Energy, +15 Speed  (%d gems)" % GameManager.GEM_SOCKET_COST
 		_btn_gem_legs.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
 
 	if GameManager.mandibles_gem_socketed:

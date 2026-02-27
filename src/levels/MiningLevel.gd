@@ -4,7 +4,7 @@ extends Node2D
 # Player is a CharacterBody2D that moves freely with gravity/jumping.
 # Terrain is a grid rendered via _draw() with collision provided by a TileMapLayer.
 # Mining is cursor-based: click to mine blocks within range.
-# Fuel drains over time while underground (faster at depth).
+# Energy drains over time while underground (faster at depth).
 
 const GRID_COLS: int = 96
 const GRID_ROWS: int = 128
@@ -32,9 +32,9 @@ enum TileType {
 	EXPLOSIVE_ARMED  = 14,
 	LAVA             = 15,
 	LAVA_FLOW        = 16,
-	FUEL_NODE        = 17,
-	FUEL_NODE_FULL   = 18,
-	REFUEL_STATION   = 19,
+	ENERGY_NODE        = 17,
+	ENERGY_NODE_FULL   = 18,
+	REENERGY_STATION   = 19,
 	SURFACE          = 20,
 	SURFACE_GRASS    = 21,
 	EXIT_STATION     = 22,
@@ -58,13 +58,13 @@ const TILE_NAMES: Dictionary = {
 	TileType.ORE_GOLD_DEEP:   "Deep Gold",
 	TileType.ORE_GEM:         "Gem",
 	TileType.ORE_GEM_DEEP:    "Deep Gem",
-	TileType.FUEL_NODE:       "Fuel",
-	TileType.FUEL_NODE_FULL:  "Fuel",
+	TileType.ENERGY_NODE:       "Energy",
+	TileType.ENERGY_NODE_FULL:  "Energy",
 	TileType.EXPLOSIVE:       "Explosive",
 	TileType.EXPLOSIVE_ARMED: "Armed Explosive",
 	TileType.LAVA:            "Lava",
 	TileType.LAVA_FLOW:       "Lava Flow",
-	TileType.REFUEL_STATION:  "Refuel Station",
+	TileType.REENERGY_STATION:  "Reenergy Station",
 	TileType.SURFACE:         "Surface",
 	TileType.EXIT_STATION:    "Exit Station",
 	TileType.BOSS_SEGMENT:    "Boss Segment",
@@ -101,9 +101,9 @@ const TILE_COLORS: Dictionary = {
 	TileType.EXPLOSIVE_ARMED: Color(1.00, 0.00, 0.00),
 	TileType.LAVA:           Color(1.00, 0.45, 0.00),
 	TileType.LAVA_FLOW:      Color(1.00, 0.30, 0.00),
-	TileType.FUEL_NODE:      Color(0.20, 0.80, 0.20),
-	TileType.FUEL_NODE_FULL: Color(0.10, 1.00, 0.10),
-	TileType.REFUEL_STATION: Color(0.50, 0.50, 0.50),
+	TileType.ENERGY_NODE:      Color(0.20, 0.80, 0.20),
+	TileType.ENERGY_NODE_FULL: Color(0.10, 1.00, 0.10),
+	TileType.REENERGY_STATION: Color(0.50, 0.50, 0.50),
 	TileType.SURFACE:        Color(0.35, 0.35, 0.35),
 	TileType.SURFACE_GRASS:  Color(0.25, 0.50, 0.25),
 	TileType.EXIT_STATION:   Color(0.15, 0.55, 0.15),
@@ -130,9 +130,9 @@ const TILE_TEXTURE_PATHS: Dictionary = {
 	TileType.EXPLOSIVE_ARMED: "res://assets/blocks/eucalyptus_log_top.png",
 	TileType.LAVA:            "res://assets/blocks/sand_ugly_3.png",
 	TileType.LAVA_FLOW:       "res://assets/blocks/sand_ugly_3.png",
-	TileType.FUEL_NODE:       "res://assets/blocks/limestone.png",
-	TileType.FUEL_NODE_FULL:  "res://assets/blocks/marble.png",
-	TileType.REFUEL_STATION:  "res://assets/blocks/cobblestone_bricks.png",
+	TileType.ENERGY_NODE:       "res://assets/blocks/limestone.png",
+	TileType.ENERGY_NODE_FULL:  "res://assets/blocks/marble.png",
+	TileType.REENERGY_STATION:  "res://assets/blocks/cobblestone_bricks.png",
 	TileType.SURFACE:         "res://assets/blocks/grass_top.png",
 	TileType.SURFACE_GRASS:   "res://assets/blocks/grass_side.png",
 	TileType.UPGRADE_STATION: "res://assets/blocks/cobblestone_bricks.png",
@@ -297,7 +297,7 @@ const TRADER_INTERACT_RADIUS: float = 128.0  # px (~2 tiles)
 
 # Tier-scaled item definitions: [label, description, run_mineral_cost, tier_required]
 const TRADER_ITEMS: Array = [
-	{"key": "fuel",    "label": "Fuel Cache",      "desc": "+50 Fuel",                      "cost": 12, "tier": 1},
+	{"key": "energy",    "label": "Energy Cache",      "desc": "+50 Energy",                      "cost": 12, "tier": 1},
 	{"key": "repair",  "label": "Carapace Patch",  "desc": "Restore 1 HP",                  "cost": 18, "tier": 1},
 	{"key": "shroom",  "label": "Mining Shroom",   "desc": "Next 12 ores yield +100%",       "cost": 30, "tier": 2},
 	{"key": "compass", "label": "Lucky Compass",   "desc": "2× Lucky Strike chance (run)",   "cost": 45, "tier": 3},
@@ -314,7 +314,7 @@ const SOLID_TILES: Array = [
 	TileType.ORE_GEM, TileType.ORE_GEM_DEEP,
 	TileType.EXPLOSIVE, TileType.EXPLOSIVE_ARMED,
 	TileType.LAVA, TileType.LAVA_FLOW,
-	TileType.FUEL_NODE, TileType.FUEL_NODE_FULL,
+	TileType.ENERGY_NODE, TileType.ENERGY_NODE_FULL,
 	TileType.SURFACE_GRASS,
 	TileType.BOSS_SEGMENT, TileType.BOSS_CORE,
 ]
@@ -330,15 +330,15 @@ const DEPTH_ZONE_COLORS = [
 	Color(0.30, 0.65, 0.85),
 ]
 
-# Time-based fuel drain: base rate (fuel per second) + depth multiplier
-const FUEL_DRAIN_BASE: float = 1.0      # 1 fuel/sec on surface
-const FUEL_DRAIN_DEPTH_MULT: float = 2.0 # Extra drain per depth ratio
-var _fuel_drain_accum: float = 0.0
+# Time-based energy drain: base rate (energy per second) + depth multiplier
+const ENERGY_DRAIN_BASE: float = 1.0      # 1 energy/sec on surface
+const ENERGY_DRAIN_DEPTH_MULT: float = 2.0 # Extra drain per depth ratio
+var _energy_drain_accum: float = 0.0
 
 # ---------------------------------------------------------------------------
 # Boss encounter system (§4) — logic lives in BossSystem.gd
 # ---------------------------------------------------------------------------
-const BOSS_DRAIN_MULT: float = 1.5   # fuel drain multiplier while boss is alive
+const BOSS_DRAIN_MULT: float = 1.5   # energy drain multiplier while boss is alive
 
 var grid: Array = []
 var has_left_spawn: bool = false
@@ -359,13 +359,13 @@ var _hub_minerals_label: Label
 var _hub_visible: bool = false
 var _upgrade_layer: CanvasLayer
 
-# Fuel Station Shop
-var _fuel_shop_layer: CanvasLayer
-var _fuel_shop_visible: bool = false
-var _fuel_shop_minerals_label: Label
-var _fuel_shop_btn_refuel_full: Button
-var _fuel_shop_btn_refuel_half: Button
-var _fuel_shop_btn_repair: Button
+# Energy Station Shop
+var _energy_shop_layer: CanvasLayer
+var _energy_shop_visible: bool = false
+var _energy_shop_minerals_label: Label
+var _energy_shop_btn_reenergy_full: Button
+var _energy_shop_btn_reenergy_half: Button
+var _energy_shop_btn_repair: Button
 
 # Upgrade Station Shop
 var _upgrade_station_layer: CanvasLayer
@@ -503,7 +503,7 @@ func _ready() -> void:
 	MusicManager.play_music(music)
 	QuestManager.clear_quest()
 	_setup_surface_hub()
-	_setup_fuel_station_shop()
+	_setup_energy_station_shop()
 	_setup_upgrade_station_shop()
 	_setup_smeltery_shop()
 	_setup_farm_animals()
@@ -611,10 +611,10 @@ func _generate_grid() -> void:
 				column.append(_random_tile(col, row))
 		grid.append(column)
 
-	var refuel_col = GRID_COLS / 2
-	grid[refuel_col][SURFACE_ROWS - 1] = TileType.REFUEL_STATION
-	grid[refuel_col - 5][SURFACE_ROWS - 1] = TileType.UPGRADE_STATION
-	grid[refuel_col + 5][SURFACE_ROWS - 1] = TileType.SMELTERY_STATION
+	var reenergy_col = GRID_COLS / 2
+	grid[reenergy_col][SURFACE_ROWS - 1] = TileType.REENERGY_STATION
+	grid[reenergy_col - 5][SURFACE_ROWS - 1] = TileType.UPGRADE_STATION
+	grid[reenergy_col + 5][SURFACE_ROWS - 1] = TileType.SMELTERY_STATION
 
 	grid[GRID_COLS - 1][SURFACE_ROWS - 1] = TileType.EXIT_STATION
 
@@ -698,8 +698,8 @@ func _random_tile(col: int, row: int) -> TileType:
 	elif r < explosive_bias + lava_bias * 0.5:     return TileType.LAVA
 	elif r < total_hazard:                          return TileType.LAVA_FLOW
 
-	elif r < total_hazard + 0.02: return TileType.FUEL_NODE
-	elif r < total_hazard + 0.03: return TileType.FUEL_NODE_FULL
+	elif r < total_hazard + 0.02: return TileType.ENERGY_NODE
+	elif r < total_hazard + 0.03: return TileType.ENERGY_NODE_FULL
 
 	var copper_chance := 0.14 - depth * 0.12
 	var iron_chance   := 0.12 - depth * 0.04
@@ -827,7 +827,7 @@ func _draw() -> void:
 			else:
 				draw_rect(tile_rect, TILE_COLORS.get(tile, Color(0.5, 0.5, 0.5)))
 
-			if tile == TileType.REFUEL_STATION:
+			if tile == TileType.REENERGY_STATION:
 				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
 					Color.WHITE, false, 2.0)
 
@@ -942,7 +942,7 @@ func _draw() -> void:
 				draw_rect(brect, seg_fill)
 				draw_rect(brect, seg_border, false, 1.5)
 
-		# Boss fuel-drain warning — red vignette flicker on screen edges
+		# Boss energy-drain warning — red vignette flicker on screen edges
 		if boss_pulse > 0.75:
 			var vignette_a := (boss_pulse - 0.75) / 0.25 * 0.12
 			draw_rect(Rect2(min_col * CELL_SIZE, min_row * CELL_SIZE,
@@ -1069,7 +1069,7 @@ func _draw() -> void:
 				and stile != TileType.ORE_IRON and stile != TileType.ORE_IRON_DEEP \
 				and stile != TileType.ORE_GOLD and stile != TileType.ORE_GOLD_DEEP \
 				and stile != TileType.ORE_GEM and stile != TileType.ORE_GEM_DEEP \
-				and stile != TileType.FUEL_NODE and stile != TileType.FUEL_NODE_FULL:
+				and stile != TileType.ENERGY_NODE and stile != TileType.ENERGY_NODE_FULL:
 					continue
 				var dist := Vector2(sc - cx, sr - cy).length()
 				if dist > sonar_system.wave_radius:
@@ -1088,7 +1088,7 @@ func _draw() -> void:
 						glow_color = Color(1.00, 0.85, 0.10, glow_alpha)
 					elif stile == TileType.ORE_IRON or stile == TileType.ORE_IRON_DEEP:
 						glow_color = Color(0.65, 0.65, 1.00, glow_alpha)
-					elif stile == TileType.FUEL_NODE or stile == TileType.FUEL_NODE_FULL:
+					elif stile == TileType.ENERGY_NODE or stile == TileType.ENERGY_NODE_FULL:
 						glow_color = Color(0.30, 1.00, 0.30, glow_alpha)
 				draw_rect(Rect2(sc * CELL_SIZE, sr * CELL_SIZE, CELL_SIZE, CELL_SIZE), glow_color)
 		# Expanding wave ring arc
@@ -1098,7 +1098,7 @@ func _draw() -> void:
 			draw_arc(center_px, wave_px, 0.0, TAU, 48, Color(0.40, 1.0, 0.60, ping_alpha * 0.55), 2.0)
 
 # ---------------------------------------------------------------------------
-# Process — fuel drain, cursor highlight, flashes
+# Process — energy drain, cursor highlight, flashes
 # ---------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
@@ -1139,7 +1139,7 @@ func _process(delta: float) -> void:
 	if forager_system.sweep_due:
 		_forager_do_sweep()
 
-	if _hub_visible or _game_over or _fuel_shop_visible or _trader_shop_visible or _smeltery_visible:
+	if _hub_visible or _game_over or _energy_shop_visible or _trader_shop_visible or _smeltery_visible:
 		return
 
 	# Update cursor highlight
@@ -1151,7 +1151,7 @@ func _process(delta: float) -> void:
 	# Update depth tracking
 	_update_depth()
 
-	# Check interact prompt (refuel station, farm NPCs)
+	# Check interact prompt (reenergy station, farm NPCs)
 	_update_interact_prompt()
 
 	# Check if player reached exit zone
@@ -1161,19 +1161,19 @@ func _process(delta: float) -> void:
 	if _hazard_cooldown > 0.0:
 		_hazard_cooldown -= delta
 
-	# Time-based fuel drain (only underground)
+	# Time-based energy drain (only underground)
 	if player_node:
 		var depth_row := player_node.get_depth_row()
 		if depth_row > 0:
 			var depth_ratio := float(depth_row) / float(GRID_ROWS - SURFACE_ROWS)
-			var boss_mult := boss_system.get_fuel_drain_mult()
-			var drain_rate := (FUEL_DRAIN_BASE + depth_ratio * FUEL_DRAIN_DEPTH_MULT) * boss_mult
-			_fuel_drain_accum += drain_rate * delta
-			if _fuel_drain_accum >= 1.0:
-				var drain_amount := int(_fuel_drain_accum)
-				_fuel_drain_accum -= float(drain_amount)
-				if not GameManager.consume_fuel(drain_amount):
-					_on_out_of_fuel()
+			var boss_mult := boss_system.get_energy_drain_mult()
+			var drain_rate := (ENERGY_DRAIN_BASE + depth_ratio * ENERGY_DRAIN_DEPTH_MULT) * boss_mult
+			_energy_drain_accum += drain_rate * delta
+			if _energy_drain_accum >= 1.0:
+				var drain_amount := int(_energy_drain_accum)
+				_energy_drain_accum -= float(drain_amount)
+				if not GameManager.consume_energy(drain_amount):
+					_on_out_of_energy()
 
 func _update_cursor_highlight() -> void:
 	if not player_node:
@@ -1207,7 +1207,7 @@ func _check_exit_zone() -> void:
 # ---------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _hub_visible or _game_over or _fuel_shop_visible or _trader_shop_visible or _smeltery_visible:
+	if _hub_visible or _game_over or _energy_shop_visible or _trader_shop_visible or _smeltery_visible:
 		return
 	if event.is_action_pressed("toggle_inventory"):
 		if _inventory_screen:
@@ -1241,11 +1241,11 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 	if tile == TileType.EMPTY or tile == TileType.SURFACE:
 		return
 
-	# Fuel nodes — collect immediately
-	if tile == TileType.FUEL_NODE or tile == TileType.FUEL_NODE_FULL:
+	# Energy nodes — collect immediately
+	if tile == TileType.ENERGY_NODE or tile == TileType.ENERGY_NODE_FULL:
 		_mine_cell(col, row)
-		GameManager.restore_fuel(10)
-		EventBus.ore_mined_popup.emit(10, "Fuel")
+		GameManager.restore_energy(10)
+		EventBus.ore_mined_popup.emit(10, "Energy")
 		SoundManager.play_drill_sound()
 		return
 
@@ -1260,8 +1260,8 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 	if tile == TileType.LAVA or tile == TileType.LAVA_FLOW:
 		return
 
-	# Refuel station / Exit station / Upgrade station / Smeltery — not mineable
-	if tile == TileType.REFUEL_STATION or tile == TileType.EXIT_STATION or tile == TileType.UPGRADE_STATION or tile == TileType.SMELTERY_STATION:
+	# Reenergy station / Exit station / Upgrade station / Smeltery — not mineable
+	if tile == TileType.REENERGY_STATION or tile == TileType.EXIT_STATION or tile == TileType.UPGRADE_STATION or tile == TileType.SMELTERY_STATION:
 		return
 
 	# Stone Golem phase resistance — delegated to BossSystem
@@ -1423,11 +1423,11 @@ func _on_player_died() -> void:
 	await get_tree().create_timer(2.5).timeout
 	GameManager.lose_run()
 
-func _on_out_of_fuel() -> void:
+func _on_out_of_energy() -> void:
 	if _game_over:
 		return
 	_game_over = true
-	_show_game_over_overlay("OUT OF FUEL", "Run minerals have been lost...")
+	_show_game_over_overlay("OUT OF ENERGY", "Run minerals have been lost...")
 	await get_tree().create_timer(2.5).timeout
 	GameManager.lose_run()
 
@@ -1530,9 +1530,9 @@ func _check_zone_transition(depth_row: int) -> void:
 			_show_zone_banner(DEPTH_ZONE_NAMES[new_zone_idx], DEPTH_ZONE_COLORS[new_zone_idx])
 			if new_zone_idx > 0 and not _zones_discovered[new_zone_idx]:
 				_zones_discovered[new_zone_idx] = true
-				const DISCOVERY_FUEL := 20
-				GameManager.restore_fuel(DISCOVERY_FUEL)
-				EventBus.ore_mined_popup.emit(DISCOVERY_FUEL, "Discovery!")
+				const DISCOVERY_ENERGY := 20
+				GameManager.restore_energy(DISCOVERY_ENERGY)
+				EventBus.ore_mined_popup.emit(DISCOVERY_ENERGY, "Discovery!")
 
 func _show_zone_banner(zone_name: String, color: Color) -> void:
 	const VW: int = 1280
@@ -1577,7 +1577,7 @@ func _update_interact_prompt() -> void:
 	var player_gp := player_node.get_grid_pos()
 	if player_gp.x >= 0 and player_gp.x < GRID_COLS and player_gp.y >= 0 and player_gp.y < GRID_ROWS:
 		var current_tile: int = grid[player_gp.x][player_gp.y]
-		if current_tile == TileType.REFUEL_STATION:
+		if current_tile == TileType.REENERGY_STATION:
 			var key_name := _get_interact_key_name()
 			player_node.show_prompt("Press %s to open shop" % key_name)
 			var world_pos := Vector2(player_gp.x * CELL_SIZE + CELL_SIZE * 0.5, player_gp.y * CELL_SIZE)
@@ -1598,11 +1598,11 @@ func _update_interact_prompt() -> void:
 			var screen_pos := get_viewport().get_canvas_transform() * world_pos
 			player_node.set_prompt_position(screen_pos)
 			return
-	# Check adjacent tiles for refuel station
+	# Check adjacent tiles for reenergy station
 	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
 		var check: Vector2i = player_node.get_grid_pos() + offset
 		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
-			if grid[check.x][check.y] == TileType.REFUEL_STATION:
+			if grid[check.x][check.y] == TileType.REENERGY_STATION:
 				var key_name := _get_interact_key_name()
 				player_node.show_prompt("Press %s to open shop" % key_name)
 				var world_pos := Vector2(check.x * CELL_SIZE + CELL_SIZE * 0.5, check.y * CELL_SIZE)
@@ -1667,12 +1667,12 @@ func _try_interact() -> void:
 	if nearby_trader.size() > 0:
 		_show_trader_shop(nearby_trader)
 		return
-	# Check current + adjacent tiles for refuel station
+	# Check current + adjacent tiles for reenergy station
 	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
 		var check: Vector2i = player_node.get_grid_pos() + offset
 		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
-			if grid[check.x][check.y] == TileType.REFUEL_STATION:
-				_show_fuel_station_shop()
+			if grid[check.x][check.y] == TileType.REENERGY_STATION:
+				_show_energy_station_shop()
 				return
 	# Check current + adjacent tiles for upgrade station
 	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
@@ -1872,14 +1872,14 @@ func _close_upgrade_overlay() -> void:
 		_upgrade_layer = null
 
 # ---------------------------------------------------------------------------
-# Fuel Station Shop
+# Energy Station Shop
 # ---------------------------------------------------------------------------
 
-const SHOP_REFUEL_FULL_COST: int = 10
-const SHOP_REFUEL_HALF_COST: int = 5
+const SHOP_REENERGY_FULL_COST: int = 10
+const SHOP_REENERGY_HALF_COST: int = 5
 const SHOP_REPAIR_COST: int = 15
 
-func _setup_fuel_station_shop() -> void:
+func _setup_energy_station_shop() -> void:
 	const VW: int = 1280
 	const VH: int = 720
 	const PANEL_W: int = 420
@@ -1887,123 +1887,123 @@ func _setup_fuel_station_shop() -> void:
 	const PX: int = (VW - PANEL_W) / 2
 	const PY: int = (VH - PANEL_H) / 2
 
-	_fuel_shop_layer = CanvasLayer.new()
-	_fuel_shop_layer.layer = 10
-	_fuel_shop_layer.visible = false
-	add_child(_fuel_shop_layer)
+	_energy_shop_layer = CanvasLayer.new()
+	_energy_shop_layer.layer = 10
+	_energy_shop_layer.visible = false
+	add_child(_energy_shop_layer)
 
 	var dim := ColorRect.new()
 	dim.position = Vector2.ZERO
 	dim.size = Vector2(VW, VH)
 	dim.color = Color(0.0, 0.0, 0.0, 0.72)
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
-	_fuel_shop_layer.add_child(dim)
+	_energy_shop_layer.add_child(dim)
 
 	var border := ColorRect.new()
 	border.position = Vector2(PX - 3, PY - 3)
 	border.size = Vector2(PANEL_W + 6, PANEL_H + 6)
 	border.color = Color(0.20, 0.60, 0.90, 1.0)
-	_fuel_shop_layer.add_child(border)
+	_energy_shop_layer.add_child(border)
 
 	var panel := ColorRect.new()
 	panel.position = Vector2(PX, PY)
 	panel.size = Vector2(PANEL_W, PANEL_H)
 	panel.color = Color(0.07, 0.10, 0.14, 0.97)
-	_fuel_shop_layer.add_child(panel)
+	_energy_shop_layer.add_child(panel)
 
 	var title := Label.new()
-	title.text = "Fuel Station Shop"
+	title.text = "Energy Station Shop"
 	title.position = Vector2(PX, PY + 12)
 	title.size = Vector2(PANEL_W, 30)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 20)
 	title.modulate = Color(0.55, 0.85, 1.0)
-	_fuel_shop_layer.add_child(title)
+	_energy_shop_layer.add_child(title)
 
-	_fuel_shop_minerals_label = Label.new()
-	_fuel_shop_minerals_label.position = Vector2(PX, PY + 48)
-	_fuel_shop_minerals_label.size = Vector2(PANEL_W, 24)
-	_fuel_shop_minerals_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_fuel_shop_minerals_label.modulate = Color(1.0, 0.85, 0.2)
-	_fuel_shop_layer.add_child(_fuel_shop_minerals_label)
+	_energy_shop_minerals_label = Label.new()
+	_energy_shop_minerals_label.position = Vector2(PX, PY + 48)
+	_energy_shop_minerals_label.size = Vector2(PANEL_W, 24)
+	_energy_shop_minerals_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_energy_shop_minerals_label.modulate = Color(1.0, 0.85, 0.2)
+	_energy_shop_layer.add_child(_energy_shop_minerals_label)
 
 	var divider := ColorRect.new()
 	divider.position = Vector2(PX + 20, PY + 80)
 	divider.size = Vector2(PANEL_W - 40, 2)
 	divider.color = Color(0.20, 0.60, 0.90, 0.5)
-	_fuel_shop_layer.add_child(divider)
+	_energy_shop_layer.add_child(divider)
 
 	const BTN_X: int = PX + 25
 	const BTN_W: int = PANEL_W - 50
 	const BTN_H: int = 48
 
-	_fuel_shop_btn_refuel_full = Button.new()
-	_fuel_shop_btn_refuel_full.position = Vector2(BTN_X, PY + 94)
-	_fuel_shop_btn_refuel_full.size = Vector2(BTN_W, BTN_H)
-	_fuel_shop_btn_refuel_full.pressed.connect(_shop_refuel_full)
-	_fuel_shop_layer.add_child(_fuel_shop_btn_refuel_full)
+	_energy_shop_btn_reenergy_full = Button.new()
+	_energy_shop_btn_reenergy_full.position = Vector2(BTN_X, PY + 94)
+	_energy_shop_btn_reenergy_full.size = Vector2(BTN_W, BTN_H)
+	_energy_shop_btn_reenergy_full.pressed.connect(_shop_reenergy_full)
+	_energy_shop_layer.add_child(_energy_shop_btn_reenergy_full)
 
-	_fuel_shop_btn_refuel_half = Button.new()
-	_fuel_shop_btn_refuel_half.position = Vector2(BTN_X, PY + 152)
-	_fuel_shop_btn_refuel_half.size = Vector2(BTN_W, BTN_H)
-	_fuel_shop_btn_refuel_half.pressed.connect(_shop_refuel_half)
-	_fuel_shop_layer.add_child(_fuel_shop_btn_refuel_half)
+	_energy_shop_btn_reenergy_half = Button.new()
+	_energy_shop_btn_reenergy_half.position = Vector2(BTN_X, PY + 152)
+	_energy_shop_btn_reenergy_half.size = Vector2(BTN_W, BTN_H)
+	_energy_shop_btn_reenergy_half.pressed.connect(_shop_reenergy_half)
+	_energy_shop_layer.add_child(_energy_shop_btn_reenergy_half)
 
-	_fuel_shop_btn_repair = Button.new()
-	_fuel_shop_btn_repair.position = Vector2(BTN_X, PY + 210)
-	_fuel_shop_btn_repair.size = Vector2(BTN_W, BTN_H)
-	_fuel_shop_btn_repair.pressed.connect(_shop_repair)
-	_fuel_shop_layer.add_child(_fuel_shop_btn_repair)
+	_energy_shop_btn_repair = Button.new()
+	_energy_shop_btn_repair.position = Vector2(BTN_X, PY + 210)
+	_energy_shop_btn_repair.size = Vector2(BTN_W, BTN_H)
+	_energy_shop_btn_repair.pressed.connect(_shop_repair)
+	_energy_shop_layer.add_child(_energy_shop_btn_repair)
 
 	var divider2 := ColorRect.new()
 	divider2.position = Vector2(PX + 20, PY + 268)
 	divider2.size = Vector2(PANEL_W - 40, 2)
 	divider2.color = Color(0.20, 0.60, 0.90, 0.5)
-	_fuel_shop_layer.add_child(divider2)
+	_energy_shop_layer.add_child(divider2)
 
 	var close_btn := Button.new()
 	close_btn.text = "Close Shop"
 	close_btn.position = Vector2(BTN_X + (BTN_W - 180) / 2, PY + 278)
 	close_btn.size = Vector2(180, 40)
-	close_btn.pressed.connect(_hide_fuel_station_shop)
-	_fuel_shop_layer.add_child(close_btn)
+	close_btn.pressed.connect(_hide_energy_station_shop)
+	_energy_shop_layer.add_child(close_btn)
 
-func _show_fuel_station_shop() -> void:
-	_fuel_shop_minerals_label.text = "Run Minerals: %d" % GameManager.run_mineral_currency
-	_fuel_shop_btn_refuel_full.text = "Full Refuel  (%d -> %d fuel)  -- %d minerals" % [
-		GameManager.current_fuel, GameManager.get_max_fuel(), SHOP_REFUEL_FULL_COST]
-	_fuel_shop_btn_refuel_half.text = "Refuel 50%%  (+%d fuel)  -- %d minerals" % [
-		GameManager.get_max_fuel() / 2, SHOP_REFUEL_HALF_COST]
-	_fuel_shop_btn_repair.text = "Emergency Repair  (+1 HP)  -- %d minerals" % SHOP_REPAIR_COST
-	_fuel_shop_btn_refuel_full.disabled = GameManager.run_mineral_currency < SHOP_REFUEL_FULL_COST \
-		or GameManager.current_fuel >= GameManager.get_max_fuel()
-	_fuel_shop_btn_refuel_half.disabled = GameManager.run_mineral_currency < SHOP_REFUEL_HALF_COST \
-		or GameManager.current_fuel >= GameManager.get_max_fuel()
+func _show_energy_station_shop() -> void:
+	_energy_shop_minerals_label.text = "Run Minerals: %d" % GameManager.run_mineral_currency
+	_energy_shop_btn_reenergy_full.text = "Full Reenergy  (%d -> %d energy)  -- %d minerals" % [
+		GameManager.current_energy, GameManager.get_max_energy(), SHOP_REENERGY_FULL_COST]
+	_energy_shop_btn_reenergy_half.text = "Reenergy 50%%  (+%d energy)  -- %d minerals" % [
+		GameManager.get_max_energy() / 2, SHOP_REENERGY_HALF_COST]
+	_energy_shop_btn_repair.text = "Emergency Repair  (+1 HP)  -- %d minerals" % SHOP_REPAIR_COST
+	_energy_shop_btn_reenergy_full.disabled = GameManager.run_mineral_currency < SHOP_REENERGY_FULL_COST \
+		or GameManager.current_energy >= GameManager.get_max_energy()
+	_energy_shop_btn_reenergy_half.disabled = GameManager.run_mineral_currency < SHOP_REENERGY_HALF_COST \
+		or GameManager.current_energy >= GameManager.get_max_energy()
 	var at_max_hp: bool = player_node != null and player_node.is_at_max_health()
-	_fuel_shop_btn_repair.disabled = GameManager.run_mineral_currency < SHOP_REPAIR_COST or at_max_hp
-	_fuel_shop_layer.visible = true
-	_fuel_shop_visible = true
+	_energy_shop_btn_repair.disabled = GameManager.run_mineral_currency < SHOP_REPAIR_COST or at_max_hp
+	_energy_shop_layer.visible = true
+	_energy_shop_visible = true
 
-func _hide_fuel_station_shop() -> void:
-	_fuel_shop_layer.visible = false
-	_fuel_shop_visible = false
+func _hide_energy_station_shop() -> void:
+	_energy_shop_layer.visible = false
+	_energy_shop_visible = false
 
-func _shop_refuel_full() -> void:
-	if GameManager.run_mineral_currency >= SHOP_REFUEL_FULL_COST:
-		GameManager.run_mineral_currency -= SHOP_REFUEL_FULL_COST
-		GameManager.current_fuel = GameManager.get_max_fuel()
+func _shop_reenergy_full() -> void:
+	if GameManager.run_mineral_currency >= SHOP_REENERGY_FULL_COST:
+		GameManager.run_mineral_currency -= SHOP_REENERGY_FULL_COST
+		GameManager.current_energy = GameManager.get_max_energy()
 		EventBus.minerals_changed.emit(GameManager.run_mineral_currency)
-		EventBus.fuel_changed.emit(GameManager.current_fuel, GameManager.get_max_fuel())
+		EventBus.energy_changed.emit(GameManager.current_energy, GameManager.get_max_energy())
 		SoundManager.play_drill_sound()
-		_show_fuel_station_shop()
+		_show_energy_station_shop()
 
-func _shop_refuel_half() -> void:
-	if GameManager.run_mineral_currency >= SHOP_REFUEL_HALF_COST:
-		GameManager.run_mineral_currency -= SHOP_REFUEL_HALF_COST
-		GameManager.restore_fuel(GameManager.get_max_fuel() / 2)
+func _shop_reenergy_half() -> void:
+	if GameManager.run_mineral_currency >= SHOP_REENERGY_HALF_COST:
+		GameManager.run_mineral_currency -= SHOP_REENERGY_HALF_COST
+		GameManager.restore_energy(GameManager.get_max_energy() / 2)
 		EventBus.minerals_changed.emit(GameManager.run_mineral_currency)
 		SoundManager.play_drill_sound()
-		_show_fuel_station_shop()
+		_show_energy_station_shop()
 
 func _shop_repair() -> void:
 	if GameManager.run_mineral_currency >= SHOP_REPAIR_COST and player_node:
@@ -2011,7 +2011,7 @@ func _shop_repair() -> void:
 		EventBus.minerals_changed.emit(GameManager.run_mineral_currency)
 		player_node.heal(1)
 		SoundManager.play_drill_sound()
-		_show_fuel_station_shop()
+		_show_energy_station_shop()
 
 # ---------------------------------------------------------------------------
 # Upgrade Station Shop
@@ -2116,9 +2116,9 @@ func _show_upgrade_station_shop() -> void:
 	_upgrade_station_btn_carapace.disabled = GameManager.mineral_currency < carapace_cost
 
 	var legs_cost := 50 + 25 * GameManager.legs_level
-	var current_fuel_cap := GameManager.get_max_fuel()
-	_upgrade_station_btn_legs.text = "Strengthen Legs Lv%d — Fuel Limit: %d → %d  (%d Minerals)" % [
-		GameManager.legs_level, current_fuel_cap, current_fuel_cap + 25, legs_cost]
+	var current_energy_cap := GameManager.get_max_energy()
+	_upgrade_station_btn_legs.text = "Strengthen Legs Lv%d — Energy Limit: %d → %d  (%d Minerals)" % [
+		GameManager.legs_level, current_energy_cap, current_energy_cap + 25, legs_cost]
 	_upgrade_station_btn_legs.disabled = GameManager.mineral_currency < legs_cost
 
 	var mandibles_cost := 50 + 25 * GameManager.mandibles_level
@@ -2147,7 +2147,7 @@ func _upgrade_station_buy_legs() -> void:
 	if GameManager.mineral_currency >= cost:
 		GameManager.mineral_currency -= cost
 		GameManager.upgrade_legs()
-		EventBus.fuel_changed.emit(GameManager.current_fuel, GameManager.get_max_fuel())
+		EventBus.energy_changed.emit(GameManager.current_energy, GameManager.get_max_energy())
 		SoundManager.play_drill_sound()
 		_show_upgrade_station_shop()
 
@@ -2509,10 +2509,10 @@ func _trader_purchase(item_key: String) -> void:
 		return
 
 	match item_key:
-		"fuel":
+		"energy":
 			GameManager.run_mineral_currency -= cost
-			GameManager.restore_fuel(50)
-			EventBus.ore_mined_popup.emit(0, "Fuel Pack!")
+			GameManager.restore_energy(50)
+			EventBus.ore_mined_popup.emit(0, "Energy Pack!")
 		"repair":
 			if player_node and player_node.is_at_max_health():
 				EventBus.ore_mined_popup.emit(0, "Already at full HP")

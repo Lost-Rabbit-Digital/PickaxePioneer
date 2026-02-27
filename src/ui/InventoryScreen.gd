@@ -21,7 +21,7 @@ const ORE_ORDER: Array = [
 
 # Artifact plant icons: one distinct plant per trader item key
 const ARTIFACT_DEFS: Dictionary = {
-	"fuel":    {"label": "Fuel Cache",     "desc": "+50 Fuel",               "plant": "res://assets/blocks/plants/cattail.png",       "color": Color(0.20, 0.90, 0.20)},
+	"energy":    {"label": "Energy Cache",     "desc": "+50 Energy",               "plant": "res://assets/blocks/plants/cattail.png",       "color": Color(0.20, 0.90, 0.20)},
 	"repair":  {"label": "Carapace Patch", "desc": "Restored 1 HP",          "plant": "res://assets/blocks/plants/aloe.png",           "color": Color(0.85, 0.08, 0.08)},
 	"shroom":  {"label": "Mining Shroom",  "desc": "x2 Ore Yield",           "plant": "res://assets/blocks/plants/mushroom_brown.png", "color": Color(0.50, 0.90, 0.20)},
 	"compass": {"label": "Lucky Compass",  "desc": "x2 Lucky Strike",        "plant": "res://assets/blocks/plants/dandelion.png",      "color": Color(1.00, 0.90, 0.10)},
@@ -247,7 +247,7 @@ func _draw_equipment(parent: Control, x: int, y: int, w: int) -> int:
 			"label": "Legs",
 			"color": Color(0.30, 0.70, 1.00),
 			"level": GameManager.legs_level,
-			"stat": "Fuel: %d  Spd: %d" % [GameManager.get_max_fuel(), int(GameManager.get_max_speed())],
+			"stat": "Energy: %d  Spd: %d" % [GameManager.get_max_energy(), int(GameManager.get_max_speed())],
 		},
 		{
 			"label": "Mandibles",

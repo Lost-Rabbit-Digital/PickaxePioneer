@@ -21,8 +21,8 @@ signal minerals_changed(amount: int)
 signal minerals_earned(amount: int)  # Emitted with each individual mining earn
 signal ore_mined_popup(amount: int, ore_name: String)  # Emitted on mine with ore type for HUD popup
 
-# Fuel Signals
-signal fuel_changed(current_fuel: int, max_fuel: int)
+# Energy Signals
+signal energy_changed(current_energy: int, max_energy: int)
 
 # Depth Signals
 signal depth_changed(depth_rows: int)  # Rows below surface (0 = surface)
