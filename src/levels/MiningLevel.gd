@@ -962,7 +962,7 @@ func _draw() -> void:
 		# Ancient One: phase label near core
 		if boss_system.boss_type == BossSystem.BOSS_TYPE_ANCIENT:
 			var ancient_phase_labels := ["SHELL PHASE", "CRYSTAL PHASE", "CORE PHASE"]
-			var al := ancient_phase_labels[clampi(boss_system.ancient_phase, 0, ancient_phase_labels.size() - 1)]
+			var al = ancient_phase_labels[clampi(boss_system.ancient_phase, 0, ancient_phase_labels.size() - 1)]
 			var label_px2 := Vector2(-9999.0, -9999.0)
 			for bp4 in boss_system.boss_tile_positions:
 				if bp4.x >= 0 and bp4.x < GRID_COLS \
