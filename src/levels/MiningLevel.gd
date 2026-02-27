@@ -302,7 +302,7 @@ var _fuel_drain_accum: float = 0.0
 # Bosses spawn at milestone depth rows. Each uses only existing mining tools.
 # ---------------------------------------------------------------------------
 const BOSS_MILESTONES: Array[int]  = [32, 64, 96, 112]
-const BOSS_DRAIN_MULT: float       = 2.5   # fuel drain multiplier while boss is alive
+const BOSS_DRAIN_MULT: float       = 1.5   # fuel drain multiplier while boss is alive
 const BOSS_SEGMENT_COUNT: int      = 12    # body segments per centipede encounter
 const BOSS_REWARD_BONUS: int       = 100   # flat mineral bonus on defeat (on top of tile drops)
 
@@ -1907,6 +1907,13 @@ func _shop_repair() -> void:
 # Boss encounter system (§4)
 # ---------------------------------------------------------------------------
 
+# Shows a sequence of hint popups with a delay between each, so new players
+# understand boss mechanics without being overwhelmed all at once.
+func _queue_boss_hints(hints: Array) -> void:
+	for hint in hints:
+		await get_tree().create_timer(2.0).timeout
+		EventBus.ore_mined_popup.emit(0, hint)
+
 func _check_boss_milestone(depth_row: int) -> void:
 	if _boss_active:
 		return  # Only one boss at a time
@@ -1951,8 +1958,9 @@ func _spawn_centipede_king() -> void:
 	_boss_pulse_time = 0.0
 
 	_show_zone_banner("CENTIPEDE KING AWAKENS!", Color(0.90, 0.10, 0.05))
-	EventBus.ore_mined_popup.emit(0, "Boss! Fuel drains faster!")
+	EventBus.ore_mined_popup.emit(0, "Boss! Mine all segments to defeat it!")
 	_shake_camera(8.0, 0.4)
+	_queue_boss_hints(["Click each glowing tile to chip away at it!", "Defeat the boss to restore fuel!"])
 
 func _spawn_cave_spider_matriarch() -> void:
 	if not player_node:
@@ -1985,8 +1993,9 @@ func _spawn_cave_spider_matriarch() -> void:
 	_boss_pulse_time = 0.0
 
 	_show_zone_banner("CAVE SPIDER MATRIARCH!", Color(0.60, 0.10, 0.80))
-	EventBus.ore_mined_popup.emit(0, "Boss! Fuel drains faster!")
+	EventBus.ore_mined_popup.emit(0, "Boss! Mine all body parts to defeat it!")
 	_shake_camera(8.0, 0.4)
+	_queue_boss_hints(["Click each glowing segment to chip away at it!", "Defeat the boss to restore fuel!"])
 
 func _on_boss_defeated() -> void:
 	_boss_active = false
@@ -2003,8 +2012,8 @@ func _on_boss_defeated() -> void:
 	EventBus.minerals_earned.emit(BOSS_REWARD_BONUS)
 	EventBus.ore_mined_popup.emit(BOSS_REWARD_BONUS, "Boss defeated!")
 	_show_zone_banner("BOSS DEFEATED!", Color(0.30, 1.00, 0.40))
-	GameManager.restore_fuel(30)
-	EventBus.ore_mined_popup.emit(30, "Fuel restored!")
+	GameManager.restore_fuel(50)
+	EventBus.ore_mined_popup.emit(50, "Fuel restored!")
 	_shake_camera(14.0, 0.6)
 
 func _spawn_blind_mole() -> void:
@@ -2044,8 +2053,9 @@ func _spawn_blind_mole() -> void:
 	_mole_tremor_timer = MOLE_TREMOR_INTERVAL  # first tremor after full interval
 
 	_show_zone_banner("THE BLIND MOLE STIRS!", Color(0.55, 0.35, 0.10))
-	EventBus.ore_mined_popup.emit(0, "Boss! Tremors will collapse tunnels!")
+	EventBus.ore_mined_popup.emit(0, "Boss! Mine all segments to defeat it!")
 	_shake_camera(12.0, 0.6)
+	_queue_boss_hints(["Watch for TREMOR warnings — get clear!", "Tremors refill mined tunnels around the boss!", "Defeat the boss to restore fuel!"])
 
 
 func _update_blind_mole(delta: float) -> void:
@@ -2130,8 +2140,9 @@ func _spawn_stone_golem() -> void:
 
 	var required := GOLEM_PHASE_ORES[0].capitalize()
 	_show_zone_banner("STONE GOLEM AWAKENS!", Color(0.60, 0.55, 0.45))
-	EventBus.ore_mined_popup.emit(0, "Mine " + required + " to crack its armor!")
+	EventBus.ore_mined_popup.emit(0, "Armor boss! Mine nearby ore to unlock damage!")
 	_shake_camera(14.0, 0.8)
+	_queue_boss_hints(["Step 1: Mine " + required + " ore (not the boss!)", "Step 2: Then click the glowing boss tiles!", "Wrong ore type? It blocks all damage!"])
 
 
 func _check_trader_milestone(depth_row: int) -> void:
