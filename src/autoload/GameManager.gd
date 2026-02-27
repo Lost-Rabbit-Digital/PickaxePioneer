@@ -10,6 +10,7 @@ enum GameState {
 var current_state: GameState = GameState.MENU
 var mineral_currency: int = 0
 var run_mineral_currency: int = 0
+var dollars: int = 0  # Persistent currency earned by selling bars at the smeltery
 # Per-ore tracking for run summary (tile_type_id -> count/minerals)
 var run_ore_counts: Dictionary = {}
 var run_ore_earnings: Dictionary = {}
@@ -82,6 +83,11 @@ func _ready() -> void:
 func add_currency(amount: int) -> void:
 	run_mineral_currency += amount
 	EventBus.minerals_changed.emit(run_mineral_currency)
+
+func add_dollars(amount: int) -> void:
+	dollars += amount
+	EventBus.dollars_changed.emit(dollars)
+	save_game()
 
 func track_ore_mined(tile_type: int, minerals: int) -> void:
 	run_ore_counts[tile_type] = run_ore_counts.get(tile_type, 0) + 1
@@ -226,6 +232,7 @@ func is_out_of_energy() -> bool:
 func save_game() -> void:
 	var save_data = {
 		"mineral_currency": mineral_currency,
+		"dollars": dollars,
 		"carapace_level": carapace_level,
 		"legs_level": legs_level,
 		"mandibles_level": mandibles_level,
@@ -271,6 +278,7 @@ func load_game() -> void:
 		if error == OK:
 			var data = json.data
 			mineral_currency = data.get("mineral_currency", 0)
+			dollars = data.get("dollars", 0)
 			carapace_level = data.get("carapace_level", 0)
 			legs_level = data.get("legs_level", 0)
 			mandibles_level = data.get("mandibles_level", 0)

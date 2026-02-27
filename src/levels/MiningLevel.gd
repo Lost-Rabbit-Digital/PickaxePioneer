@@ -2016,18 +2016,18 @@ func _setup_energy_station_shop() -> void:
 	_energy_shop_layer.add_child(close_btn)
 
 func _show_energy_station_shop() -> void:
-	_energy_shop_minerals_label.text = "Run Minerals: %d" % GameManager.run_mineral_currency
-	_energy_shop_btn_reenergy_full.text = "Full Reenergy  (%d -> %d energy)  -- %d minerals" % [
+	_energy_shop_minerals_label.text = "Dollars: $%d" % GameManager.dollars
+	_energy_shop_btn_reenergy_full.text = "Full Reenergy  (%d -> %d energy)  -- $%d" % [
 		GameManager.current_energy, GameManager.get_max_energy(), SHOP_REENERGY_FULL_COST]
-	_energy_shop_btn_reenergy_half.text = "Reenergy 50%%  (+%d energy)  -- %d minerals" % [
+	_energy_shop_btn_reenergy_half.text = "Reenergy 50%%  (+%d energy)  -- $%d" % [
 		GameManager.get_max_energy() / 2, SHOP_REENERGY_HALF_COST]
-	_energy_shop_btn_repair.text = "Emergency Repair  (+1 HP)  -- %d minerals" % SHOP_REPAIR_COST
-	_energy_shop_btn_reenergy_full.disabled = GameManager.run_mineral_currency < SHOP_REENERGY_FULL_COST \
+	_energy_shop_btn_repair.text = "Emergency Repair  (+1 HP)  -- $%d" % SHOP_REPAIR_COST
+	_energy_shop_btn_reenergy_full.disabled = GameManager.dollars < SHOP_REENERGY_FULL_COST \
 		or GameManager.current_energy >= GameManager.get_max_energy()
-	_energy_shop_btn_reenergy_half.disabled = GameManager.run_mineral_currency < SHOP_REENERGY_HALF_COST \
+	_energy_shop_btn_reenergy_half.disabled = GameManager.dollars < SHOP_REENERGY_HALF_COST \
 		or GameManager.current_energy >= GameManager.get_max_energy()
 	var at_max_hp: bool = player_node != null and player_node.is_at_max_health()
-	_energy_shop_btn_repair.disabled = GameManager.run_mineral_currency < SHOP_REPAIR_COST or at_max_hp
+	_energy_shop_btn_repair.disabled = GameManager.dollars < SHOP_REPAIR_COST or at_max_hp
 	_energy_shop_layer.visible = true
 	_energy_shop_visible = true
 
@@ -2036,26 +2036,29 @@ func _hide_energy_station_shop() -> void:
 	_energy_shop_visible = false
 
 func _shop_reenergy_full() -> void:
-	if GameManager.run_mineral_currency >= SHOP_REENERGY_FULL_COST:
-		GameManager.run_mineral_currency -= SHOP_REENERGY_FULL_COST
+	if GameManager.dollars >= SHOP_REENERGY_FULL_COST:
+		GameManager.dollars -= SHOP_REENERGY_FULL_COST
 		GameManager.current_energy = GameManager.get_max_energy()
-		EventBus.minerals_changed.emit(GameManager.run_mineral_currency)
+		EventBus.dollars_changed.emit(GameManager.dollars)
 		EventBus.energy_changed.emit(GameManager.current_energy, GameManager.get_max_energy())
+		GameManager.save_game()
 		SoundManager.play_drill_sound()
 		_show_energy_station_shop()
 
 func _shop_reenergy_half() -> void:
-	if GameManager.run_mineral_currency >= SHOP_REENERGY_HALF_COST:
-		GameManager.run_mineral_currency -= SHOP_REENERGY_HALF_COST
+	if GameManager.dollars >= SHOP_REENERGY_HALF_COST:
+		GameManager.dollars -= SHOP_REENERGY_HALF_COST
 		GameManager.restore_energy(GameManager.get_max_energy() / 2)
-		EventBus.minerals_changed.emit(GameManager.run_mineral_currency)
+		EventBus.dollars_changed.emit(GameManager.dollars)
+		GameManager.save_game()
 		SoundManager.play_drill_sound()
 		_show_energy_station_shop()
 
 func _shop_repair() -> void:
-	if GameManager.run_mineral_currency >= SHOP_REPAIR_COST and player_node:
-		GameManager.run_mineral_currency -= SHOP_REPAIR_COST
-		EventBus.minerals_changed.emit(GameManager.run_mineral_currency)
+	if GameManager.dollars >= SHOP_REPAIR_COST and player_node:
+		GameManager.dollars -= SHOP_REPAIR_COST
+		EventBus.dollars_changed.emit(GameManager.dollars)
+		GameManager.save_game()
 		player_node.heal(1)
 		SoundManager.play_drill_sound()
 		_show_energy_station_shop()
@@ -2154,25 +2157,25 @@ func _setup_upgrade_station_shop() -> void:
 	_upgrade_station_layer.add_child(close_btn)
 
 func _show_upgrade_station_shop() -> void:
-	_upgrade_station_minerals_label.text = "Banked Minerals: %d" % GameManager.mineral_currency
+	_upgrade_station_minerals_label.text = "Dollars: $%d" % GameManager.dollars
 
 	var carapace_cost := 50 + 25 * GameManager.carapace_level
 	var current_hp := GameManager.get_max_health()
-	_upgrade_station_btn_carapace.text = "Harden Carapace Lv%d — Max HP: %d → %d  (%d Minerals)" % [
+	_upgrade_station_btn_carapace.text = "Harden Carapace Lv%d — Max HP: %d → %d  ($%d)" % [
 		GameManager.carapace_level, current_hp, current_hp + 1, carapace_cost]
-	_upgrade_station_btn_carapace.disabled = GameManager.mineral_currency < carapace_cost
+	_upgrade_station_btn_carapace.disabled = GameManager.dollars < carapace_cost
 
 	var legs_cost := 50 + 25 * GameManager.legs_level
 	var current_energy_cap := GameManager.get_max_energy()
-	_upgrade_station_btn_legs.text = "Strengthen Legs Lv%d — Energy Limit: %d → %d  (%d Minerals)" % [
+	_upgrade_station_btn_legs.text = "Strengthen Legs Lv%d — Energy Limit: %d → %d  ($%d)" % [
 		GameManager.legs_level, current_energy_cap, current_energy_cap + 25, legs_cost]
-	_upgrade_station_btn_legs.disabled = GameManager.mineral_currency < legs_cost
+	_upgrade_station_btn_legs.disabled = GameManager.dollars < legs_cost
 
 	var mandibles_cost := 50 + 25 * GameManager.mandibles_level
 	var current_power := GameManager.get_mandibles_power()
-	_upgrade_station_btn_mandibles.text = "Sharpen Mandibles Lv%d — Mining Speed: %d → %d  (%d Minerals)" % [
+	_upgrade_station_btn_mandibles.text = "Sharpen Mandibles Lv%d — Mining Speed: %d → %d  ($%d)" % [
 		GameManager.mandibles_level, current_power, current_power + 3, mandibles_cost]
-	_upgrade_station_btn_mandibles.disabled = GameManager.mineral_currency < mandibles_cost
+	_upgrade_station_btn_mandibles.disabled = GameManager.dollars < mandibles_cost
 
 	_upgrade_station_layer.visible = true
 	_upgrade_station_visible = true
@@ -2183,16 +2186,18 @@ func _hide_upgrade_station_shop() -> void:
 
 func _upgrade_station_buy_carapace() -> void:
 	var cost := 50 + 25 * GameManager.carapace_level
-	if GameManager.mineral_currency >= cost:
-		GameManager.mineral_currency -= cost
+	if GameManager.dollars >= cost:
+		GameManager.dollars -= cost
+		EventBus.dollars_changed.emit(GameManager.dollars)
 		GameManager.upgrade_carapace()
 		SoundManager.play_drill_sound()
 		_show_upgrade_station_shop()
 
 func _upgrade_station_buy_legs() -> void:
 	var cost := 50 + 25 * GameManager.legs_level
-	if GameManager.mineral_currency >= cost:
-		GameManager.mineral_currency -= cost
+	if GameManager.dollars >= cost:
+		GameManager.dollars -= cost
+		EventBus.dollars_changed.emit(GameManager.dollars)
 		GameManager.upgrade_legs()
 		EventBus.energy_changed.emit(GameManager.current_energy, GameManager.get_max_energy())
 		SoundManager.play_drill_sound()
@@ -2200,8 +2205,9 @@ func _upgrade_station_buy_legs() -> void:
 
 func _upgrade_station_buy_mandibles() -> void:
 	var cost := 50 + 25 * GameManager.mandibles_level
-	if GameManager.mineral_currency >= cost:
-		GameManager.mineral_currency -= cost
+	if GameManager.dollars >= cost:
+		GameManager.dollars -= cost
+		EventBus.dollars_changed.emit(GameManager.dollars)
 		GameManager.upgrade_mandibles()
 		SoundManager.play_drill_sound()
 		_show_upgrade_station_shop()
@@ -2351,7 +2357,7 @@ func _setup_smeltery_shop() -> void:
 	_smeltery_layer.add_child(close_btn)
 
 func _show_smeltery_shop() -> void:
-	_smeltery_minerals_label.text = "Run Minerals: %d" % GameManager.run_mineral_currency
+	_smeltery_minerals_label.text = "Dollars: $%d" % GameManager.dollars
 
 	for ore_group in SMELTERY_ORE_GROUPS_ORDER:
 		var ore_count := _get_ore_group_count(ore_group)
@@ -2364,7 +2370,7 @@ func _show_smeltery_shop() -> void:
 		_smeltery_smelt_btns[ore_group].disabled = ore_count < SMELTERY_ORES_PER_BAR
 
 		_smeltery_bar_labels[ore_group].text = "%s: %d" % [bar_name, bar_count]
-		_smeltery_sell_btns[ore_group].text = "Sell (+%d)" % sell_value
+		_smeltery_sell_btns[ore_group].text = "Sell (+$%d)" % sell_value
 		_smeltery_sell_btns[ore_group].disabled = bar_count <= 0
 
 	_smeltery_layer.visible = true
@@ -2390,7 +2396,7 @@ func _smeltery_sell(ore_group: String) -> void:
 		return
 	var sell_value: int = SMELTERY_BAR_SELL_VALUES[ore_group]
 	_run_bar_counts[ore_group] = bar_count - 1
-	GameManager.add_currency(sell_value)
+	GameManager.add_dollars(sell_value)
 	SoundManager.play_pickup_sound()
 	EventBus.ore_mined_popup.emit(sell_value, SMELTERY_BAR_NAMES[ore_group] + " sold!")
 	_show_smeltery_shop()

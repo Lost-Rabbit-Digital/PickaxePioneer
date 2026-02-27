@@ -20,6 +20,7 @@ signal game_state_changed(new_state: int)
 signal minerals_changed(amount: int)
 signal minerals_earned(amount: int)  # Emitted with each individual mining earn
 signal ore_mined_popup(amount: int, ore_name: String)  # Emitted on mine with ore type for HUD popup
+signal dollars_changed(amount: int)  # Emitted when player's dollar balance changes
 
 # Energy Signals
 signal energy_changed(current_energy: int, max_energy: int)

@@ -30,6 +30,8 @@ var earnings_label: Label
 var _pickup_panel: ColorRect
 var depth_label: Label
 var depth_panel: ColorRect
+var dollars_label: Label
+var dollars_panel: ColorRect
 var _earnings_tween: Tween
 
 # Low energy warning
@@ -101,6 +103,7 @@ func _ready() -> void:
 	EventBus.energy_changed.connect(_on_energy_changed)
 	EventBus.ore_mined_popup.connect(_on_ore_mined_popup)
 	EventBus.depth_changed.connect(_on_depth_changed)
+	EventBus.dollars_changed.connect(_on_dollars_changed)
 
 	# Semi-transparent black background panel behind the minerals label
 	scrap_panel = ColorRect.new()
@@ -142,6 +145,22 @@ func _ready() -> void:
 	depth_label.text = "Surface"
 	depth_label.modulate = Color(0.6, 0.85, 1.0, 1.0)  # Light blue tint
 	$Control.add_child(depth_label)
+
+	# Background panel behind the dollars label
+	dollars_panel = ColorRect.new()
+	dollars_panel.color = Color(0.0, 0.0, 0.0, 0.55)
+	dollars_panel.position = Vector2(8, 102)
+	dollars_panel.size = Vector2(148, 30)
+	dollars_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$Control.add_child(dollars_panel)
+
+	# Dollars label — shows the player's persistent dollar balance
+	dollars_label = Label.new()
+	dollars_label.position = Vector2(12, 106)
+	dollars_label.custom_minimum_size = Vector2(136, 22)
+	dollars_label.text = "$%d" % GameManager.dollars
+	dollars_label.modulate = Color(0.30, 1.0, 0.40, 1.0)  # Green tint
+	$Control.add_child(dollars_label)
 
 	# Low energy warning — bottom-centre, pulses red when energy <= 20 %
 	_low_energy_warning = Label.new()
@@ -198,6 +217,9 @@ func _on_minerals_changed(_amount: int) -> void:
 	for count in GameManager.run_ore_counts.values():
 		ore_count += count
 	scrap_label.text = "Capacity: %d/%d" % [ore_count, GameManager.MAX_ORE_CAPACITY]
+
+func _on_dollars_changed(amount: int) -> void:
+	dollars_label.text = "$%d" % amount
 
 # Called when a tile is mined — shows a coloured "+X OreName" popup.
 func _on_ore_mined_popup(amount: int, ore_name: String) -> void:

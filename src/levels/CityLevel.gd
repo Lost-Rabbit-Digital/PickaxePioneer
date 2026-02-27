@@ -221,8 +221,8 @@ func _button(x: int, y: int, w: int, h: int, text: String, callback: Callable) -
 
 # ── UI refresh ────────────────────────────────────────────────────────────────
 func _update_ui() -> void:
-	_minerals_label.text = "Banked Minerals: %d   |   Gems: %d" % [
-		GameManager.mineral_currency, GameManager.gem_count]
+	_minerals_label.text = "Dollars: $%d   |   Gems: %d" % [
+		GameManager.dollars, GameManager.gem_count]
 
 	var hp    := GameManager.get_max_health()
 	var energy  := GameManager.get_max_energy()
@@ -231,16 +231,16 @@ func _update_ui() -> void:
 	var r     := GameManager.get_sonar_ping_radius()
 	var fc    := GameManager.get_sonar_ping_energy_cost()
 
-	_btn_carapace.text  = "Thicken Pelt Lv%d  —  HP %d → %d  (%d minerals)" % [
+	_btn_carapace.text  = "Thicken Pelt Lv%d  —  HP %d → %d  ($%d)" % [
 		GameManager.carapace_level, hp, hp + 1, _carapace_cost]
-	_btn_legs.text      = "Strengthen Paws Lv%d  —  Energy %d → %d, Speed %.0f → %.0f  (%d minerals)" % [
+	_btn_legs.text      = "Strengthen Paws Lv%d  —  Energy %d → %d, Speed %.0f → %.0f  ($%d)" % [
 		GameManager.legs_level, energy, energy + 25, spd, spd + 30.0, _legs_cost]
-	_btn_mandibles.text = "Sharpen Claws Lv%d  —  Power %d → %d  (%d minerals)" % [
+	_btn_mandibles.text = "Sharpen Claws Lv%d  —  Power %d → %d  ($%d)" % [
 		GameManager.mandibles_level, power, power + 3, _mandibles_cost]
-	_btn_sense.text     = "Refine Whiskers Lv%d  —  Radius %.0f → %.0f tiles, Energy %d → %d  (%d minerals)" % [
+	_btn_sense.text     = "Refine Whiskers Lv%d  —  Radius %.0f → %.0f tiles, Energy %d → %d  ($%d)" % [
 		GameManager.mineral_sense_level, r, r + 3.0, fc, maxi(3, fc - 2), _sense_cost]
 
-	var m := GameManager.mineral_currency
+	var m := GameManager.dollars
 	_btn_carapace.disabled  = m < _carapace_cost
 	_btn_legs.disabled      = m < _legs_cost
 	_btn_mandibles.disabled = m < _mandibles_cost
@@ -282,9 +282,10 @@ func _set_status(msg: String) -> void:
 
 # ── Upgrade purchases ─────────────────────────────────────────────────────────
 func _on_carapace_pressed() -> void:
-	if GameManager.mineral_currency < _carapace_cost:
+	if GameManager.dollars < _carapace_cost:
 		return
-	GameManager.mineral_currency -= _carapace_cost
+	GameManager.dollars -= _carapace_cost
+	EventBus.dollars_changed.emit(GameManager.dollars)
 	GameManager.upgrade_carapace()
 	_carapace_cost += 25
 	GameManager.save_game()
@@ -293,9 +294,10 @@ func _on_carapace_pressed() -> void:
 
 
 func _on_legs_pressed() -> void:
-	if GameManager.mineral_currency < _legs_cost:
+	if GameManager.dollars < _legs_cost:
 		return
-	GameManager.mineral_currency -= _legs_cost
+	GameManager.dollars -= _legs_cost
+	EventBus.dollars_changed.emit(GameManager.dollars)
 	GameManager.upgrade_legs()
 	_legs_cost += 25
 	GameManager.save_game()
@@ -304,9 +306,10 @@ func _on_legs_pressed() -> void:
 
 
 func _on_mandibles_pressed() -> void:
-	if GameManager.mineral_currency < _mandibles_cost:
+	if GameManager.dollars < _mandibles_cost:
 		return
-	GameManager.mineral_currency -= _mandibles_cost
+	GameManager.dollars -= _mandibles_cost
+	EventBus.dollars_changed.emit(GameManager.dollars)
 	GameManager.upgrade_mandibles()
 	_mandibles_cost += 25
 	GameManager.save_game()
@@ -315,9 +318,10 @@ func _on_mandibles_pressed() -> void:
 
 
 func _on_sense_pressed() -> void:
-	if GameManager.mineral_currency < _sense_cost:
+	if GameManager.dollars < _sense_cost:
 		return
-	GameManager.mineral_currency -= _sense_cost
+	GameManager.dollars -= _sense_cost
+	EventBus.dollars_changed.emit(GameManager.dollars)
 	GameManager.upgrade_mineral_sense()
 	_sense_cost += 50
 	GameManager.save_game()
@@ -386,14 +390,14 @@ func _refresh_chamber_panel() -> void:
 		var cost_val: int  = GameManager.get(chamber["cost_const"])
 		var unlocked: bool = _is_chamber_unlocked(chamber["key"])
 
-		btn.disabled = built or not unlocked or GameManager.mineral_currency < cost_val
+		btn.disabled = built or not unlocked or GameManager.dollars < cost_val
 
 		if built:
 			btn.text = "[BUILT]  %s\n%s" % [chamber["name"], chamber["effect"]]
 		elif not unlocked:
 			btn.text = "[LOCKED]  %s\n%s\n%s" % [chamber["name"], chamber["effect"], chamber["unlock_label"]]
 		else:
-			btn.text = "Build %s  —  %s\nCost: %d minerals" % [chamber["name"], chamber["effect"], cost_val]
+			btn.text = "Build %s  —  %s\nCost: $%d" % [chamber["name"], chamber["effect"], cost_val]
 
 
 func _on_chamber_pressed(key: String) -> void:
@@ -402,9 +406,10 @@ func _on_chamber_pressed(key: String) -> void:
 			continue
 		var built: bool   = GameManager.get(chamber["built_prop"])
 		var cost_val: int = GameManager.get(chamber["cost_const"])
-		if built or not _is_chamber_unlocked(key) or GameManager.mineral_currency < cost_val:
+		if built or not _is_chamber_unlocked(key) or GameManager.dollars < cost_val:
 			return
-		GameManager.mineral_currency -= cost_val
+		GameManager.dollars -= cost_val
+		EventBus.dollars_changed.emit(GameManager.dollars)
 		GameManager.set(chamber["built_prop"], true)
 		GameManager.save_game()
 		_set_status("%s constructed!" % chamber["name"])
