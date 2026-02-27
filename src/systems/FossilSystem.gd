@@ -26,9 +26,10 @@ func check(tile: int, fossil_data: Dictionary) -> void:
 		_drought[tile] = _drought.get(tile, 0) + 1
 		return
 	var drought: int = _drought.get(tile, 0)
-	var roll_rate := minf(CAP_RATE, BASE_RATE + drought * DROUGHT_SCALE)
+	var roll_rate := minf(CAP_RATE, BASE_RATE + drought * DROUGHT_SCALE + GameManager.get_fossil_rate_bonus())
 	if randf() < roll_rate:
 		var minerals: int = fossil_data["minerals"]
+		GameManager.total_fossils += 1
 		GameManager.add_currency(minerals)
 		EventBus.ore_mined_popup.emit(minerals, fossil_data["name"] + " Fossil!")
 		_drought[tile] = 0

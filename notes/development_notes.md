@@ -51,7 +51,7 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
   - *Stone Golem (row 112):* [x] three ore-phase armor (copper → iron → gold); resists damage until player last-mined the required ore; phase label drawn near core; ARMOR CRACKED banner on phase advance
   - *The Ancient One (row 128):* [x] three-phase final boss — Phase 1: outer stone-shell ring (12 segments, teal); Phase 2: crystalline inner ring (8 segments, purple) with periodic void pulses that reseal mined tunnels; Phase 3: exposed core (white/gold) that regenerates every 8 s if not mined down quickly. 2× fuel drain throughout.
 - [x] **Gem socketing system** — ORE_GEM/ORE_GEM_DEEP tiles now award 1–2 gem items immediately on mining (primary value; mineral yield reduced to 5/8). `GameManager.gem_count` tracks stockpile. Four permanent gem socket slots in UpgradeMenu (cost: 3 gems each): Chitin Gem (+1 Max HP), Quickstride Gem (+25 Fuel, +15 Speed), Fracture Gem (+4 Mining Power), Echo Gem (+3 Sonar Radius). Socketed bonuses apply via updated stat getters; saved/loaded with game data.
-- [ ] **Develop colony passive skill tree** — deeper progression beyond the 4 current upgrade tracks. Current tracks (Carapace, Legs, Mandibles, Mineral Sense) are the first tier; the skill tree gates further specialisation behind milestone unlocks.
+- [x] **Develop colony passive skill tree** — Colony Chamber system (see Medium Priority) provides the first tier of milestone-gated passive progression: 5 buildable rooms with distinct run-wide bonuses, each unlocked by a gameplay milestone. Gem socketing adds a second orthogonal layer (4 socket slots across upgrade tracks).
 
 ### Overworld Polish
 - [x] **Populate overworld settlement nodes** — `settlement_node_3` and `settlement_node_4` now launch `SettlementLevel.tscn`. Players spend banked minerals on Fuel Cache (+50 starting fuel), Field Repair (+1 HP), Mining Shroom (12 charges), and Whetstone (+1 mandible power). Bonuses persist via `GameManager` into the next mine run.
@@ -66,14 +66,13 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 ## Medium Priority
 
 ### Progression Systems
-- [ ] **Implement Colony Chamber system** — buildable rooms in the Colony hub unlocked by milestones, each providing a passive run-wide bonus. Drip-feed unlock timing to avoid early overwhelm. See docs/mining_game_design_lessons.md §3.8
-  - *Fungus Garden* (500 minerals banked): +10% mineral yield from all tiles
-  - *Brood Chamber* (first boss defeated): worker ant slots +2; workers recover faster after death
-  - *Armory* (1000 minerals banked): soldier ants deal 2× damage; explosive radius +1 tile
-  - *Nursery Vault* (10 fossils): fossil drop rate +15%; new fossil types enabled
-  - *Deep Antenna Array* (reach row 96): sonar ping radius +3 tiles at all tiers
-  - *Royal Archive* (25 fossils): lore fragments unlock; Archivist gives bounties
-  - *Queen's Sanctum* (all upgrade tracks at level 5): unlock Tier 3 Research Tree
+- [x] **Implement Colony Chamber system** — buildable rooms in the Colony hub, each gated behind milestone conditions. UI panel in CityLevel shows locked/unlocked/built state per chamber. `GameManager` tracks total minerals banked, bosses defeated, fossils found, and deepest row for unlock checks. Five chambers implemented:
+  - *Fungus Garden* (500 minerals banked, cost 200): +10% mineral yield from all tiles (via `get_mineral_yield_mult()`)
+  - *Brood Chamber* (first boss defeated, cost 150): Forager carry cap +20 (via `get_forager_carry_bonus()`)
+  - *Armory* (1000 minerals banked, cost 300): explosive blast radius +1 tile (via `get_explosive_radius_bonus()`)
+  - *Nursery Vault* (10 fossils found, cost 250): +5% fossil base find rate (via `get_fossil_rate_bonus()`)
+  - *Deep Antenna Array* (reach row 96, cost 200): sonar ping radius +3 (via updated `get_sonar_ping_radius()`)
+  - *Royal Archive* / *Queen's Sanctum*: deferred — require content (lore system, Tier 3 Research Tree) not yet built.
 - [ ] **Expand worker ant system to profession types** — Scout, Engineer, Soldier — after Forager companion is stable. Requires pheromone trail data (done) + zone assignment. Do not implement before Forager is working. See docs/mining_game_design_lessons.md §3.1
 - [ ] **Make some fossils discoverable only via specific mining patterns** — not random drops. Examples: a 2×3 cluster of gem tiles, mining three fuel nodes in sequence. Rewards attentive play. See docs/mining_game_design_lessons.md §3.6
 

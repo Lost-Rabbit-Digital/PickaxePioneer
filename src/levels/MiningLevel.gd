@@ -471,9 +471,9 @@ func _ready() -> void:
 	if GameManager.settlement_mandible_bonus > 0:
 		_settlement_mandible_bonus = GameManager.settlement_mandible_bonus
 		GameManager.settlement_mandible_bonus = 0
-	var forager_bonus: int = 0
+	var forager_bonus: int = GameManager.get_forager_carry_bonus()
 	if GameManager.settlement_forager_bonus > 0:
-		forager_bonus = GameManager.settlement_forager_bonus
+		forager_bonus += GameManager.settlement_forager_bonus
 		GameManager.settlement_forager_bonus = 0
 
 	# Initialise ForagerSystem near the player's starting position
@@ -1249,7 +1249,7 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 			GameManager.save_game()
 			EventBus.ore_mined_popup.emit(gems_gained, "Gem collected!")
 		if tile in MINEABLE_TILES:
-			var minerals: int = TILE_MINERALS.get(tile, 1)
+			var minerals: int = roundi(TILE_MINERALS.get(tile, 1) * GameManager.get_mineral_yield_mult())
 			_mine_streak += 1
 			var lucky_chance := LUCKY_STRIKE_CHANCE * (2.0 if _lucky_compass_active else 1.0)
 			var lucky := tile in ORE_TILES and randf() < lucky_chance
@@ -1341,8 +1341,9 @@ func _spawn_ore_chunks(tile: int, minerals: int, world_pos: Vector2) -> void:
 		add_child(chunk)
 
 func _explode_area(center_col: int, center_row: int) -> void:
-	for dc in range(-1, 2):
-		for dr in range(-1, 2):
+	var r := 1 + GameManager.get_explosive_radius_bonus()
+	for dc in range(-r, r + 1):
+		for dr in range(-r, r + 1):
 			var nc := center_col + dc
 			var nr := center_row + dr
 			if nc >= 0 and nc < GRID_COLS and nr >= 0 and nr < GRID_ROWS:
@@ -1453,6 +1454,9 @@ func _update_depth() -> void:
 		var _boss_hints := boss_system.get_pending_hints()
 		if not _boss_hints.is_empty():
 			_queue_boss_hints(_boss_hints)
+		# Track deepest row for Colony Chamber unlock condition
+		if depth > GameManager.deepest_row_reached:
+			GameManager.deepest_row_reached = depth
 		# Reset mine streak when surfacing
 		if depth <= 0:
 			_mine_streak = 0

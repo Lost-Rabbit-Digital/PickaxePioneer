@@ -450,6 +450,7 @@ func _on_boss_defeated() -> void:
 	_ancient_outer_count = 0
 	_ancient_inner_count = 0
 
+	GameManager.bosses_defeated_total += 1
 	GameManager.add_currency(BOSS_REWARD_BONUS)
 	EventBus.minerals_earned.emit(BOSS_REWARD_BONUS)
 	EventBus.ore_mined_popup.emit(BOSS_REWARD_BONUS, "Boss defeated!")

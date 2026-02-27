@@ -49,6 +49,27 @@ var legs_gem_socketed: bool = false          # +25 max fuel, +15 move speed
 var mandibles_gem_socketed: bool = false     # +4 mining power
 var sense_gem_socketed: bool = false         # +3 sonar ping radius
 
+# Colony Chamber system — buildable rooms unlocked by milestone conditions
+# Unlock conditions are checked at runtime; build costs are spent from mineral_currency.
+const CHAMBER_COST_FUNGUS_GARDEN: int   = 200   # unlocks when total_minerals_banked >= 500
+const CHAMBER_COST_BROOD_CHAMBER: int   = 150   # unlocks when bosses_defeated_total >= 1
+const CHAMBER_COST_ARMORY: int          = 300   # unlocks when total_minerals_banked >= 1000
+const CHAMBER_COST_NURSERY_VAULT: int   = 250   # unlocks when total_fossils >= 10
+const CHAMBER_COST_DEEP_ANTENNA: int    = 200   # unlocks when deepest_row_reached >= 96
+
+# Cumulative milestone trackers (persisted to save)
+var total_minerals_banked: int = 0       # sum of all currency ever banked
+var bosses_defeated_total: int = 0       # total boss encounters won
+var total_fossils: int = 0               # total fossils found across all runs
+var deepest_row_reached: int = 0         # deepest grid row ever reached
+
+# Chamber built flags (persisted to save)
+var fungus_garden_built: bool = false    # +10% mineral yield from all tiles
+var brood_chamber_built: bool = false    # forager carry cap +20
+var armory_built: bool = false           # explosive radius +1
+var nursery_vault_built: bool = false    # fossil find rate +5% base
+var deep_antenna_built: bool = false     # sonar radius +3
+
 const SAVE_PATH = "user://save_data.json"
 
 func _ready() -> void:
@@ -64,6 +85,7 @@ func track_ore_mined(tile_type: int, minerals: int) -> void:
 	run_ore_earnings[tile_type] = run_ore_earnings.get(tile_type, 0) + minerals
 
 func bank_currency() -> void:
+	total_minerals_banked += run_mineral_currency
 	mineral_currency += run_mineral_currency
 	run_mineral_currency = 0
 	EventBus.minerals_changed.emit(0)
@@ -144,7 +166,24 @@ func upgrade_mineral_sense() -> void:
 	print("Mineral Sense upgraded to level ", mineral_sense_level)
 
 func get_sonar_ping_radius() -> float:
-	return 4.0 + mineral_sense_level * 3.0 + (3.0 if sense_gem_socketed else 0.0)
+	return 4.0 + mineral_sense_level * 3.0 + (3.0 if sense_gem_socketed else 0.0) \
+		+ (3.0 if deep_antenna_built else 0.0)
+
+## Multiplier applied to all mined tile mineral yields (Fungus Garden chamber).
+func get_mineral_yield_mult() -> float:
+	return 1.10 if fungus_garden_built else 1.0
+
+## Bonus carry capacity added to the Forager Ant (Brood Chamber).
+func get_forager_carry_bonus() -> int:
+	return 20 if brood_chamber_built else 0
+
+## Extra tiles added to each side of the explosive blast radius (Armory).
+func get_explosive_radius_bonus() -> int:
+	return 1 if armory_built else 0
+
+## Extra base fossil find rate per eligible tile mined (Nursery Vault).
+func get_fossil_rate_bonus() -> float:
+	return 0.05 if nursery_vault_built else 0.0
 
 func get_sonar_ping_fuel_cost() -> int:
 	return maxi(3, 10 - mineral_sense_level * 2)
@@ -197,6 +236,15 @@ func save_game() -> void:
 		"legs_gem_socketed": legs_gem_socketed,
 		"mandibles_gem_socketed": mandibles_gem_socketed,
 		"sense_gem_socketed": sense_gem_socketed,
+		"total_minerals_banked": total_minerals_banked,
+		"bosses_defeated_total": bosses_defeated_total,
+		"total_fossils": total_fossils,
+		"deepest_row_reached": deepest_row_reached,
+		"fungus_garden_built": fungus_garden_built,
+		"brood_chamber_built": brood_chamber_built,
+		"armory_built": armory_built,
+		"nursery_vault_built": nursery_vault_built,
+		"deep_antenna_built": deep_antenna_built,
 	}
 	
 	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -233,6 +281,15 @@ func load_game() -> void:
 			legs_gem_socketed = data.get("legs_gem_socketed", false)
 			mandibles_gem_socketed = data.get("mandibles_gem_socketed", false)
 			sense_gem_socketed = data.get("sense_gem_socketed", false)
+			total_minerals_banked = data.get("total_minerals_banked", 0)
+			bosses_defeated_total = data.get("bosses_defeated_total", 0)
+			total_fossils = data.get("total_fossils", 0)
+			deepest_row_reached = data.get("deepest_row_reached", 0)
+			fungus_garden_built = data.get("fungus_garden_built", false)
+			brood_chamber_built = data.get("brood_chamber_built", false)
+			armory_built = data.get("armory_built", false)
+			nursery_vault_built = data.get("nursery_vault_built", false)
+			deep_antenna_built = data.get("deep_antenna_built", false)
 			print("Game loaded")
 		else:
 			print("Failed to parse save file")
