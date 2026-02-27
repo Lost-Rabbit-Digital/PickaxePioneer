@@ -3,11 +3,17 @@ extends Node2D
 # MenuBackground
 # Infinitely scrolling procedural mining level background for the main menu.
 # Tile generation mirrors MiningLevel so the visual language is consistent.
+#
+# Interaction:
+#   - Click and drag anywhere on the background to pan manually.
+#   - After IDLE_TIMEOUT seconds of no interaction the background picks a new
+#     random direction and resumes slow auto-panning.
 
 const CELL_SIZE: int = 64
-const GRID_ROWS: int = 12        # 12 * 64 = 768, covers 720-high viewport
-const SCROLL_SPEED: float = 40.0 # Pixels per second (50% of original 80)
-const VISIBLE_COLS: int = 22     # 22 * 64 = 1408, covers 1280-wide viewport + buffer
+const GRID_ROWS: int = 20       # 20 * 64 = 1280 px – seamless vertical wrap
+const GRID_COLS: int = 40       # 40 * 64 = 2560 px – seamless horizontal wrap
+const AUTO_PAN_SPEED: float = 40.0  # Pixels per second during auto-pan
+const IDLE_TIMEOUT: float = 3.0     # Seconds before auto-pan resumes after interaction
 
 enum TileType {
 	EMPTY      = 0,
@@ -52,13 +58,26 @@ const TILE_TEXTURE_PATHS: Dictionary = {
 
 var tile_textures: Dictionary = {}
 
-# Each element is a Dictionary: { "tiles": Array[TileType], "x": float }
-var columns: Array = []
-var scroll_y: float = 0.0  # Vertical scroll offset in pixels
+# 2D tile grid: tile_grid[row][col] = TileType
+var tile_grid: Array = []
+
+# Current scroll position in pixels (any value; wraps during rendering)
+var scroll_offset: Vector2 = Vector2.ZERO
+
+# Auto-pan direction × speed (pixels per second)
+var auto_pan_velocity: Vector2 = Vector2.ZERO
+
+# Drag state
+var is_dragging: bool = false
+
+# Idle tracking
+var idle_timer: float = 0.0
+var is_autopanning: bool = true
 
 func _ready() -> void:
 	_load_tile_textures()
-	_init_columns()
+	_init_tile_grid()
+	_pick_random_direction()
 
 func _load_tile_textures() -> void:
 	for tile_type in TILE_TEXTURE_PATHS:
@@ -67,20 +86,17 @@ func _load_tile_textures() -> void:
 		if tex:
 			tile_textures[tile_type] = tex
 
-func _init_columns() -> void:
-	columns = []
-	# Start one column to the left for a left-side buffer
-	for i in range(VISIBLE_COLS):
-		columns.append({
-			"tiles": _generate_column(),
-			"x": float((i - 1) * CELL_SIZE),
-		})
-
-func _generate_column() -> Array:
-	var col: Array = []
+func _init_tile_grid() -> void:
+	tile_grid = []
 	for _row in range(GRID_ROWS):
-		col.append(_random_tile())
-	return col
+		var row_arr: Array = []
+		for _col in range(GRID_COLS):
+			row_arr.append(_random_tile())
+		tile_grid.append(row_arr)
+
+func _pick_random_direction() -> void:
+	var angle: float = randf() * TAU
+	auto_pan_velocity = Vector2(cos(angle), sin(angle)) * AUTO_PAN_SPEED
 
 func _random_tile() -> TileType:
 	var r := randf()
@@ -95,27 +111,36 @@ func _random_tile() -> TileType:
 	elif r < 0.68: return TileType.DIRT_DARK
 	else:          return TileType.DIRT
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			is_dragging = true
+			is_autopanning = false
+			idle_timer = 0.0
+			get_viewport().set_input_as_handled()
+		else:
+			is_dragging = false
+			idle_timer = 0.0  # Begin countdown to resume auto-pan
+	elif event is InputEventMouseMotion and is_dragging:
+		# Drag right → world scrolls left (subtract relative motion)
+		scroll_offset -= event.relative
+		idle_timer = 0.0
+		get_viewport().set_input_as_handled()
+
 func _process(delta: float) -> void:
-	# Shift every column rightward (scroll right) and advance vertical offset (scroll down)
-	for col_data in columns:
-		col_data["x"] += SCROLL_SPEED * delta
-
-	var grid_height: float = float(GRID_ROWS * CELL_SIZE)
-	scroll_y = fmod(scroll_y + SCROLL_SPEED * delta, grid_height)
-
-	# Find the current leftmost x so recycled columns land left of it
-	var leftmost_x: float = INF
-	for col_data in columns:
-		if col_data["x"] < leftmost_x:
-			leftmost_x = col_data["x"]
-
-	# Recycle any column whose left edge has fully exited the right side
-	var vp_width: float = get_viewport_rect().size.x
-	for col_data in columns:
-		if col_data["x"] >= vp_width:
-			leftmost_x -= float(CELL_SIZE)
-			col_data["x"] = leftmost_x
-			col_data["tiles"] = _generate_column()
+	if is_autopanning:
+		scroll_offset += auto_pan_velocity * delta
+		# Wrap to avoid unbounded float growth
+		var gw: float = float(GRID_COLS * CELL_SIZE)
+		var gh: float = float(GRID_ROWS * CELL_SIZE)
+		scroll_offset.x = fmod(scroll_offset.x, gw)
+		scroll_offset.y = fmod(scroll_offset.y, gh)
+	else:
+		idle_timer += delta
+		if idle_timer >= IDLE_TIMEOUT:
+			_pick_random_direction()
+			is_autopanning = true
+			idle_timer = 0.0
 
 	queue_redraw()
 
@@ -125,23 +150,38 @@ func _draw() -> void:
 	# Dark earth background
 	draw_rect(Rect2(Vector2.ZERO, vp_size), Color(0.08, 0.06, 0.04))
 
-	# Compute which tile row is at the top and the sub-tile pixel offset
-	var tile_start_idx: int = int(scroll_y / CELL_SIZE)
-	var pixel_offset: float = fmod(scroll_y, CELL_SIZE)
+	var gw: float = float(GRID_COLS * CELL_SIZE)
+	var gh: float = float(GRID_ROWS * CELL_SIZE)
 
-	for col_data in columns:
-		var x: float = col_data["x"]
-		# Skip columns outside horizontal viewport
-		if x + CELL_SIZE < 0.0 or x >= vp_size.x:
-			continue
-		var tiles: Array = col_data["tiles"]
-		# Draw GRID_ROWS + 1 rows to cover the partial tile at the top edge
-		for screen_row in range(GRID_ROWS + 1):
-			var y: float = screen_row * CELL_SIZE - pixel_offset
-			if y >= vp_size.y:
+	# Normalise offset to [0, gw) × [0, gh) so modulo indexing works correctly
+	var off_x: float = fmod(scroll_offset.x, gw)
+	var off_y: float = fmod(scroll_offset.y, gh)
+	if off_x < 0.0: off_x += gw
+	if off_y < 0.0: off_y += gh
+
+	# Grid cell sitting at the top-left corner of the screen
+	var start_col: int = int(off_x / CELL_SIZE)
+	var start_row: int = int(off_y / CELL_SIZE)
+
+	# Sub-cell pixel offset (how far into the top-left tile we are)
+	var pixel_off_x: float = fmod(off_x, float(CELL_SIZE))
+	var pixel_off_y: float = fmod(off_y, float(CELL_SIZE))
+
+	# +2: one partial tile at each edge
+	var cols_to_draw: int = int(vp_size.x / CELL_SIZE) + 2
+	var rows_to_draw: int = int(vp_size.y / CELL_SIZE) + 2
+
+	for screen_row in range(rows_to_draw):
+		var y: float = screen_row * CELL_SIZE - pixel_off_y
+		if y >= vp_size.y:
+			break
+		var tile_row: int = (start_row + screen_row) % GRID_ROWS
+		for screen_col in range(cols_to_draw):
+			var x: float = screen_col * CELL_SIZE - pixel_off_x
+			if x >= vp_size.x:
 				break
-			var tile_idx: int = (tile_start_idx + screen_row) % GRID_ROWS
-			var tile: int = tiles[tile_idx]
+			var tile_col: int = (start_col + screen_col) % GRID_COLS
+			var tile: int = tile_grid[tile_row][tile_col]
 			if tile == TileType.EMPTY:
 				continue
 			_draw_tile(tile, x, y)
