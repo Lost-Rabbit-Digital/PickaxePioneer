@@ -47,8 +47,8 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 - [x] **Add underground boss encounters** — milestone rooms at specific depth rows. No separate combat system; defeated using existing mining tools. Fuel drains 2.5× while a boss is alive; defeating one rewards 100 minerals + 30 fuel. See docs/mining_game_design_lessons.md §4
   - *Centipede King (row 32):* [x] two-row horizontal body (12 segments + core); mine through the body to reach and destroy the core; fuel pressure increases during encounter
   - *Cave Spider Matriarch (row 64):* [x] diamond/cross pattern body spawned below player; mine segments to reach and destroy the core
-  - *The Blind Mole (row 96):* [ ] tremor AoE collapses map sections — framework in place, spawn logic pending
-  - *Stone Golem (row 112):* [ ] armoured phases requiring specific ore-type mining sequence — pending
+  - *The Blind Mole (row 96):* [x] tremor AoE collapses nearby empty tiles; warning overlay telegraphs incoming tremor; brown screen-edge pulse on warning
+  - *Stone Golem (row 112):* [x] three ore-phase armor (copper → iron → gold); resists damage until player last-mined the required ore; phase label drawn near core; ARMOR CRACKED banner on phase advance
   - *The Ancient One (row 128):* [ ] three-phase final boss — pending
 - [ ] **Gem socketing system** — slot gems found during runs into upgrade slots for special passive effects (PoE affix inspiration). Requires gems to be collectible items, not just ore tiles with mineral value.
 - [ ] **Develop colony passive skill tree** — deeper progression beyond the 4 current upgrade tracks. Current tracks (Carapace, Legs, Mandibles, Mineral Sense) are the first tier; the skill tree gates further specialisation behind milestone unlocks.
@@ -102,7 +102,7 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 
 ## Ongoing Improvements
 
-- [ ] **Extract MiningLevel.gd into focused subsystems** — the file is approaching 1,200 lines. Mining logic, rendering, UI setup, and surface hub are all in one class. Priority extraction targets: `SmeltingSystem`, `FossilSystem`, `SonarSystem`, each as standalone scripts called from MiningLevel.
+- [x] **Extract MiningLevel.gd into focused subsystems** — `SmeltingSystem.gd` and `FossilSystem.gd` extracted to `src/systems/` as standalone `RefCounted` classes with clean interfaces; MiningLevel delegates to them directly. Remaining targets: `SonarSystem`, `ForagerSystem`, `BossSystem` (draw-heavy systems; deferred until render API is cleaner).
 - [ ] **Activate the existing StateMachine component in MiningLevel** — `StateMachine.gd` and `State.gd` exist but MiningLevel uses ad-hoc `_hub_visible / _game_over / _fuel_shop_visible` flags instead. Migrating would clean up the `_process` guard chain significantly.
 - [x] **Fix the "No fuel for ping" popup** — HUD now omits the "+0" prefix when `amount == 0`, treating it as a pure notification string.
 
