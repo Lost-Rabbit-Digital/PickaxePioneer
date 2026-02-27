@@ -478,6 +478,7 @@ func _ready() -> void:
 	_generate_cave_rooms()
 	_setup_collision_tilemap()
 	_sync_collision_tilemap()
+	_setup_map_barriers()
 
 	# Setup camera
 	camera = Camera2D.new()
@@ -579,6 +580,30 @@ func _setup_collision_tilemap() -> void:
 	collision_tilemap.collision_enabled = true
 	collision_tilemap.visible = false  # We render tiles ourselves via _draw()
 	add_child(collision_tilemap)
+
+func _setup_map_barriers() -> void:
+	# Invisible StaticBody2D walls on the left and right edges of the map
+	# so the player cannot fall or walk off the sides.
+	var map_height := GRID_ROWS * CELL_SIZE
+	var barrier_thickness := CELL_SIZE
+
+	for side in ["left", "right"]:
+		var barrier := StaticBody2D.new()
+		barrier.collision_layer = 1
+		barrier.collision_mask = 0
+
+		var shape_node := CollisionShape2D.new()
+		var rect := RectangleShape2D.new()
+		rect.size = Vector2(barrier_thickness, map_height)
+		shape_node.shape = rect
+
+		if side == "left":
+			shape_node.position = Vector2(-barrier_thickness * 0.5, map_height * 0.5)
+		else:
+			shape_node.position = Vector2(GRID_COLS * CELL_SIZE + barrier_thickness * 0.5, map_height * 0.5)
+
+		barrier.add_child(shape_node)
+		add_child(barrier)
 
 func _sync_collision_tilemap() -> void:
 	collision_tilemap.clear()
