@@ -1228,7 +1228,7 @@ func _update_interact_prompt() -> void:
 	if nearby_trader.size() > 0:
 		var key_name := _get_interact_key_name()
 		player_node.show_prompt("Press %s to trade" % key_name)
-		var screen_pos := get_viewport().get_canvas_transform() * nearby_trader["world_pos"]
+		var screen_pos := get_viewport().get_canvas_transform() * (nearby_trader["world_pos"] as Vector2)
 		player_node.set_prompt_position(screen_pos + Vector2(0, -CELL_SIZE))
 		return
 	var nearby_npc: FarmAnimalNPC = _get_nearby_farm_npc()
