@@ -36,7 +36,7 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 - `Legs` upgrade increases **both** max fuel capacity (+25/level) **and** move speed (+30 px/s per level).
 - The **Forager Ant** is a programmatic entity rendered in `MiningLevel._draw()` — not a separate scene. It takes 40% of ore yield, carries up to 30 minerals (base), returns to surface and banks directly into `mineral_currency` when full.
 - **Cave rooms** are generated via `_generate_cave_rooms()` after `_generate_grid()` each run: 6–10 elliptical open chambers with ore-rich walls scaled to depth.
-- `MiningLevel.gd` is now ~1,600+ lines. Extraction of `SmeltingSystem`, `FossilSystem`, `SonarSystem`, and `ForagerSystem` into subsystems is an ongoing priority.
+- `MiningLevel.gd` is now ~1,970 lines. All planned subsystem extractions are complete: `SmeltingSystem`, `FossilSystem`, `SonarSystem`, `ForagerSystem`, and `BossSystem` all live in `src/systems/` as `RefCounted` classes.
 
 ---
 
@@ -102,7 +102,7 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 
 ## Ongoing Improvements
 
-- [x] **Extract MiningLevel.gd into focused subsystems** — `SmeltingSystem.gd` and `FossilSystem.gd` extracted to `src/systems/` as standalone `RefCounted` classes with clean interfaces; MiningLevel delegates to them directly. Remaining targets: `SonarSystem`, `ForagerSystem`, `BossSystem` (draw-heavy systems; deferred until render API is cleaner).
+- [x] **Extract MiningLevel.gd into focused subsystems** — `SmeltingSystem.gd`, `FossilSystem.gd`, `SonarSystem.gd`, `ForagerSystem.gd`, and `BossSystem.gd` all extracted to `src/systems/` as standalone `RefCounted` classes with clean interfaces; MiningLevel delegates to them via public state reads (for draw) and method calls. MiningLevel reduced from ~2300 to ~1970 lines.
 - [ ] **Activate the existing StateMachine component in MiningLevel** — `StateMachine.gd` and `State.gd` exist but MiningLevel uses ad-hoc `_hub_visible / _game_over / _fuel_shop_visible` flags instead. Migrating would clean up the `_process` guard chain significantly.
 - [x] **Fix the "No fuel for ping" popup** — HUD now omits the "+0" prefix when `amount == 0`, treating it as a pure notification string.
 
