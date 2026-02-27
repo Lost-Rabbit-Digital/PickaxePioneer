@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cat_miner_texture_001"
-path="res://.godot/imported/cat_miner.png-cat_miner_texture_001.ctex"
+uid="uid://d0358frrp512o"
+path="res://.godot/imported/cat_miner.png-b1a1363e3f6aaa2e44e66f51ce3ab3c7.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/cat_miner.png"
-dest_files=["res://.godot/imported/cat_miner.png-cat_miner_texture_001.ctex"]
+dest_files=["res://.godot/imported/cat_miner.png-b1a1363e3f6aaa2e44e66f51ce3ab3c7.ctex"]
 
 [params]
 

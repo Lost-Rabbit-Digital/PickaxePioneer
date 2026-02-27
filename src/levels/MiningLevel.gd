@@ -496,6 +496,7 @@ func _ready() -> void:
 	)
 	player_node.mining_level = self
 	player_node.sprite.texture = player_texture
+	player_node.sprite.scale = Vector2(0.5, 0.5)
 
 	EventBus.player_died.connect(_on_player_died)
 

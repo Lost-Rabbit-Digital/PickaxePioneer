@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://pickaxe_effect_texture_001"
-path="res://.godot/imported/pickaxe_effect.png-pickaxe_effect_texture_001.ctex"
+uid="uid://bkcwneuxjalgr"
+path="res://.godot/imported/pickaxe_effect.png-b166c93d38d2b6981dcf2a8516e46e10.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/pickaxe_effect.png"
-dest_files=["res://.godot/imported/pickaxe_effect.png-pickaxe_effect_texture_001.ctex"]
+dest_files=["res://.godot/imported/pickaxe_effect.png-b166c93d38d2b6981dcf2a8516e46e10.ctex"]
 
 [params]
 
