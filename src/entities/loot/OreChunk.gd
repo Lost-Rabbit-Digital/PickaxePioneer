@@ -7,7 +7,7 @@ extends CharacterBody2D
 
 const GRAVITY: float = 600.0
 const CHUNK_SIZE: float = 20.0
-const COLLECT_DIST: float = 24.0
+const COLLECT_DIST: float = 30.0
 
 # Ore type → chunk colour (mirrors MiningLevel.TILE_COLORS)
 const CHUNK_COLORS: Dictionary = {
