@@ -29,8 +29,17 @@ const ROW_H := 38.0
 const HEADER_H := 68.0
 const FOOTER_H := 96.0
 
+# Animation state
+var _panel_node: Control = null
+var _row_groups: Array = []     # Array of Arrays — each inner array holds Control nodes for one row
+var _total_label: Label = null
+var _final_total: int = 0
+var _border: ColorRect = null
+
 func _ready() -> void:
+	_final_total = GameManager.run_mineral_currency
 	_build_ui()
+	_play_intro()
 
 func _build_ui() -> void:
 	# Full-screen catch-all control
@@ -39,11 +48,21 @@ func _build_ui() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(root)
 
-	# Dark overlay
+	# Dark overlay (static, behind everything)
 	var dim := ColorRect.new()
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	dim.color = Color(0, 0, 0, 0.82)
+	dim.color = Color(0, 0, 0, 0.0)
 	root.add_child(dim)
+	# Fade overlay in separately so it doesn't move with the panel
+	var dim_tween := create_tween()
+	dim_tween.tween_property(dim, "color:a", 0.82, 0.2)
+
+	# Panel container — this node slides in
+	_panel_node = Control.new()
+	_panel_node.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_panel_node.position = Vector2(0.0, -60.0)
+	_panel_node.modulate.a = 0.0
+	root.add_child(_panel_node)
 
 	# Determine which ore rows to show
 	var ore_counts: Dictionary = GameManager.run_ore_counts
@@ -59,19 +78,19 @@ func _build_ui() -> void:
 	var px := (VW - PANEL_W) / 2.0
 	var py := (VH - panel_h) / 2.0
 
-	# Green border
-	var border := ColorRect.new()
-	border.position = Vector2(px - 2.0, py - 2.0)
-	border.size = Vector2(PANEL_W + 4.0, panel_h + 4.0)
-	border.color = Color(0.20, 0.70, 0.30)
-	root.add_child(border)
+	# Green border (starts brighter, settles to normal)
+	_border = ColorRect.new()
+	_border.position = Vector2(px - 2.0, py - 2.0)
+	_border.size = Vector2(PANEL_W + 4.0, panel_h + 4.0)
+	_border.color = Color(0.5, 1.0, 0.65)
+	_panel_node.add_child(_border)
 
 	# Panel background
 	var panel_bg := ColorRect.new()
 	panel_bg.position = Vector2(px, py)
 	panel_bg.size = Vector2(PANEL_W, panel_h)
 	panel_bg.color = Color(0.07, 0.09, 0.12, 1.0)
-	root.add_child(panel_bg)
+	_panel_node.add_child(panel_bg)
 
 	# Title
 	var title := Label.new()
@@ -82,19 +101,19 @@ func _build_ui() -> void:
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 30)
 	title.add_theme_color_override("font_color", Color(0.25, 0.95, 0.45))
-	root.add_child(title)
+	_panel_node.add_child(title)
 
 	# Header separator
-	_add_separator(root, px, py + HEADER_H - 4.0, PANEL_W)
+	_add_separator(_panel_node, px, py + HEADER_H - 4.0, PANEL_W)
 
 	# Column headers
-	_add_label(root, "Material", px + 46.0, py + HEADER_H - ROW_H + 4.0,
+	_add_label(_panel_node, "Material", px + 46.0, py + HEADER_H - ROW_H + 4.0,
 			200.0, ROW_H - 6.0, 13, Color(0.55, 0.55, 0.55),
 			HORIZONTAL_ALIGNMENT_LEFT)
-	_add_label(root, "Count", px + 260.0, py + HEADER_H - ROW_H + 4.0,
+	_add_label(_panel_node, "Count", px + 260.0, py + HEADER_H - ROW_H + 4.0,
 			90.0, ROW_H - 6.0, 13, Color(0.55, 0.55, 0.55),
 			HORIZONTAL_ALIGNMENT_RIGHT)
-	_add_label(root, "Minerals", px + 356.0, py + HEADER_H - ROW_H + 4.0,
+	_add_label(_panel_node, "Minerals", px + 356.0, py + HEADER_H - ROW_H + 4.0,
 			160.0, ROW_H - 6.0, 13, Color(0.55, 0.55, 0.55),
 			HORIZONTAL_ALIGNMENT_RIGHT)
 
@@ -106,13 +125,16 @@ func _build_ui() -> void:
 		var count: int = ore_counts.get(tile_id, 0)
 		var earned: int = ore_earnings.get(tile_id, 0)
 
+		var row_nodes: Array = []
+
 		# Alternating row tint
 		if i % 2 == 0:
 			var row_bg := ColorRect.new()
 			row_bg.position = Vector2(px, y)
 			row_bg.size = Vector2(PANEL_W, ROW_H)
 			row_bg.color = Color(1.0, 1.0, 1.0, 0.03)
-			root.add_child(row_bg)
+			_panel_node.add_child(row_bg)
+			row_nodes.append(row_bg)
 
 		# Icon — try block texture first, fall back to solid colour square
 		var tex_path: String = info.get("tex", "")
@@ -124,46 +146,100 @@ func _build_ui() -> void:
 				icon.position = Vector2(px + 10.0, y + (ROW_H - 26.0) / 2.0)
 				icon.size = Vector2(26.0, 26.0)
 				icon.stretch_mode = TextureRect.STRETCH_SCALE
-				root.add_child(icon)
+				_panel_node.add_child(icon)
+				row_nodes.append(icon)
 			else:
-				_add_colour_icon(root, px, y, info["color"])
+				row_nodes.append(_add_colour_icon(_panel_node, px, y, info["color"]))
 		else:
-			_add_colour_icon(root, px, y, info["color"])
+			row_nodes.append(_add_colour_icon(_panel_node, px, y, info["color"]))
 
 		# Name
-		_add_label(root, info["name"], px + 44.0, y, 220.0, ROW_H, 16,
-				Color(0.92, 0.92, 0.92), HORIZONTAL_ALIGNMENT_LEFT)
+		row_nodes.append(_add_label(_panel_node, info["name"], px + 44.0, y, 220.0, ROW_H, 16,
+				Color(0.92, 0.92, 0.92), HORIZONTAL_ALIGNMENT_LEFT))
 
 		# Count
-		_add_label(root, "x%d" % count, px + 260.0, y, 90.0, ROW_H, 16,
-				Color(0.75, 0.75, 0.75), HORIZONTAL_ALIGNMENT_RIGHT)
+		row_nodes.append(_add_label(_panel_node, "x%d" % count, px + 260.0, y, 90.0, ROW_H, 16,
+				Color(0.75, 0.75, 0.75), HORIZONTAL_ALIGNMENT_RIGHT))
 
 		# Minerals earned
-		_add_label(root, "+%d" % earned, px + 356.0, y, 160.0, ROW_H, 16,
-				Color(1.00, 0.88, 0.25), HORIZONTAL_ALIGNMENT_RIGHT)
+		row_nodes.append(_add_label(_panel_node, "+%d" % earned, px + 356.0, y, 160.0, ROW_H, 16,
+				Color(1.00, 0.88, 0.25), HORIZONTAL_ALIGNMENT_RIGHT))
 
+		# Start invisible for stagger animation
+		for node in row_nodes:
+			node.modulate.a = 0.0
+
+		_row_groups.append(row_nodes)
 		y += ROW_H
 
 	# Total separator + label
-	_add_separator(root, px, y + 6.0, PANEL_W)
+	_add_separator(_panel_node, px, y + 6.0, PANEL_W)
 
-	var total_label := Label.new()
-	total_label.text = "Total:  %d Minerals" % GameManager.run_mineral_currency
-	total_label.position = Vector2(px, y + 10.0)
-	total_label.size = Vector2(PANEL_W, 40.0)
-	total_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	total_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	total_label.add_theme_font_size_override("font_size", 22)
-	total_label.add_theme_color_override("font_color", Color(1.00, 0.85, 0.10))
-	root.add_child(total_label)
+	_total_label = Label.new()
+	_total_label.text = "Total:  0 Minerals"
+	_total_label.position = Vector2(px, y + 10.0)
+	_total_label.size = Vector2(PANEL_W, 40.0)
+	_total_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_total_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_total_label.add_theme_font_size_override("font_size", 22)
+	_total_label.add_theme_color_override("font_color", Color(1.00, 0.85, 0.10))
+	_total_label.modulate.a = 0.0
+	_panel_node.add_child(_total_label)
 
-	# Return to Base button
-	var btn := Button.new()
-	btn.text = "Return to Base"
-	btn.position = Vector2(px + PANEL_W / 2.0 - 100.0, py + panel_h - 52.0)
-	btn.size = Vector2(200.0, 40.0)
-	btn.pressed.connect(_on_return_pressed)
-	root.add_child(btn)
+	# Two buttons: Dive Again (left) + Return to Base (right)
+	var btn_y := py + panel_h - 52.0
+	var btn_w := 200.0
+	var gap := 20.0
+	var total_btns_w := btn_w * 2.0 + gap
+	var btn_left_x := px + (PANEL_W - total_btns_w) / 2.0
+
+	var btn_dive := Button.new()
+	btn_dive.text = "Dive Again"
+	btn_dive.position = Vector2(btn_left_x, btn_y)
+	btn_dive.size = Vector2(btn_w, 40.0)
+	btn_dive.pressed.connect(_on_dive_again_pressed)
+	_panel_node.add_child(btn_dive)
+
+	var btn_return := Button.new()
+	btn_return.text = "Return to Base"
+	btn_return.position = Vector2(btn_left_x + btn_w + gap, btn_y)
+	btn_return.size = Vector2(btn_w, 40.0)
+	btn_return.pressed.connect(_on_return_pressed)
+	_panel_node.add_child(btn_return)
+
+func _play_intro() -> void:
+	# 1. Slide panel down and fade in
+	var t := create_tween()
+	t.set_parallel(true)
+	t.tween_property(_panel_node, "position:y", 0.0, 0.22) \
+		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+	t.tween_property(_panel_node, "modulate:a", 1.0, 0.18)
+
+	# 2. Settle border colour from bright flash to normal green
+	var border_tween := create_tween()
+	border_tween.tween_interval(0.12)
+	border_tween.tween_property(_border, "color", Color(0.20, 0.70, 0.30), 0.4)
+
+	# 3. Stagger ore rows in
+	var row_delay := 0.22
+	for i in _row_groups.size():
+		for node in _row_groups[i]:
+			var rt := create_tween()
+			rt.tween_interval(row_delay + i * 0.055)
+			rt.tween_property(node, "modulate:a", 1.0, 0.12)
+
+	# 4. Count-up total after rows finish
+	var count_delay := row_delay + _row_groups.size() * 0.055 + 0.12
+	var count_tween := create_tween()
+	count_tween.tween_interval(count_delay)
+	count_tween.tween_property(_total_label, "modulate:a", 1.0, 0.1)
+	if _final_total > 0:
+		count_tween.tween_method(
+			func(v: float) -> void:
+				_total_label.text = "Total:  %d Minerals" % int(v),
+			0.0, float(_final_total), minf(0.6, float(_final_total) * 0.002))
+	else:
+		_total_label.text = "Total:  0 Minerals"
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -176,16 +252,17 @@ func _add_separator(parent: Control, px: float, sep_y: float, width: float) -> v
 	sep.color = Color(0.20, 0.70, 0.30, 0.45)
 	parent.add_child(sep)
 
-func _add_colour_icon(parent: Control, px: float, row_y: float, color: Color) -> void:
+func _add_colour_icon(parent: Control, px: float, row_y: float, color: Color) -> ColorRect:
 	var icon := ColorRect.new()
 	icon.position = Vector2(px + 10.0, row_y + (ROW_H - 26.0) / 2.0)
 	icon.size = Vector2(26.0, 26.0)
 	icon.color = color
 	parent.add_child(icon)
+	return icon
 
 func _add_label(parent: Control, text: String, lx: float, ly: float,
 		w: float, h: float, font_size: int, color: Color,
-		h_align: HorizontalAlignment) -> void:
+		h_align: HorizontalAlignment) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.position = Vector2(lx, ly)
@@ -195,8 +272,14 @@ func _add_label(parent: Control, text: String, lx: float, ly: float,
 	lbl.add_theme_font_size_override("font_size", font_size)
 	lbl.add_theme_color_override("font_color", color)
 	parent.add_child(lbl)
+	return lbl
 
 func _on_return_pressed() -> void:
 	GameManager.bank_currency()
 	queue_free()
 	GameManager.load_overworld()
+
+func _on_dive_again_pressed() -> void:
+	GameManager.bank_currency()
+	queue_free()
+	GameManager.load_mining_level()
