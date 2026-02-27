@@ -1833,7 +1833,7 @@ func _spawn_centipede_king() -> void:
 	var half := BOSS_SEGMENT_COUNT / 2
 
 	for dc in range(-half, half + 1):
-		var col := clamp(player_col + dc, 2, GRID_COLS - 3)
+		var col: int = clamp(player_col + dc, 2, GRID_COLS - 3)
 		var tile_type := TileType.BOSS_CORE if dc == 0 else TileType.BOSS_SEGMENT
 		grid[col][boss_row] = tile_type
 		_set_tile_collision(col, boss_row, true)
@@ -1841,7 +1841,7 @@ func _spawn_centipede_king() -> void:
 
 	# Underbelly — shorter row one tile below, no core
 	for dc in range(-half + 2, half - 1):
-		var col := clamp(player_col + dc, 2, GRID_COLS - 3)
+		var col: int = clamp(player_col + dc, 2, GRID_COLS - 3)
 		if grid[col][boss_row + 1] != TileType.SURFACE and grid[col][boss_row + 1] != TileType.EXIT_STATION:
 			grid[col][boss_row + 1] = TileType.BOSS_SEGMENT
 			_set_tile_collision(col, boss_row + 1, true)
@@ -1873,8 +1873,8 @@ func _spawn_cave_spider_matriarch() -> void:
 	]
 
 	for offset in offsets:
-		var col := clamp(player_col + offset.x, 2, GRID_COLS - 3)
-		var row := clamp(boss_row + offset.y, SURFACE_ROWS + 1, GRID_ROWS - 2)
+		var col: int = clamp(player_col + offset.x, 2, GRID_COLS - 3)
+		var row: int = clamp(boss_row + offset.y, SURFACE_ROWS + 1, GRID_ROWS - 2)
 		var tile_type := TileType.BOSS_CORE if offset == Vector2i(0, 0) else TileType.BOSS_SEGMENT
 		grid[col][row] = tile_type
 		_set_tile_collision(col, row, true)
