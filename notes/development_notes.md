@@ -50,7 +50,7 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
   - *The Blind Mole (row 96):* [x] tremor AoE collapses nearby empty tiles; warning overlay telegraphs incoming tremor; brown screen-edge pulse on warning
   - *Stone Golem (row 112):* [x] three ore-phase armor (copper → iron → gold); resists damage until player last-mined the required ore; phase label drawn near core; ARMOR CRACKED banner on phase advance
   - *The Ancient One (row 128):* [x] three-phase final boss — Phase 1: outer stone-shell ring (12 segments, teal); Phase 2: crystalline inner ring (8 segments, purple) with periodic void pulses that reseal mined tunnels; Phase 3: exposed core (white/gold) that regenerates every 8 s if not mined down quickly. 2× fuel drain throughout.
-- [ ] **Gem socketing system** — slot gems found during runs into upgrade slots for special passive effects (PoE affix inspiration). Requires gems to be collectible items, not just ore tiles with mineral value.
+- [x] **Gem socketing system** — ORE_GEM/ORE_GEM_DEEP tiles now award 1–2 gem items immediately on mining (primary value; mineral yield reduced to 5/8). `GameManager.gem_count` tracks stockpile. Four permanent gem socket slots in UpgradeMenu (cost: 3 gems each): Chitin Gem (+1 Max HP), Quickstride Gem (+25 Fuel, +15 Speed), Fracture Gem (+4 Mining Power), Echo Gem (+3 Sonar Radius). Socketed bonuses apply via updated stat getters; saved/loaded with game data.
 - [ ] **Develop colony passive skill tree** — deeper progression beyond the 4 current upgrade tracks. Current tracks (Carapace, Legs, Mandibles, Mineral Sense) are the first tier; the skill tree gates further specialisation behind milestone unlocks.
 
 ### Overworld Polish

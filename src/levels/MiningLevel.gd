@@ -183,8 +183,8 @@ const TILE_MINERALS: Dictionary = {
 	TileType.ORE_IRON_DEEP:   8,
 	TileType.ORE_GOLD:        10,
 	TileType.ORE_GOLD_DEEP:   15,
-	TileType.ORE_GEM:         20,
-	TileType.ORE_GEM_DEEP:    30,
+	TileType.ORE_GEM:         5,   # primary value now comes as a gem item
+	TileType.ORE_GEM_DEEP:    8,   # primary value now comes as a gem item
 	TileType.BOSS_SEGMENT:    10,
 	TileType.BOSS_CORE:       75,
 }
@@ -1242,6 +1242,12 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 		# Boss tile tracking — delegated to BossSystem
 		if tile == TileType.BOSS_SEGMENT or tile == TileType.BOSS_CORE:
 			boss_system.on_tile_mined(col, row, tile)
+		# Gem tile: award a gem item immediately on mining (primary value)
+		if tile == TileType.ORE_GEM or tile == TileType.ORE_GEM_DEEP:
+			var gems_gained := 2 if tile == TileType.ORE_GEM_DEEP else 1
+			GameManager.gem_count += gems_gained
+			GameManager.save_game()
+			EventBus.ore_mined_popup.emit(gems_gained, "Gem collected!")
 		if tile in MINEABLE_TILES:
 			var minerals: int = TILE_MINERALS.get(tile, 1)
 			_mine_streak += 1

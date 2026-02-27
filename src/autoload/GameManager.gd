@@ -27,7 +27,7 @@ var allowed_hazard_types: Array = []
 var current_fuel: int = 100
 
 func get_max_fuel() -> int:
-	return 100 + (legs_level * 25)
+	return 100 + (legs_level * 25) + (25 if legs_gem_socketed else 0)
 
 # Settlement carry-over bonuses (applied on next mine entry, then cleared)
 var settlement_fuel_bonus: int = 0       # extra starting fuel from Fuel Cache purchase
@@ -40,6 +40,14 @@ var carapace_level: int = 0
 var legs_level: int = 0
 var mandibles_level: int = 0
 var mineral_sense_level: int = 0
+
+# Gem socketing system — gems collected as items, socketed for passive bonuses
+var gem_count: int = 0                       # unspent gems in the colony's stockpile
+const GEM_SOCKET_COST: int = 3              # gems required to fill one socket slot
+var carapace_gem_socketed: bool = false      # +1 max HP
+var legs_gem_socketed: bool = false          # +25 max fuel, +15 move speed
+var mandibles_gem_socketed: bool = false     # +4 mining power
+var sense_gem_socketed: bool = false         # +3 sonar ping radius
 
 const SAVE_PATH = "user://save_data.json"
 
@@ -136,19 +144,19 @@ func upgrade_mineral_sense() -> void:
 	print("Mineral Sense upgraded to level ", mineral_sense_level)
 
 func get_sonar_ping_radius() -> float:
-	return 4.0 + mineral_sense_level * 3.0
+	return 4.0 + mineral_sense_level * 3.0 + (3.0 if sense_gem_socketed else 0.0)
 
 func get_sonar_ping_fuel_cost() -> int:
 	return maxi(3, 10 - mineral_sense_level * 2)
 
 func get_max_health() -> int:
-	return 3 + carapace_level
+	return 3 + carapace_level + (1 if carapace_gem_socketed else 0)
 
 func get_max_speed() -> float:
-	return 300.0 + (legs_level * 30.0)
+	return 300.0 + (legs_level * 30.0) + (15.0 if legs_gem_socketed else 0.0)
 
 func get_mandibles_power() -> int:
-	return 5 + (mandibles_level * 3)
+	return 5 + (mandibles_level * 3) + (4 if mandibles_gem_socketed else 0)
 
 func consume_fuel(amount: int) -> bool:
 	current_fuel -= amount
@@ -184,6 +192,11 @@ func save_game() -> void:
 		"settlement_forager_bonus": settlement_forager_bonus,
 		"settlement_shroom_charges": settlement_shroom_charges,
 		"settlement_mandible_bonus": settlement_mandible_bonus,
+		"gem_count": gem_count,
+		"carapace_gem_socketed": carapace_gem_socketed,
+		"legs_gem_socketed": legs_gem_socketed,
+		"mandibles_gem_socketed": mandibles_gem_socketed,
+		"sense_gem_socketed": sense_gem_socketed,
 	}
 	
 	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -215,6 +228,11 @@ func load_game() -> void:
 			settlement_forager_bonus = data.get("settlement_forager_bonus", 0)
 			settlement_shroom_charges = data.get("settlement_shroom_charges", 0)
 			settlement_mandible_bonus = data.get("settlement_mandible_bonus", 0)
+			gem_count = data.get("gem_count", 0)
+			carapace_gem_socketed = data.get("carapace_gem_socketed", false)
+			legs_gem_socketed = data.get("legs_gem_socketed", false)
+			mandibles_gem_socketed = data.get("mandibles_gem_socketed", false)
+			sense_gem_socketed = data.get("sense_gem_socketed", false)
 			print("Game loaded")
 		else:
 			print("Failed to parse save file")
