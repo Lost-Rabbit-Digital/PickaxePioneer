@@ -424,14 +424,16 @@ var _ancient_map_active: bool = false     # Ancient Map: 2× sonar ping radius
 # even if the player later dies.
 # ---------------------------------------------------------------------------
 const FORAGER_CAPACITY_BASE: int = 30
-const FORAGER_COLLECT_RATIO: float = 0.40   # fraction of mined ore yield taken by forager
 const FORAGER_MOVE_SPEED: float = 140.0     # px/s while following/returning
 const FORAGER_DEPOSIT_DELAY: float = 1.8    # seconds at surface before returning underground
+const FORAGER_COLLECT_RADIUS: float = 80.0  # px radius within which forager sweeps up ore chunks
+const FORAGER_COLLECT_INTERVAL: float = 0.25  # seconds between chunk-sweep passes
 
 var _forager_world_pos: Vector2 = Vector2.ZERO
 var _forager_state: String = "follow"   # "follow" | "return" | "deposit"
 var _forager_carry: int = 0
 var _forager_capacity: int = FORAGER_CAPACITY_BASE
+var _forager_collect_timer: float = 0.0
 
 # Settlement whetstone bonus: temporary +N mandible power for this run only
 var _settlement_mandible_bonus: int = 0
@@ -1243,20 +1245,21 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 				_run_ore_counts[tile] = _run_ore_counts.get(tile, 0) + 1
 			# Fossil forgiveness check (§3.6) — before awarding base minerals
 			fossil_system.check(tile, FOSSIL_TYPES.get(tile, {}))
-			# Forager Ant takes its share of ore minerals (§3.4)
-			if _forager_state == "follow" and tile in ORE_TILES:
-				var forager_share := roundi(float(minerals) * FORAGER_COLLECT_RATIO)
-				minerals -= forager_share
-				_forager_carry = mini(_forager_carry + forager_share, _forager_capacity)
-				if _forager_carry >= _forager_capacity:
-					_forager_start_return()
 			# Consecutive smelting bonus (§3.5) — awards extra currency internally
 			smelt_system.process(SMELT_ORE_GROUPS.get(tile, ""), minerals)
-			GameManager.add_currency(minerals)
-			GameManager.track_ore_mined(tile, minerals)
-			EventBus.minerals_earned.emit(minerals)
-			var popup_label: String = "LUCKY!" if lucky else TILE_NAMES.get(tile, "Mineral")
-			EventBus.ore_mined_popup.emit(minerals, popup_label)
+			if tile in ORE_TILES:
+				# Ore tiles break into physical chunks the player (or forager) must collect.
+				var world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
+				_spawn_ore_chunks(tile, minerals, world_pos)
+				GameManager.track_ore_mined(tile, minerals)
+				var popup_label: String = "LUCKY!" if lucky else TILE_NAMES.get(tile, "Mineral")
+				EventBus.ore_mined_popup.emit(minerals, popup_label)
+			else:
+				# Non-ore tiles (dirt, stone, grass) still reward instantly.
+				GameManager.add_currency(minerals)
+				GameManager.track_ore_mined(tile, minerals)
+				EventBus.minerals_earned.emit(minerals)
+				EventBus.ore_mined_popup.emit(minerals, TILE_NAMES.get(tile, "Mineral"))
 			_check_streak_milestone()
 		SoundManager.play_drill_sound()
 	else:
@@ -1296,6 +1299,27 @@ func _mine_cell(col: int, row: int) -> void:
 	_set_tile_collision(col, row, false)
 	# Record pheromone trail on player-mined cells (§3.3)
 	_pheromone_trails[Vector2i(col, row)] = 1.0
+
+# Spawns physical ore chunks that scatter from the mined tile position.
+# The player and forager ant must collect them to bank the minerals.
+func _spawn_ore_chunks(tile: int, minerals: int, world_pos: Vector2) -> void:
+	if minerals <= 0:
+		return
+	# Random chunk count — more minerals create more pieces (capped to keep it tidy).
+	var chunk_count: int = randi_range(3, mini(6, minerals))
+	# Distribute minerals across chunks, spreading any remainder across the first ones.
+	var base_value: int = minerals / chunk_count
+	var leftover: int = minerals - base_value * chunk_count
+	for i in range(chunk_count):
+		var chunk := OreChunk.new()
+		chunk.ore_type = tile
+		chunk.value = base_value + (1 if i < leftover else 0)
+		# Scatter outward with a slight upward bias so chunks visibly pop out.
+		var angle: float = randf() * TAU
+		var speed: float = randf_range(60.0, 170.0)
+		chunk.velocity = Vector2(cos(angle) * speed, sin(angle) * speed - 90.0)
+		chunk.global_position = world_pos
+		add_child(chunk)
 
 func _explode_area(center_col: int, center_row: int) -> void:
 	for dc in range(-1, 2):
@@ -2230,6 +2254,11 @@ func _update_forager(delta: float) -> void:
 			# Hover a tile behind and above the player
 			var target := player_node.global_position + Vector2(-CELL_SIZE * 1.2, -CELL_SIZE * 0.5)
 			_forager_world_pos = _forager_world_pos.move_toward(target, FORAGER_MOVE_SPEED * delta)
+			# Periodically sweep up nearby ore chunks
+			_forager_collect_timer -= delta
+			if _forager_collect_timer <= 0.0:
+				_forager_collect_timer = FORAGER_COLLECT_INTERVAL
+				_forager_sweep_chunks()
 		"return":
 			# Fly toward the left-centre surface strip to deposit
 			var surface_y := (SURFACE_ROWS - 1) * CELL_SIZE + CELL_SIZE * 0.5
@@ -2246,6 +2275,19 @@ func _update_forager(delta: float) -> void:
 	if _forager_state == "deposit":
 		# Repurpose _forager_capacity as a timer storage trick; use a dedicated var instead
 		pass  # handled inline in _forager_deposit()
+
+# Scan for ore chunks near the forager and collect them into its carry.
+func _forager_sweep_chunks() -> void:
+	var chunks := get_tree().get_nodes_in_group("ore_chunk")
+	for chunk in chunks:
+		if not is_instance_valid(chunk):
+			continue
+		if _forager_world_pos.distance_to(chunk.global_position) < FORAGER_COLLECT_RADIUS:
+			_forager_carry = mini(_forager_carry + chunk.value, _forager_capacity)
+			chunk.collect_silent()
+			if _forager_carry >= _forager_capacity:
+				_forager_start_return()
+				return
 
 func _forager_start_return() -> void:
 	_forager_state = "return"
