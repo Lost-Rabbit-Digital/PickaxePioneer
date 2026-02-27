@@ -2,7 +2,7 @@ class_name SettlementLevel
 extends Node2D
 
 # Settlement rest stop — visited from the Overworld between mine runs.
-# Players spend banked minerals (mineral_currency) on fuel caches, repairs,
+# Players spend banked minerals (mineral_currency) on energy caches, repairs,
 # and consumables that carry into their next mining run.
 
 const PANEL_W: int = 520
@@ -12,7 +12,7 @@ const VH: int = 720
 
 # Consumables pre-purchased here persist into the next mine run via GameManager
 # Costs are in banked mineral_currency (not run_mineral_currency)
-const COST_FUEL_CACHE: int    = 20   # +50 starting fuel next run
+const COST_ENERGY_CACHE: int    = 20   # +50 starting energy next run
 const COST_RATIONS: int       = 25   # +20 forager carry capacity next run
 const COST_SHROOM: int        = 35   # 12 shroom charges next run
 const COST_SHARPENING: int    = 30   # +1 mandible power for one run (temporary)
@@ -20,7 +20,7 @@ const COST_SHARPENING: int    = 30   # +1 mandible power for one run (temporary)
 var _location_name: String = "Settlement"
 var _minerals_label: Label
 var _status_label: Label
-var _btn_fuel: Button
+var _btn_energy: Button
 var _btn_rations: Button
 var _btn_shroom: Button
 var _btn_sharpen: Button
@@ -116,9 +116,9 @@ func _build_ui() -> void:
 	var bw := PANEL_W - BTN_W_OFFSET
 	var by := py + 116
 
-	_btn_fuel = _make_button(canvas, bx, by, bw, BTN_H,
-		"Fuel Cache  —  +50 starting fuel next run  (%d minerals)" % COST_FUEL_CACHE,
-		_buy_fuel_cache)
+	_btn_energy = _make_button(canvas, bx, by, bw, BTN_H,
+		"Energy Cache  —  +50 starting energy next run  (%d minerals)" % COST_ENERGY_CACHE,
+		_buy_energy_cache)
 	by += BTN_GAP
 
 	_btn_rations = _make_button(canvas, bx, by, bw, BTN_H,
@@ -166,7 +166,7 @@ func _refresh_minerals() -> void:
 
 func _update_button_states() -> void:
 	var m := GameManager.mineral_currency
-	_btn_fuel.disabled    = m < COST_FUEL_CACHE
+	_btn_energy.disabled    = m < COST_ENERGY_CACHE
 	_btn_rations.disabled = m < COST_RATIONS
 	_btn_shroom.disabled  = m < COST_SHROOM
 	_btn_sharpen.disabled = m < COST_SHARPENING
@@ -178,13 +178,13 @@ func _set_status(msg: String) -> void:
 # Purchases
 # ---------------------------------------------------------------------------
 
-func _buy_fuel_cache() -> void:
-	if GameManager.mineral_currency < COST_FUEL_CACHE:
+func _buy_energy_cache() -> void:
+	if GameManager.mineral_currency < COST_ENERGY_CACHE:
 		return
-	GameManager.mineral_currency -= COST_FUEL_CACHE
-	GameManager.settlement_fuel_bonus += 50
+	GameManager.mineral_currency -= COST_ENERGY_CACHE
+	GameManager.settlement_energy_bonus += 50
 	GameManager.save_game()
-	_set_status("+50 fuel cache ready for next run!")
+	_set_status("+50 energy cache ready for next run!")
 	_refresh_minerals()
 	_update_button_states()
 

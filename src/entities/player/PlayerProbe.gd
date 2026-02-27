@@ -32,15 +32,15 @@ var _facing_left: bool = true
 # Jetpack
 var has_jetpack: bool = true
 const JETPACK_THRUST: float = -220.0     # Upward velocity applied each frame while thrusting
-const JETPACK_FUEL_RATE: float = 5.0     # Fuel units consumed per second while thrusting
+const JETPACK_ENERGY_RATE: float = 5.0     # Energy units consumed per second while thrusting
 var _jetpack_active: bool = false
-var _jetpack_fuel_accum: float = 0.0
+var _jetpack_energy_accum: float = 0.0
 
-# Sprint — hold Shift for 1.5× speed, costs extra fuel
+# Sprint — hold Shift for 1.5× speed, costs extra energy
 const SPRINT_MULT: float = 1.5
-const SPRINT_FUEL_RATE: float = 4.0     # Fuel units consumed per second while sprinting
+const SPRINT_ENERGY_RATE: float = 4.0     # Energy units consumed per second while sprinting
 var _sprinting: bool = false
-var _sprint_fuel_accum: float = 0.0
+var _sprint_energy_accum: float = 0.0
 
 @onready var jetpack_sprite: Sprite2D = $JetpackSprite
 
@@ -52,7 +52,7 @@ func _ready() -> void:
 	EventBus.player_health_changed.emit(health_component.current_health, health_component.max_health)
 
 func _physics_process(delta: float) -> void:
-	if not mining_level or mining_level._game_over or mining_level._hub_visible or mining_level._fuel_shop_visible or mining_level._trader_shop_visible:
+	if not mining_level or mining_level._game_over or mining_level._hub_visible or mining_level._energy_shop_visible or mining_level._trader_shop_visible:
 		return
 
 	# Gravity
@@ -62,23 +62,23 @@ func _physics_process(delta: float) -> void:
 		if velocity.y > 0:
 			velocity.y = 0
 
-	# Sprint — Shift held, burns fuel, boosts horizontal speed
-	_sprinting = Input.is_action_pressed("sprint") and GameManager.current_fuel > 0
+	# Sprint — Shift held, burns energy, boosts horizontal speed
+	_sprinting = Input.is_action_pressed("sprint") and GameManager.current_energy > 0
 	var effective_speed := move_speed * (SPRINT_MULT if _sprinting else 1.0)
 
 	# Horizontal movement
 	var direction := Input.get_axis("move_left", "move_right")
 	velocity.x = direction * effective_speed
 
-	# Sprint fuel drain (only while actually moving)
+	# Sprint energy drain (only while actually moving)
 	if _sprinting and abs(direction) > 0.1:
-		_sprint_fuel_accum += SPRINT_FUEL_RATE * delta
-		if _sprint_fuel_accum >= 1.0:
-			var to_consume := int(_sprint_fuel_accum)
-			_sprint_fuel_accum -= to_consume
-			GameManager.consume_fuel(to_consume)
+		_sprint_energy_accum += SPRINT_ENERGY_RATE * delta
+		if _sprint_energy_accum >= 1.0:
+			var to_consume := int(_sprint_energy_accum)
+			_sprint_energy_accum -= to_consume
+			GameManager.consume_energy(to_consume)
 	else:
-		_sprint_fuel_accum = 0.0
+		_sprint_energy_accum = 0.0
 
 	# Flip sprite
 	if direction < 0:
@@ -92,17 +92,17 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("jump") and is_on_floor():
 		velocity.y = jump_velocity
 
-	# Jetpack thrust — hold jump while airborne to fly upward, consumes fuel
+	# Jetpack thrust — hold jump while airborne to fly upward, consumes energy
 	# Sprint also boosts vertical thrust by 20% when airborne
 	_jetpack_active = false
-	if has_jetpack and not is_on_floor() and Input.is_action_pressed("jump") and GameManager.current_fuel > 0:
+	if has_jetpack and not is_on_floor() and Input.is_action_pressed("jump") and GameManager.current_energy > 0:
 		velocity.y = JETPACK_THRUST * (1.2 if _sprinting else 1.0)
 		_jetpack_active = true
-		_jetpack_fuel_accum += JETPACK_FUEL_RATE * delta
-		if _jetpack_fuel_accum >= 1.0:
-			var to_consume := int(_jetpack_fuel_accum)
-			_jetpack_fuel_accum -= to_consume
-			GameManager.consume_fuel(to_consume)
+		_jetpack_energy_accum += JETPACK_ENERGY_RATE * delta
+		if _jetpack_energy_accum >= 1.0:
+			var to_consume := int(_jetpack_energy_accum)
+			_jetpack_energy_accum -= to_consume
+			GameManager.consume_energy(to_consume)
 
 	# Sync jetpack sprite with player facing and active state
 	jetpack_sprite.flip_h = sprite.flip_h

@@ -22,7 +22,7 @@ var messages: Array[String] = [
 	"I miss the upper galleries.",
 	"Who digs these side tunnels?",
 	"My antennae are picking up vibrations.",
-	"Anyone got a spare fuel cell?",
+	"Anyone got a spare energy cell?",
 	"The Queen is demanding more.",
 	"Just one more run...",
 	"Did you hear that rumbling?",

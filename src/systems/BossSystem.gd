@@ -14,7 +14,7 @@ extends RefCounted
 # ---------------------------------------------------------------------------
 
 const BOSS_MILESTONES: Array[int] = [32, 64, 96, 112, 128]
-const BOSS_DRAIN_MULT: float      = 1.5   # fuel drain multiplier while boss alive
+const BOSS_DRAIN_MULT: float      = 1.5   # energy drain multiplier while boss alive
 const BOSS_SEGMENT_COUNT: int     = 12    # body segments for Centipede King
 const BOSS_REWARD_BONUS: int      = 100   # flat mineral bonus on defeat
 
@@ -31,7 +31,7 @@ const ANCIENT_VOID_PULSE_WARNING: float   = 1.5   # warning window before pulse 
 const ANCIENT_VOID_PULSE_RADIUS: int      = 7     # radius of void pulse collapse
 const ANCIENT_VOID_FILL_CHANCE: float     = 0.40  # probability each empty tile collapses
 const ANCIENT_CORE_RECHARGE_INTERVAL: float = 8.0 # core resets accumulated damage every 8s (phase 3)
-const ANCIENT_DRAIN_MULT: float           = 2.0   # The Ancient One drains fuel at 2× rate
+const ANCIENT_DRAIN_MULT: float           = 2.0   # The Ancient One drains energy at 2× rate
 
 # Blind Mole tremor timings
 const MOLE_TREMOR_INTERVAL: float   = 7.0
@@ -136,8 +136,8 @@ func update(delta: float) -> void:
 	_update_ancient_one(delta)
 
 
-## Returns the fuel drain multiplier for the current boss (1.0 if no boss active).
-func get_fuel_drain_mult() -> float:
+## Returns the energy drain multiplier for the current boss (1.0 if no boss active).
+func get_energy_drain_mult() -> float:
 	if not boss_active:
 		return 1.0
 	if boss_type == BOSS_TYPE_ANCIENT:
@@ -265,7 +265,7 @@ func _spawn_centipede_king(player_col: int) -> void:
 	_show_banner.call("CENTIPEDE KING AWAKENS!", Color(0.90, 0.10, 0.05))
 	EventBus.ore_mined_popup.emit(0, "Boss! Mine all segments to defeat it!")
 	_shake_camera.call(8.0, 0.4)
-	_pending_hints = ["Click each glowing tile to chip away at it!", "Defeat the boss to restore fuel!"]
+	_pending_hints = ["Click each glowing tile to chip away at it!", "Defeat the boss to restore energy!"]
 
 
 func _spawn_cave_spider_matriarch(player_col: int) -> void:
@@ -292,7 +292,7 @@ func _spawn_cave_spider_matriarch(player_col: int) -> void:
 	_show_banner.call("CAVE SPIDER MATRIARCH!", Color(0.60, 0.10, 0.80))
 	EventBus.ore_mined_popup.emit(0, "Boss! Mine all body parts to defeat it!")
 	_shake_camera.call(8.0, 0.4)
-	_pending_hints = ["Click each glowing segment to chip away at it!", "Defeat the boss to restore fuel!"]
+	_pending_hints = ["Click each glowing segment to chip away at it!", "Defeat the boss to restore energy!"]
 
 
 func _spawn_blind_mole(player_col: int) -> void:
@@ -326,7 +326,7 @@ func _spawn_blind_mole(player_col: int) -> void:
 	_show_banner.call("THE BLIND MOLE STIRS!", Color(0.55, 0.35, 0.10))
 	EventBus.ore_mined_popup.emit(0, "Boss! Mine all segments to defeat it!")
 	_shake_camera.call(12.0, 0.6)
-	_pending_hints = ["Watch for TREMOR warnings — get clear!", "Tremors refill mined tunnels around the boss!", "Defeat the boss to restore fuel!"]
+	_pending_hints = ["Watch for TREMOR warnings — get clear!", "Tremors refill mined tunnels around the boss!", "Defeat the boss to restore energy!"]
 
 
 func _spawn_stone_golem(player_col: int) -> void:
@@ -455,8 +455,8 @@ func _on_boss_defeated() -> void:
 	EventBus.minerals_earned.emit(BOSS_REWARD_BONUS)
 	EventBus.ore_mined_popup.emit(BOSS_REWARD_BONUS, "Boss defeated!")
 	_show_banner.call("BOSS DEFEATED!", Color(0.30, 1.00, 0.40))
-	GameManager.restore_fuel(50)
-	EventBus.ore_mined_popup.emit(50, "Fuel restored!")
+	GameManager.restore_energy(50)
+	EventBus.ore_mined_popup.emit(50, "Energy restored!")
 	_shake_camera.call(14.0, 0.6)
 
 
