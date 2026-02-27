@@ -3,11 +3,11 @@
 
 ## 1. Game Overview
 **Title:** Pickaxe Pioneer
-**Genre:** 2D Grid-Based Mining Roguelite
+**Genre:** 2D Side-Scrolling Mining Roguelite
 **Theme:** Underground Ant Colony Mining Adventure
 **Engine:** Godot 4.5
-**Perspective:** Top-Down Grid (2D)
-**Inspiration:** Motherlode, Supermotherlode, Dwarf Fortress, Path of Exile, ADOM
+**Perspective:** Side-Scrolling 2D (Terraria-style physics)
+**Inspiration:** Motherlode, Supermotherlode, Dwarf Fortress, Path of Exile, ADOM, Noita
 **Target Playtime:** 5-12 hours (first completion), 15-25+ hours (100% completion)
 **Target Platforms:** Steam (Windows/Linux/Mac), Itch.io
 
@@ -27,32 +27,37 @@ You are a red ant venturing out from the colony into the earth below. Each exped
 ### 2.1 Core Loop
 1. **Hub — The Colony (Surface):**
    - View stats, achievements, and total progression
-   - Access the Colony Workshop (permanent ant upgrades)
+   - Access the Colony Workshop (permanent ant upgrades: Carapace, Legs, Mandibles, Mineral Sense)
    - Check the Mission Board (daily challenges, bounties, discovery missions)
    - Read collected Fossils and Ancient Inscriptions in the Archive
    - Interact with colony NPCs for quests and lore
 
 2. **Overworld — The Anthill Map:**
-   - Node-based navigation between different mine entrances
+   - Node-based navigation between mine entrances, settlement rest stops, and the colony
    - Multiple mines with varying depth, ore richness, and hazard profiles
    - Each mine node has a name and unique composition (Iron Mine, Gold Vein, Gem Cavern, etc.)
+   - Settlement nodes offer pre-run consumables for banked minerals
 
-3. **Mining Run — The Descent:**
-   - Spawn at the surface entrance of a mine shaft (32×128 tile grid)
-   - Dig left and down through the grid, mining tiles by moving into them
-   - Each underground tile costs 1 fuel to enter; surface movement is free
+3. **Settlement — Rest Stop:**
+   - Spend banked minerals on run-scoped consumables before entering a mine
+   - Available items: Fuel Cache (+50 starting fuel), Field Repair (+1 HP), Mining Shroom (12 ore-yield charges), Whetstone (+1 mandible power)
+
+4. **Mining Run — The Descent:**
+   - Spawn at the surface entrance of a mine shaft (96×128 tile grid)
+   - Terraria-style physics: gravity, jump, horizontal run; cursor-based mining (left-click within 4.5 tiles)
+   - Fuel depletes with depth; surface movement is free
    - Ore value increases dramatically with depth
    - Hazards: lava flows, explosive gas pockets, unstable rock
    - Fuel Nodes restore energy; the Refuel Station (midpoint) refuels for minerals
    - Reach the Exit Station to complete the run and bank your minerals
 
-4. **Post-Run — Return to Colony:**
-   - Successful surface return: bank all collected minerals
-   - Out of fuel: lose all run minerals, return empty to colony
+5. **Post-Run — Return to Colony:**
+   - Successful surface return: bank all collected minerals (+ any forager-banked minerals)
+   - Out of fuel or HP → 0: lose all run minerals, return empty to colony
    - Review run statistics and depth reached
    - Unlock new upgrades based on mineral wealth
 
-5. **Meta-Progression Loop:**
+6. **Meta-Progression Loop:**
    - Spend minerals on permanent carapace, legs, and mandibles upgrades
    - Unlock new mine locations on the overworld
    - Progress colony story through boss encounters and fossil collection
@@ -88,15 +93,20 @@ You are a red ant venturing out from the colony into the earth below. Each exped
 - **Lean Rations:** Limited fuel capacity, enormous mineral multipliers
 
 ### 2.3 Controls
-- **Movement:**
-  - `W` / `Up Arrow` / `A` / `D` / `S`: Move the ant one tile in that direction
-  - Hold direction key: Auto-repeat movement after 0.15s delay
+- **Movement (Terraria-style physics):**
+  - `A` / `D` / Left Arrow / Right Arrow: Horizontal movement
+  - `W` / `Up Arrow` / `Space`: Jump
+- **Mining:**
+  - Left-click: Mine the tile under the cursor (within 4.5-tile range)
+- **Abilities:**
+  - `Q`: Sonar ping (costs fuel; reveals ore in radius through solid rock)
+  - `F`: Place pheromone marker (directs forager ant)
 - **Interaction:**
-  - `E`: Interact with Refuel Station
+  - `E`: Interact with Refuel Station or NPC
   - `Esc`: Pause Menu
 - **HUD Indicators:**
   - Upper-left: Minerals collected this run
-  - Upper-right: Health squares (carapace HP) and fuel bar
+  - Upper-right: Health squares (carapace HP), segmented fuel bar, depth meter
 
 ### 2.4 Entities
 
@@ -105,26 +115,28 @@ The ant is a red forager from the colony, controlled directly by the player. Mov
 
 **Ant Stats (affected by upgrades):**
 - **Carapace (Health):** Base 3 HP; +1 per Carapace upgrade level
-- **Legs (Speed/Efficiency):** Affects auto-repeat speed and future fuel efficiency upgrades
-- **Mandibles (Mining Power):** Affects damage to special tough tiles and future armored hazards
+- **Legs (Speed/Fuel):** +30 px/s move speed **and** +25 max fuel per level
+- **Mandibles (Mining Power):** +3 mining power per level; affects damage to tough tiles and boss weak points
+- **Mineral Sense:** Increases sonar ping radius and reduces fuel cost per activation
 
 #### Upgrades (Colony Workshop)
-Three permanent upgrade tracks, each with scaling mineral costs (+25 per level):
+Four permanent upgrade tracks, each with scaling mineral costs (+25 per level):
 
 1. **Harden Carapace** (base cost: 50 minerals)
    - Toughens the ant's exoskeleton
    - Effect: +1 max HP per level (base: 3 HP)
-   - Visual: Darker, more armored ant sprite (future)
 
 2. **Strengthen Legs** (base cost: 50 minerals)
-   - Builds leg muscle for more efficient underground travel
-   - Effect: +30 max movement speed per level (future fuel efficiency)
-   - Visual: Longer, more powerful legs (future)
+   - Builds leg muscle for faster movement and greater fuel endurance
+   - Effect: +30 px/s move speed **and** +25 max fuel per level
 
 3. **Sharpen Mandibles** (base cost: 50 minerals)
    - Hones the ant's digging claws to a razor edge
-   - Effect: +3 mining power per level (used for special tile damage)
-   - Visual: Larger, more prominent mandibles (future)
+   - Effect: +3 mining power per level (used for tough tiles and boss armor)
+
+4. **Mineral Sense** (base cost: 50 minerals)
+   - Refines the ant's antennae sensitivity for deeper sonar reads
+   - Effect: Larger sonar ping radius and lower fuel cost per activation per level
 
 #### Mine Tiles
 See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
@@ -236,8 +248,8 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 - **Supply Cache:** Fuel nodes abundant, prepare for deep dive
 - **Boss Encounter:** Elite creature guarding legendary rewards
 
-### 4.3 Mining Level (Grid-Based Procedural Generation)
-**Grid:** 32 columns × 128 rows at 64px per tile (viewport: 1280×720)
+### 4.3 Mining Level (Procedural Generation)
+**Grid:** 96 columns × 128 rows at 64 px per tile
 - **Right 2 columns:** Exit zone (spawn point and return corridor)
 - **Row 0–2:** Surface layer (sky blue, free movement)
 - **Row 3:** Grass surface row (1 mineral each)
@@ -276,13 +288,14 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 
 ### 5.2 Upgrade System
 
-**Colony Workshop — Three Tracks:**
+**Colony Workshop — Four Tracks:**
 
 | Upgrade | Stat | Base Cost | Per Level | Max Levels |
 |---------|------|-----------|-----------|-----------|
 | Harden Carapace | +1 Max HP | 50 minerals | +25 minerals | 10 |
-| Strengthen Legs | +30 move speed | 50 minerals | +25 minerals | 10 |
+| Strengthen Legs | +30 px/s speed & +25 max fuel | 50 minerals | +25 minerals | 10 |
 | Sharpen Mandibles | +3 mining power | 50 minerals | +25 minerals | 10 |
+| Mineral Sense | Larger sonar radius, lower fuel/ping | 50 minerals | +25 minerals | 10 |
 
 **Future Upgrade Tracks (Planned):**
 - **Fuel Sac:** Increases max fuel capacity
@@ -349,20 +362,25 @@ res://
 ├── docs/             # Documentation
 ├── notes/            # Development notes
 └── src/              # Source Code & Scenes
-    ├── autoload/     # Global Singletons (GameManager, EventBus, etc.)
-    ├── components/   # Reusable Component Nodes
-    ├── entities/     # Game Objects (PlayerProbe/Ant, ScrapLoot/Minerals, NPCs)
-    ├── levels/       # Game Scenes (Overworld, MiningLevel, CityLevel/Colony)
-    ├── systems/      # Systems (ChatterManager, etc.)
-    └── ui/           # User Interface (HUD, UpgradeMenu, RunSummary)
+    ├── autoload/     # Global Singletons (GameManager, EventBus, SoundManager, MusicManager, etc.)
+    ├── components/   # Reusable Component Nodes (HealthComponent, StateMachine, etc.)
+    ├── entities/     # Game Objects (PlayerProbe/Ant, ScrapLoot/Minerals, NPCs, Overworld tokens)
+    ├── levels/       # Game Scenes (Overworld, MiningLevel, CityLevel, SettlementLevel)
+    ├── systems/      # Extracted subsystems (SmeltingSystem, FossilSystem, SonarSystem, ForagerSystem, BossSystem)
+    └── ui/           # User Interface (HUD, UpgradeMenu, RunSummary, LevelInfoModal, etc.)
 ```
 
 ### 7.2 Key Systems
-- **GameManager:** Game state, scene transitions, mineral currency, upgrade levels
-- **EventBus:** Decoupled signals (minerals_changed, minerals_earned, fuel_changed, player_health_changed)
-- **MiningLevel:** Grid-based world, tile generation, player movement, fuel logic
-- **UpgradeMenu:** Colony Workshop UI, carapace/legs/mandibles upgrades
-- **HUD:** Minerals counter, health squares, 10-segment fuel bar
+- **GameManager:** Game state, scene transitions, mineral currency, 4 upgrade tracks, fuel, settlement carry-overs
+- **EventBus:** Decoupled signals (minerals_changed, minerals_earned, fuel_changed, player_health_changed, player_died)
+- **MiningLevel:** Terraria-style physics world, procedural tile generation, cursor mining, fuel logic; delegates to subsystems below
+- **SmeltingSystem:** Consecutive ore chain bonuses and alloy combos
+- **FossilSystem:** Fossil drop probability with forgiveness pity counter per block type
+- **SonarSystem:** Sonar ping — radial ore detection, fuel cost per activation
+- **ForagerSystem:** Forager ant companion — collects 40% ore yield, auto-banks when full
+- **BossSystem:** Five depth-milestone boss encounters; fuel pressure, phase management
+- **UpgradeMenu:** Colony Workshop UI — Carapace / Legs / Mandibles / Mineral Sense upgrades
+- **HUD:** Minerals counter, health squares, segmented fuel bar, depth meter, milestone banners
 
 ### 7.3 Save System
 Persistent save via JSON (`user://save_data.json`):
