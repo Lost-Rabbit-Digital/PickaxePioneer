@@ -13,6 +13,9 @@ var run_mineral_currency: int = 0
 # Per-ore tracking for run summary (tile_type_id -> count/minerals)
 var run_ore_counts: Dictionary = {}
 var run_ore_earnings: Dictionary = {}
+
+# Maximum number of ore pieces the player can carry per run
+const MAX_ORE_CAPACITY: int = 50
 var last_overworld_node_name: String = ""
 
 # Ores allowed to spawn in the current level instance (set from MapNode.ore_types).

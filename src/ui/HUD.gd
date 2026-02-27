@@ -1,7 +1,7 @@
 class_name HUD
 extends CanvasLayer
 
-# HUD — displays Minerals total (upper-left), health squares and energy gauge (upper-right).
+# HUD — displays Ore Capacity (upper-left), health squares and energy gauge (upper-right).
 
 @onready var scrap_label: Label = $Control/ScrapLabel
 @onready var health_container: HBoxContainer = $Control/HealthContainer
@@ -106,7 +106,7 @@ func _ready() -> void:
 	scrap_panel = ColorRect.new()
 	scrap_panel.color = Color(0.0, 0.0, 0.0, 0.55)
 	scrap_panel.position = Vector2(8, 8)
-	scrap_panel.size = Vector2(148, 34)
+	scrap_panel.size = Vector2(172, 34)
 	scrap_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	$Control.add_child(scrap_panel)
 	$Control.move_child(scrap_panel, 0)  # Draw behind everything else
@@ -193,8 +193,11 @@ func _ready() -> void:
 	# Initialize energy display after all UI elements are created
 	_on_energy_changed(GameManager.current_energy, GameManager.get_max_energy())
 
-func _on_minerals_changed(amount: int) -> void:
-	scrap_label.text = "Minerals: %d" % amount
+func _on_minerals_changed(_amount: int) -> void:
+	var ore_count := 0
+	for count in GameManager.run_ore_counts.values():
+		ore_count += count
+	scrap_label.text = "Capacity: %d/%d" % [ore_count, GameManager.MAX_ORE_CAPACITY]
 
 # Called when a tile is mined — shows a coloured "+X OreName" popup.
 func _on_ore_mined_popup(amount: int, ore_name: String) -> void:

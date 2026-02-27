@@ -1371,14 +1371,10 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 				var world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
 				_spawn_ore_chunks(tile, minerals, world_pos)
 				GameManager.track_ore_mined(tile, minerals)
+				EventBus.minerals_changed.emit(GameManager.run_mineral_currency)
 				var popup_label: String = "LUCKY!" if lucky else TILE_NAMES.get(tile, "Mineral")
 				EventBus.ore_mined_popup.emit(minerals, popup_label)
-			else:
-				# Non-ore tiles (dirt, stone, grass) still reward instantly.
-				GameManager.add_currency(minerals)
-				GameManager.track_ore_mined(tile, minerals)
-				EventBus.minerals_earned.emit(minerals)
-				EventBus.ore_mined_popup.emit(minerals, TILE_NAMES.get(tile, "Mineral"))
+			# Non-ore tiles (dirt, stone, grass) give no minerals.
 			_check_streak_milestone()
 		SoundManager.play_drill_sound()
 	else:
