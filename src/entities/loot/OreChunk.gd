@@ -2,14 +2,12 @@ class_name OreChunk
 extends CharacterBody2D
 
 # Ore chunk — spawned when an ore block is fully mined.
-# Falls with gravity, lands on terrain, then magnetises toward the player.
-# Collected on proximity; the forager ant can also sweep it up silently.
+# Falls with gravity, lands on terrain. No automatic magnet — the player must
+# physically walk onto the chunk (or the forager ant sweeps it up) to collect it.
 
 const GRAVITY: float = 600.0
-const MAGNET_RADIUS: float = 130.0
-const MAGNET_SPEED: float = 380.0
-const CHUNK_SIZE: float = 10.0
-const COLLECT_DIST: float = 20.0
+const CHUNK_SIZE: float = 20.0
+const COLLECT_DIST: float = 24.0
 
 # Ore type → chunk colour (mirrors MiningLevel.TILE_COLORS)
 const CHUNK_COLORS: Dictionary = {
@@ -26,8 +24,6 @@ const CHUNK_COLORS: Dictionary = {
 ## Set by MiningLevel before adding to the scene tree.
 var ore_type: int = 0
 var value: int = 1
-
-var _magnetized: bool = false
 
 func _ready() -> void:
 	add_to_group("ore_chunk")
@@ -59,22 +55,12 @@ func _physics_process(delta: float) -> void:
 		velocity.y = 0.0
 		velocity.x = move_toward(velocity.x, 0.0, 250.0 * delta)
 
-	# Begin magnetising once the player steps into range.
-	if not _magnetized:
-		var players := get_tree().get_nodes_in_group("player")
-		if players.size() > 0 and \
-				global_position.distance_to(players[0].global_position) < MAGNET_RADIUS:
-			_magnetized = true
-
-	if _magnetized:
-		var players := get_tree().get_nodes_in_group("player")
-		if players.size() > 0:
-			var player: Node2D = players[0]
-			var dir := global_position.direction_to(player.global_position)
-			velocity = velocity.move_toward(dir * MAGNET_SPEED, 1400.0 * delta)
-			if global_position.distance_to(player.global_position) < COLLECT_DIST:
-				collect()
-				return
+	# Collect when the player physically walks onto the chunk.
+	var players := get_tree().get_nodes_in_group("player")
+	if players.size() > 0 and \
+			global_position.distance_to(players[0].global_position) < COLLECT_DIST:
+		collect()
+		return
 
 	move_and_slide()
 
