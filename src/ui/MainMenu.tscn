@@ -28,6 +28,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 script = ExtResource("1_script")
 
 [node name="Background" type="Node2D" parent="."]
@@ -43,6 +44,7 @@ offset_top = 80.0
 offset_right = 300.0
 offset_bottom = 180.0
 grow_horizontal = 2
+mouse_filter = 2
 theme_override_colors/font_color = Color(0.9, 0.7, 0.3, 1)
 theme_override_font_sizes/font_size = 72
 text = "PICKAXE PIONEER"
@@ -59,6 +61,7 @@ offset_top = 180.0
 offset_right = 200.0
 offset_bottom = 220.0
 grow_horizontal = 2
+mouse_filter = 2
 theme_override_colors/font_color = Color(0.7, 0.6, 0.4, 1)
 theme_override_font_sizes/font_size = 24
 text = "Scavenge the Wastes"
