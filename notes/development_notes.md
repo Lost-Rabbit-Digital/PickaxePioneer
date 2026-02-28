@@ -73,7 +73,7 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
   - *Nursery Vault* (10 fossils found, cost 250): +5% fossil base find rate (via `get_fossil_rate_bonus()`)
   - *Deep Antenna Array* (reach row 96, cost 200): sonar ping radius +3 (via updated `get_sonar_ping_radius()`)
   - *Royal Archive* / *Queen's Sanctum*: deferred — require content (lore system, Tier 3 Research Tree) not yet built.
-- [ ] **Expand worker ant system to profession types** — Scout, Engineer, Soldier — after Forager companion is stable. Requires pheromone trail data (done) + zone assignment. Do not implement before Forager is working. See docs/mining_game_design_lessons.md §3.1
+- [ ] **Expand Scout Cat system to profession types** — Hunter, Digger, Lookout — after Forager companion is stable. Requires pheromone trail data (done) + zone assignment. Do not implement before Forager is working. See docs/mining_game_design_lessons.md §3.1
 - [ ] **Make some fossils discoverable only via specific mining patterns** — not random drops. Examples: a 2×3 cluster of gem tiles, mining three energy nodes in sequence. Rewards attentive play. See docs/mining_game_design_lessons.md §3.6
 
 ### World and Environment
@@ -88,7 +88,7 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 ### Economy and NPC
 - [ ] **Allow selling ore types individually or in batches to different NPCs** — overworld settlement traders buy specific ore types at premium prices, creating routing decisions.
 - [ ] **Add a gambling mini-game** — bet run minerals on ore quality predictions at a settlement. Small scope, adds texture to overworld stops.
-- [ ] **Implement ant appearance customisation** — carapace colour, mandible shape. Purely cosmetic; can be unlocked through fossil collection or milestone rewards.
+- [ ] **Implement cat appearance customisation** — fur colour, pattern, collar unlocks. Purely cosmetic; can be unlocked through fossil collection or milestone rewards.
 
 ### Colony Workshop Expansion
 - [ ] **Expand Colony Workshop** — add Energy Sac upgrade track (energy capacity, separate from Legs which currently handles both speed and energy). Decoupling these into separate tracks gives the player more meaningful choice.
@@ -117,16 +117,16 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 ## Shelved / Far Future
 *These ideas have merit but are out of scope until the core loop is polished and the game is approaching a shippable state. Keeping them here prevents re-adding them to active lists.*
 
-- **Multiplayer co-op** — two ants in the same mine. Requires independent energy pools per player (Super Motherload lesson). No engine infrastructure for this yet.
-- **Rival ant colonies competing for mine shafts** — needs AI opponent system and overworld territory logic.
-- **User-run mining consortiums (guilds)** — shared colony resource tracking across players. Requires server infrastructure.
+- **Multiplayer co-op** — two cats in the same mine. Requires independent energy pools per player (Super Motherload lesson). No engine infrastructure for this yet.
+- **Rival cat clowders competing for mine shafts** — needs AI opponent system and overworld territory logic.
+- **User-run mining consortiums (guilds)** — shared clowder resource tracking across players. Requires server infrastructure.
 - **Connect Steamworks API** — achievements, chat overlays. Appropriate once the game is on Steam.
 - **NoobHub with AWS Lambda for global colony chat** — server infrastructure; not needed for a single-player prototype.
 - **Day/night cycle** — the game is set underground; the surface is 3 rows. The gameplay impact does not justify the scope.
 - **Implement territory control** — claim mine nodes for passive income. Overworld needs to be much more developed first.
 - **Alchemy system** — distil rare minerals into colony buffs. Needs harvestable fungi/roots tile types first, which don't exist.
 - **Harvestable fungi and roots** — requires new tile types, art, and collection mechanics.
-- **Introduce rival ant colonies competing** — needs AI pathfinding and contested-resource systems.
+- **Introduce rival cat clowders competing** — needs AI pathfinding and contested-resource systems.
 - **Cargo/abdomen capacity** — separate carry limit on top of energy. The design doc (§3.7) explicitly defers this until after the Forager Ant is implemented; the Forager changes the risk calculus entirely.
 - **ADOM-style overworld with cavern networks** — an overworld exists; cavern networks connecting mine nodes would be a major structural redesign.
 
@@ -135,9 +135,9 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 ## Ideas for Future Consideration
 *Rough ideas worth remembering but not yet scoped.*
 
-- [ ] Create story-driven quests from the Queen with cliffhangers
+- [ ] Create story-driven quests from the Matriarch with cliffhangers
 - [ ] Implement a fossil and rare mineral museum for collection rewards — ties into fossil forgiveness system
-- [ ] Create colony-driven economies with ant-to-ant mineral trading
+- [ ] Create clowder-driven economies with cat-to-cat mineral trading
 - [x] Add special event mines with boosted ore richness for limited times
-- [ ] Pet/companion system — a non-ant creature (beetle, springtail) that provides a passive bonus distinct from worker ants. Lower scope than the full worker ant system.
+- [ ] Pet/companion system — a non-cat creature (mouse, bird) that provides a passive bonus distinct from the Scout Cat. Lower scope than the full Scout Cat system.
 - [ ] Fishing/foraging mini-game on the surface between runs — requires surface content expansion first

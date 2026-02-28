@@ -238,7 +238,7 @@ func get_pending_hints() -> Array[String]:
 
 
 ## Called by MiningLevel after a BOSS_SEGMENT or BOSS_CORE tile is fully mined.
-## Handles phase advancement (Golem, Ancient One) and defeat detection.
+## Handles phase advancement (Golem, Ancient Star Beast) and defeat detection.
 func on_tile_mined(col: int, row: int, tile_type: int) -> void:
 	var mined_pos := Vector2i(col, row)
 	boss_tile_positions.erase(mined_pos)
@@ -259,7 +259,7 @@ func on_tile_mined(col: int, row: int, tile_type: int) -> void:
 				EventBus.ore_mined_popup.emit(0, "Strike the core!")
 				_shake_camera.call(8.0, 0.4)
 
-	# Ancient One: track shell phase transitions
+	# Ancient Star Beast: track shell phase transitions
 	if boss_active and boss_type == BOSS_TYPE_ANCIENT and tile_type == _TILE_BOSS_SEGMENT:
 		if mined_pos in _ancient_outer_positions:
 			_ancient_outer_positions.erase(mined_pos)

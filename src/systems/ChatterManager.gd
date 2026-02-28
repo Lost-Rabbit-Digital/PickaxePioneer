@@ -29,6 +29,9 @@ var messages: Array[String] = [
 	"Sensing mineral veins ahead...",
 	"Back to the digging.",
 	"Hope the deposit is rich.",
+	"Curiosity didn't kill this cat...",
+	"Nine lives, but I'd rather not use them.",
+	"Keep your claws sharp, your whiskers sharper.",
 
 	# Tips
 	"Don't step on lava!",
@@ -47,7 +50,10 @@ var messages: Array[String] = [
 	"How far does the earth go?",
 	"They say there's a gem vein nearby.",
 	"I found a strange crystal yesterday.",
-	"The deep rocks are shifting."
+	"The deep rocks are shifting.",
+	"My paws were made for digging.",
+	"Ancient tunnels... something old lives down here.",
+	"The Matriarch's whiskers never lie.",
 ]
 
 func _ready() -> void:

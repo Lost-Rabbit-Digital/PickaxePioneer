@@ -163,22 +163,22 @@ func _transition_to_scene(scene_path: String) -> void:
 func upgrade_carapace() -> void:
 	carapace_level += 1
 	save_game()
-	print("Carapace upgraded to level ", carapace_level)
+	print("Spacesuit reinforced to level ", carapace_level)
 
 func upgrade_legs() -> void:
 	legs_level += 1
 	save_game()
-	print("Legs upgraded to level ", legs_level)
+	print("Jet Boots upgraded to level ", legs_level)
 
 func upgrade_mandibles() -> void:
 	mandibles_level += 1
 	save_game()
-	print("Mandibles upgraded to level ", mandibles_level)
+	print("Space Pickaxe enhanced to level ", mandibles_level)
 
 func upgrade_mineral_sense() -> void:
 	mineral_sense_level += 1
 	save_game()
-	print("Mineral Sense upgraded to level ", mineral_sense_level)
+	print("Space Whiskers tuned to level ", mineral_sense_level)
 
 func get_sonar_ping_radius() -> float:
 	return 4.0 + mineral_sense_level * 3.0 + (3.0 if sense_gem_socketed else 0.0)
