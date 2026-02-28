@@ -1,163 +1,13 @@
-[gd_scene load_steps=88 format=3 uid="uid://c8x7k2q5y302"]
+[gd_scene load_steps=65 format=3 uid="uid://c8x7k2q5y302"]
 
 [ext_resource type="Script" uid="uid://qet53heo74tq" path="res://src/entities/player/PlayerProbe.gd" id="1_probe"]
 [ext_resource type="Script" uid="uid://c062iuy7bensn" path="res://src/components/HealthComponent.gd" id="2_health"]
+[ext_resource type="SpriteFrames" uid="uid://bfkysu132gal1" path="res://assets/elemental_followers/ice_elemental_spriteframes.tres" id="2_t7q6t"]
 [ext_resource type="Texture2D" uid="uid://bioqrfw288och" path="res://assets/player_cat_spritesheet.png" id="2_yx8hx"]
+[ext_resource type="SpriteFrames" uid="uid://cr6cw6dcjd3bw" path="res://assets/elemental_followers/leaf_elemental_spriteframes.tres" id="3_gh7rg"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(56, 60)
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_8ebmi"]
-load_path = "res://.godot/imported/hat1.png-4722e770fdb9c24138be219653489c4a.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_yx8hx"]
-load_path = "res://.godot/imported/hat2.png-bcb8dc93b883ff6dfc2d560f9f0935a4.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_t7q6t"]
-load_path = "res://.godot/imported/hat3.png-d4a90dad377cceeaee5479ac80c9aaf2.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_gh7rg"]
-load_path = "res://.godot/imported/hat4.png-52d60cbc226bf1ea612abc4ac8519b5a.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_aol7p"]
-load_path = "res://.godot/imported/hat5.png-d7213bbebb646451848c0f16ece2ba8d.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_ci55w"]
-load_path = "res://.godot/imported/hat6.png-38b19a232638756630bd2f897d12f06f.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_xvfuw"]
-load_path = "res://.godot/imported/hat7.png-5c855b111000465f230c0fd040ff7074.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_4l0a6"]
-load_path = "res://.godot/imported/hat8.png-e1edbfd7dcbe1456c0a2d3959d49e4a5.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_g2ni8"]
-load_path = "res://.godot/imported/hat9.png-d0d31baadad7b5c4d65701ab737092ca.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_sobun"]
-load_path = "res://.godot/imported/hat10.png-1171e7845cd8f147c637df94d1199d56.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_4tmsc"]
-load_path = "res://.godot/imported/hat11.png-59ffcae11cacc06c085ac94bed4624a8.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_mu4qo"]
-load_path = "res://.godot/imported/hat12.png-644f9207bc43804a44cabf1625061ae7.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_nhwaa"]
-load_path = "res://.godot/imported/hat13.png-8c58b175f6d912e658dd4ff338fdcb27.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_r42i1"]
-load_path = "res://.godot/imported/hat14.png-b3ba333d88ac7f5d36f635083186b367.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_ojlfg"]
-load_path = "res://.godot/imported/hat15.png-fffbdf2d779f0ff4d56a46d4726561e8.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_kooxh"]
-load_path = "res://.godot/imported/hat16.png-88ac6370beb7a349f774bf994ad8a5be.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_sevcp"]
-load_path = "res://.godot/imported/hat17.png-0cd4d085bcd0ee8af345c8088a2cc0eb.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_r1l7k"]
-load_path = "res://.godot/imported/hat19.png-fb7cc948e4bc8afa32068bdba0e4dbd0.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_ff6td"]
-load_path = "res://.godot/imported/hat20.png-5673185e54d0c6a1cac779d747d834ad.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_f0jk2"]
-load_path = "res://.godot/imported/hat21.png-728db4a6b8ed512ff59cd5b9abf63aea.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_fvfj6"]
-load_path = "res://.godot/imported/hat22.png-36ec809e53db60aaf78fd2139be8e87b.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_3oyke"]
-load_path = "res://.godot/imported/hat23.png-cb595b9554c2ee22e1f2142e9d4d5577.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_e2mc5"]
-load_path = "res://.godot/imported/hat24.png-d77b2af524d4e946be19a960456f300d.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_o47gn"]
-load_path = "res://.godot/imported/hat25.png-23bfef3413ff832c36a0042345818010.ctex"
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_aol7p"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_8ebmi")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_yx8hx")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_t7q6t")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_gh7rg")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_aol7p")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_ci55w")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_xvfuw")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_4l0a6")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_g2ni8")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_sobun")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_4tmsc")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_mu4qo")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_nhwaa")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_r42i1")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_ojlfg")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_kooxh")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_sevcp")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_r1l7k")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_ff6td")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_f0jk2")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_fvfj6")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_3oyke")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_e2mc5")
-}, {
-"duration": 1.0,
-"texture": SubResource("CompressedTexture2D_o47gn")
-}],
-"loop": false,
-"name": &"default",
-"speed": 0.0
-}]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_sobun"]
 atlas = ExtResource("2_yx8hx")
@@ -603,15 +453,25 @@ script = ExtResource("1_probe")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_player")
 
-[node name="ElementalFollower" type="AnimatedSprite2D" parent="."]
-z_index = 1
-texture_filter = 1
+[node name="ElementalFollowers" type="Node2D" parent="."]
 position = Vector2(0, -12.999999)
 scale = Vector2(2.75, 2.75)
-sprite_frames = SubResource("SpriteFrames_aol7p")
-frame = 16
-offset = Vector2(3.55, -1.72)
-flip_h = true
+
+[node name="IceElemental" type="AnimatedSprite2D" parent="ElementalFollowers"]
+z_index = 1
+texture_filter = 1
+position = Vector2(-32, 0)
+scale = Vector2(0.99999994, 0.99999994)
+sprite_frames = ExtResource("2_t7q6t")
+animation = &"damage"
+
+[node name="LeafElemental" type="AnimatedSprite2D" parent="ElementalFollowers"]
+z_index = 1
+texture_filter = 1
+position = Vector2(-64, 0)
+scale = Vector2(0.99999994, 0.99999994)
+sprite_frames = ExtResource("3_gh7rg")
+animation = &"scared"
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 texture_filter = 1
