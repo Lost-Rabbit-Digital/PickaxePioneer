@@ -57,8 +57,12 @@ var mine_metadata: Dictionary = {
 }
 
 func _ready() -> void:
-	# Randomize mine nodes
-	_randomize_mines()
+	# Restore or randomize mine nodes
+	var saved_config := SaveManager.get_planet_config()
+	if saved_config.size() > 0:
+		_restore_mines(saved_config)
+	else:
+		_randomize_mines()
 
 	# Set static node metadata
 	city_node.description = "Your home Space Station. Spend your hard-earned minerals on upgrades to improve your space mining operation."
@@ -129,6 +133,36 @@ func _randomize_mines() -> void:
 	else:
 		# Hide second mine if only 1 mine is selected
 		mine_node_2.visible = false
+
+	# Persist planet config so it stays consistent until the player dies
+	_save_planet_config()
+
+func _restore_mines(config: Dictionary) -> void:
+	# Restore mine configuration from a saved planet config
+	var mine1_name: String = config.get("mine1_name", "")
+	var mine2_name: String = config.get("mine2_name", "")
+	var mine2_visible: bool = config.get("mine2_visible", true)
+
+	if mine1_name != "":
+		mine_node_1.location_name = mine1_name
+		_apply_mine_metadata(mine_node_1, mine1_name)
+		mine_node_1._update_visuals()
+
+	if mine2_name != "":
+		mine_node_2.location_name = mine2_name
+		_apply_mine_metadata(mine_node_2, mine2_name)
+		mine_node_2._update_visuals()
+		mine_node_2.visible = mine2_visible
+	else:
+		mine_node_2.visible = false
+
+func _save_planet_config() -> void:
+	var config := {
+		"mine1_name": mine_node_1.location_name,
+		"mine2_name": mine_node_2.location_name if mine_node_2.visible else "",
+		"mine2_visible": mine_node_2.visible,
+	}
+	SaveManager.save_planet_config(config)
 
 func _arrange_nodes_in_circle() -> void:
 	var center := Vector2(640, 360)
@@ -302,6 +336,7 @@ func _on_modal_confirmed(node: MapNode) -> void:
 	GameManager.last_overworld_node_name = node.name
 	GameManager.allowed_ore_types = node.ore_types.duplicate()
 	GameManager.allowed_hazard_types = node.hazard_types.duplicate()
+	GameManager.save_game()
 
 	if node.node_type == MapNode.NodeType.MINE or node.node_type == MapNode.NodeType.STATION:
 		GameManager.load_mining_level(node.scene_path)
