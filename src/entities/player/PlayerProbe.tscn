@@ -1,30 +1,69 @@
-[gd_scene load_steps=5 format=3 uid="uid://c8x7k2q5y3z2"]
+[gd_scene load_steps=6 format=3 uid="uid://c8x7k2q5y302"]
 
-[ext_resource type="Script" path="res://src/entities/player/PlayerProbe.gd" id="1_probe"]
-[ext_resource type="Script" path="res://src/components/HealthComponent.gd" id="2_health"]
-[ext_resource type="Texture2D" path="res://assets/blocks/coral_block_brain.png" id="3_coral"]
+[ext_resource type="Script" uid="uid://qet53heo74tq" path="res://src/entities/player/PlayerProbe.gd" id="1_probe"]
+[ext_resource type="Script" uid="uid://c062iuy7bensn" path="res://src/components/HealthComponent.gd" id="2_health"]
+[ext_resource type="Texture2D" uid="uid://0jseqfgr1hyk" path="res://assets/blocks/coral_block_brain.png" id="3_coral"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(56, 60)
 
+[sub_resource type="SpriteFrames" id="SpriteFrames_8ebmi"]
+animations = [{
+"frames": [],
+"loop": true,
+"name": &"clean",
+"speed": 5.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"idle",
+"speed": 5.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"jump",
+"speed": 5.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"movement",
+"speed": 5.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"paw",
+"speed": 5.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"scared",
+"speed": 5.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"sleep",
+"speed": 5.0
+}]
+
 [node name="PlayerProbe" type="CharacterBody2D"]
 collision_layer = 2
-collision_mask = 1
 script = ExtResource("1_probe")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_player")
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 texture_filter = 1
 scale = Vector2(4, 4)
+sprite_frames = SubResource("SpriteFrames_8ebmi")
+animation = &"scared"
 
 [node name="JetpackSprite" type="Sprite2D" parent="."]
-texture = ExtResource("3_coral")
+z_index = -1
 texture_filter = 1
 position = Vector2(0, 8)
 scale = Vector2(2, 2)
-z_index = -1
+texture = ExtResource("3_coral")
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("2_health")
@@ -34,10 +73,6 @@ layer = 10
 
 [node name="InteractPrompt" type="Label" parent="PromptLayer"]
 visible = false
-layout_mode = 0
-offset_left = 0.0
-offset_top = 0.0
 offset_right = 320.0
 offset_bottom = 32.0
-text = ""
 horizontal_alignment = 1

@@ -344,7 +344,6 @@ var grid: Array = []
 var has_left_spawn: bool = false
 
 var tile_textures: Dictionary = {}
-var player_texture: Texture2D
 
 # Camera
 var camera: Camera2D
@@ -462,7 +461,6 @@ const FARM_NPC_ROW: int = 2  # Placed on the middle surface row
 var _pickaxe_texture: Texture2D
 
 func _ready() -> void:
-	player_texture = load("res://assets/cat_miner.png") as Texture2D
 	_pickaxe_texture = load("res://assets/pickaxe_effect.png") as Texture2D
 
 	texture_filter = TEXTURE_FILTER_NEAREST
@@ -495,7 +493,6 @@ func _ready() -> void:
 		spawn_row * CELL_SIZE + CELL_SIZE * 0.5
 	)
 	player_node.mining_level = self
-	player_node.sprite.texture = player_texture
 	player_node.sprite.scale = Vector2(0.5, 0.5)
 
 	EventBus.player_died.connect(_on_player_died)
