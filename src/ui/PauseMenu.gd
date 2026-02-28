@@ -3,14 +3,16 @@ extends CanvasLayer
 # Pause menu — shown when Escape is pressed during mining.
 # Handles audio settings (Master + Music volume) and exit to main menu.
 
-@onready var master_slider: HSlider = $Panel/VBox/MasterSlider
-@onready var music_slider: HSlider  = $Panel/VBox/MusicSlider
-@onready var resume_button: Button  = $Panel/VBox/ResumeButton
-@onready var exit_button: Button    = $Panel/VBox/ExitButton
+@onready var master_slider: HSlider  = $Panel/VBox/MasterSlider
+@onready var music_slider: HSlider   = $Panel/VBox/MusicSlider
+@onready var resume_button: Button   = $Panel/VBox/ResumeButton
+@onready var exit_button: Button     = $Panel/VBox/ExitButton
+@onready var version_label: Label    = $Panel/VBox/VersionLabel
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	hide()
+	version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
 	resume_button.pressed.connect(_on_resume_pressed)
 	exit_button.pressed.connect(_on_exit_pressed)
 	master_slider.value_changed.connect(_on_master_volume_changed)

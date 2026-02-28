@@ -327,4 +327,22 @@ theme_override_font_sizes/font_size = 22
 tooltip_text = "Back to the cosmos."
 text = "CLOSE"
 
+[node name="VersionLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -30.0
+offset_right = 100.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.5, 0.45, 0.35, 0.6)
+theme_override_font_sizes/font_size = 14
+text = "v0.1.0"
+horizontal_alignment = 1
+
 [connection signal="pressed" from="SocialButtons/DiscordButton" to="SocialButtons" method="_on_discord_button_pressed"]
