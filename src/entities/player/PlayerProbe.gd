@@ -23,7 +23,7 @@ const MINE_INTERVAL: float = 0.12  # Seconds between mining hits
 var mining_level: Node = null
 
 @onready var health_component: HealthComponent = $HealthComponent
-@onready var sprite: Sprite2D = $Sprite2D
+@onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var interact_prompt: Label = $PromptLayer/InteractPrompt
 
 # Facing direction
@@ -50,6 +50,7 @@ func _ready() -> void:
 	health_component.died.connect(_on_died)
 	move_speed = GameManager.get_max_speed()
 	EventBus.player_health_changed.emit(health_component.current_health, health_component.max_health)
+	sprite.play(&"idle")
 
 func _physics_process(delta: float) -> void:
 	if not mining_level or mining_level._game_over or mining_level._hub_visible or mining_level._energy_shop_visible or mining_level._trader_shop_visible:
@@ -115,6 +116,24 @@ func _physics_process(delta: float) -> void:
 
 	# Cursor mining
 	_handle_mining(delta)
+
+	# Update animation based on current state
+	_update_animation()
+
+func _update_animation() -> void:
+	var anim: StringName
+
+	if _mining and is_on_floor():
+		anim = &"paw"
+	elif not is_on_floor():
+		anim = &"jump"
+	elif abs(velocity.x) > 0.1:
+		anim = &"movement"
+	else:
+		anim = &"idle"
+
+	if sprite.animation != anim:
+		sprite.play(anim)
 
 func _handle_mining(delta: float) -> void:
 	# No mining while flying with the jetpack
