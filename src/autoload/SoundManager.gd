@@ -5,6 +5,25 @@ extends Node
 
 var sample_rate = 44100.0
 
+var _rocket_engine_player: AudioStreamPlayer = null
+
+func start_rocket_engine_sound() -> void:
+	if _rocket_engine_player and _rocket_engine_player.playing:
+		return
+	if not _rocket_engine_player:
+		_rocket_engine_player = AudioStreamPlayer.new()
+		add_child(_rocket_engine_player)
+		var stream: AudioStreamWAV = load("res://assets/sound_effects/rocket_engine.wav").duplicate()
+		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		_rocket_engine_player.stream = stream
+		_rocket_engine_player.bus = &"SFX"
+		_rocket_engine_player.volume_db = -10.0
+	_rocket_engine_player.play()
+
+func stop_rocket_engine_sound() -> void:
+	if _rocket_engine_player and _rocket_engine_player.playing:
+		_rocket_engine_player.stop()
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 

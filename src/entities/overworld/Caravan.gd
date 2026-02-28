@@ -44,6 +44,7 @@ func move_along_path(positions: Array[Vector2]) -> void:
 	target_position = positions[-1]
 	is_moving = true
 	_wiggle_time = 0.0
+	SoundManager.start_rocket_engine_sound()
 
 	# Flip sprite based on horizontal direction to the first waypoint
 	_update_facing(positions[0])
@@ -71,6 +72,7 @@ func move_along_path(positions: Array[Vector2]) -> void:
 
 	movement_tween.tween_callback(func() -> void:
 		is_moving = false
+		SoundManager.stop_rocket_engine_sound()
 		arrived.emit()
 	)
 
@@ -85,6 +87,7 @@ func teleport_to(pos: Vector2) -> void:
 	if movement_tween:
 		movement_tween.kill()
 
+	SoundManager.stop_rocket_engine_sound()
 	position = pos
 	target_position = pos
 	is_moving = false
