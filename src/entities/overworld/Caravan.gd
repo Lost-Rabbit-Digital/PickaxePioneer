@@ -3,7 +3,9 @@ extends Node2D
 
 # Player token on the Overworld
 
-@export var speed: float = 200.0
+@export var base_speed: float = 200.0
+var speed: float:
+	get: return base_speed * GameManager.get_ship_speed_mult()
 var target_position: Vector2
 var is_moving: bool = false
 var movement_tween: Tween

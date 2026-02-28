@@ -405,10 +405,6 @@ var _exit_pulse_time: float = 0.0
 # Cursor highlight
 var _cursor_grid_pos: Vector2i = Vector2i(-1, -1)
 
-# Pheromone trails — mined tile positions with fade alpha (§3.3)
-var _pheromone_trails: Dictionary = {}
-const PHEROMONE_FADE_RATE: float = 0.025  # alpha units/sec (~40 s full fade
-
 # Sonar ping subsystem (§3.2) — logic lives in SonarSystem.gd
 var sonar_system: SonarSystem = SonarSystem.new()
 
@@ -459,7 +455,6 @@ var _inventory_screen: InventoryScreen = null
 
 # Farm animal NPCs
 var _farm_npcs: Array = []
-var _farm_npc_grid_cols: Array[int] = []
 const FARM_NPC_ROW: int = 2  # Placed on the middle surface row
 
 var _pickaxe_texture: Texture2D
@@ -517,7 +512,7 @@ func _ready() -> void:
 	if GameManager.settlement_mandible_bonus > 0:
 		_settlement_mandible_bonus = GameManager.settlement_mandible_bonus
 		GameManager.settlement_mandible_bonus = 0
-	var forager_bonus: int = GameManager.get_forager_carry_bonus()
+	var forager_bonus: int = 0
 	if GameManager.settlement_forager_bonus > 0:
 		forager_bonus += GameManager.settlement_forager_bonus
 		GameManager.settlement_forager_bonus = 0
@@ -900,15 +895,6 @@ func _draw() -> void:
 		var highlight_rect := Rect2(_cursor_grid_pos.x * CELL_SIZE, _cursor_grid_pos.y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
 		draw_rect(highlight_rect, Color(1.0, 1.0, 1.0, 0.2), false, 2.0)
 
-	# Pheromone trail overlay — faint purple on player-mined EMPTY tiles (§3.3)
-	for pk in _pheromone_trails:
-		var tc: int = pk.x
-		var tr: int = pk.y
-		if tc >= min_col and tc <= max_col and tr >= min_row and tr <= max_row:
-			var trail_alpha: float = _pheromone_trails[pk] * 0.22
-			draw_rect(Rect2(tc * CELL_SIZE, tr * CELL_SIZE, CELL_SIZE, CELL_SIZE),
-				Color(0.55, 0.30, 0.80, trail_alpha))
-
 	# Wandering Trader nodes — pulsing gold circle with "T" glyph
 	for trader in _active_traders:
 		var tp: Vector2 = trader["world_pos"]
@@ -1193,16 +1179,6 @@ func _process(delta: float) -> void:
 		for k in to_remove:
 			_flash_cells.erase(k)
 
-	# Fade pheromone trails (§3.3)
-	if _pheromone_trails.size() > 0:
-		var to_remove_pt: Array = []
-		for pk in _pheromone_trails:
-			_pheromone_trails[pk] -= PHEROMONE_FADE_RATE * delta
-			if _pheromone_trails[pk] <= 0.0:
-				to_remove_pt.append(pk)
-		for k in to_remove_pt:
-			_pheromone_trails.erase(k)
-
 	# Update sonar ping wave (§3.2) — delegated to SonarSystem
 	sonar_system.update(delta, 2.0 if _ancient_map_active else 1.0)
 
@@ -1362,7 +1338,6 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 	if tile == TileType.EXPLOSIVE or tile == TileType.EXPLOSIVE_ARMED:
 		_mine_cell(col, row)
 		_explode_area(col, row)
-		_damage_player(1)
 		return
 
 	# Lava — can't mine lava
@@ -1403,12 +1378,12 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 			boss_system.on_tile_mined(col, row, tile)
 		# Gem tile: award a gem item immediately on mining (primary value)
 		if tile == TileType.ORE_GEM or tile == TileType.ORE_GEM_DEEP:
-			var gems_gained := 2 if tile == TileType.ORE_GEM_DEEP else 1
+			var gems_gained := (2 if tile == TileType.ORE_GEM_DEEP else 1) + GameManager.get_gem_mine_bonus()
 			GameManager.gem_count += gems_gained
 			GameManager.save_game()
 			EventBus.ore_mined_popup.emit(gems_gained, "Gem collected!")
 		if tile in MINEABLE_TILES:
-			var minerals: int = roundi(TILE_MINERALS.get(tile, 1) * GameManager.get_mineral_yield_mult())
+			var minerals: int = TILE_MINERALS.get(tile, 1)
 			_mine_streak += 1
 			var lucky_chance := LUCKY_STRIKE_CHANCE * (2.0 if _lucky_compass_active else 1.0)
 			var lucky := tile in ORE_TILES and randf() < lucky_chance
@@ -1455,7 +1430,6 @@ func check_player_hazard(col: int, row: int) -> void:
 	elif tile == TileType.EXPLOSIVE or tile == TileType.EXPLOSIVE_ARMED:
 		_mine_cell(col, row)
 		_explode_area(col, row)
-		_damage_player(1)
 		_hazard_cooldown = HAZARD_COOLDOWN_TIME
 
 # ---------------------------------------------------------------------------
@@ -1472,8 +1446,6 @@ func _check_streak_milestone() -> void:
 func _mine_cell(col: int, row: int) -> void:
 	grid[col][row] = TileType.EMPTY
 	_set_tile_collision(col, row, false)
-	# Record pheromone trail on player-mined cells (§3.3)
-	_pheromone_trails[Vector2i(col, row)] = 1.0
 
 # Spawns physical ore chunks that scatter from the mined tile position.
 # The player and forager ant must collect them to bank the minerals.
@@ -1497,7 +1469,7 @@ func _spawn_ore_chunks(tile: int, minerals: int, world_pos: Vector2) -> void:
 		add_child(chunk)
 
 func _explode_area(center_col: int, center_row: int) -> void:
-	var r := 1 + GameManager.get_explosive_radius_bonus()
+	var r := 1
 	for dc in range(-r, r + 1):
 		for dr in range(-r, r + 1):
 			var nc := center_col + dc
@@ -1505,7 +1477,7 @@ func _explode_area(center_col: int, center_row: int) -> void:
 			if nc >= 0 and nc < GRID_COLS and nr >= 0 and nr < GRID_ROWS:
 				var tile: int = grid[nc][nr]
 				if tile in ORE_TILES:
-					var minerals: int = roundi(TILE_MINERALS.get(tile, 1) * GameManager.get_mineral_yield_mult())
+					var minerals: int = TILE_MINERALS.get(tile, 1)
 					var world_pos := Vector2(nc * CELL_SIZE + CELL_SIZE * 0.5, nr * CELL_SIZE + CELL_SIZE * 0.5)
 					_spawn_ore_chunks(tile, minerals, world_pos)
 					GameManager.track_ore_mined(tile, minerals)
@@ -1513,6 +1485,11 @@ func _explode_area(center_col: int, center_row: int) -> void:
 				_set_tile_collision(nc, nr, false)
 	SoundManager.play_explosion_sound()
 	_shake_camera(6.0, 0.35)
+	if player_node:
+		var player_col := int(player_node.global_position.x / CELL_SIZE)
+		var player_row := int(player_node.global_position.y / CELL_SIZE)
+		if abs(player_col - center_col) <= r and abs(player_row - center_row) <= r:
+			_damage_player(1)
 
 func _damage_player(amount: int) -> void:
 	if player_node and player_node.has_method("take_damage"):
@@ -1759,9 +1736,10 @@ func _get_nearby_farm_npc() -> FarmAnimalNPC:
 	var player_gp := player_node.get_grid_pos()
 	if player_gp.y >= SURFACE_ROWS:
 		return null
-	for i in range(_farm_npcs.size()):
-		if abs(_farm_npc_grid_cols[i] - player_gp.x) <= 1:
-			return _farm_npcs[i]
+	var player_pos := player_node.global_position
+	for npc in _farm_npcs:
+		if npc.global_position.distance_to(player_pos) <= CELL_SIZE * 2:
+			return npc
 	return null
 
 func _try_interact() -> void:
@@ -1811,20 +1789,28 @@ func _setup_farm_animals() -> void:
 		{"name": "Sheep",   "texture_path": "res://assets/creatures/sheep_spritesheet.png",   "col": 8},
 		{"name": "Pig",     "texture_path": "res://assets/creatures/pig_spritesheet.png",     "col": 12},
 	]
+	var bounce_left := 1.0 * CELL_SIZE
+	var bounce_right := 20.0 * CELL_SIZE
 	for a in animals:
 		var npc := npc_scene.instantiate() as FarmAnimalNPC
 		npc.animal_name = a["name"]
 		var tex := load(a["texture_path"]) as Texture2D
 		if tex:
-			npc.get_node("Sprite2D").texture = tex
+			var spr := npc.get_node("Sprite2D") as Sprite2D
+			spr.texture = tex
+			spr.hframes = 2
+			spr.frame = 0
 		npc.scale = Vector2(2.0, 2.0)
 		npc.position = Vector2(
 			a["col"] * CELL_SIZE + CELL_SIZE * 0.5,
 			FARM_NPC_ROW * CELL_SIZE + CELL_SIZE * 0.5
 		)
+		npc.bounce_left = bounce_left
+		npc.bounce_right = bounce_right
+		var speed := randf_range(40.0, 80.0)
+		npc.velocity = Vector2(speed * (1.0 if randf() > 0.5 else -1.0), 0.0)
 		add_child(npc)
 		_farm_npcs.append(npc)
-		_farm_npc_grid_cols.append(a["col"])
 
 # ---------------------------------------------------------------------------
 # Inventory Screen
@@ -2453,7 +2439,7 @@ func _smeltery_sell(ore_group: String) -> void:
 	var bar_count: int = _run_bar_counts.get(ore_group, 0)
 	if bar_count <= 0:
 		return
-	var sell_value: int = SMELTERY_BAR_SELL_VALUES[ore_group]
+	var sell_value: int = roundi(SMELTERY_BAR_SELL_VALUES[ore_group] * GameManager.get_dollar_sell_mult())
 	_run_bar_counts[ore_group] = bar_count - 1
 	GameManager.add_dollars(sell_value)
 	SoundManager.play_pickup_sound()

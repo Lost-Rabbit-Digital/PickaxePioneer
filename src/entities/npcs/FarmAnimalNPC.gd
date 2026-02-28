@@ -28,10 +28,52 @@ const _CAT_REACTIONS: Dictionary = {
 
 var _wiggle_tween: Tween
 
+# Bouncing movement
+var velocity: Vector2 = Vector2.ZERO
+var bounce_left: float = 64.0
+var bounce_right: float = 1216.0
+var _base_y: float = 0.0
+var _bounce_time: float = 0.0
+const BOUNCE_HEIGHT: float = 8.0
+const BOUNCE_FREQ: float = 3.0
+const ANIM_SPEED: float = 0.2
+var _anim_timer: float = 0.0
+
 func _ready() -> void:
-	if texture and $Sprite2D:
-		$Sprite2D.texture = texture
+	var spr := $Sprite2D as Sprite2D
+	if texture and spr:
+		spr.texture = texture
+		spr.hframes = 2
+		spr.frame = 0
 	texture_filter = TEXTURE_FILTER_NEAREST
+	_base_y = position.y
+
+func _process(delta: float) -> void:
+	var spr := $Sprite2D as Sprite2D
+	if not spr or velocity == Vector2.ZERO:
+		return
+
+	# Move horizontally and bounce at bounds
+	position.x += velocity.x * delta
+	if position.x <= bounce_left:
+		position.x = bounce_left
+		velocity.x = abs(velocity.x)
+	elif position.x >= bounce_right:
+		position.x = bounce_right
+		velocity.x = -abs(velocity.x)
+
+	# Flip sprite to face direction of travel
+	spr.flip_h = velocity.x < 0
+
+	# Vertical hop using sine wave (abs keeps it always upward)
+	_bounce_time += delta
+	position.y = _base_y - abs(sin(_bounce_time * BOUNCE_FREQ * PI)) * BOUNCE_HEIGHT
+
+	# Cycle walk frames
+	_anim_timer += delta
+	if _anim_timer >= ANIM_SPEED:
+		_anim_timer -= ANIM_SPEED
+		spr.frame = (spr.frame + 1) % 2
 
 ## Returns a cat-themed reaction line for this animal type.
 func get_pet_message() -> String:

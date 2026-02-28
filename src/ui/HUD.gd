@@ -216,7 +216,7 @@ func _on_minerals_changed(_amount: int) -> void:
 	var ore_count := 0
 	for count in GameManager.run_ore_counts.values():
 		ore_count += count
-	scrap_label.text = "Capacity: %d/%d" % [ore_count, GameManager.MAX_ORE_CAPACITY]
+	scrap_label.text = "Capacity: %d/%d" % [ore_count, GameManager.get_ore_capacity()]
 
 func _on_dollars_changed(amount: int) -> void:
 	dollars_label.text = "$%d" % amount
@@ -361,7 +361,7 @@ func _on_depth_changed(depth_rows: int) -> void:
 		_exit_hint_label.modulate.a = 0.0
 		_exit_hint_panel.modulate.a = 0.0
 
-		depth_label.text = "Sector: %d ly" % (depth_rows * 12)
+		depth_label.text = "Depth: %d m" % (depth_rows * 10)
 
 	# Colour shifts from light blue → orange-red as player goes deeper
 		var t: float = clampf(float(depth_rows) / 80.0, 0.0, 1.0)
@@ -369,7 +369,7 @@ func _on_depth_changed(depth_rows: int) -> void:
 
 		# Show a milestone banner at every 20 blocks of new depth
 		if depth_rows >= _next_milestone:
-			_show_milestone_banner("Sector: %d ly" % (_next_milestone * 12))
+			_show_milestone_banner("Depth: %d m" % (_next_milestone * 10))
 			_next_milestone += 20
 
 func _on_energy_changed(current_energy: int, max_energy: int) -> void:
