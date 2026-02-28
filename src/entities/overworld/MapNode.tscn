@@ -1,7 +1,99 @@
-[gd_scene load_steps=4 format=3 uid="uid://mapnode123"]
+[gd_scene load_steps=17 format=3 uid="uid://mapnode123"]
 
-[ext_resource type="Script" path="res://src/entities/overworld/MapNode.gd" id="1_node"]
-[ext_resource type="Texture2D" uid="uid://map_node_svg" path="res://assets/map_node.svg" id="2_sprite"]
+[ext_resource type="Script" uid="uid://t6s1a2wv460w" path="res://src/entities/overworld/MapNode.gd" id="1_node"]
+[ext_resource type="Texture2D" uid="uid://ccugob0fyy7k8" path="res://assets/celestial_bodies/planets.png" id="2_rq8q2"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_oxvu1"]
+atlas = ExtResource("2_rq8q2")
+region = Rect2(0, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ckt3i"]
+atlas = ExtResource("2_rq8q2")
+region = Rect2(64, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5vcth"]
+atlas = ExtResource("2_rq8q2")
+region = Rect2(128, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4k3pf"]
+atlas = ExtResource("2_rq8q2")
+region = Rect2(192, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_53uok"]
+atlas = ExtResource("2_rq8q2")
+region = Rect2(0, 64, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_s0r18"]
+atlas = ExtResource("2_rq8q2")
+region = Rect2(64, 64, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fs3pc"]
+atlas = ExtResource("2_rq8q2")
+region = Rect2(128, 64, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_542g5"]
+atlas = ExtResource("2_rq8q2")
+region = Rect2(192, 64, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3nju2"]
+atlas = ExtResource("2_rq8q2")
+region = Rect2(0, 128, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_kh3ib"]
+atlas = ExtResource("2_rq8q2")
+region = Rect2(64, 128, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_k8866"]
+atlas = ExtResource("2_rq8q2")
+region = Rect2(128, 128, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_c8hq2"]
+atlas = ExtResource("2_rq8q2")
+region = Rect2(192, 128, 64, 64)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_c6w87"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_oxvu1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ckt3i")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5vcth")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4k3pf")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_53uok")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_s0r18")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_fs3pc")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_542g5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_3nju2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_kh3ib")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_k8866")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_c8hq2")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1"]
 radius = 32.0
@@ -9,8 +101,8 @@ radius = 32.0
 [node name="MapNode" type="Area2D"]
 script = ExtResource("1_node")
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
-texture = ExtResource("2_sprite")
+[node name="Sprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_c6w87")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_1")
