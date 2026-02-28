@@ -578,9 +578,10 @@ func _setup_collision_tilemap() -> void:
 	add_child(collision_tilemap)
 
 func _setup_map_barriers() -> void:
-	# Invisible StaticBody2D walls on the left and right edges of the map
-	# so the player cannot fall or walk off the sides.
+	# Invisible StaticBody2D walls on the left, right, and bottom edges of the
+	# map so the player cannot fall or walk off.
 	var map_height := GRID_ROWS * CELL_SIZE
+	var map_width := GRID_COLS * CELL_SIZE
 	var barrier_thickness := CELL_SIZE
 
 	for side in ["left", "right"]:
@@ -596,10 +597,24 @@ func _setup_map_barriers() -> void:
 		if side == "left":
 			shape_node.position = Vector2(-barrier_thickness * 0.5, map_height * 0.5)
 		else:
-			shape_node.position = Vector2(GRID_COLS * CELL_SIZE + barrier_thickness * 0.5, map_height * 0.5)
+			shape_node.position = Vector2(map_width + barrier_thickness * 0.5, map_height * 0.5)
 
 		barrier.add_child(shape_node)
 		add_child(barrier)
+
+	# Bottom barrier
+	var bottom_barrier := StaticBody2D.new()
+	bottom_barrier.collision_layer = 1
+	bottom_barrier.collision_mask = 0
+
+	var bottom_shape := CollisionShape2D.new()
+	var bottom_rect := RectangleShape2D.new()
+	bottom_rect.size = Vector2(map_width, barrier_thickness)
+	bottom_shape.shape = bottom_rect
+	bottom_shape.position = Vector2(map_width * 0.5, map_height + barrier_thickness * 0.5)
+
+	bottom_barrier.add_child(bottom_shape)
+	add_child(bottom_barrier)
 
 func _sync_collision_tilemap() -> void:
 	collision_tilemap.clear()
@@ -1220,6 +1235,10 @@ func _check_exit_zone() -> void:
 	if player_col < GRID_COLS - EXIT_COLS:
 		has_left_spawn = true
 	if has_left_spawn and player_col >= GRID_COLS - EXIT_COLS and player_row < SURFACE_ROWS:
+		_game_over = true
+		GameManager.complete_run()
+	# Reaching the bottom of the map also counts as a completed run
+	elif player_row >= GRID_ROWS - 1:
 		_game_over = true
 		GameManager.complete_run()
 
