@@ -130,7 +130,7 @@ animations = [{
 }],
 "loop": false,
 "name": &"damage",
-"speed": 0.0
+"speed": 5.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -156,7 +156,7 @@ animations = [{
 }],
 "loop": false,
 "name": &"death",
-"speed": 0.0
+"speed": 5.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -174,9 +174,9 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_ynva3")
 }],
-"loop": false,
+"loop": true,
 "name": &"idle",
-"speed": 0.0
+"speed": 5.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -194,9 +194,9 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_ymdk8")
 }],
-"loop": false,
+"loop": true,
 "name": &"move",
-"speed": 0.0
+"speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -216,5 +216,5 @@ animations = [{
 }],
 "loop": false,
 "name": &"scared",
-"speed": 0.0
+"speed": 5.0
 }]

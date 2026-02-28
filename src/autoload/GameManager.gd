@@ -45,8 +45,9 @@ var ladder_count: int = 10
 # Currently selected hotbar slot: 0 = pickaxe, 1 = ladder, 2 = empty
 var selected_hotbar_slot: int = 0
 
-# Equipped hat frame index (-1 = no hat)
-var equipped_hat: int = -1
+# Equipped followers (independent toggles)
+var equipped_leaf: bool = false
+var equipped_ice: bool = false
 
 # Upgrade levels
 var carapace_level: int = 0
@@ -267,7 +268,8 @@ func save_game() -> void:
 		"gem_refinery_built": gem_refinery_built,
 		"trade_amplifier_built": trade_amplifier_built,
 		"ladder_count": ladder_count,
-		"equipped_hat": equipped_hat,
+		"equipped_leaf": equipped_leaf,
+		"equipped_ice": equipped_ice,
 	}
 
 	SaveManager.save_active_slot()
@@ -318,7 +320,8 @@ func load_game() -> void:
 			gem_refinery_built = data.get("gem_refinery_built", false)
 			trade_amplifier_built = data.get("trade_amplifier_built", false)
 			ladder_count = data.get("ladder_count", 0)
-			equipped_hat = data.get("equipped_hat", -1)
+			equipped_leaf = data.get("equipped_leaf", false)
+			equipped_ice = data.get("equipped_ice", false)
 			print("Game loaded")
 		else:
 			print("Failed to parse save file")

@@ -41,7 +41,8 @@ const FALL_DAMAGE_THRESHOLD: int = 3 * CELL_SIZE  # 3 tiles in pixels (192px)
 @onready var health_component: HealthComponent = $HealthComponent
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var interact_prompt: Label = $PromptLayer/InteractPrompt
-@onready var hat: AnimatedSprite2D = $Hat
+@onready var _ice_follower: AnimatedSprite2D = $ElementalFollowers/IceElemental
+@onready var _leaf_follower: AnimatedSprite2D = $ElementalFollowers/LeafElemental
 
 # Facing direction
 var _facing_left: bool = true
@@ -73,33 +74,13 @@ const POOF_VEL_THRESHOLD: float = 100.0   # Min fall speed (px/s) to trigger poo
 var _particles: Array = []
 var _dust_timer: float = 0.0
 
-# Per-frame hat offsets [x, y] matching the hat AnimatedSprite2D frames
-const HAT_OFFSETS: Array = [
-	Vector2(2.75, 4.1),    # 0
-	Vector2(4.0, 5.1),     # 1
-	Vector2(2.75, 3.28),   # 2
-	Vector2(3.5, -5.45),   # 3
-	Vector2(3.75, 5.0),    # 4
-	Vector2(3.75, 3.75),   # 5
-	Vector2(3.75, 5.75),   # 6
-	Vector2(4.65, 10.12),  # 7
-	Vector2(3.75, 9.15),   # 8
-	Vector2(3.75, 6.78),   # 9
-	Vector2(3.65, 1.4),    # 10
-	Vector2(3.39, 0.4),    # 11
-	Vector2(3.39, 0.4),    # 12
-	Vector2(5.0, -0.7),    # 13
-	Vector2(5.0, -0.7),    # 14
-	Vector2(5.0, -0.7),    # 15
-	Vector2(3.75, -1.6),   # 16
-	Vector2(3.75, -2.7),   # 17
-	Vector2(3.75, 1.37),   # 18
-	Vector2(3.75, 1.37),   # 19
-	Vector2(3.75, 1.37),   # 20
-	Vector2(3.75, 1.37),   # 21
-	Vector2(3.75, 0.29),   # 22
-	Vector2(3.75, 1.285),  # 23
-]
+# Follower trail system
+const TRAIL_HISTORY_MAX: int = 30
+const ICE_TRAIL_FRAMES: int = 8    # Ice follows 8 steps behind
+const LEAF_TRAIL_FRAMES: int = 14  # Leaf follows 14 steps behind
+const FOLLOWER_Y_OFFSET: float = -20.0  # Float above ground
+
+var _trail_history: Array = []
 
 func _ready() -> void:
 	add_to_group("player")
@@ -108,15 +89,23 @@ func _ready() -> void:
 	move_speed = GameManager.get_max_speed()
 	EventBus.player_health_changed.emit(health_component.current_health, health_component.max_health)
 	sprite.play(&"idle")
-	equip_hat(GameManager.equipped_hat)
+	_init_followers()
 
-func equip_hat(frame: int) -> void:
-	if frame < 0:
-		hat.visible = false
-	else:
-		hat.visible = true
-		hat.frame = frame
-		hat.offset = HAT_OFFSETS[frame]
+func _init_followers() -> void:
+	_ice_follower.visible = GameManager.equipped_ice
+	_leaf_follower.visible = GameManager.equipped_leaf
+	if GameManager.equipped_ice:
+		_ice_follower.play(&"idle")
+	if GameManager.equipped_leaf:
+		_leaf_follower.play(&"idle")
+
+func update_follower_visibility() -> void:
+	_ice_follower.visible = GameManager.equipped_ice
+	_leaf_follower.visible = GameManager.equipped_leaf
+	if GameManager.equipped_ice and not _ice_follower.is_playing():
+		_ice_follower.play(&"idle")
+	if GameManager.equipped_leaf and not _leaf_follower.is_playing():
+		_leaf_follower.play(&"idle")
 
 func _physics_process(delta: float) -> void:
 	if not mining_level or mining_level._game_over or mining_level.any_ui_open() or (mining_level.get("_spawning") == true):
@@ -197,6 +186,9 @@ func _physics_process(delta: float) -> void:
 
 	# Update animation based on current state
 	_update_animation(delta)
+
+	# Update follower trail and animations
+	_update_followers()
 
 func _update_animation(delta: float) -> void:
 	var anim: StringName
@@ -368,6 +360,31 @@ func _apply_fall_damage() -> void:
 			var damage := health_component.max_health / 2
 			health_component.damage(damage)
 		_is_falling = false
+
+func _update_followers() -> void:
+	# Record player world position for trail
+	_trail_history.push_back(global_position)
+	if _trail_history.size() > TRAIL_HISTORY_MAX:
+		_trail_history.pop_front()
+
+	var is_moving := abs(velocity.x) > 10.0
+	var follower_anim: StringName = &"move" if is_moving else &"idle"
+
+	if _ice_follower.visible:
+		var idx := maxi(0, _trail_history.size() - 1 - ICE_TRAIL_FRAMES)
+		var trail_pos: Vector2 = _trail_history[idx] + Vector2(0.0, FOLLOWER_Y_OFFSET)
+		_ice_follower.global_position = trail_pos
+		_ice_follower.flip_h = sprite.flip_h
+		if _ice_follower.animation != follower_anim:
+			_ice_follower.play(follower_anim)
+
+	if _leaf_follower.visible:
+		var idx := maxi(0, _trail_history.size() - 1 - LEAF_TRAIL_FRAMES)
+		var trail_pos: Vector2 = _trail_history[idx] + Vector2(0.0, FOLLOWER_Y_OFFSET)
+		_leaf_follower.global_position = trail_pos
+		_leaf_follower.flip_h = sprite.flip_h
+		if _leaf_follower.animation != follower_anim:
+			_leaf_follower.play(follower_anim)
 
 func _draw() -> void:
 	for p: Dictionary in _particles:
