@@ -240,7 +240,7 @@ func _spawn_npcs() -> void:
 
 		# Use a building texture for the NPC sprite (same as buildings)
 		var tex_idx := randi() % _building_textures_loaded.size()
-		var tex := _building_textures_loaded[tex_idx]
+		var tex: Texture2D = _building_textures_loaded[tex_idx]
 		var spr := npc.get_node("Sprite2D") as Sprite2D
 		if spr and tex:
 			spr.texture = tex
