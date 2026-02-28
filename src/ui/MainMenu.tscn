@@ -285,7 +285,10 @@ size_flags_vertical = 3
 [node name="CreditsContent" type="RichTextLabel" parent="CreditsPanel/VBox/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_colors/default_color = Color(0.85, 0.8, 0.7, 1)
 theme_override_font_sizes/font_size = 14
+bbcode_enabled = true
+fit_content = true
 text = "DEVELOPERS
 
   BodenGameDev
