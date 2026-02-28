@@ -396,6 +396,7 @@ func _shop_buy_ladders() -> void:
 	if GameManager.dollars >= SHOP_LADDER_PACK_COST:
 		GameManager.dollars -= SHOP_LADDER_PACK_COST
 		GameManager.ladder_count += SHOP_LADDER_PACK_COUNT
+		EventBus.ladder_count_changed.emit(GameManager.ladder_count)
 		EventBus.dollars_changed.emit(GameManager.dollars)
 		GameManager.save_game()
 		EventBus.ore_mined_popup.emit(SHOP_LADDER_PACK_COUNT, "Ladders acquired!")

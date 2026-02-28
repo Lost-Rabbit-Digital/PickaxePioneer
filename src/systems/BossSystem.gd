@@ -252,11 +252,11 @@ func on_tile_mined(col: int, row: int, tile_type: int) -> void:
 			if golem_phase < GOLEM_PHASE_ORES.size():
 				var next_ore := GOLEM_PHASE_ORES[golem_phase].capitalize()
 				_show_banner.call("ARMOR CRACKED!", Color(0.85, 0.70, 0.20))
-				EventBus.ore_mined_popup.emit(0, "Now mine " + next_ore + "!")
+				EventBus.boss_hint_popup.emit("Now mine " + next_ore + "!")
 				_shake_camera.call(8.0, 0.4)
 			else:
 				_show_banner.call("CORE EXPOSED!", Color(1.00, 0.40, 0.00))
-				EventBus.ore_mined_popup.emit(0, "Strike the core!")
+				EventBus.boss_hint_popup.emit("Strike the core!")
 				_shake_camera.call(8.0, 0.4)
 
 	# Ancient One: track shell phase transitions
@@ -268,7 +268,7 @@ func on_tile_mined(col: int, row: int, tile_type: int) -> void:
 				ancient_phase = 1
 				_ancient_void_timer = ANCIENT_VOID_PULSE_INTERVAL
 				_show_banner.call("CRYSTALLINE FORM REVEALED!", Color(0.55, 0.10, 0.85))
-				EventBus.ore_mined_popup.emit(0, "Phase 2! Watch for void pulses!")
+				EventBus.boss_hint_popup.emit("Phase 2! Watch for void pulses!")
 				_shake_camera.call(10.0, 0.6)
 		else:
 			_ancient_inner_count -= 1
@@ -277,7 +277,7 @@ func on_tile_mined(col: int, row: int, tile_type: int) -> void:
 				ancient_void_warning_active = false
 				_ancient_core_recharge_timer = ANCIENT_CORE_RECHARGE_INTERVAL
 				_show_banner.call("THE STAR BEAST CORE EXPOSED!", Color(0.90, 0.70, 1.00))
-				EventBus.ore_mined_popup.emit(0, "Phase 3! Mine fast — it regenerates!")
+				EventBus.boss_hint_popup.emit("Phase 3! Mine fast — it regenerates!")
 				_shake_camera.call(12.0, 0.8)
 
 	if boss_tile_positions.is_empty() and boss_active:
@@ -311,7 +311,7 @@ func _spawn_giant_rat_king(player_col: int) -> void:
 	_rat_center = Vector2i(player_col, boss_row)
 	_rat_charge_timer = RAT_CHARGE_INTERVAL
 	_show_banner.call("GIANT SPACE RAT AWAKENS!", Color(0.90, 0.10, 0.05))
-	EventBus.ore_mined_popup.emit(0, "Boss! Watch for charge attacks!")
+	EventBus.boss_hint_popup.emit("Boss! Watch for charge attacks!")
 	_shake_camera.call(8.0, 0.4)
 	_pending_hints = ["Watch for CHARGE warnings — dodge the debris!", "Click each glowing tile to chip away at it!", "Defeat the boss to restore fuel!"]
 
@@ -340,7 +340,7 @@ func _spawn_cave_spider_matriarch(player_col: int) -> void:
 	_spider_center = Vector2i(player_col, boss_row)
 	_spider_web_timer = SPIDER_WEB_INTERVAL
 	_show_banner.call("VOID SPIDER MATRIARCH!", Color(0.60, 0.10, 0.80))
-	EventBus.ore_mined_popup.emit(0, "Boss! Beware of web traps!")
+	EventBus.boss_hint_popup.emit("Boss! Beware of web traps!")
 	_shake_camera.call(8.0, 0.4)
 	_pending_hints = ["Watch for WEB warnings — move before you're trapped!", "Click each glowing segment to chip away at it!", "Defeat the boss to restore fuel!"]
 
@@ -374,7 +374,7 @@ func _spawn_blind_mole(player_col: int) -> void:
 	_mole_tremor_timer = MOLE_TREMOR_INTERVAL
 
 	_show_banner.call("THE COSMIC MOLE STIRS!", Color(0.55, 0.35, 0.85))
-	EventBus.ore_mined_popup.emit(0, "Boss! Mine all segments to defeat it!")
+	EventBus.boss_hint_popup.emit("Boss! Mine all segments to defeat it!")
 	_shake_camera.call(12.0, 0.6)
 	_pending_hints = ["Watch for TREMOR warnings — get clear!", "Tremors seal mined passages around the boss!", "Defeat the boss to restore fuel!"]
 
@@ -409,7 +409,7 @@ func _spawn_stone_golem(player_col: int) -> void:
 
 	var required := GOLEM_PHASE_ORES[0].capitalize()
 	_show_banner.call("ASTEROID GOLEM AWAKENS!", Color(0.60, 0.55, 0.85))
-	EventBus.ore_mined_popup.emit(0, "Armored boss! Mine nearby ore to unlock damage!")
+	EventBus.boss_hint_popup.emit("Armored boss! Mine nearby ore to unlock damage!")
 	_shake_camera.call(14.0, 0.8)
 	_pending_hints = ["Step 1: Mine " + required + " ore (not the boss!)", "Step 2: Then click the glowing boss tiles!", "Wrong ore type? It blocks all damage!"]
 
@@ -506,7 +506,7 @@ func _spawn_ancient_one(player_col: int) -> void:
 	ancient_core_recharge_warning = false
 
 	_show_banner.call("THE ANCIENT STAR BEAST AWAKENS!", Color(0.15, 0.70, 0.90))
-	EventBus.ore_mined_popup.emit(0, "Final boss! Break the outer shell first!")
+	EventBus.boss_hint_popup.emit("Final boss! Break the outer shell first!")
 	_shake_camera.call(16.0, 1.0)
 	_pending_hints = [
 		"Phase 1: Mine the outer ring of segments!",
@@ -584,7 +584,7 @@ func _update_blind_mole(delta: float) -> void:
 		_mole_tremor_timer = MOLE_TREMOR_INTERVAL
 		mole_tremor_warning_active = true
 		mole_tremor_warning_timer = MOLE_TREMOR_WARNING
-		EventBus.ore_mined_popup.emit(0, "TREMOR INCOMING!")
+		EventBus.boss_hint_popup.emit("TREMOR INCOMING!")
 		_shake_camera.call(5.0, 0.3)
 
 
@@ -633,7 +633,7 @@ func _update_giant_rat(delta: float) -> void:
 		rat_charge_warning_active = true
 		rat_charge_warning_timer = RAT_CHARGE_WARNING
 		rat_charge_target_pos = Vector2i(_player_col, _player_row)
-		EventBus.ore_mined_popup.emit(0, "RAT KING CHARGES!")
+		EventBus.boss_hint_popup.emit("RAT KING CHARGES!")
 		_shake_camera.call(5.0, 0.3)
 
 
@@ -689,7 +689,7 @@ func _update_spider(delta: float) -> void:
 		spider_web_warning_active = true
 		spider_web_warning_timer = SPIDER_WEB_WARNING
 		spider_web_target_pos = Vector2i(_player_col, _player_row)
-		EventBus.ore_mined_popup.emit(0, "WEB INCOMING!")
+		EventBus.boss_hint_popup.emit("WEB INCOMING!")
 		_shake_camera.call(4.0, 0.3)
 
 
@@ -743,7 +743,7 @@ func _update_ancient_one(delta: float) -> void:
 				_ancient_void_timer = ANCIENT_VOID_PULSE_INTERVAL
 				ancient_void_warning_active = true
 				ancient_void_warning_timer = ANCIENT_VOID_PULSE_WARNING
-				EventBus.ore_mined_popup.emit(0, "VOID PULSE INCOMING!")
+				EventBus.boss_hint_popup.emit("VOID PULSE INCOMING!")
 				_shake_camera.call(4.0, 0.3)
 
 	# Phase 3: core periodically recharges (resets accumulated hit damage)
@@ -754,7 +754,7 @@ func _update_ancient_one(delta: float) -> void:
 			_ancient_core_recharge_timer = ANCIENT_CORE_RECHARGE_INTERVAL
 			ancient_core_recharge_warning = false
 			_erase_tile_state.call(_ancient_center)
-			EventBus.ore_mined_popup.emit(0, "Star Beast regenerates!")
+			EventBus.boss_hint_popup.emit("Star Beast regenerates!")
 			_shake_camera.call(6.0, 0.4)
 
 
