@@ -20,7 +20,7 @@ enum NodeType {
 
 signal node_clicked(node: MapNode)
 
-@onready var sprite: Sprite2D = $Sprite2D
+@onready var sprite: AnimatedSprite2D = $Sprite2D
 @onready var label: Label = $Label
 
 func _ready() -> void:
@@ -30,9 +30,11 @@ func _ready() -> void:
 func _update_visuals() -> void:
 	label.text = location_name
 
+	var frame_count := sprite.sprite_frames.get_frame_count("default")
+	sprite.frame = randi() % frame_count
+
 	match node_type:
 		NodeType.MINE:
-			sprite.texture = preload("res://assets/blocks/glass.png")
 			sprite.scale = Vector2(2.5, 2.5)
 			sprite.modulate = Color(1.0, 0.75, 0.20)  # warm gold tint for mines
 		NodeType.STATION:
