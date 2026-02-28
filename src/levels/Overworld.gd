@@ -192,7 +192,7 @@ func _arrange_nodes_in_circle() -> void:
 
 	# BFS traversal order keeps connected nodes adjacent on the circle,
 	# minimising edge crossings without assuming a fixed cycle topology.
-	var ordered_nodes := _get_traversal_order()
+	var ordered_nodes := _get_cycle_order()
 
 	var base_step := TAU / ordered_nodes.size()
 	for i in range(ordered_nodes.size()):
