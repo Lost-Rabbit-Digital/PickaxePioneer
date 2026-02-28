@@ -17,6 +17,14 @@ const GRID_COLS: int = 40       # 40 * 64 = 2560 px – seamless horizontal wrap
 const AUTO_PAN_SPEED: float = 40.0  # Pixels per second during auto-pan
 const IDLE_TIMEOUT: float = 3.0     # Seconds before auto-pan resumes after interaction
 
+# Cave and tunnel generation
+const CAVE_COUNT: int = 7           # Number of cave pockets carved into the terrain
+const CAVE_RADIUS_MIN: int = 1      # Minimum cave radius in tiles
+const CAVE_RADIUS_MAX: int = 3      # Maximum cave radius in tiles
+const TUNNEL_COUNT: int = 9         # Number of drunkard-walk tunnel passages
+const TUNNEL_LENGTH_MIN: int = 8    # Minimum tunnel length in steps
+const TUNNEL_LENGTH_MAX: int = 22   # Maximum tunnel length in steps
+
 # Momentum / inertia tuning
 const MOMENTUM_DAMPING: float = 0.97        # Velocity multiplier per 60-fps tick (frame-rate independent)
 const MOMENTUM_THRESHOLD: float = 0.5       # px/s – below this speed momentum is considered stopped
@@ -108,6 +116,8 @@ func _init_tile_grid() -> void:
 		for _col in range(GRID_COLS):
 			row_arr.append(_random_tile())
 		tile_grid.append(row_arr)
+	_carve_caves()
+	_carve_tunnels()
 
 func _pick_random_direction() -> void:
 	var angle: float = randf() * TAU
@@ -125,6 +135,38 @@ func _random_tile() -> TileType:
 	elif r < 0.58: return TileType.STONE
 	elif r < 0.68: return TileType.DIRT_DARK
 	else:          return TileType.DIRT
+
+# Carve irregular cave pockets by setting cells to EMPTY within a randomised radius.
+func _carve_caves() -> void:
+	for _i in range(CAVE_COUNT):
+		var cx: int = randi() % GRID_COLS
+		var cy: int = randi() % GRID_ROWS
+		var radius: int = CAVE_RADIUS_MIN + randi() % (CAVE_RADIUS_MAX - CAVE_RADIUS_MIN + 1)
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				# Irregular cave edges: each cell uses its own random threshold
+				var dist_sq := float(dx * dx + dy * dy)
+				var max_sq := float(radius * radius)
+				if dist_sq <= max_sq * randf_range(0.55, 1.0):
+					var r: int = ((cy + dy) % GRID_ROWS + GRID_ROWS) % GRID_ROWS
+					var c: int = ((cx + dx) % GRID_COLS + GRID_COLS) % GRID_COLS
+					tile_grid[r][c] = TileType.EMPTY
+
+# Carve winding tunnel passages using a drunkard's walk.
+func _carve_tunnels() -> void:
+	var dirs: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+	for _i in range(TUNNEL_COUNT):
+		var cx: int = randi() % GRID_COLS
+		var cy: int = randi() % GRID_ROWS
+		var length: int = TUNNEL_LENGTH_MIN + randi() % (TUNNEL_LENGTH_MAX - TUNNEL_LENGTH_MIN + 1)
+		var dir: Vector2i = dirs[randi() % dirs.size()]
+		for _step in range(length):
+			tile_grid[cy][cx] = TileType.EMPTY
+			# 25 % chance to turn, giving natural bends
+			if randf() < 0.25:
+				dir = dirs[randi() % dirs.size()]
+			cx = ((cx + dir.x) % GRID_COLS + GRID_COLS) % GRID_COLS
+			cy = ((cy + dir.y) % GRID_ROWS + GRID_ROWS) % GRID_ROWS
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
