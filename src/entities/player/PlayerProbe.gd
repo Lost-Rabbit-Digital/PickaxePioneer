@@ -46,6 +46,23 @@ const SPRINT_ENERGY_RATE: float = 4.0     # Energy units consumed per second whi
 var _sprinting: bool = false
 var _sprint_energy_accum: float = 0.0
 
+# --- Particle system (walking dust + landing poof) ---
+const PARTICLE_FEET_Y: float = 26.0        # Offset below player center to feet
+const PARTICLE_MAX: int = 80               # Max simultaneous particles
+
+const DUST_INTERVAL: float = 0.08          # Seconds between dust emits while walking
+const DUST_LIFETIME: float = 0.35
+const DUST_SIZE: float = 4.0
+
+const POOF_COUNT: int = 14
+const POOF_LIFETIME: float = 0.45
+const POOF_SIZE_MIN: float = 5.0
+const POOF_SIZE_MAX: float = 9.0
+const POOF_VEL_THRESHOLD: float = 100.0   # Min fall speed (px/s) to trigger poof
+
+var _particles: Array = []
+var _dust_timer: float = 0.0
+
 func _ready() -> void:
 	add_to_group("player")
 	health_component.health_changed.connect(_on_health_changed)
@@ -57,6 +74,8 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if not mining_level or mining_level._game_over or mining_level.any_ui_open():
 		return
+
+	var pre_floor := is_on_floor()
 
 	# Grip/climb: W or Up held.  Descend: S or Down held.  Neither: freefall.
 	_gripping_ladder   = on_ladder and (Input.is_key_pressed(KEY_W)   or Input.is_key_pressed(KEY_UP))
@@ -106,7 +125,11 @@ func _physics_process(delta: float) -> void:
 		elif _gripping_ladder and Input.is_key_pressed(KEY_SPACE):
 			velocity.y = jump_velocity  # Space launches the player off the ladder
 
+	var pre_vel_y := velocity.y
 	move_and_slide()
+
+	_update_particles(delta, pre_floor, pre_vel_y)
+	queue_redraw()
 
 	# Check hazard contact after moving
 	_check_hazard_contact()
@@ -218,3 +241,58 @@ func _on_health_changed(current: int, max_hp: int) -> void:
 
 func _on_died() -> void:
 	EventBus.player_died.emit()
+
+func _update_particles(delta: float, was_on_floor: bool, vel_y_before_slide: float) -> void:
+	# Landing poof — trigger on first frame touching floor after a real fall
+	if is_on_floor() and not was_on_floor and vel_y_before_slide > POOF_VEL_THRESHOLD:
+		_spawn_poof()
+
+	# Walking dust — emit small squares at feet while moving on the ground
+	if is_on_floor() and abs(velocity.x) > 20.0 and not _gripping_ladder:
+		_dust_timer += delta
+		if _dust_timer >= DUST_INTERVAL and _particles.size() < PARTICLE_MAX:
+			_dust_timer = 0.0
+			_spawn_dust()
+	else:
+		_dust_timer = 0.0
+
+	# Advance and prune particles
+	var i := _particles.size() - 1
+	while i >= 0:
+		var p: Dictionary = _particles[i]
+		p["life"] -= delta
+		if p["life"] <= 0.0:
+			_particles.remove_at(i)
+		else:
+			p["pos"] += p["vel"] * delta
+			p["vel"] *= 0.80  # Air drag slows particles
+		i -= 1
+
+func _spawn_dust() -> void:
+	_particles.append({
+		"pos": global_position + Vector2(randf_range(-10.0, 10.0), PARTICLE_FEET_Y),
+		"vel": Vector2(randf_range(-25.0, 25.0), randf_range(-45.0, -15.0)),
+		"life": DUST_LIFETIME,
+		"max_life": DUST_LIFETIME,
+		"size": DUST_SIZE,
+	})
+
+func _spawn_poof() -> void:
+	var count := mini(POOF_COUNT, PARTICLE_MAX - _particles.size())
+	for _i in count:
+		var angle := randf_range(-PI, 0.0)  # Upward hemisphere
+		var speed := randf_range(50.0, 140.0)
+		_particles.append({
+			"pos": global_position + Vector2(randf_range(-18.0, 18.0), PARTICLE_FEET_Y),
+			"vel": Vector2(cos(angle), sin(angle)) * speed,
+			"life": POOF_LIFETIME,
+			"max_life": POOF_LIFETIME,
+			"size": randf_range(POOF_SIZE_MIN, POOF_SIZE_MAX),
+		})
+
+func _draw() -> void:
+	for p: Dictionary in _particles:
+		var lpos := to_local(p["pos"])
+		var alpha: float = p["life"] / p["max_life"]
+		var sz: float = p["size"]
+		draw_rect(Rect2(lpos.x - sz * 0.5, lpos.y - sz * 0.5, sz, sz), Color(1.0, 1.0, 1.0, alpha))
