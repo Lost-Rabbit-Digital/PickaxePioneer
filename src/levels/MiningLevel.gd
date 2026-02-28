@@ -391,6 +391,7 @@ const HAZARD_COOLDOWN_TIME: float = 1.0
 @onready var pause_menu = $PauseMenu
 
 var _inventory_screen: InventoryScreen = null
+var _hat_menu: HatMenu = null
 
 # Farm animal NPCs
 var _farm_npcs: Array = []
@@ -479,6 +480,7 @@ func _ready() -> void:
 	_boss_renderer.setup(boss_system, grid, CELL_SIZE)
 
 	_setup_inventory_screen()
+	_setup_hat_menu()
 	queue_redraw()
 
 	# Kick off the spaceship entry cinematic (hides player until ship deposits them)
@@ -869,7 +871,8 @@ func _emit_lava_embers(delta: float, min_col: int, max_col: int, min_row: int, m
 # ---------------------------------------------------------------------------
 
 func any_ui_open() -> bool:
-	return shop_system != null and (shop_system.any_shop_open() or trader_system.shop_visible)
+	var hat_open := _hat_menu != null and _hat_menu.visible
+	return hat_open or (shop_system != null and (shop_system.any_shop_open() or trader_system.shop_visible))
 
 # ---------------------------------------------------------------------------
 # Process — energy drain, cursor highlight, flashes
@@ -1015,6 +1018,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			else:
 				_inventory_screen.open(shop_system.run_ore_counts, _shroom_charges[0],
 					_lucky_compass_active[0], _ancient_map_active[0])
+		return
+	if event.is_action_pressed("toggle_hat_menu"):
+		if _hat_menu:
+			if _hat_menu.visible:
+				_hat_menu.close()
+			else:
+				_hat_menu.open()
 		return
 	if event.is_action_pressed("ui_cancel"):
 		pause_menu.show_menu()
@@ -1698,6 +1708,11 @@ func _setup_inventory_screen() -> void:
 		_inventory_screen = inv_scene.instantiate() as InventoryScreen
 		_inventory_screen.mining_level = self
 		add_child(_inventory_screen)
+
+func _setup_hat_menu() -> void:
+	_hat_menu = HatMenu.new()
+	_hat_menu.player = player_node
+	add_child(_hat_menu)
 
 # Shops (Surface Hub, Energy Dock, Upgrade Bay, Space Forge, Cat Tavern)
 # are now managed by MiningShopSystem — see src/levels/MiningShopSystem.gd
