@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bf1r4we3udukr"
+path="res://.godot/imported/underwater world.mp3-60ba30607ccbf70f83a9465e2017effe.mp3str"
+
+[deps]
+
+source_file="res://assets/sound_effects/underwater world.mp3"
+dest_files=["res://.godot/imported/underwater world.mp3-60ba30607ccbf70f83a9465e2017effe.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

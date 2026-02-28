@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://dsmme5tkx3kd4"
+path="res://.godot/imported/Strange Worlds.mp3-c607910dd36146b6393c88f05638f4c3.mp3str"
+
+[deps]
+
+source_file="res://assets/music/Strange Worlds.mp3"
+dest_files=["res://.godot/imported/Strange Worlds.mp3-c607910dd36146b6393c88f05638f4c3.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

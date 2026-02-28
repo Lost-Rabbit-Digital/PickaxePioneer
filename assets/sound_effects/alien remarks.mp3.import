@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://diykxywfnfin3"
+path="res://.godot/imported/alien remarks.mp3-576ee22c30be8a50830d285f17ff372d.mp3str"
+
+[deps]
+
+source_file="res://assets/sound_effects/alien remarks.mp3"
+dest_files=["res://.godot/imported/alien remarks.mp3-576ee22c30be8a50830d285f17ff372d.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

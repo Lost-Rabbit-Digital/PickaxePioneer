@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://mpvcgqob63vp"
+path="res://.godot/imported/presence behind.mp3-beab845e07ba5ff41e65c3fc70f922c2.mp3str"
+
+[deps]
+
+source_file="res://assets/sound_effects/presence behind.mp3"
+dest_files=["res://.godot/imported/presence behind.mp3-beab845e07ba5ff41e65c3fc70f922c2.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

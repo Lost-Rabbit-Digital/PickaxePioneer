@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://b1f0ouitsakne"
+path="res://.godot/imported/Gentle Breeze.mp3-292b4c057ea66ee7be8109c2be961de5.mp3str"
+
+[deps]
+
+source_file="res://assets/music/Gentle Breeze.mp3"
+dest_files=["res://.godot/imported/Gentle Breeze.mp3-292b4c057ea66ee7be8109c2be961de5.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
