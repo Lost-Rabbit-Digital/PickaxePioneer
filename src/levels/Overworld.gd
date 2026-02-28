@@ -57,12 +57,17 @@ var mine_metadata: Dictionary = {
 }
 
 func _ready() -> void:
-	# Restore or randomize mine nodes
+	# Collect all nodes first — needed before connection generation/restore
+	nodes = [city_node, mine_node_1, mine_node_2, settlement_node_3, settlement_node_4]
+
+	# Restore or randomize mine nodes and their connections
 	var saved_config := SaveManager.get_planet_config()
 	if saved_config.size() > 0:
 		_restore_mines(saved_config)
+		_restore_connections(saved_config)
 	else:
 		_randomize_mines()
+		_generate_connections()
 
 	# Set static node metadata
 	city_node.description = "Your home Space Station. Spend your hard-earned minerals on upgrades to improve your space mining operation."
@@ -90,8 +95,12 @@ func _ready() -> void:
 	# Collect all nodes
 	nodes = [city_node, mine_node_1, mine_node_2, settlement_node_3, settlement_node_4]
 
-	# Arrange nodes in a circular formation with random layout
-	_arrange_nodes_in_circle()
+	# Arrange nodes - restore saved positions or randomize fresh
+	if saved_config.has("node_positions"):
+		_restore_node_positions(saved_config["node_positions"])
+	else:
+		_arrange_nodes_in_circle()
+		_save_node_positions()
 
 	# Connect click signals
 	for node in nodes:
@@ -134,8 +143,7 @@ func _randomize_mines() -> void:
 		# Hide second mine if only 1 mine is selected
 		mine_node_2.visible = false
 
-	# Persist planet config so it stays consistent until the player dies
-	_save_planet_config()
+	# Config is persisted by _generate_connections() after connections are built
 
 func _restore_mines(config: Dictionary) -> void:
 	# Restore mine configuration from a saved planet config
@@ -157,10 +165,22 @@ func _restore_mines(config: Dictionary) -> void:
 		mine_node_2.visible = false
 
 func _save_planet_config() -> void:
+	# Collect unique edges as [name_a, name_b] pairs so connections survive reloads.
+	var connection_pairs: Array = []
+	var seen_pairs: Array = []
+	for node in nodes:
+		for neighbor in node.neighbors:
+			var pair: Array = [node.name, neighbor.name]
+			pair.sort()
+			if not seen_pairs.has(pair):
+				seen_pairs.append(pair)
+				connection_pairs.append(pair)
+
 	var config := {
 		"mine1_name": mine_node_1.location_name,
 		"mine2_name": mine_node_2.location_name if mine_node_2.visible else "",
 		"mine2_visible": mine_node_2.visible,
+		"connections": connection_pairs,
 	}
 	SaveManager.save_planet_config(config)
 
@@ -170,16 +190,28 @@ func _arrange_nodes_in_circle() -> void:
 	var jitter := deg_to_rad(12.0)
 	var start_angle := randf() * TAU
 
-	# Use cycle order so connected nodes sit adjacent on the circle.
-	# The graph forms a cycle: city -> mine1 -> settlement3 -> settlement4 -> mine2 -> city.
-	# Placing nodes in this order means every edge is between neighbours on the
-	# circle, producing a clean polygon instead of a pentagram.
-	var ordered_nodes := _get_cycle_order()
+	# BFS traversal order keeps connected nodes adjacent on the circle,
+	# minimising edge crossings without assuming a fixed cycle topology.
+	var ordered_nodes := _get_traversal_order()
 
 	var base_step := TAU / ordered_nodes.size()
 	for i in range(ordered_nodes.size()):
 		var angle := start_angle + i * base_step + randf_range(-jitter, jitter)
 		ordered_nodes[i].position = center + Vector2(cos(angle), sin(angle)) * radius
+
+func _save_node_positions() -> void:
+	var node_positions := {}
+	for node in nodes:
+		node_positions[node.name] = {"x": node.position.x, "y": node.position.y}
+	var config := SaveManager.get_planet_config()
+	config["node_positions"] = node_positions
+	SaveManager.save_planet_config(config)
+
+func _restore_node_positions(positions: Dictionary) -> void:
+	for node in nodes:
+		if positions.has(node.name):
+			var pos_data = positions[node.name]
+			node.position = Vector2(pos_data["x"], pos_data["y"])
 
 func _get_cycle_order() -> Array[MapNode]:
 	# Return visible nodes in the intended cycle order so edges stay on the
@@ -188,9 +220,25 @@ func _get_cycle_order() -> Array[MapNode]:
 		city_node, mine_node_1, settlement_node_3, settlement_node_4, mine_node_2
 	]
 	var result: Array[MapNode] = []
-	for node in full_order:
+	var visited: Array[MapNode] = []
+	var queue: Array[MapNode] = [city_node]
+
+	while queue.size() > 0:
+		var node: MapNode = queue.pop_front()
+		if visited.has(node):
+			continue
+		visited.append(node)
 		if node.visible:
 			result.append(node)
+		for neighbor in node.neighbors:
+			if not visited.has(neighbor):
+				queue.append(neighbor)
+
+	# Safety: include any visible nodes not reachable from city
+	for node in nodes:
+		if node.visible and not result.has(node):
+			result.append(node)
+
 	return result
 
 func _apply_mine_metadata(node: MapNode, name: String) -> void:
@@ -198,6 +246,52 @@ func _apply_mine_metadata(node: MapNode, name: String) -> void:
 	node.difficulty = meta.get("difficulty", 1)
 	node.ore_types = meta.get("ores", [])
 	node.hazard_types = meta.get("hazards", [])
+
+func _generate_connections() -> void:
+	# Build a random spanning tree so the map has no loops and settlements are
+	# always dead ends (exactly one connection each).
+	#
+	# Layout rules:
+	#   - city_node is always the root hub.
+	#   - mine_node_1 always connects to city.
+	#   - mine_node_2 (when visible) connects to city OR mine_node_1 (50/50).
+	#   - Each settlement connects to a randomly chosen visible mine as a leaf.
+
+	_connect_nodes(city_node, mine_node_1)
+
+	if mine_node_2.visible:
+		var mine2_parent: MapNode = city_node if randf() < 0.5 else mine_node_1
+		_connect_nodes(mine2_parent, mine_node_2)
+
+	var available_mines: Array[MapNode] = [mine_node_1]
+	if mine_node_2.visible:
+		available_mines.append(mine_node_2)
+
+	# Assign each settlement to a random mine — never back to each other
+	for settlement in [settlement_node_3, settlement_node_4]:
+		var target: MapNode = available_mines[randi() % available_mines.size()]
+		_connect_nodes(target, settlement)
+
+	_save_planet_config()
+
+func _restore_connections(config: Dictionary) -> void:
+	# Rebuild edges from a saved list of [node_name_a, node_name_b] pairs.
+	# Falls back to fresh generation if the key is missing (legacy saves).
+	var connection_pairs: Array = config.get("connections", [])
+	if connection_pairs.is_empty():
+		_generate_connections()
+		return
+
+	var node_lookup: Dictionary = {}
+	for node in nodes:
+		node_lookup[node.name] = node
+
+	for pair in connection_pairs:
+		if pair.size() == 2:
+			var node_a: MapNode = node_lookup.get(pair[0])
+			var node_b: MapNode = node_lookup.get(pair[1])
+			if node_a and node_b:
+				_connect_nodes(node_a, node_b)
 
 func _connect_nodes(node_a: MapNode, node_b: MapNode) -> void:
 	if not node_a.neighbors.has(node_b):

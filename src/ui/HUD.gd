@@ -64,6 +64,21 @@ var _exit_hint_tween: Tween
 var _low_hp_warning: Label
 var _low_hp_tween: Tween
 
+# Hotbar — bottom-centre quick-slot strip (pickaxe, ladder, empty); click opens inventory
+const HOTBAR_SLOT_SIZE: int = 48
+const HOTBAR_SLOT_GAP: int = 4
+const HOTBAR_PICKAXE_TEXTURES: Array = [
+	"res://assets/db32_rpg_items/pickaxe_crusty.png",
+	"res://assets/db32_rpg_items/pickaxe_gold.png",
+	"res://assets/db32_rpg_items/pickaxe_iron.png",
+	"res://assets/db32_rpg_items/pickaxe_platinum.png",
+	"res://assets/db32_rpg_items/pickaxe_silver.png",
+	"res://assets/db32_rpg_items/pickaxe_steel.png"
+]
+var _hotbar_slots: Array[PanelContainer] = []
+var _hotbar_styles: Array[StyleBoxFlat] = []  # One StyleBoxFlat per slot for border recolouring
+var _hotbar_ladder_icon: Control  # Ladder slot content — shown/hidden based on ladder count
+
 # Ore colour mapping for the earnings popup
 const ORE_COLORS: Dictionary = {
 	"Lunar Copper":      Color(0.90, 0.60, 0.25),
@@ -263,6 +278,9 @@ func _ready() -> void:
 	_on_health_changed(max_hp, max_hp)
 	# Initialize energy display after all UI elements are created
 	_on_energy_changed(GameManager.current_energy, GameManager.get_max_energy())
+
+	# Build the bottom-centre hotbar (pickaxe / ladder / empty)
+	_build_hotbar()
 
 func _on_minerals_changed(_amount: int) -> void:
 	var ore_count := 0
@@ -523,6 +541,9 @@ func _update_ladder_display(count: int) -> void:
 	else:
 		_ladder_label.modulate.a = 0.0
 		_ladder_panel.modulate.a = 0.0
+	# Sync hotbar ladder slot icon visibility
+	if _hotbar_ladder_icon:
+		_hotbar_ladder_icon.visible = count > 0
 
 # Queues a boss hint and kicks off display if nothing is showing.
 func _on_boss_hint_popup(hint: String) -> void:
@@ -546,3 +567,117 @@ func _show_next_boss_hint() -> void:
 	_boss_hint_tween.tween_property(_boss_hint_label, "modulate:a", 0.0, 0.6)
 	_boss_hint_tween.parallel().tween_property(_boss_hint_panel, "modulate:a", 0.0, 0.6)
 	_boss_hint_tween.tween_callback(_show_next_boss_hint)
+
+# ---------------------------------------------------------------------------
+# Hotbar — 3 slots at bottom-centre (pickaxe tool, ladder tool, empty).
+# Clicking a slot selects it; 1/2/3 keys also switch the active slot.
+# The selected slot is outlined yellow; others keep the default purple.
+# ---------------------------------------------------------------------------
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_1:
+			_set_hotbar_selection(0)
+		elif event.keycode == KEY_2:
+			_set_hotbar_selection(1)
+		elif event.keycode == KEY_3:
+			_set_hotbar_selection(2)
+
+func _set_hotbar_selection(slot: int) -> void:
+	GameManager.selected_hotbar_slot = slot
+	for i in range(_hotbar_styles.size()):
+		_hotbar_styles[i].border_color = (
+			Color(1.0, 0.90, 0.10, 1.0)      # Yellow — selected
+			if i == slot else
+			Color(0.50, 0.40, 0.65, 0.80)    # Purple — unselected
+		)
+
+func _build_hotbar() -> void:
+	var slot_outer: int = HOTBAR_SLOT_SIZE + 6  # content + border (3 px margin each side)
+	var total_w: int = 3 * slot_outer + 2 * HOTBAR_SLOT_GAP
+	var hb_x: int = (1280 - total_w) / 2
+	var hb_y: int = 720 - slot_outer - 6
+
+	var container := HBoxContainer.new()
+	container.position = Vector2(hb_x, hb_y)
+	container.add_theme_constant_override("separation", HOTBAR_SLOT_GAP)
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$Control.add_child(container)
+
+	for i in range(3):
+		var slot := PanelContainer.new()
+		slot.custom_minimum_size = Vector2(HOTBAR_SLOT_SIZE, HOTBAR_SLOT_SIZE)
+
+		# Outline style via StyleBoxFlat
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.06, 0.06, 0.10, 0.85)
+		style.border_color = Color(0.50, 0.40, 0.65, 0.80)
+		style.set_border_width_all(2)
+		style.set_content_margin_all(3)
+		slot.add_theme_stylebox_override("panel", style)
+		slot.mouse_filter = Control.MOUSE_FILTER_STOP
+		slot.gui_input.connect(_on_hotbar_slot_input.bind(i))
+		_hotbar_styles.append(style)
+
+		if i == 0:
+			# Pickaxe tool — random block texture
+			var tex_path: String = HOTBAR_PICKAXE_TEXTURES[randi() % HOTBAR_PICKAXE_TEXTURES.size()]
+			var tex: Texture2D = load(tex_path) as Texture2D
+			if tex:
+				var icon := TextureRect.new()
+				icon.texture = tex
+				icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+				icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+				icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				slot.add_child(icon)
+
+		elif i == 1:
+			# Ladder tool — drawn as two poles + three rungs (matches in-game ladder style)
+			_hotbar_ladder_icon = Control.new()
+			_hotbar_ladder_icon.custom_minimum_size = Vector2(HOTBAR_SLOT_SIZE - 6, HOTBAR_SLOT_SIZE - 6)
+			_hotbar_ladder_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+			var pole_color := Color(0.80, 0.60, 0.15, 0.90)
+			var rung_color := Color(0.70, 0.50, 0.10, 0.90)
+
+			# Left pole
+			var left_pole := ColorRect.new()
+			left_pole.color = pole_color
+			left_pole.position = Vector2(7, 2)
+			left_pole.size = Vector2(5, 38)
+			left_pole.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_hotbar_ladder_icon.add_child(left_pole)
+
+			# Right pole
+			var right_pole := ColorRect.new()
+			right_pole.color = pole_color
+			right_pole.position = Vector2(30, 2)
+			right_pole.size = Vector2(5, 38)
+			right_pole.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_hotbar_ladder_icon.add_child(right_pole)
+
+			# Three rungs
+			for r in 3:
+				var rung := ColorRect.new()
+				rung.color = rung_color
+				rung.position = Vector2(7, 7 + r * 13)
+				rung.size = Vector2(28, 4)
+				rung.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				_hotbar_ladder_icon.add_child(rung)
+
+			# Only visible when the player has at least one ladder
+			_hotbar_ladder_icon.visible = GameManager.ladder_count > 0
+			slot.add_child(_hotbar_ladder_icon)
+
+		# Slot 3 (i == 2) intentionally left empty
+
+		container.add_child(slot)
+		_hotbar_slots.append(slot)
+
+	# Highlight slot 0 (pickaxe) as selected by default
+	_set_hotbar_selection(0)
+
+func _on_hotbar_slot_input(event: InputEvent, slot_index: int) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_set_hotbar_selection(slot_index)

@@ -33,12 +33,21 @@ var _gripping_ladder: bool = false
 # True when the player is descending a ladder (S or Down held)
 var _descending_ladder: bool = false
 
+# Fall damage tracking
+var _fall_start_y: float = 0.0
+var _is_falling: bool = false
+const FALL_DAMAGE_THRESHOLD: int = 3 * CELL_SIZE  # 3 tiles in pixels (192px)
+
 @onready var health_component: HealthComponent = $HealthComponent
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var interact_prompt: Label = $PromptLayer/InteractPrompt
 
 # Facing direction
 var _facing_left: bool = true
+
+# Idle to sleep transition
+var _idle_timer: float = 0.0
+const IDLE_TO_SLEEP_TIME: float = 5.0  # Seconds before transitioning to sleep
 
 # Sprint — hold Shift for 1.5× speed, costs extra energy
 const SPRINT_MULT: float = 1.5
@@ -76,6 +85,15 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var pre_floor := is_on_floor()
+
+	# Track fall start position
+	if pre_floor and not _gripping_ladder and not _descending_ladder:
+		# Player is on floor and not using ladder, reset fall tracking
+		_is_falling = false
+	elif not pre_floor and not _is_falling:
+		# Player just left the ground, start tracking fall
+		_is_falling = true
+		_fall_start_y = global_position.y
 
 	# Grip/climb: W or Up held.  Descend: S or Down held.  Neither: freefall.
 	_gripping_ladder   = on_ladder and (Input.is_key_pressed(KEY_W)   or Input.is_key_pressed(KEY_UP))
@@ -140,26 +158,38 @@ func _physics_process(delta: float) -> void:
 	_handle_mining(delta)
 
 	# Update animation based on current state
-	_update_animation()
+	_update_animation(delta)
 
-func _update_animation() -> void:
+func _update_animation(delta: float) -> void:
 	var anim: StringName
 
 	if _mining and is_on_floor():
 		anim = &"paw"
+		_idle_timer = 0.0
 	elif _gripping_ladder or _descending_ladder:
 		anim = &"movement"
+		_idle_timer = 0.0
 	elif not is_on_floor():
 		anim = &"jump"
+		_idle_timer = 0.0
 	elif abs(velocity.x) > 0.1:
 		anim = &"movement"
+		_idle_timer = 0.0
 	else:
-		anim = &"idle"
+		# Player is idle - track idle time
+		_idle_timer += delta
+		if _idle_timer >= IDLE_TO_SLEEP_TIME:
+			anim = &"sleep"
+		else:
+			anim = &"idle"
 
 	if sprite.animation != anim:
 		sprite.play(anim)
 
 func _handle_mining(delta: float) -> void:
+	if GameManager.selected_hotbar_slot != 0:
+		_mining = false
+		return
 	if Input.is_action_pressed("mine"):
 		var mouse_world := get_global_mouse_position()
 		var grid_pos := Vector2i(
@@ -248,6 +278,7 @@ func _update_particles(delta: float, was_on_floor: bool, vel_y_before_slide: flo
 	# Landing poof — trigger on first frame touching floor after a real fall
 	if is_on_floor() and not was_on_floor and vel_y_before_slide > POOF_VEL_THRESHOLD:
 		_spawn_poof()
+		_apply_fall_damage()
 
 	# Walking dust — emit small squares at feet while moving on the ground
 	if is_on_floor() and abs(velocity.x) > 20.0 and not _gripping_ladder:
@@ -291,6 +322,14 @@ func _spawn_poof() -> void:
 			"max_life": POOF_LIFETIME,
 			"size": randf_range(POOF_SIZE_MIN, POOF_SIZE_MAX),
 		})
+
+func _apply_fall_damage() -> void:
+	if _is_falling:
+		var fall_distance := _fall_start_y - global_position.y
+		if fall_distance > FALL_DAMAGE_THRESHOLD:
+			var damage := health_component.max_health / 2
+			health_component.damage(damage)
+		_is_falling = false
 
 func _draw() -> void:
 	for p: Dictionary in _particles:

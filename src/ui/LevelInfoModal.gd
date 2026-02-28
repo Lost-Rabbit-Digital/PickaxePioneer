@@ -14,14 +14,13 @@ signal cancelled
 @onready var ore_types_label: Label = $Control/Panel/MarginContainer/VBox/OreTypesLabel
 @onready var hazards_label: Label = $Control/Panel/MarginContainer/VBox/HazardsLabel
 @onready var enter_button: Button = $Control/Panel/MarginContainer/VBox/ButtonsBox/EnterButton
-@onready var cancel_button: Button = $Control/Panel/MarginContainer/VBox/ButtonsBox/CancelButton
+@onready var hsep2: HSeparator = $Control/Panel/MarginContainer/VBox/HSep2
 
 var _current_node: MapNode = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	enter_button.pressed.connect(_on_enter_pressed)
-	cancel_button.pressed.connect(_on_cancel_pressed)
 	hide()
 
 func show_for_node(node: MapNode) -> void:
@@ -36,6 +35,7 @@ func show_for_node(node: MapNode) -> void:
 			difficulty_label.visible = false
 			ore_types_label.visible = false
 			hazards_label.visible = false
+			hsep2.visible = true
 			enter_button.text = "Dock at Station"
 		MapNode.NodeType.MINE:
 			type_label.text = "[ Asteroid Mine ]"
@@ -43,6 +43,7 @@ func show_for_node(node: MapNode) -> void:
 			difficulty_label.visible = true
 			ore_types_label.visible = node.ore_types.size() > 0
 			hazards_label.visible = node.hazard_types.size() > 0
+			hsep2.visible = true
 			enter_button.text = "Launch"
 		MapNode.NodeType.SETTLEMENT:
 			type_label.text = "[ Outpost ]"
@@ -50,6 +51,7 @@ func show_for_node(node: MapNode) -> void:
 			difficulty_label.visible = false
 			ore_types_label.visible = false
 			hazards_label.visible = false
+			hsep2.visible = false
 			enter_button.text = "Visit Outpost"
 		_:
 			type_label.text = "[ Unknown ]"
@@ -57,6 +59,7 @@ func show_for_node(node: MapNode) -> void:
 			difficulty_label.visible = false
 			ore_types_label.visible = false
 			hazards_label.visible = false
+			hsep2.visible = true
 			enter_button.text = "Explore"
 
 	if difficulty_label.visible:

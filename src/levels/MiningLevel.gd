@@ -286,6 +286,12 @@ const SOLID_TILES: Array = [
 	TileType.CAT_TAVERN,
 ]
 
+# Tiles that fall when the block below them is removed (gravity behaviour)
+const GRAVITY_TILES: Array = [TileType.STONE_DARK]
+
+# Seconds between each row-step a gravity tile falls
+const GRAVITY_FALL_DELAY: float = 0.2
+
 # Depth zones
 const DEPTH_ZONE_ROWS   = [0, 16, 41, 71, 101]
 const DEPTH_ZONE_NAMES  = ["Low Orbit", "Asteroid Belt", "Nebula Zone", "Star Cluster", "Deep Space"]
@@ -334,6 +340,9 @@ var _tile_damage: Dictionary = {}
 var _tile_hits: Dictionary = {}
 var _flash_cells: Dictionary = {}
 var _breaking_overlays: Dictionary = {}  # Maps Vector2i -> AnimatedSprite2D instance
+
+# Gravity-tile fall queue: Vector2i(col, row) -> float seconds_until_next_step
+var _gravity_pending: Dictionary = {}
 var _mine_streak: int = 0
 var _zones_discovered: Array[bool] = [false, false, false, false, false]
 var _exit_pulse_time: float = 0.0
@@ -388,7 +397,8 @@ var _level_particles: Array = []
 const LEVEL_PARTICLE_MAX: int = 300
 
 func _ready() -> void:
-	_pickaxe_texture = load("res://assets/pickaxe_effect.png") as Texture2D
+	_pickaxe_texture = load("res://assets/db32_rpg_items/pickaxe_steel.png") as Texture2D
+	
 
 	texture_filter = TEXTURE_FILTER_NEAREST
 
@@ -1570,6 +1580,9 @@ func _process(delta: float) -> void:
 
 	# Update level particles
 	_update_level_particles(delta)
+  
+	# Gravity tile falling (gravel etc. drop when unsupported)
+	_process_gravity(delta)
 
 	# Update sonar ping wave (§3.2) — delegated to SonarSystem
 	sonar_system.update(delta, 2.0 if _ancient_map_active[0] else 1.0)
@@ -1702,7 +1715,7 @@ func _spawn_pickaxe_effect(from: Vector2, to: Vector2) -> void:
 	var sprite := Sprite2D.new()
 	sprite.texture = _pickaxe_texture
 	sprite.position = from
-	sprite.scale = Vector2(0.5, 0.5)
+	sprite.scale = Vector2(2.5, 2.5)
 	sprite.rotation = from.angle_to_point(to) + PI * 0.25
 	sprite.texture_filter = TEXTURE_FILTER_NEAREST
 	add_child(sprite)
@@ -1888,9 +1901,88 @@ func _check_streak_milestone() -> void:
 		EventBus.minerals_earned.emit(bonus)
 		EventBus.ore_mined_popup.emit(bonus, "Streak!")
 
+# ---------------------------------------------------------------------------
+# Gravity block system — GRAVITY_TILES fall when unsupported
+# ---------------------------------------------------------------------------
+
+# Schedule a gravity check for any gravity tile sitting directly above (col, row).
+func _trigger_gravity_above(col: int, row: int) -> void:
+	var above_row := row - 1
+	if above_row < 0 or col < 0 or col >= GRID_COLS:
+		return
+	if grid[col][above_row] in GRAVITY_TILES:
+		var pos := Vector2i(col, above_row)
+		# Only add if not already scheduled (avoid duplicates)
+		if not _gravity_pending.has(pos):
+			_gravity_pending[pos] = GRAVITY_FALL_DELAY
+
+# Advance all pending gravity tiles by delta seconds, dropping them one row
+# per step when ready.  Called every frame from _process().
+func _process_gravity(delta: float) -> void:
+	if _gravity_pending.is_empty():
+		return
+
+	# Snapshot keys so we can modify the dict while iterating.
+	var keys: Array = _gravity_pending.keys()
+	for pos in keys:
+		# Tick the countdown
+		_gravity_pending[pos] -= delta
+		if _gravity_pending[pos] > 0.0:
+			continue
+
+		_gravity_pending.erase(pos)
+
+		var col: int = pos.x
+		var row: int = pos.y
+
+		# Tile may have already been mined away while waiting — skip if so.
+		if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
+			continue
+		if not grid[col][row] in GRAVITY_TILES:
+			continue
+
+		var below_row := row + 1
+		if below_row >= GRID_ROWS:
+			continue
+
+		# Only fall if the cell directly below is empty.
+		if grid[col][below_row] != TileType.EMPTY:
+			continue
+
+		var tile: int = grid[col][row]
+
+		# Move the tile down one row.
+		grid[col][below_row] = tile
+		grid[col][row] = TileType.EMPTY
+		_set_tile_collision(col, row, false)
+		_set_tile_collision(col, below_row, true)
+
+		# Clear any partial-damage state that belonged to the old position.
+		_tile_damage.erase(pos)
+		_tile_hits.erase(pos)
+		_remove_breaking_overlay(pos)
+
+		# Also clear damage on the destination (a tile falling onto an already-
+		# damaged cell should start fresh).
+		var new_pos := Vector2i(col, below_row)
+		_tile_damage.erase(new_pos)
+		_tile_hits.erase(new_pos)
+		_remove_breaking_overlay(new_pos)
+
+		queue_redraw()
+
+		# Schedule the next fall step from the new position.
+		_gravity_pending[new_pos] = GRAVITY_FALL_DELAY
+
+		# If something was sitting above the old position, it may now be
+		# unsupported — trigger a gravity check for it too.
+		_trigger_gravity_above(col, row)
+
 func _mine_cell(col: int, row: int) -> void:
 	grid[col][row] = TileType.EMPTY
 	_set_tile_collision(col, row, false)
+	# A newly-empty cell may leave a gravity tile unsupported above it.
+	_trigger_gravity_above(col, row)
 
 # Spawns physical ore chunks that scatter from the mined tile position.
 # The player and forager ant must collect them to bank the minerals.
@@ -1928,10 +2020,13 @@ func _explode_area(center_col: int, center_row: int) -> void:
 					GameManager.track_ore_mined(tile, minerals)
 				grid[nc][nr] = TileType.EMPTY
 				_set_tile_collision(nc, nr, false)
-	# Large explosion particle burst
-	var explosion_world := Vector2(center_col * CELL_SIZE + CELL_SIZE * 0.5, center_row * CELL_SIZE + CELL_SIZE * 0.5)
-	_spawn_mining_particles(explosion_world, Color(1.0, 0.55, 0.05), 28, 80.0, 280.0)
-	_spawn_mining_particles(explosion_world, Color(1.0, 0.90, 0.20, 0.8), 16, 50.0, 180.0)
+  	    # Large explosion particle burst
+	      var explosion_world := Vector2(center_col * CELL_SIZE + CELL_SIZE * 0.5, center_row * CELL_SIZE + CELL_SIZE * 0.5)
+	      _spawn_mining_particles(explosion_world, Color(1.0, 0.55, 0.05), 28, 80.0, 280.0)
+      	_spawn_mining_particles(explosion_world, Color(1.0, 0.90, 0.20, 0.8), 16, 50.0, 180.0)
+				_remove_breaking_overlay(Vector2i(nc, nr))
+				# Explosion may leave gravity tiles unsupported above cleared cells.
+				_trigger_gravity_above(nc, nr)
 	SoundManager.play_explosion_sound()
 	_shake_camera(6.0, 0.35)
 	if player_node:
@@ -2319,6 +2414,9 @@ func cat_mine_at(grid_pos: Vector2i) -> void:
 # ---------------------------------------------------------------------------
 
 func _try_place_ladder() -> void:
+	if GameManager.selected_hotbar_slot != 1:
+		EventBus.ore_mined_popup.emit(0, "Select the ladder (slot 2) to place ladders.")
+		return
 	if not player_node:
 		return
 	if GameManager.ladder_count <= 0:

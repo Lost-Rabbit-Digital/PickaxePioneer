@@ -85,6 +85,18 @@ max_value = 100.0
 step = 1.0
 value = 100.0
 
+[node name="SFXLabel" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+text = "SFX Volume"
+
+[node name="SFXSlider" type="HSlider" parent="Panel/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 24)
+min_value = 0.0
+max_value = 100.0
+step = 1.0
+value = 100.0
+
 [node name="Sep2" type="HSeparator" parent="Panel/VBox"]
 layout_mode = 2
 

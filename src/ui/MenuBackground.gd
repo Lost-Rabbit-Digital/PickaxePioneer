@@ -6,8 +6,8 @@ extends Node2D
 #
 # Interaction:
 #   - Click and drag anywhere on the background to pan manually.
-#   - Scroll wheel gives a vertical impulse (floaty throw).
-#   - Releasing a drag or scroll carries momentum that decays gradually.
+#   - Scroll wheel zooms in/out of the terrain (clamped to ZOOM_MIN/ZOOM_MAX).
+#   - Releasing a drag carries momentum that decays gradually.
 #   - After IDLE_TIMEOUT seconds of no interaction the background picks a new
 #     random direction and resumes slow auto-panning.
 
@@ -28,8 +28,12 @@ const TUNNEL_LENGTH_MAX: int = 22   # Maximum tunnel length in steps
 # Momentum / inertia tuning
 const MOMENTUM_DAMPING: float = 0.97        # Velocity multiplier per 60-fps tick (frame-rate independent)
 const MOMENTUM_THRESHOLD: float = 0.5       # px/s – below this speed momentum is considered stopped
-const SCROLL_IMPULSE: float = 400.0         # px/s added per scroll-wheel notch
 const DRAG_VEL_BLEND: float = 0.70          # How aggressively drag_velocity tracks instantaneous motion
+
+# Zoom tuning
+const ZOOM_MIN: float = 0.5                 # Furthest zoom out (half tile size)
+const ZOOM_MAX: float = 3.0                 # Closest zoom in (3× tile size)
+const ZOOM_STEP: float = 0.15              # Zoom amount per scroll-wheel notch
 
 enum TileType {
 	EMPTY      = 0,
@@ -94,6 +98,9 @@ var is_autopanning: bool = true
 var momentum_velocity: Vector2 = Vector2.ZERO   # Current throw velocity
 var drag_velocity: Vector2 = Vector2.ZERO        # Rolling velocity estimate during drag
 var _mouse_delta_acc: Vector2 = Vector2.ZERO     # Mouse motion accumulated this frame
+
+# Zoom state
+var zoom_level: float = 1.0                     # Current zoom multiplier (clamped to ZOOM_MIN/ZOOM_MAX)
 
 func _ready() -> void:
 	# Nearest-neighbour filtering keeps pixel-art tiles crisp
@@ -191,22 +198,24 @@ func _unhandled_input(event: InputEvent) -> void:
 
 			MOUSE_BUTTON_WHEEL_UP:
 				if event.pressed:
-					momentum_velocity.y -= SCROLL_IMPULSE
+					_apply_zoom(ZOOM_STEP)
 					is_autopanning = false
 					idle_timer = 0.0
 					get_viewport().set_input_as_handled()
 
 			MOUSE_BUTTON_WHEEL_DOWN:
 				if event.pressed:
-					momentum_velocity.y += SCROLL_IMPULSE
+					_apply_zoom(-ZOOM_STEP)
 					is_autopanning = false
 					idle_timer = 0.0
 					get_viewport().set_input_as_handled()
 
 	elif event is InputEventMouseMotion and is_dragging:
-		# Drag right → world scrolls left (subtract relative motion)
-		scroll_offset -= event.relative
-		_mouse_delta_acc -= event.relative
+		# Drag right → world scrolls left. Divide by zoom so dragging feels
+		# consistent: one screen-pixel of drag always moves the same apparent amount.
+		var world_delta: Vector2 = (event as InputEventMouseMotion).relative / zoom_level
+		scroll_offset -= world_delta
+		_mouse_delta_acc -= world_delta
 		idle_timer = 0.0
 		get_viewport().set_input_as_handled()
 
@@ -237,6 +246,13 @@ func _process(delta: float) -> void:
 
 	queue_redraw()
 
+func _apply_zoom(delta_zoom: float) -> void:
+	var old_zoom := zoom_level
+	zoom_level = clamp(zoom_level + delta_zoom, ZOOM_MIN, ZOOM_MAX)
+	# Keep the viewport centre anchored in world space when zooming
+	var vp_center := get_viewport_rect().size * 0.5
+	scroll_offset += vp_center * (1.0 / old_zoom - 1.0 / zoom_level)
+
 func _wrap_scroll() -> void:
 	var gw: float = float(GRID_COLS * CELL_SIZE)
 	var gh: float = float(GRID_ROWS * CELL_SIZE)
@@ -252,6 +268,9 @@ func _draw() -> void:
 	var gw: float = float(GRID_COLS * CELL_SIZE)
 	var gh: float = float(GRID_ROWS * CELL_SIZE)
 
+	# Effective tile size in screen pixels after applying zoom
+	var effective_cell: float = float(CELL_SIZE) * zoom_level
+
 	# Normalise offset to [0, gw) × [0, gh) so modulo indexing works correctly
 	var off_x: float = fmod(scroll_offset.x, gw)
 	var off_y: float = fmod(scroll_offset.y, gh)
@@ -262,31 +281,31 @@ func _draw() -> void:
 	var start_col: int = int(off_x / CELL_SIZE)
 	var start_row: int = int(off_y / CELL_SIZE)
 
-	# Sub-cell pixel offset (how far into the top-left tile we are)
-	var pixel_off_x: float = fmod(off_x, float(CELL_SIZE))
-	var pixel_off_y: float = fmod(off_y, float(CELL_SIZE))
+	# Sub-cell pixel offset scaled to screen space
+	var pixel_off_x: float = fmod(off_x, float(CELL_SIZE)) * zoom_level
+	var pixel_off_y: float = fmod(off_y, float(CELL_SIZE)) * zoom_level
 
 	# +2: one partial tile at each edge
-	var cols_to_draw: int = int(vp_size.x / CELL_SIZE) + 2
-	var rows_to_draw: int = int(vp_size.y / CELL_SIZE) + 2
+	var cols_to_draw: int = int(vp_size.x / effective_cell) + 2
+	var rows_to_draw: int = int(vp_size.y / effective_cell) + 2
 
 	for screen_row in range(rows_to_draw):
-		var y: float = screen_row * CELL_SIZE - pixel_off_y
+		var y: float = screen_row * effective_cell - pixel_off_y
 		if y >= vp_size.y:
 			break
 		var tile_row: int = (start_row + screen_row) % GRID_ROWS
 		for screen_col in range(cols_to_draw):
-			var x: float = screen_col * CELL_SIZE - pixel_off_x
+			var x: float = screen_col * effective_cell - pixel_off_x
 			if x >= vp_size.x:
 				break
 			var tile_col: int = (start_col + screen_col) % GRID_COLS
 			var tile: int = tile_grid[tile_row][tile_col]
 			if tile == TileType.EMPTY:
 				continue
-			_draw_tile(tile, x, y)
+			_draw_tile(tile, x, y, effective_cell)
 
-func _draw_tile(tile: int, x: float, y: float) -> void:
-	var tile_rect := Rect2(x, y, CELL_SIZE, CELL_SIZE)
+func _draw_tile(tile: int, x: float, y: float, size: float) -> void:
+	var tile_rect := Rect2(x, y, size, size)
 	var tex: Texture2D = tile_textures.get(tile)
 	if tex:
 		draw_texture_rect(tex, tile_rect, false)

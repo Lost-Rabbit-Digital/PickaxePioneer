@@ -172,6 +172,7 @@ func _rebuild_content(ore_counts: Dictionary, shroom_charges: int, lucky_compass
 		Color(0.35, 0.75, 0.95))
 	eq_y += 4
 	eq_y = _draw_equipment(_content_root, eq_x, eq_y, col_w)
+	eq_y = _draw_ladders(_content_root, eq_x, eq_y, col_w)
 
 	# -----------------------------------------------------------------------
 	# Column 3: Artifacts
@@ -364,3 +365,66 @@ func _draw_artifacts(parent: Control, x: int, y: int, w: int,
 		y += ROW_H + 2
 
 	return y
+
+func _draw_ladders(parent: Control, x: int, y: int, w: int) -> int:
+	var count: int = GameManager.ladder_count
+	y += SEC_GAP
+
+	# Ladder icon — two poles + three rungs drawn as ColorRects
+	var icon_container := Control.new()
+	icon_container.position = Vector2(x + 2, y + 2)
+	icon_container.size = Vector2(ICON_SZ, ICON_SZ)
+
+	var pole_color := Color(0.80, 0.60, 0.15, 0.90)
+	var rung_color := Color(0.70, 0.50, 0.10, 0.90)
+
+	var lp := ColorRect.new()
+	lp.color = pole_color
+	lp.position = Vector2(6, 2)
+	lp.size = Vector2(5, 36)
+	icon_container.add_child(lp)
+
+	var rp := ColorRect.new()
+	rp.color = pole_color
+	rp.position = Vector2(29, 2)
+	rp.size = Vector2(5, 36)
+	icon_container.add_child(rp)
+
+	for r in 3:
+		var rung := ColorRect.new()
+		rung.color = rung_color
+		rung.position = Vector2(6, 5 + r * 12)
+		rung.size = Vector2(28, 4)
+		icon_container.add_child(rung)
+
+	parent.add_child(icon_container)
+
+	# Name
+	var name_lbl := Label.new()
+	name_lbl.text = "Ladders"
+	name_lbl.position = Vector2(x + ICON_SZ + 8, y + 4)
+	name_lbl.custom_minimum_size = Vector2(w - ICON_SZ - 50, 20)
+	name_lbl.add_theme_font_size_override("font_size", 13)
+	name_lbl.modulate = Color(0.85, 0.65, 0.20)
+	parent.add_child(name_lbl)
+
+	# Count
+	var count_lbl := Label.new()
+	count_lbl.text = "×%d" % count
+	count_lbl.position = Vector2(x + w - 42, y + 4)
+	count_lbl.custom_minimum_size = Vector2(40, 20)
+	count_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	count_lbl.add_theme_font_size_override("font_size", 13)
+	count_lbl.modulate = Color(0.90, 0.90, 0.90)
+	parent.add_child(count_lbl)
+
+	# "[F] to place" hint
+	var hint_lbl := Label.new()
+	hint_lbl.text = "[F] to place"
+	hint_lbl.position = Vector2(x + ICON_SZ + 8, y + 24)
+	hint_lbl.custom_minimum_size = Vector2(w - ICON_SZ - 10, 18)
+	hint_lbl.add_theme_font_size_override("font_size", 11)
+	hint_lbl.modulate = Color(0.60, 0.55, 0.45, 0.80)
+	parent.add_child(hint_lbl)
+
+	return y + ROW_H + 2
