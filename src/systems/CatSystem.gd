@@ -133,7 +133,7 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	for cat in _cats:
 		if cat.role == CatRole.COLLECTING and cat.carry > 0:
-			var pos := cat.world_pos
+			var pos: Vector2 = cat.world_pos
 			var ratio := float(cat.carry) / float(CAT_CARRY_CAPACITY)
 			var bar_w := 24.0
 			var bar_h := 4.0

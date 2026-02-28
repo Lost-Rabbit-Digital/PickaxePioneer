@@ -1056,6 +1056,13 @@ func _draw() -> void:
 			draw_arc(center_px, wave_px, 0.0, TAU, 48, Color(0.40, 1.0, 0.60, ping_alpha * 0.55), 2.0)
 
 # ---------------------------------------------------------------------------
+# UI-blocking helper — used by PlayerProbe to pause input while any shop is open
+# ---------------------------------------------------------------------------
+
+func any_ui_open() -> bool:
+	return shop_system != null and (shop_system.any_shop_open() or trader_system.shop_visible)
+
+# ---------------------------------------------------------------------------
 # Process — energy drain, cursor highlight, flashes
 # ---------------------------------------------------------------------------
 

@@ -51,8 +51,7 @@ func _ready() -> void:
 	sprite.play(&"idle")
 
 func _physics_process(delta: float) -> void:
-	if not mining_level or mining_level._game_over or mining_level._hub_visible \
-			or mining_level._energy_shop_visible or mining_level._trader_shop_visible:
+	if not mining_level or mining_level._game_over or mining_level.any_ui_open():
 		return
 
 	# Gravity — reduced when on a ladder
