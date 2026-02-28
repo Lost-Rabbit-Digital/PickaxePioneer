@@ -1,10 +1,14 @@
-[gd_scene load_steps=6 format=3 uid="uid://overworld8aa"]
+[gd_scene load_steps=7 format=3 uid="uid://overworld8aa"]
 
 [ext_resource type="Script" uid="uid://bk70fmvti7sbc" path="res://src/levels/Overworld.gd" id="1_overworld"]
 [ext_resource type="Texture2D" uid="uid://2i1s08p2mq37" path="res://assets/pixelart_starfield.png" id="2_aphkn"]
 [ext_resource type="PackedScene" uid="uid://mapnode123" path="res://src/entities/overworld/MapNode.tscn" id="2_node"]
 [ext_resource type="PackedScene" uid="uid://caravan456" path="res://src/entities/overworld/Caravan.tscn" id="3_caravan"]
 [ext_resource type="PackedScene" uid="uid://dom6mgmv6ffss" path="res://src/ui/PauseMenu.tscn" id="7_pausemenu"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_1"]
+font_sizes/font_size = 12
+font_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 
 [node name="Overworld" type="Control"]
 layout_mode = 3
@@ -62,6 +66,22 @@ scene_path = "res://src/levels/SettlementLevel.tscn"
 
 [node name="Caravan" parent="." instance=ExtResource("3_caravan")]
 position = Vector2(200, 360)
+
+[node name="VersionLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -30.0
+offset_right = 200.0
+offset_bottom = -10.0
+grow_horizontal = 1
+grow_vertical = 0
+text = "v0.1.0 (63a6731)"
+label_settings = SubResource("LabelSettings_1")
 
 [node name="PauseMenu" parent="." instance=ExtResource("7_pausemenu")]
 visible = false
