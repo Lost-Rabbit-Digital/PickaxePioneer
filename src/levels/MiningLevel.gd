@@ -1933,6 +1933,9 @@ func cat_mine_at(grid_pos: Vector2i) -> void:
 # ---------------------------------------------------------------------------
 
 func _try_place_ladder() -> void:
+	if GameManager.selected_hotbar_slot != 1:
+		EventBus.ore_mined_popup.emit(0, "Select the ladder (slot 2) to place ladders.")
+		return
 	if not player_node:
 		return
 	if GameManager.ladder_count <= 0:

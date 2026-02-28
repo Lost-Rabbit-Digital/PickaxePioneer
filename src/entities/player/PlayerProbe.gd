@@ -185,6 +185,9 @@ func _update_animation(delta: float) -> void:
 		sprite.play(anim)
 
 func _handle_mining(delta: float) -> void:
+	if GameManager.selected_hotbar_slot != 0:
+		_mining = false
+		return
 	if Input.is_action_pressed("mine"):
 		var mouse_world := get_global_mouse_position()
 		var grid_pos := Vector2i(
