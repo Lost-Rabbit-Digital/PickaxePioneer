@@ -82,10 +82,10 @@ func _physics_process(delta: float) -> void:
 		_sprint_energy_accum = 0.0
 
 	# Flip sprite
-	if direction < 0:
+	if direction > 0:
 		_facing_left = true
 		sprite.flip_h = false
-	elif direction > 0:
+	elif direction < 0:
 		_facing_left = false
 		sprite.flip_h = true
 

@@ -459,7 +459,7 @@ sprite_frames = SubResource("SpriteFrames_8ebmi")
 animation = &"jump"
 frame = 6
 frame_progress = 0.29225284
-offset = Vector2(0, -16)
+offset = Vector2(0, -8)
 
 [node name="JetpackSprite" type="Sprite2D" parent="."]
 z_index = -1
