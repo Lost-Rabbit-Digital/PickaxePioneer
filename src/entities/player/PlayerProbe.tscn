@@ -463,7 +463,7 @@ texture_filter = 1
 position = Vector2(-32, 0)
 scale = Vector2(0.99999994, 0.99999994)
 sprite_frames = ExtResource("2_t7q6t")
-animation = &"damage"
+animation = &"sleep"
 
 [node name="LeafElemental" type="AnimatedSprite2D" parent="ElementalFollowers"]
 z_index = 1
@@ -471,7 +471,7 @@ texture_filter = 1
 position = Vector2(-64, 0)
 scale = Vector2(0.99999994, 0.99999994)
 sprite_frames = ExtResource("3_gh7rg")
-animation = &"scared"
+animation = &"idle"
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 texture_filter = 1

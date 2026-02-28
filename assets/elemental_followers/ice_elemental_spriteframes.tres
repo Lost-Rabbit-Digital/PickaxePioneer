@@ -130,9 +130,9 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_c2puy")
 }],
-"loop": true,
+"loop": false,
 "name": &"damage",
-"speed": 5.0
+"speed": 0.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -159,9 +159,9 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_yfs6a")
 }],
-"loop": true,
+"loop": false,
 "name": &"death",
-"speed": 5.0
+"speed": 0.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -199,9 +199,9 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_24ydm")
 }],
-"loop": true,
+"loop": false,
 "name": &"move",
-"speed": 5.0
+"speed": 0.0
 }, {
 "frames": [{
 "duration": 1.0,
