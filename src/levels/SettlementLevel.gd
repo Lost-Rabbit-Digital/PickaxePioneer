@@ -113,6 +113,9 @@ func _ready() -> void:
 	camera.limit_bottom = GRID_ROWS * CELL_SIZE
 
 	# Spawn player near the caravan (left side) on the ground
+	if not player_node:
+		push_error("SettlementLevel: PlayerProbe node not found — cannot spawn player.")
+		return
 	var spawn_col := 4
 	var spawn_row := GROUND_ROW - 1
 	player_node.global_position = Vector2(
