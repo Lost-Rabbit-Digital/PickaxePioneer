@@ -39,6 +39,7 @@ func _ready() -> void:
 
 	# Dynamically add Mineral Sense (Sonar Ping) upgrade button
 	_sense_button = Button.new()
+	_sense_button.tooltip_text = "Teach your whiskers to sniff out ore from ridiculous distances."
 	$Panel/VBoxContainer.add_child(_sense_button)
 	_sense_button.pressed.connect(_on_mineral_sense_pressed)
 
@@ -48,18 +49,22 @@ func _ready() -> void:
 	$Panel/VBoxContainer.add_child(_gem_label)
 
 	_gem_carapace_button = Button.new()
+	_gem_carapace_button.tooltip_text = "Slot a shiny gem into your spacesuit. Fashionable AND protective."
 	$Panel/VBoxContainer.add_child(_gem_carapace_button)
 	_gem_carapace_button.pressed.connect(_on_gem_carapace_pressed)
 
 	_gem_legs_button = Button.new()
+	_gem_legs_button.tooltip_text = "Gem-powered jet boots: now with 20% more zoom and 100% more style."
 	$Panel/VBoxContainer.add_child(_gem_legs_button)
 	_gem_legs_button.pressed.connect(_on_gem_legs_pressed)
 
 	_gem_mandibles_button = Button.new()
+	_gem_mandibles_button.tooltip_text = "A gem in your pickaxe? Overkill. Absolutely do it."
 	$Panel/VBoxContainer.add_child(_gem_mandibles_button)
 	_gem_mandibles_button.pressed.connect(_on_gem_mandibles_pressed)
 
 	_gem_sense_button = Button.new()
+	_gem_sense_button.tooltip_text = "Supercharge your whiskers. Feel ore deposits from the next sector over."
 	$Panel/VBoxContainer.add_child(_gem_sense_button)
 	_gem_sense_button.pressed.connect(_on_gem_sense_pressed)
 

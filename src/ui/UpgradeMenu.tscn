@@ -88,12 +88,15 @@ theme_override_constants/separation = 15
 
 [node name="HullButton" type="Button" parent="Panel/VBoxContainer"]
 layout_mode = 2
+tooltip_text = "Your spacesuit has seen better days. Patch it up before the cosmos patches you."
 text = "Upgrade Hull (50 Scrap)"
 
 [node name="EngineButton" type="Button" parent="Panel/VBoxContainer"]
 layout_mode = 2
+tooltip_text = "More fuel, more speed, fewer embarrassing slow-motion retreats."
 text = "Upgrade Engine (50 Scrap)"
 
 [node name="DrillButton" type="Button" parent="Panel/VBoxContainer"]
 layout_mode = 2
+tooltip_text = "A sharper pickaxe means faster rocks. That's just science."
 text = "Upgrade Drill (50 Scrap)"
