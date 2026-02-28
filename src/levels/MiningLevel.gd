@@ -1338,7 +1338,6 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 	if tile == TileType.EXPLOSIVE or tile == TileType.EXPLOSIVE_ARMED:
 		_mine_cell(col, row)
 		_explode_area(col, row)
-		_damage_player(1)
 		return
 
 	# Lava — can't mine lava
@@ -1431,7 +1430,6 @@ func check_player_hazard(col: int, row: int) -> void:
 	elif tile == TileType.EXPLOSIVE or tile == TileType.EXPLOSIVE_ARMED:
 		_mine_cell(col, row)
 		_explode_area(col, row)
-		_damage_player(1)
 		_hazard_cooldown = HAZARD_COOLDOWN_TIME
 
 # ---------------------------------------------------------------------------
@@ -1487,6 +1485,11 @@ func _explode_area(center_col: int, center_row: int) -> void:
 				_set_tile_collision(nc, nr, false)
 	SoundManager.play_explosion_sound()
 	_shake_camera(6.0, 0.35)
+	if player_node:
+		var player_col := int(player_node.global_position.x / CELL_SIZE)
+		var player_row := int(player_node.global_position.y / CELL_SIZE)
+		if abs(player_col - center_col) <= r and abs(player_row - center_row) <= r:
+			_damage_player(1)
 
 func _damage_player(amount: int) -> void:
 	if player_node and player_node.has_method("take_damage"):
