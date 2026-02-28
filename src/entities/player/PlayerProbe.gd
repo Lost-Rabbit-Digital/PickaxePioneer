@@ -33,6 +33,11 @@ var _gripping_ladder: bool = false
 # True when the player is descending a ladder (S or Down held)
 var _descending_ladder: bool = false
 
+# Fall damage tracking
+var _fall_start_y: float = 0.0
+var _is_falling: bool = false
+const FALL_DAMAGE_THRESHOLD: int = 3 * CELL_SIZE  # 3 tiles in pixels (192px)
+
 @onready var health_component: HealthComponent = $HealthComponent
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var interact_prompt: Label = $PromptLayer/InteractPrompt
@@ -76,6 +81,15 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var pre_floor := is_on_floor()
+
+	# Track fall start position
+	if pre_floor and not _gripping_ladder and not _descending_ladder:
+		# Player is on floor and not using ladder, reset fall tracking
+		_is_falling = false
+	elif not pre_floor and not _is_falling:
+		# Player just left the ground, start tracking fall
+		_is_falling = true
+		_fall_start_y = global_position.y
 
 	# Grip/climb: W or Up held.  Descend: S or Down held.  Neither: freefall.
 	_gripping_ladder   = on_ladder and (Input.is_key_pressed(KEY_W)   or Input.is_key_pressed(KEY_UP))
@@ -246,6 +260,7 @@ func _update_particles(delta: float, was_on_floor: bool, vel_y_before_slide: flo
 	# Landing poof — trigger on first frame touching floor after a real fall
 	if is_on_floor() and not was_on_floor and vel_y_before_slide > POOF_VEL_THRESHOLD:
 		_spawn_poof()
+		_apply_fall_damage()
 
 	# Walking dust — emit small squares at feet while moving on the ground
 	if is_on_floor() and abs(velocity.x) > 20.0 and not _gripping_ladder:
@@ -289,6 +304,14 @@ func _spawn_poof() -> void:
 			"max_life": POOF_LIFETIME,
 			"size": randf_range(POOF_SIZE_MIN, POOF_SIZE_MAX),
 		})
+
+func _apply_fall_damage() -> void:
+	if _is_falling:
+		var fall_distance := _fall_start_y - global_position.y
+		if fall_distance > FALL_DAMAGE_THRESHOLD:
+			var damage := health_component.max_health / 2
+			health_component.damage(damage)
+		_is_falling = false
 
 func _draw() -> void:
 	for p: Dictionary in _particles:
