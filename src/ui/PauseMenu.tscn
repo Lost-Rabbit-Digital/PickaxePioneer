@@ -49,6 +49,7 @@ custom_minimum_size = Vector2(0, 4)
 [node name="ResumeButton" type="Button" parent="Panel/VBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 38)
+tooltip_text = "Back to digging. Those ores won't mine themselves."
 text = "Resume"
 
 [node name="Sep1" type="HSeparator" parent="Panel/VBox"]
@@ -94,4 +95,5 @@ custom_minimum_size = Vector2(0, 4)
 [node name="ExitButton" type="Button" parent="Panel/VBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 38)
+tooltip_text = "Abandon your mission. The minerals will miss you."
 text = "Exit to Main Menu"

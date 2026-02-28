@@ -84,21 +84,25 @@ theme_override_constants/separation = 20
 [node name="StartButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
+tooltip_text = "Boldly dig where no cat has dug before."
 text = "START"
 
 [node name="SettingsButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
+tooltip_text = "Fiddle with the cosmic dials."
 text = "SETTINGS"
 
 [node name="WishlistButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
+tooltip_text = "Tell the galaxy you want this game."
 text = "WISHLIST NOW"
 
 [node name="QuitButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
+tooltip_text = "The asteroid belt will wait. (It won't.)"
 text = "QUIT"
 
 [node name="SettingsPanel" type="PanelContainer" parent="."]
@@ -212,6 +216,7 @@ vertical_alignment = 1
 [node name="CloseButton" type="Button" parent="SettingsPanel/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
+tooltip_text = "Close settings. Or don't. I'm a tooltip, not a cop."
 text = "CLOSE"
 
 [node name="SocialButtons" type="HBoxContainer" parent="."]
