@@ -287,6 +287,8 @@ const FOSSIL_TYPES: Dictionary = {
 # ---------------------------------------------------------------------------
 const SONAR_PING_DURATION: float = 3.0  # seconds until ping fades — also defined in SonarSystem
 
+const BreakingAnimationScene: PackedScene = preload("res://assets/interaction/breaking_animation.tscn")
+
 # ---------------------------------------------------------------------------
 # Wandering Space Trader system
 # ---------------------------------------------------------------------------
@@ -398,6 +400,7 @@ var _game_over: bool = false
 var _tile_damage: Dictionary = {}
 var _tile_hits: Dictionary = {}
 var _flash_cells: Dictionary = {}
+var _breaking_overlays: Dictionary = {}  # Maps Vector2i -> AnimatedSprite2D instance
 var _mine_streak: int = 0
 var _zones_discovered: Array[bool] = [false, false, false, false, false]
 var _exit_pulse_time: float = 0.0
@@ -530,7 +533,7 @@ func _ready() -> void:
 		func(c, r, solid): _set_tile_collision(c, r, solid),
 		func(text, color): _show_zone_banner(text, color),
 		func(intensity, duration): _shake_camera(intensity, duration),
-		func(pos): _tile_damage.erase(pos); _tile_hits.erase(pos)
+		func(pos): _tile_damage.erase(pos); _tile_hits.erase(pos); _remove_breaking_overlay(pos)
 	)
 
 	_setup_inventory_screen()
@@ -874,13 +877,7 @@ func _draw() -> void:
 				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
 					Color(1.0, 0.55, 0.0), false, 2.0)
 
-			# Crack overlay
-			var pk := Vector2i(col, row)
-			if _tile_damage.has(pk):
-				var tile_hp: int = TILE_HP.get(tile, 0)
-				if tile_hp > 0:
-					var damage_ratio := float(_tile_damage[pk]) / float(tile_hp)
-					draw_rect(tile_rect, Color(0.0, 0.0, 0.0, damage_ratio * 0.6))
+			# Breaking overlay is handled by child AnimatedSprite2D instances
 
 	# Impact flashes
 	for pk in _flash_cells:
@@ -1308,6 +1305,32 @@ func _spawn_pickaxe_effect(from: Vector2, to: Vector2) -> void:
 	tween.tween_callback(sprite.queue_free)
 
 # ---------------------------------------------------------------------------
+# Breaking overlay helpers
+# ---------------------------------------------------------------------------
+
+func _update_breaking_overlay(pos_key: Vector2i, damage_ratio: float) -> void:
+	var frame_index := clampi(int(damage_ratio * 3.0), 0, 2)
+	var overlay: AnimatedSprite2D
+	if _breaking_overlays.has(pos_key):
+		overlay = _breaking_overlays[pos_key]
+	else:
+		overlay = BreakingAnimationScene.instantiate()
+		overlay.position = Vector2(
+			pos_key.x * CELL_SIZE + CELL_SIZE * 0.5,
+			pos_key.y * CELL_SIZE + CELL_SIZE * 0.5
+		)
+		overlay.scale = Vector2(CELL_SIZE / 10.0, CELL_SIZE / 10.0)
+		add_child(overlay)
+		_breaking_overlays[pos_key] = overlay
+	overlay.frame = frame_index
+
+func _remove_breaking_overlay(pos_key: Vector2i) -> void:
+	if _breaking_overlays.has(pos_key):
+		var overlay: AnimatedSprite2D = _breaking_overlays[pos_key]
+		overlay.queue_free()
+		_breaking_overlays.erase(pos_key)
+
+# ---------------------------------------------------------------------------
 # Mining API — called by PlayerProbe
 # ---------------------------------------------------------------------------
 
@@ -1372,6 +1395,7 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 	if new_damage >= tile_hp:
 		_tile_damage.erase(pos_key)
 		_tile_hits.erase(pos_key)
+		_remove_breaking_overlay(pos_key)
 		_mine_cell(col, row)
 		# Boss tile tracking — delegated to BossSystem
 		if tile == TileType.BOSS_SEGMENT or tile == TileType.BOSS_CORE:
@@ -1414,6 +1438,8 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 	else:
 		_tile_damage[pos_key] = new_damage
 		_tile_hits[pos_key] = hits_so_far + 1
+		var damage_ratio := float(new_damage) / float(tile_hp)
+		_update_breaking_overlay(pos_key, damage_ratio)
 		SoundManager.play_impact_sound()
 		_shake_camera(1.5, 0.07)
 
