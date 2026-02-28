@@ -343,6 +343,9 @@ func _setup_map_barriers() -> void:
 # PlayerProbe._physics_process and related code
 # ---------------------------------------------------------------------------
 
+func any_ui_open() -> bool:
+	return _shop_visible
+
 func try_mine_at(_grid_pos: Vector2i) -> void:
 	# Mining is disabled in settlements — do nothing
 	pass
