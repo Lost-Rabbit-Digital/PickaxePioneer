@@ -241,35 +241,7 @@ const SMELT_COMBOS: Dictionary = {
 	"gold+copper": [1.50, "Stardust Blend"],
 }
 
-# ---------------------------------------------------------------------------
-# Space Forge — ore-to-bar conversion and bar selling
-# ---------------------------------------------------------------------------
-const SMELTERY_ORE_GROUPS_ORDER: Array = ["copper", "iron", "gold", "gem"]
-const SMELTERY_ORE_GROUP_TILES: Dictionary = {
-	"copper": [TileType.ORE_COPPER, TileType.ORE_COPPER_DEEP],
-	"iron":   [TileType.ORE_IRON, TileType.ORE_IRON_DEEP],
-	"gold":   [TileType.ORE_GOLD, TileType.ORE_GOLD_DEEP],
-	"gem":    [TileType.ORE_GEM, TileType.ORE_GEM_DEEP],
-}
-const SMELTERY_ORES_PER_BAR: int = 3   # ores consumed per bar smelted
-const SMELTERY_BAR_SELL_VALUES: Dictionary = {
-	"copper": 15,
-	"iron":   30,
-	"gold":   50,
-	"gem":    75,
-}
-const SMELTERY_BAR_NAMES: Dictionary = {
-	"copper": "Lunar Bar",
-	"iron":   "Meteor Bar",
-	"gold":   "Star Bar",
-	"gem":    "Cosmic Bar",
-}
-const SMELTERY_GROUP_COLORS: Dictionary = {
-	"copper": Color(0.90, 0.60, 0.25),
-	"iron":   Color(0.90, 0.45, 0.70),
-	"gold":   Color(0.85, 0.80, 1.00),
-	"gem":    Color(0.20, 0.90, 0.95),
-}
+# Space Forge constants live in MiningShopSystem.gd
 
 # ---------------------------------------------------------------------------
 # Legendary Space Cat system (§3.6)
@@ -296,25 +268,7 @@ const SONAR_PING_DURATION: float = 3.0  # seconds until ping fades — also defi
 
 const BreakingAnimationScene: PackedScene = preload("res://assets/interaction/breaking_animation.tscn")
 
-# ---------------------------------------------------------------------------
-# Wandering Space Trader system
-# ---------------------------------------------------------------------------
-# Traders spawn randomly as the player mines deeper — independent of bosses.
-const TRADER_CHECK_INTERVAL: int   = 10    # check for a trader spawn every N depth rows
-const TRADER_FIRST_CHECK: int      = 15    # first eligible depth row
-const TRADER_SPAWN_CHANCE: float   = 0.15  # 15 % chance per check
-const TRADER_MAX_PER_RUN: int      = 3     # cap traders spawned per run
-# World-space radius within which the trader can be interacted with
-const TRADER_INTERACT_RADIUS: float = 128.0  # px (~2 tiles)
-
-# Tier-scaled item definitions: [label, description, run_mineral_cost, tier_required]
-const TRADER_ITEMS: Array = [
-	{"key": "energy",    "label": "Fuel Cell Cache",    "desc": "+50 Fuel",                        "cost": 12, "tier": 1},
-	{"key": "repair",  "label": "Spacesuit Patch",   "desc": "Restore 1 HP",                   "cost": 18, "tier": 1},
-	{"key": "shroom",  "label": "Astro Shroom",     "desc": "Next 12 ores yield +100%",        "cost": 30, "tier": 2},
-	{"key": "compass", "label": "Lucky Star Chart", "desc": "2× Lucky Strike chance (run)",    "cost": 45, "tier": 3},
-	{"key": "map",     "label": "Deep Space Map",   "desc": "2× Scanner radius (run)",         "cost": 65, "tier": 4},
-]
+# Trader constants live in TraderSystem.gd
 
 # Tiles that block player movement (have collision)
 const SOLID_TILES: Array = [
@@ -365,45 +319,9 @@ var camera: Camera2D
 var collision_tilemap: TileMapLayer
 var _tileset: TileSet
 
-# Surface Hub
-var _hub_layer: CanvasLayer
-var _hub_minerals_label: Label
-var _hub_visible: bool = false
-var _upgrade_layer: CanvasLayer
-
-# Energy Station Shop
-var _energy_shop_layer: CanvasLayer
-var _energy_shop_visible: bool = false
-var _energy_shop_minerals_label: Label
-var _energy_shop_btn_reenergy_full: Button
-var _energy_shop_btn_reenergy_half: Button
-var _energy_shop_btn_repair: Button
-var _energy_shop_btn_ladders: Button
-
-# Upgrade Station Shop
-var _upgrade_station_layer: CanvasLayer
-var _upgrade_station_visible: bool = false
-var _upgrade_station_minerals_label: Label
-var _upgrade_station_btn_carapace: Button
-var _upgrade_station_btn_legs: Button
-var _upgrade_station_btn_mandibles: Button
-
-# Smeltery Station
-var _smeltery_layer: CanvasLayer
-var _smeltery_visible: bool = false
-var _smeltery_minerals_label: Label
-var _smeltery_ore_labels: Dictionary = {}       # ore_group -> Label showing ore count
-var _smeltery_bar_labels: Dictionary = {}       # ore_group -> Label showing bar count
-var _smeltery_smelt_btns: Dictionary = {}       # ore_group -> Button to smelt
-var _smeltery_sell_btns: Dictionary = {}        # ore_group -> Button to sell bars
-var _run_bar_counts: Dictionary = {}            # ore_group -> int (bars smelted this run)
-
-# Cat Tavern shop
-var _cat_tavern_layer: CanvasLayer = null
-var _cat_tavern_visible: bool = false
-var _cat_tavern_label: Label = null
-var _cat_tavern_btn_mining: Button = null
-var _cat_tavern_btn_collecting: Button = null
+# Shop + Trader systems (Node children — own all shop UI and trader NPC logic)
+var shop_system: MiningShopSystem = null
+var trader_system: TraderSystem = null
 
 # Depth tracking
 var _last_depth: int = 0
@@ -439,26 +357,13 @@ var boss_system: BossSystem = BossSystem.new()
 # Mining/Collecting Cat subsystem — logic lives in CatSystem.gd (Node2D child)
 var cat_system: CatSystem = null
 
-# Wandering Trader state
-# Each entry: {world_pos: Vector2, tier: int, pulse: float}
-var _active_traders: Array = []
-var _trader_last_check_row: int = 0   # last depth row where a spawn check was made
-var _traders_spawned_count: int = 0   # total traders spawned this run
-var _trader_shop_layer: CanvasLayer = null
-var _trader_shop_visible: bool = false
-var _current_trader: Dictionary = {}
-
-# Run-length buffs granted by trader items
-var _shroom_charges: int = 0       # Mining Shroom: remaining ores with doubled yield
-var _lucky_compass_active: bool = false   # Lucky Compass: 2× lucky strike chance
-var _ancient_map_active: bool = false     # Ancient Map: 2× sonar ping radius
-
+# Run-length buffs — stored as single-element Arrays so TraderSystem can hold a writable reference
+var _shroom_charges: Array = [0]          # [int]  — Mining Shroom remaining charges
+var _lucky_compass_active: Array = [false] # [bool] — Lucky Compass active this run
+var _ancient_map_active: Array = [false]   # [bool] — Ancient Map active this run
 
 # Settlement whetstone bonus: temporary +N mandible power for this run only
 var _settlement_mandible_bonus: int = 0
-
-# Per-run ore collection counts for inventory display
-var _run_ore_counts: Dictionary = {}  # TileType int -> count mined this run
 
 # Hazard damage cooldown to prevent instant death
 var _hazard_cooldown: float = 0.0
@@ -512,15 +417,11 @@ func _ready() -> void:
 	EventBus.player_died.connect(_on_player_died)
 
 	QuestManager.clear_quest()
-	_setup_surface_hub()
-	_setup_energy_station_shop()
-	_setup_upgrade_station_shop()
-	_setup_smeltery_shop()
 	_setup_farm_animals()
 
 	# Apply settlement carry-over consumables (purchased at a settlement before this run)
 	if GameManager.settlement_shroom_charges > 0:
-		_shroom_charges += GameManager.settlement_shroom_charges
+		_shroom_charges[0] += GameManager.settlement_shroom_charges
 		GameManager.settlement_shroom_charges = 0
 		EventBus.ore_mined_popup.emit(0, "Shroom charges ready!")
 	if GameManager.settlement_mandible_bonus > 0:
@@ -532,8 +433,15 @@ func _ready() -> void:
 	add_child(cat_system)
 	cat_system.setup(self, grid, GRID_COLS, GRID_ROWS, SURFACE_ROWS)
 
-	# Build Cat Tavern inline shop UI
-	_setup_cat_tavern_shop()
+	# Initialise MiningShopSystem (all shop UIs + run_ore_counts / run_bar_counts)
+	shop_system = MiningShopSystem.new()
+	add_child(shop_system)
+	shop_system.setup(player_node, cat_system)
+
+	# Initialise TraderSystem (wandering trader NPC + shop UI)
+	trader_system = TraderSystem.new()
+	add_child(trader_system)
+	trader_system.setup(player_node, _shroom_charges, _lucky_compass_active, _ancient_map_active)
 
 	# Initialise BossSystem with grid reference and MiningLevel callbacks
 	boss_system.setup(
@@ -923,23 +831,7 @@ func _draw() -> void:
 		var highlight_rect := Rect2(_cursor_grid_pos.x * CELL_SIZE, _cursor_grid_pos.y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
 		draw_rect(highlight_rect, Color(1.0, 1.0, 1.0, 0.2), false, 2.0)
 
-	# Wandering Trader nodes — pulsing gold circle with "T" glyph
-	for trader in _active_traders:
-		var tp: Vector2 = trader["world_pos"]
-		var tc_grid := Vector2i(floori(tp.x / CELL_SIZE), floori(tp.y / CELL_SIZE))
-		if tc_grid.x < min_col or tc_grid.x > max_col or tc_grid.y < min_row or tc_grid.y > max_row:
-			continue
-		var pulse: float = sin(trader["pulse"] * 3.0) * 0.5 + 0.5
-		var trader_color := Color(1.0, 0.75 + pulse * 0.15, 0.0 + pulse * 0.15, 0.90)
-		var cx_px := tc_grid.x * CELL_SIZE + CELL_SIZE * 0.5
-		var cy_px := tc_grid.y * CELL_SIZE + CELL_SIZE * 0.5
-		var radius := CELL_SIZE * 0.40 + pulse * 4.0
-		draw_circle(Vector2(cx_px, cy_px), radius, trader_color)
-		draw_arc(Vector2(cx_px, cy_px), radius + 3.0, 0.0, TAU, 24,
-			Color(1.0, 0.95, 0.50, 0.55 + pulse * 0.35), 2.0)
-		var font := ThemeDB.fallback_font
-		draw_string(font, Vector2(cx_px - 6, cy_px + 8), "T",
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.10, 0.05, 0.00))
+	# Trader nodes are drawn by TraderSystem._draw() (Node2D child)
 
 	# Boss tile pulse overlay — pulsing glow on remaining boss tiles (§4)
 	# State is read from boss_system; draw calls remain in MiningLevel._draw()
@@ -1182,16 +1074,14 @@ func _process(delta: float) -> void:
 			_flash_cells.erase(k)
 
 	# Update sonar ping wave (§3.2) — delegated to SonarSystem
-	sonar_system.update(delta, 2.0 if _ancient_map_active else 1.0)
+	sonar_system.update(delta, 2.0 if _ancient_map_active[0] else 1.0)
 
-	# Pulse wandering traders and boss system regardless of menu state
-	for trader in _active_traders:
-		trader["pulse"] += delta
+	# Boss system update (trader_system has its own _process as a Node child)
 	var _boss_pcol := floori(player_node.global_position.x / CELL_SIZE) if player_node else -1
 	var _boss_prow := floori(player_node.global_position.y / CELL_SIZE) if player_node else -1
 	boss_system.update(delta, _boss_pcol, _boss_prow)
 
-	# Update player on_ladder flag each frame (cats handle their own movement)
+	# Update player on_ladder flag each frame
 	if player_node:
 		var pgp := player_node.get_grid_pos()
 		player_node.on_ladder = (
@@ -1199,8 +1089,7 @@ func _process(delta: float) -> void:
 			and grid[pgp.x][pgp.y] == TileType.LADDER
 		)
 
-	if _hub_visible or _game_over or _energy_shop_visible or _trader_shop_visible \
-			or _smeltery_visible or _cat_tavern_visible:
+	if _game_over or shop_system.any_shop_open() or trader_system.shop_visible:
 		return
 
 	# Update cursor highlight
@@ -1260,8 +1149,7 @@ func _check_exit_zone() -> void:
 	if player_col < GRID_COLS - EXIT_COLS:
 		has_left_spawn = true
 	if has_left_spawn and player_col >= GRID_COLS - EXIT_COLS and player_row < SURFACE_ROWS:
-		_game_over = true
-		GameManager.complete_run()
+		shop_system.show_hub()
 	# Reaching the bottom of the map also counts as a completed run
 	elif player_row >= GRID_ROWS - 1:
 		_game_over = true
@@ -1272,16 +1160,15 @@ func _check_exit_zone() -> void:
 # ---------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _hub_visible or _game_over or _energy_shop_visible or _trader_shop_visible \
-			or _smeltery_visible or _cat_tavern_visible:
+	if _game_over or shop_system.any_shop_open() or trader_system.shop_visible:
 		return
 	if event.is_action_pressed("toggle_inventory"):
 		if _inventory_screen:
 			if _inventory_screen.visible:
 				_inventory_screen.close()
 			else:
-				_inventory_screen.open(_run_ore_counts, _shroom_charges,
-					_lucky_compass_active, _ancient_map_active)
+				_inventory_screen.open(shop_system.run_ore_counts, _shroom_charges[0],
+					_lucky_compass_active[0], _ancient_map_active[0])
 		return
 	if event.is_action_pressed("ui_cancel"):
 		pause_menu.show_menu()
@@ -1423,17 +1310,17 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 		if tile in MINEABLE_TILES:
 			var minerals: int = TILE_MINERALS.get(tile, 1)
 			_mine_streak += 1
-			var lucky_chance := LUCKY_STRIKE_CHANCE * (2.0 if _lucky_compass_active else 1.0)
+			var lucky_chance := LUCKY_STRIKE_CHANCE * (2.0 if _lucky_compass_active[0] else 1.0)
 			var lucky := tile in ORE_TILES and randf() < lucky_chance
 			if lucky:
 				minerals *= 2
 			# Mining Shroom buff: doubled yield on ore tiles
-			if _shroom_charges > 0 and tile in ORE_TILES:
+			if _shroom_charges[0] > 0 and tile in ORE_TILES:
 				minerals *= 2
-				_shroom_charges -= 1
+				_shroom_charges[0] -= 1
 			# Track ore counts for inventory (ore tiles only)
 			if tile in ORE_TILES:
-				_run_ore_counts[tile] = _run_ore_counts.get(tile, 0) + 1
+				shop_system.run_ore_counts[tile] = shop_system.run_ore_counts.get(tile, 0) + 1
 			# Fossil forgiveness check (§3.6) — before awarding base minerals
 			fossil_system.check(tile, FOSSIL_TYPES.get(tile, {}))
 			# Consecutive smelting bonus (§3.5) — awards extra currency internally
@@ -1628,7 +1515,7 @@ func _update_depth() -> void:
 		_last_depth = depth
 		EventBus.depth_changed.emit(depth)
 		_check_zone_transition(depth)
-		_check_trader_milestone(depth)
+		trader_system.check_milestone(depth)
 		boss_system.check_milestone(depth, player_node.get_grid_pos().x)
 		var _boss_hints := boss_system.get_pending_hints()
 		if not _boss_hints.is_empty():
@@ -1696,88 +1583,39 @@ func _get_interact_key_name() -> String:
 func _update_interact_prompt() -> void:
 	if not player_node:
 		return
-	var player_gp := player_node.get_grid_pos()
-	if player_gp.x >= 0 and player_gp.x < GRID_COLS and player_gp.y >= 0 and player_gp.y < GRID_ROWS:
-		var current_tile: int = grid[player_gp.x][player_gp.y]
-		if current_tile == TileType.REENERGY_STATION:
-			var key_name := _get_interact_key_name()
-			player_node.show_prompt("Press %s to open shop" % key_name)
-			var world_pos := Vector2(player_gp.x * CELL_SIZE + CELL_SIZE * 0.5, player_gp.y * CELL_SIZE)
-			var screen_pos := get_viewport().get_canvas_transform() * world_pos
-			player_node.set_prompt_position(screen_pos)
+	var key := _get_interact_key_name()
+	var adj := [Vector2i(0,0), Vector2i(-1,0), Vector2i(1,0), Vector2i(0,-1), Vector2i(0,1)]
+	# Station prompts
+	const STATION_PROMPTS: Dictionary = {
+		TileType.REENERGY_STATION: "Press %s to open shop",
+		TileType.UPGRADE_STATION:  "Press %s to upgrade",
+		TileType.SMELTERY_STATION: "Press %s to open smeltery",
+		TileType.CAT_TAVERN:       "Press %s to enter Cat Tavern",
+	}
+	for offset in adj:
+		var check: Vector2i = player_node.get_grid_pos() + offset
+		if check.x < 0 or check.x >= GRID_COLS or check.y < 0 or check.y >= GRID_ROWS:
+			continue
+		var t: int = grid[check.x][check.y]
+		if t in STATION_PROMPTS:
+			player_node.show_prompt(STATION_PROMPTS[t] % key)
+			var world_pos := Vector2(check.x * CELL_SIZE + CELL_SIZE * 0.5, check.y * CELL_SIZE)
+			player_node.set_prompt_position(get_viewport().get_canvas_transform() * world_pos)
 			return
-		if current_tile == TileType.UPGRADE_STATION:
-			var key_name := _get_interact_key_name()
-			player_node.show_prompt("Press %s to upgrade" % key_name)
-			var world_pos := Vector2(player_gp.x * CELL_SIZE + CELL_SIZE * 0.5, player_gp.y * CELL_SIZE)
-			var screen_pos := get_viewport().get_canvas_transform() * world_pos
-			player_node.set_prompt_position(screen_pos)
-			return
-		if current_tile == TileType.SMELTERY_STATION:
-			var key_name := _get_interact_key_name()
-			player_node.show_prompt("Press %s to open smeltery" % key_name)
-			var world_pos := Vector2(player_gp.x * CELL_SIZE + CELL_SIZE * 0.5, player_gp.y * CELL_SIZE)
-			var screen_pos := get_viewport().get_canvas_transform() * world_pos
-			player_node.set_prompt_position(screen_pos)
-			return
-	# Check adjacent tiles for reenergy station
-	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
-		var check: Vector2i = player_node.get_grid_pos() + offset
-		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
-			if grid[check.x][check.y] == TileType.REENERGY_STATION:
-				var key_name := _get_interact_key_name()
-				player_node.show_prompt("Press %s to open shop" % key_name)
-				var world_pos := Vector2(check.x * CELL_SIZE + CELL_SIZE * 0.5, check.y * CELL_SIZE)
-				var screen_pos := get_viewport().get_canvas_transform() * world_pos
-				player_node.set_prompt_position(screen_pos)
-				return
-	# Check adjacent tiles for upgrade station
-	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
-		var check: Vector2i = player_node.get_grid_pos() + offset
-		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
-			if grid[check.x][check.y] == TileType.UPGRADE_STATION:
-				var key_name := _get_interact_key_name()
-				player_node.show_prompt("Press %s to upgrade" % key_name)
-				var world_pos := Vector2(check.x * CELL_SIZE + CELL_SIZE * 0.5, check.y * CELL_SIZE)
-				var screen_pos := get_viewport().get_canvas_transform() * world_pos
-				player_node.set_prompt_position(screen_pos)
-				return
-	# Check adjacent tiles for smeltery station
-	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
-		var check: Vector2i = player_node.get_grid_pos() + offset
-		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
-			if grid[check.x][check.y] == TileType.SMELTERY_STATION:
-				var key_name := _get_interact_key_name()
-				player_node.show_prompt("Press %s to open smeltery" % key_name)
-				var world_pos := Vector2(check.x * CELL_SIZE + CELL_SIZE * 0.5, check.y * CELL_SIZE)
-				var screen_pos := get_viewport().get_canvas_transform() * world_pos
-				player_node.set_prompt_position(screen_pos)
-				return
-	# Check adjacent tiles for Cat Tavern
-	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
-		var check: Vector2i = player_node.get_grid_pos() + offset
-		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
-			if grid[check.x][check.y] == TileType.CAT_TAVERN:
-				var key_name := _get_interact_key_name()
-				player_node.show_prompt("Press %s to enter Cat Tavern" % key_name)
-				var world_pos := Vector2(check.x * CELL_SIZE + CELL_SIZE * 0.5, check.y * CELL_SIZE)
-				var screen_pos := get_viewport().get_canvas_transform() * world_pos
-				player_node.set_prompt_position(screen_pos)
-				return
-	var nearby_trader := _get_nearby_trader()
+	# Trader prompt
+	var nearby_trader := trader_system.get_nearby_trader()
 	if nearby_trader.size() > 0:
-		var key_name := _get_interact_key_name()
-		player_node.show_prompt("Press %s to trade" % key_name)
-		var screen_pos := get_viewport().get_canvas_transform() * (nearby_trader["world_pos"] as Vector2)
-		player_node.set_prompt_position(screen_pos + Vector2(0, -CELL_SIZE))
+		player_node.show_prompt("Press %s to trade" % key)
+		player_node.set_prompt_position(
+			get_viewport().get_canvas_transform() * (nearby_trader["world_pos"] as Vector2)
+			+ Vector2(0, -CELL_SIZE))
 		return
+	# Farm NPC prompt
 	var nearby_npc: FarmAnimalNPC = _get_nearby_farm_npc()
 	if nearby_npc:
-		var key_name := _get_interact_key_name()
-		player_node.show_prompt("Press %s to pet the %s" % [key_name, nearby_npc.animal_name])
-		var world_pos := player_node.global_position + Vector2(0, -CELL_SIZE)
-		var screen_pos := get_viewport().get_canvas_transform() * world_pos
-		player_node.set_prompt_position(screen_pos)
+		player_node.show_prompt("Press %s to pet the %s" % [key, nearby_npc.animal_name])
+		player_node.set_prompt_position(
+			get_viewport().get_canvas_transform() * (player_node.global_position + Vector2(0, -CELL_SIZE)))
 	else:
 		player_node.hide_prompt()
 
@@ -1796,39 +1634,24 @@ func _get_nearby_farm_npc() -> FarmAnimalNPC:
 func _try_interact() -> void:
 	if not player_node:
 		return
-	# Wandering Trader takes priority when in range
-	var nearby_trader := _get_nearby_trader()
+	var nearby_trader := trader_system.get_nearby_trader()
 	if nearby_trader.size() > 0:
-		_show_trader_shop(nearby_trader)
+		trader_system.show_shop(nearby_trader)
 		return
-	# Check current + adjacent tiles for reenergy station
+	const STATION_SHOPS: Dictionary = {
+		TileType.REENERGY_STATION: "show_energy_shop",
+		TileType.UPGRADE_STATION:  "show_upgrade_station",
+		TileType.SMELTERY_STATION: "show_smeltery",
+		TileType.CAT_TAVERN:       "show_cat_tavern",
+	}
 	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
 		var check: Vector2i = player_node.get_grid_pos() + offset
-		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
-			if grid[check.x][check.y] == TileType.REENERGY_STATION:
-				_show_energy_station_shop()
-				return
-	# Check current + adjacent tiles for upgrade station
-	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
-		var check: Vector2i = player_node.get_grid_pos() + offset
-		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
-			if grid[check.x][check.y] == TileType.UPGRADE_STATION:
-				_show_upgrade_station_shop()
-				return
-	# Check current + adjacent tiles for smeltery station
-	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
-		var check: Vector2i = player_node.get_grid_pos() + offset
-		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
-			if grid[check.x][check.y] == TileType.SMELTERY_STATION:
-				_show_smeltery_shop()
-				return
-	# Check current + adjacent tiles for Cat Tavern
-	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
-		var check: Vector2i = player_node.get_grid_pos() + offset
-		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
-			if grid[check.x][check.y] == TileType.CAT_TAVERN:
-				_show_cat_tavern_shop()
-				return
+		if check.x < 0 or check.x >= GRID_COLS or check.y < 0 or check.y >= GRID_ROWS:
+			continue
+		var t: int = grid[check.x][check.y]
+		if t in STATION_SHOPS:
+			shop_system.call(STATION_SHOPS[t])
+			return
 	var nearby_npc: FarmAnimalNPC = _get_nearby_farm_npc()
 	if nearby_npc:
 		nearby_npc.wiggle()
@@ -1881,653 +1704,9 @@ func _setup_inventory_screen() -> void:
 		_inventory_screen.mining_level = self
 		add_child(_inventory_screen)
 
-# ---------------------------------------------------------------------------
-# Surface Hub
-# ---------------------------------------------------------------------------
+# Shops (Surface Hub, Energy Dock, Upgrade Bay, Space Forge, Cat Tavern)
+# are now managed by MiningShopSystem — see src/levels/MiningShopSystem.gd
 
-func _setup_surface_hub() -> void:
-	const VW: int = 1280
-	const VH: int = 720
-	const PANEL_W: int = 460
-	const PANEL_H: int = 310
-	const PX: int = (VW - PANEL_W) / 2
-	const PY: int = (VH - PANEL_H) / 2
-
-	_hub_layer = CanvasLayer.new()
-	_hub_layer.layer = 10
-	_hub_layer.visible = false
-	add_child(_hub_layer)
-
-	var dim := ColorRect.new()
-	dim.position = Vector2.ZERO
-	dim.size = Vector2(VW, VH)
-	dim.color = Color(0.0, 0.0, 0.0, 0.70)
-	dim.mouse_filter = Control.MOUSE_FILTER_STOP
-	_hub_layer.add_child(dim)
-
-	var border := ColorRect.new()
-	border.position = Vector2(PX - 3, PY - 3)
-	border.size = Vector2(PANEL_W + 6, PANEL_H + 6)
-	border.color = Color(0.30, 0.70, 0.25, 1.0)
-	_hub_layer.add_child(border)
-
-	var panel := ColorRect.new()
-	panel.position = Vector2(PX, PY)
-	panel.size = Vector2(PANEL_W, PANEL_H)
-	panel.color = Color(0.09, 0.08, 0.06, 0.97)
-	_hub_layer.add_child(panel)
-
-	var title := Label.new()
-	title.text = "You reached the station!"
-	title.position = Vector2(PX, PY + 14)
-	title.size = Vector2(PANEL_W, 32)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hub_layer.add_child(title)
-
-	_hub_minerals_label = Label.new()
-	_hub_minerals_label.position = Vector2(PX, PY + 50)
-	_hub_minerals_label.size = Vector2(PANEL_W, 28)
-	_hub_minerals_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hub_minerals_label.modulate = Color(1.0, 0.85, 0.2, 1.0)
-	_hub_layer.add_child(_hub_minerals_label)
-
-	var divider := ColorRect.new()
-	divider.position = Vector2(PX + 20, PY + 86)
-	divider.size = Vector2(PANEL_W - 40, 2)
-	divider.color = Color(0.30, 0.70, 0.25, 0.6)
-	_hub_layer.add_child(divider)
-
-	const BTN_X: int = PX + 30
-	const BTN_W: int = PANEL_W - 60
-	const BTN_H: int = 46
-
-	var bank_btn := Button.new()
-	bank_btn.text = "Bank Minerals & Keep Exploring"
-	bank_btn.position = Vector2(BTN_X, PY + 100)
-	bank_btn.size = Vector2(BTN_W, BTN_H)
-	bank_btn.pressed.connect(_hub_bank_and_continue)
-	_hub_layer.add_child(bank_btn)
-
-	var shop_btn := Button.new()
-	shop_btn.text = "Open Station Shop (banks minerals)"
-	shop_btn.position = Vector2(BTN_X, PY + 156)
-	shop_btn.size = Vector2(BTN_W, BTN_H)
-	shop_btn.pressed.connect(_hub_open_shop)
-	_hub_layer.add_child(shop_btn)
-
-	var end_btn := Button.new()
-	end_btn.text = "End Run & Return to Station"
-	end_btn.position = Vector2(BTN_X, PY + 212)
-	end_btn.size = Vector2(BTN_W, BTN_H)
-	end_btn.pressed.connect(_hub_end_run)
-	_hub_layer.add_child(end_btn)
-
-func _show_surface_hub() -> void:
-	_hub_minerals_label.text = "Minerals this run: %d" % GameManager.run_mineral_currency
-	_hub_layer.visible = true
-	_hub_visible = true
-
-func _hide_surface_hub() -> void:
-	_hub_layer.visible = false
-	_hub_visible = false
-
-func _hub_bank_and_continue() -> void:
-	GameManager.bank_currency()
-	_hide_surface_hub()
-
-func _hub_open_shop() -> void:
-	GameManager.bank_currency()
-	_hide_surface_hub()
-	_open_upgrade_overlay()
-
-func _hub_end_run() -> void:
-	_hide_surface_hub()
-	GameManager.complete_run()
-
-# ---------------------------------------------------------------------------
-# Upgrade overlay
-# ---------------------------------------------------------------------------
-
-func _open_upgrade_overlay() -> void:
-	const VW: int = 1280
-	const VH: int = 720
-	_upgrade_layer = CanvasLayer.new()
-	_upgrade_layer.layer = 10
-	add_child(_upgrade_layer)
-
-	var dim := ColorRect.new()
-	dim.position = Vector2.ZERO
-	dim.size = Vector2(VW, VH)
-	dim.color = Color(0.0, 0.0, 0.0, 0.75)
-	dim.mouse_filter = Control.MOUSE_FILTER_STOP
-	_upgrade_layer.add_child(dim)
-
-	var upgrade_scene := load("res://src/ui/UpgradeMenu.tscn") as PackedScene
-	if upgrade_scene:
-		var upgrade_menu: Node = upgrade_scene.instantiate()
-		if upgrade_menu is Control:
-			(upgrade_menu as Control).set_anchors_preset(Control.PRESET_CENTER)
-		_upgrade_layer.add_child(upgrade_menu)
-
-	var close_btn := Button.new()
-	close_btn.text = "Continue Mining"
-	close_btn.position = Vector2((VW - 260) / 2, VH - 70)
-	close_btn.size = Vector2(260, 44)
-	close_btn.pressed.connect(_close_upgrade_overlay)
-	_upgrade_layer.add_child(close_btn)
-
-func _close_upgrade_overlay() -> void:
-	if _upgrade_layer:
-		_upgrade_layer.queue_free()
-		_upgrade_layer = null
-
-# ---------------------------------------------------------------------------
-# Energy Station Shop
-# ---------------------------------------------------------------------------
-
-const SHOP_REENERGY_FULL_COST: int = 10
-const SHOP_REENERGY_HALF_COST: int = 5
-const SHOP_REPAIR_COST: int = 15
-
-func _setup_energy_station_shop() -> void:
-	const VW: int = 1280
-	const VH: int = 720
-	const PANEL_W: int = 420
-	const PANEL_H: int = 390
-	const PX: int = (VW - PANEL_W) / 2
-	const PY: int = (VH - PANEL_H) / 2
-
-	_energy_shop_layer = CanvasLayer.new()
-	_energy_shop_layer.layer = 10
-	_energy_shop_layer.visible = false
-	add_child(_energy_shop_layer)
-
-	var dim := ColorRect.new()
-	dim.position = Vector2.ZERO
-	dim.size = Vector2(VW, VH)
-	dim.color = Color(0.0, 0.0, 0.0, 0.72)
-	dim.mouse_filter = Control.MOUSE_FILTER_STOP
-	_energy_shop_layer.add_child(dim)
-
-	var border := ColorRect.new()
-	border.position = Vector2(PX - 3, PY - 3)
-	border.size = Vector2(PANEL_W + 6, PANEL_H + 6)
-	border.color = Color(0.20, 0.60, 0.90, 1.0)
-	_energy_shop_layer.add_child(border)
-
-	var panel := ColorRect.new()
-	panel.position = Vector2(PX, PY)
-	panel.size = Vector2(PANEL_W, PANEL_H)
-	panel.color = Color(0.07, 0.10, 0.14, 0.97)
-	_energy_shop_layer.add_child(panel)
-
-	var title := Label.new()
-	title.text = "Refueling Dock"
-	title.position = Vector2(PX, PY + 12)
-	title.size = Vector2(PANEL_W, 30)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 20)
-	title.modulate = Color(0.55, 0.85, 1.0)
-	_energy_shop_layer.add_child(title)
-
-	_energy_shop_minerals_label = Label.new()
-	_energy_shop_minerals_label.position = Vector2(PX, PY + 48)
-	_energy_shop_minerals_label.size = Vector2(PANEL_W, 24)
-	_energy_shop_minerals_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_energy_shop_minerals_label.modulate = Color(1.0, 0.85, 0.2)
-	_energy_shop_layer.add_child(_energy_shop_minerals_label)
-
-	var divider := ColorRect.new()
-	divider.position = Vector2(PX + 20, PY + 80)
-	divider.size = Vector2(PANEL_W - 40, 2)
-	divider.color = Color(0.20, 0.60, 0.90, 0.5)
-	_energy_shop_layer.add_child(divider)
-
-	const BTN_X: int = PX + 25
-	const BTN_W: int = PANEL_W - 50
-	const BTN_H: int = 48
-
-	_energy_shop_btn_reenergy_full = Button.new()
-	_energy_shop_btn_reenergy_full.position = Vector2(BTN_X, PY + 94)
-	_energy_shop_btn_reenergy_full.size = Vector2(BTN_W, BTN_H)
-	_energy_shop_btn_reenergy_full.pressed.connect(_shop_reenergy_full)
-	_energy_shop_layer.add_child(_energy_shop_btn_reenergy_full)
-
-	_energy_shop_btn_reenergy_half = Button.new()
-	_energy_shop_btn_reenergy_half.position = Vector2(BTN_X, PY + 152)
-	_energy_shop_btn_reenergy_half.size = Vector2(BTN_W, BTN_H)
-	_energy_shop_btn_reenergy_half.pressed.connect(_shop_reenergy_half)
-	_energy_shop_layer.add_child(_energy_shop_btn_reenergy_half)
-
-	_energy_shop_btn_repair = Button.new()
-	_energy_shop_btn_repair.position = Vector2(BTN_X, PY + 210)
-	_energy_shop_btn_repair.size = Vector2(BTN_W, BTN_H)
-	_energy_shop_btn_repair.pressed.connect(_shop_repair)
-	_energy_shop_layer.add_child(_energy_shop_btn_repair)
-
-	_energy_shop_btn_ladders = Button.new()
-	_energy_shop_btn_ladders.position = Vector2(BTN_X, PY + 268)
-	_energy_shop_btn_ladders.size = Vector2(BTN_W, BTN_H)
-	_energy_shop_btn_ladders.pressed.connect(_shop_buy_ladders)
-	_energy_shop_layer.add_child(_energy_shop_btn_ladders)
-
-	var divider2 := ColorRect.new()
-	divider2.position = Vector2(PX + 20, PY + 326)
-	divider2.size = Vector2(PANEL_W - 40, 2)
-	divider2.color = Color(0.20, 0.60, 0.90, 0.5)
-	_energy_shop_layer.add_child(divider2)
-
-	var close_btn := Button.new()
-	close_btn.text = "Close Shop"
-	close_btn.position = Vector2(BTN_X + (BTN_W - 180) / 2, PY + 336)
-	close_btn.size = Vector2(180, 40)
-	close_btn.pressed.connect(_hide_energy_station_shop)
-	_energy_shop_layer.add_child(close_btn)
-
-func _show_energy_station_shop() -> void:
-	_energy_shop_minerals_label.text = "Dollars: $%d" % GameManager.dollars
-	_energy_shop_btn_reenergy_full.text = "Full Refuel  (%d -> %d fuel)  -- $%d" % [
-		GameManager.current_energy, GameManager.get_max_energy(), SHOP_REENERGY_FULL_COST]
-	_energy_shop_btn_reenergy_half.text = "Refuel 50%%  (+%d fuel)  -- $%d" % [
-		GameManager.get_max_energy() / 2, SHOP_REENERGY_HALF_COST]
-	_energy_shop_btn_repair.text = "Spacesuit Repair  (+1 HP)  -- $%d" % SHOP_REPAIR_COST
-	_energy_shop_btn_reenergy_full.disabled = GameManager.dollars < SHOP_REENERGY_FULL_COST \
-		or GameManager.current_energy >= GameManager.get_max_energy()
-	_energy_shop_btn_reenergy_half.disabled = GameManager.dollars < SHOP_REENERGY_HALF_COST \
-		or GameManager.current_energy >= GameManager.get_max_energy()
-	var at_max_hp: bool = player_node != null and player_node.is_at_max_health()
-	_energy_shop_btn_repair.disabled = GameManager.dollars < SHOP_REPAIR_COST or at_max_hp
-	const LADDER_PACK_COST: int = 20
-	_energy_shop_btn_ladders.text = "Buy 5 Ladders  (%d remaining)  -- $%d" % [
-		GameManager.ladder_count, LADDER_PACK_COST]
-	_energy_shop_btn_ladders.disabled = GameManager.dollars < LADDER_PACK_COST
-	_energy_shop_layer.visible = true
-	_energy_shop_visible = true
-
-func _hide_energy_station_shop() -> void:
-	_energy_shop_layer.visible = false
-	_energy_shop_visible = false
-
-func _shop_reenergy_full() -> void:
-	if GameManager.dollars >= SHOP_REENERGY_FULL_COST:
-		GameManager.dollars -= SHOP_REENERGY_FULL_COST
-		GameManager.current_energy = GameManager.get_max_energy()
-		EventBus.dollars_changed.emit(GameManager.dollars)
-		EventBus.energy_changed.emit(GameManager.current_energy, GameManager.get_max_energy())
-		GameManager.save_game()
-		SoundManager.play_drill_sound()
-		_show_energy_station_shop()
-
-func _shop_reenergy_half() -> void:
-	if GameManager.dollars >= SHOP_REENERGY_HALF_COST:
-		GameManager.dollars -= SHOP_REENERGY_HALF_COST
-		GameManager.restore_energy(GameManager.get_max_energy() / 2)
-		EventBus.dollars_changed.emit(GameManager.dollars)
-		GameManager.save_game()
-		SoundManager.play_drill_sound()
-		_show_energy_station_shop()
-
-func _shop_repair() -> void:
-	if GameManager.dollars >= SHOP_REPAIR_COST and player_node:
-		GameManager.dollars -= SHOP_REPAIR_COST
-		EventBus.dollars_changed.emit(GameManager.dollars)
-		GameManager.save_game()
-		player_node.heal(1)
-		SoundManager.play_drill_sound()
-		_show_energy_station_shop()
-
-func _shop_buy_ladders() -> void:
-	const LADDER_PACK_COST: int = 20
-	if GameManager.dollars >= LADDER_PACK_COST:
-		GameManager.dollars -= LADDER_PACK_COST
-		GameManager.ladder_count += 5
-		EventBus.dollars_changed.emit(GameManager.dollars)
-		GameManager.save_game()
-		SoundManager.play_drill_sound()
-		EventBus.ore_mined_popup.emit(0, "5 Ladders purchased!")
-		_show_energy_station_shop()
-
-# ---------------------------------------------------------------------------
-# Upgrade Station Shop
-# ---------------------------------------------------------------------------
-
-func _setup_upgrade_station_shop() -> void:
-	const VW: int = 1280
-	const VH: int = 720
-	const PANEL_W: int = 500
-	const PANEL_H: int = 360
-	const PX: int = (VW - PANEL_W) / 2
-	const PY: int = (VH - PANEL_H) / 2
-
-	_upgrade_station_layer = CanvasLayer.new()
-	_upgrade_station_layer.layer = 10
-	_upgrade_station_layer.visible = false
-	add_child(_upgrade_station_layer)
-
-	var dim := ColorRect.new()
-	dim.position = Vector2.ZERO
-	dim.size = Vector2(VW, VH)
-	dim.color = Color(0.0, 0.0, 0.0, 0.72)
-	dim.mouse_filter = Control.MOUSE_FILTER_STOP
-	_upgrade_station_layer.add_child(dim)
-
-	var border := ColorRect.new()
-	border.position = Vector2(PX - 3, PY - 3)
-	border.size = Vector2(PANEL_W + 6, PANEL_H + 6)
-	border.color = Color(0.30, 0.85, 0.50, 1.0)
-	_upgrade_station_layer.add_child(border)
-
-	var panel := ColorRect.new()
-	panel.position = Vector2(PX, PY)
-	panel.size = Vector2(PANEL_W, PANEL_H)
-	panel.color = Color(0.07, 0.12, 0.09, 0.97)
-	_upgrade_station_layer.add_child(panel)
-
-	var title := Label.new()
-	title.text = "Upgrade Bay"
-	title.position = Vector2(PX, PY + 12)
-	title.size = Vector2(PANEL_W, 30)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 20)
-	title.modulate = Color(0.55, 1.0, 0.70)
-	_upgrade_station_layer.add_child(title)
-
-	_upgrade_station_minerals_label = Label.new()
-	_upgrade_station_minerals_label.position = Vector2(PX, PY + 48)
-	_upgrade_station_minerals_label.size = Vector2(PANEL_W, 24)
-	_upgrade_station_minerals_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_upgrade_station_minerals_label.modulate = Color(1.0, 0.85, 0.2)
-	_upgrade_station_layer.add_child(_upgrade_station_minerals_label)
-
-	var divider := ColorRect.new()
-	divider.position = Vector2(PX + 20, PY + 80)
-	divider.size = Vector2(PANEL_W - 40, 2)
-	divider.color = Color(0.30, 0.85, 0.50, 0.5)
-	_upgrade_station_layer.add_child(divider)
-
-	const BTN_X: int = PX + 25
-	const BTN_W: int = PANEL_W - 50
-	const BTN_H: int = 52
-
-	_upgrade_station_btn_carapace = Button.new()
-	_upgrade_station_btn_carapace.position = Vector2(BTN_X, PY + 94)
-	_upgrade_station_btn_carapace.size = Vector2(BTN_W, BTN_H)
-	_upgrade_station_btn_carapace.pressed.connect(_upgrade_station_buy_carapace)
-	_upgrade_station_layer.add_child(_upgrade_station_btn_carapace)
-
-	_upgrade_station_btn_legs = Button.new()
-	_upgrade_station_btn_legs.position = Vector2(BTN_X, PY + 156)
-	_upgrade_station_btn_legs.size = Vector2(BTN_W, BTN_H)
-	_upgrade_station_btn_legs.pressed.connect(_upgrade_station_buy_legs)
-	_upgrade_station_layer.add_child(_upgrade_station_btn_legs)
-
-	_upgrade_station_btn_mandibles = Button.new()
-	_upgrade_station_btn_mandibles.position = Vector2(BTN_X, PY + 218)
-	_upgrade_station_btn_mandibles.size = Vector2(BTN_W, BTN_H)
-	_upgrade_station_btn_mandibles.pressed.connect(_upgrade_station_buy_mandibles)
-	_upgrade_station_layer.add_child(_upgrade_station_btn_mandibles)
-
-	var divider2 := ColorRect.new()
-	divider2.position = Vector2(PX + 20, PY + 282)
-	divider2.size = Vector2(PANEL_W - 40, 2)
-	divider2.color = Color(0.30, 0.85, 0.50, 0.5)
-	_upgrade_station_layer.add_child(divider2)
-
-	var close_btn := Button.new()
-	close_btn.text = "Close"
-	close_btn.position = Vector2(BTN_X + (BTN_W - 180) / 2, PY + 292)
-	close_btn.size = Vector2(180, 40)
-	close_btn.pressed.connect(_hide_upgrade_station_shop)
-	_upgrade_station_layer.add_child(close_btn)
-
-func _show_upgrade_station_shop() -> void:
-	_upgrade_station_minerals_label.text = "Dollars: $%d" % GameManager.dollars
-
-	var carapace_cost := 50 + 25 * GameManager.carapace_level
-	var current_hp := GameManager.get_max_health()
-	_upgrade_station_btn_carapace.text = "Reinforce Spacesuit Lv%d — Max HP: %d → %d  ($%d)" % [
-		GameManager.carapace_level, current_hp, current_hp + 1, carapace_cost]
-	_upgrade_station_btn_carapace.disabled = GameManager.dollars < carapace_cost
-
-	var legs_cost := 50 + 25 * GameManager.legs_level
-	var current_energy_cap := GameManager.get_max_energy()
-	_upgrade_station_btn_legs.text = "Upgrade Jet Boots Lv%d — Fuel Limit: %d → %d  ($%d)" % [
-		GameManager.legs_level, current_energy_cap, current_energy_cap + 25, legs_cost]
-	_upgrade_station_btn_legs.disabled = GameManager.dollars < legs_cost
-
-	var mandibles_cost := 50 + 25 * GameManager.mandibles_level
-	var current_power := GameManager.get_mandibles_power()
-	_upgrade_station_btn_mandibles.text = "Enhance Space Pickaxe Lv%d — Mining Power: %d → %d  ($%d)" % [
-		GameManager.mandibles_level, current_power, current_power + 3, mandibles_cost]
-	_upgrade_station_btn_mandibles.disabled = GameManager.dollars < mandibles_cost
-
-	_upgrade_station_layer.visible = true
-	_upgrade_station_visible = true
-
-func _hide_upgrade_station_shop() -> void:
-	_upgrade_station_layer.visible = false
-	_upgrade_station_visible = false
-
-func _upgrade_station_buy_carapace() -> void:
-	var cost := 50 + 25 * GameManager.carapace_level
-	if GameManager.dollars >= cost:
-		GameManager.dollars -= cost
-		EventBus.dollars_changed.emit(GameManager.dollars)
-		GameManager.upgrade_carapace()
-		SoundManager.play_drill_sound()
-		_show_upgrade_station_shop()
-
-func _upgrade_station_buy_legs() -> void:
-	var cost := 50 + 25 * GameManager.legs_level
-	if GameManager.dollars >= cost:
-		GameManager.dollars -= cost
-		EventBus.dollars_changed.emit(GameManager.dollars)
-		GameManager.upgrade_legs()
-		EventBus.energy_changed.emit(GameManager.current_energy, GameManager.get_max_energy())
-		SoundManager.play_drill_sound()
-		_show_upgrade_station_shop()
-
-func _upgrade_station_buy_mandibles() -> void:
-	var cost := 50 + 25 * GameManager.mandibles_level
-	if GameManager.dollars >= cost:
-		GameManager.dollars -= cost
-		EventBus.dollars_changed.emit(GameManager.dollars)
-		GameManager.upgrade_mandibles()
-		SoundManager.play_drill_sound()
-		_show_upgrade_station_shop()
-
-# ---------------------------------------------------------------------------
-# Smeltery Shop
-# ---------------------------------------------------------------------------
-
-func _get_ore_group_count(ore_group: String) -> int:
-	var total := 0
-	for tile_type in SMELTERY_ORE_GROUP_TILES[ore_group]:
-		total += _run_ore_counts.get(tile_type, 0)
-	return total
-
-func _consume_ores_for_smelt(ore_group: String, count: int) -> void:
-	var remaining := count
-	for tile_type in SMELTERY_ORE_GROUP_TILES[ore_group]:
-		var have: int = _run_ore_counts.get(tile_type, 0)
-		if have <= 0:
-			continue
-		var take := mini(have, remaining)
-		_run_ore_counts[tile_type] = have - take
-		remaining -= take
-		if remaining <= 0:
-			break
-
-func _setup_smeltery_shop() -> void:
-	const VW: int = 1280
-	const VH: int = 720
-	const PANEL_W: int = 520
-	const PANEL_H: int = 420
-	const PX: int = (VW - PANEL_W) / 2
-	const PY: int = (VH - PANEL_H) / 2
-
-	_smeltery_layer = CanvasLayer.new()
-	_smeltery_layer.layer = 10
-	_smeltery_layer.visible = false
-	add_child(_smeltery_layer)
-
-	var dim := ColorRect.new()
-	dim.position = Vector2.ZERO
-	dim.size = Vector2(VW, VH)
-	dim.color = Color(0.0, 0.0, 0.0, 0.72)
-	dim.mouse_filter = Control.MOUSE_FILTER_STOP
-	_smeltery_layer.add_child(dim)
-
-	var border := ColorRect.new()
-	border.position = Vector2(PX - 3, PY - 3)
-	border.size = Vector2(PANEL_W + 6, PANEL_H + 6)
-	border.color = Color(1.0, 0.55, 0.0, 1.0)
-	_smeltery_layer.add_child(border)
-
-	var panel := ColorRect.new()
-	panel.position = Vector2(PX, PY)
-	panel.size = Vector2(PANEL_W, PANEL_H)
-	panel.color = Color(0.12, 0.08, 0.04, 0.97)
-	_smeltery_layer.add_child(panel)
-
-	var title := Label.new()
-	title.text = "Space Forge"
-	title.position = Vector2(PX, PY + 10)
-	title.size = Vector2(PANEL_W, 30)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 22)
-	title.modulate = Color(1.0, 0.65, 0.15)
-	_smeltery_layer.add_child(title)
-
-	_smeltery_minerals_label = Label.new()
-	_smeltery_minerals_label.position = Vector2(PX, PY + 40)
-	_smeltery_minerals_label.size = Vector2(PANEL_W, 22)
-	_smeltery_minerals_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_smeltery_minerals_label.modulate = Color(1.0, 0.85, 0.2)
-	_smeltery_layer.add_child(_smeltery_minerals_label)
-
-	var divider := ColorRect.new()
-	divider.position = Vector2(PX + 15, PY + 68)
-	divider.size = Vector2(PANEL_W - 30, 2)
-	divider.color = Color(1.0, 0.55, 0.0, 0.5)
-	_smeltery_layer.add_child(divider)
-
-	# Header row
-	var hdr_ores := Label.new()
-	hdr_ores.text = "Ores"
-	hdr_ores.position = Vector2(PX + 15, PY + 76)
-	hdr_ores.size = Vector2(80, 20)
-	hdr_ores.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hdr_ores.modulate = Color(0.8, 0.8, 0.8)
-	_smeltery_layer.add_child(hdr_ores)
-
-	var hdr_bars := Label.new()
-	hdr_bars.text = "Bars"
-	hdr_bars.position = Vector2(PX + 260, PY + 76)
-	hdr_bars.size = Vector2(80, 20)
-	hdr_bars.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hdr_bars.modulate = Color(0.8, 0.8, 0.8)
-	_smeltery_layer.add_child(hdr_bars)
-
-	# Per-ore-group rows: [OreLabel] [SmeltBtn] [BarLabel] [SellBtn]
-	var row_y := PY + 100
-	const ROW_H: int = 58
-	for ore_group in SMELTERY_ORE_GROUPS_ORDER:
-		var group_color: Color = SMELTERY_GROUP_COLORS[ore_group]
-
-		var ore_label := Label.new()
-		ore_label.position = Vector2(PX + 15, row_y + 4)
-		ore_label.size = Vector2(90, 24)
-		ore_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		ore_label.modulate = group_color
-		_smeltery_layer.add_child(ore_label)
-		_smeltery_ore_labels[ore_group] = ore_label
-
-		var smelt_btn := Button.new()
-		smelt_btn.position = Vector2(PX + 110, row_y)
-		smelt_btn.size = Vector2(140, 36)
-		smelt_btn.pressed.connect(_smeltery_smelt.bind(ore_group))
-		_smeltery_layer.add_child(smelt_btn)
-		_smeltery_smelt_btns[ore_group] = smelt_btn
-
-		var bar_label := Label.new()
-		bar_label.position = Vector2(PX + 260, row_y + 4)
-		bar_label.size = Vector2(90, 24)
-		bar_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		bar_label.modulate = group_color
-		_smeltery_layer.add_child(bar_label)
-		_smeltery_bar_labels[ore_group] = bar_label
-
-		var sell_btn := Button.new()
-		sell_btn.position = Vector2(PX + 355, row_y)
-		sell_btn.size = Vector2(150, 36)
-		sell_btn.pressed.connect(_smeltery_sell.bind(ore_group))
-		_smeltery_layer.add_child(sell_btn)
-		_smeltery_sell_btns[ore_group] = sell_btn
-
-		row_y += ROW_H
-
-	var divider2 := ColorRect.new()
-	divider2.position = Vector2(PX + 15, row_y + 4)
-	divider2.size = Vector2(PANEL_W - 30, 2)
-	divider2.color = Color(1.0, 0.55, 0.0, 0.5)
-	_smeltery_layer.add_child(divider2)
-
-	var close_btn := Button.new()
-	close_btn.text = "Close Forge"
-	close_btn.position = Vector2(PX + (PANEL_W - 200) / 2, row_y + 16)
-	close_btn.size = Vector2(200, 40)
-	close_btn.pressed.connect(_hide_smeltery_shop)
-	_smeltery_layer.add_child(close_btn)
-
-func _show_smeltery_shop() -> void:
-	_smeltery_minerals_label.text = "Dollars: $%d" % GameManager.dollars
-
-	for ore_group in SMELTERY_ORE_GROUPS_ORDER:
-		var ore_count := _get_ore_group_count(ore_group)
-		var bar_count: int = _run_bar_counts.get(ore_group, 0)
-		var bar_name: String = SMELTERY_BAR_NAMES[ore_group]
-		var sell_value: int = SMELTERY_BAR_SELL_VALUES[ore_group]
-
-		_smeltery_ore_labels[ore_group].text = "%s: %d" % [ore_group.capitalize(), ore_count]
-		_smeltery_smelt_btns[ore_group].text = "Smelt (%d ore)" % SMELTERY_ORES_PER_BAR
-		_smeltery_smelt_btns[ore_group].disabled = ore_count < SMELTERY_ORES_PER_BAR
-
-		_smeltery_bar_labels[ore_group].text = "%s: %d" % [bar_name, bar_count]
-		_smeltery_sell_btns[ore_group].text = "Sell (+$%d)" % sell_value
-		_smeltery_sell_btns[ore_group].disabled = bar_count <= 0
-
-	_smeltery_layer.visible = true
-	_smeltery_visible = true
-
-func _hide_smeltery_shop() -> void:
-	_smeltery_layer.visible = false
-	_smeltery_visible = false
-
-func _smeltery_smelt(ore_group: String) -> void:
-	var ore_count := _get_ore_group_count(ore_group)
-	if ore_count < SMELTERY_ORES_PER_BAR:
-		return
-	_consume_ores_for_smelt(ore_group, SMELTERY_ORES_PER_BAR)
-	_run_bar_counts[ore_group] = _run_bar_counts.get(ore_group, 0) + 1
-	SoundManager.play_drill_sound()
-	EventBus.ore_mined_popup.emit(0, SMELTERY_BAR_NAMES[ore_group] + " smelted!")
-	_show_smeltery_shop()
-
-func _smeltery_sell(ore_group: String) -> void:
-	var bar_count: int = _run_bar_counts.get(ore_group, 0)
-	if bar_count <= 0:
-		return
-	var sell_value: int = roundi(SMELTERY_BAR_SELL_VALUES[ore_group] * GameManager.get_dollar_sell_mult())
-	_run_bar_counts[ore_group] = bar_count - 1
-	GameManager.add_dollars(sell_value)
-	SoundManager.play_pickup_sound()
-	EventBus.ore_mined_popup.emit(sell_value, SMELTERY_BAR_NAMES[ore_group] + " sold!")
-	_show_smeltery_shop()
-
-# ---------------------------------------------------------------------------
-# Wandering Trader
-# ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
 # Boss encounter system (§4) — delegated to BossSystem
@@ -2545,125 +1724,6 @@ func _queue_boss_hints(hints: Array) -> void:
 		await get_tree().create_timer(2.0).timeout
 		EventBus.ore_mined_popup.emit(0, hint)
 
-
-func _check_trader_milestone(depth_row: int) -> void:
-	if depth_row < TRADER_FIRST_CHECK:
-		return
-	if _traders_spawned_count >= TRADER_MAX_PER_RUN:
-		return
-	# Only check at regular intervals (every TRADER_CHECK_INTERVAL rows)
-	var check_row := (depth_row / TRADER_CHECK_INTERVAL) * TRADER_CHECK_INTERVAL
-	if check_row <= _trader_last_check_row:
-		return
-	_trader_last_check_row = check_row
-	if randf() > TRADER_SPAWN_CHANCE:
-		return
-	# Tier scales with depth: 1-4
-	var tier := clampi(depth_row / 32 + 1, 1, 4)
-	_spawn_wandering_trader(tier)
-
-func _spawn_wandering_trader(tier: int) -> void:
-	if not player_node:
-		return
-	# Place the trader a couple of tiles to the right of the player
-	var spawn_pos := player_node.global_position + Vector2(CELL_SIZE * 2.5, 0.0)
-	_active_traders.append({"world_pos": spawn_pos, "tier": tier, "pulse": 0.0})
-	_traders_spawned_count += 1
-	EventBus.ore_mined_popup.emit(0, "Space Trader!")
-
-func _get_nearby_trader() -> Dictionary:
-	if not player_node:
-		return {}
-	for trader in _active_traders:
-		if (player_node.global_position - trader["world_pos"]).length() <= TRADER_INTERACT_RADIUS:
-			return trader
-	return {}
-
-func _show_trader_shop(trader: Dictionary) -> void:
-	_current_trader = trader
-	_trader_shop_visible = true
-
-	const VW: int = 1280
-	const VH: int = 720
-	const PANEL_W: int = 480
-	const PX: int = (VW - PANEL_W) / 2
-
-	var tier: int = trader.get("tier", 1)
-	var available_items: Array = []
-	for item in TRADER_ITEMS:
-		if item["tier"] <= tier:
-			available_items.append(item)
-
-	var panel_h: int = 120 + available_items.size() * 54 + 54
-	var py: int = (VH - panel_h) / 2
-
-	_trader_shop_layer = CanvasLayer.new()
-	_trader_shop_layer.layer = 10
-	add_child(_trader_shop_layer)
-
-	var dim := ColorRect.new()
-	dim.position = Vector2.ZERO
-	dim.size = Vector2(VW, VH)
-	dim.color = Color(0.0, 0.0, 0.0, 0.72)
-	dim.mouse_filter = Control.MOUSE_FILTER_STOP
-	_trader_shop_layer.add_child(dim)
-
-	var border := ColorRect.new()
-	border.position = Vector2(PX - 3, py - 3)
-	border.size = Vector2(PANEL_W + 6, panel_h + 6)
-	border.color = Color(0.85, 0.65, 0.10, 1.0)
-	_trader_shop_layer.add_child(border)
-
-	var panel := ColorRect.new()
-	panel.position = Vector2(PX, py)
-	panel.size = Vector2(PANEL_W, panel_h)
-	panel.color = Color(0.08, 0.06, 0.03, 0.97)
-	_trader_shop_layer.add_child(panel)
-
-	var title := Label.new()
-	title.text = "Space Trader  —  Tier %d" % tier
-	title.position = Vector2(PX, py + 10)
-	title.size = Vector2(PANEL_W, 30)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 18)
-	title.modulate = Color(1.0, 0.85, 0.20)
-	_trader_shop_layer.add_child(title)
-
-	var minerals_label := Label.new()
-	minerals_label.text = "Run Minerals: %d" % GameManager.run_mineral_currency
-	minerals_label.position = Vector2(PX, py + 42)
-	minerals_label.size = Vector2(PANEL_W, 22)
-	minerals_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	minerals_label.modulate = Color(1.0, 0.85, 0.2)
-	_trader_shop_layer.add_child(minerals_label)
-
-	const BTN_W: int = PANEL_W - 60
-	const BTN_X: int = PX + 30
-	const BTN_H: int = 44
-	var btn_y := py + 78
-	for item in available_items:
-		var btn := Button.new()
-		btn.text = "%s  —  %s  (%d minerals)" % [item["label"], item["desc"], item["cost"]]
-		btn.position = Vector2(BTN_X, btn_y)
-		btn.size = Vector2(BTN_W, BTN_H)
-		var item_key: String = item["key"]
-		btn.pressed.connect(_trader_purchase.bind(item_key))
-		_trader_shop_layer.add_child(btn)
-		btn_y += BTN_H + 10
-
-	var close_btn := Button.new()
-	close_btn.text = "Farewell"
-	close_btn.position = Vector2(BTN_X, btn_y + 4)
-	close_btn.size = Vector2(BTN_W, BTN_H)
-	close_btn.pressed.connect(_close_trader_shop)
-	_trader_shop_layer.add_child(close_btn)
-
-func _close_trader_shop() -> void:
-	if _trader_shop_layer:
-		_trader_shop_layer.queue_free()
-		_trader_shop_layer = null
-	_trader_shop_visible = false
-	_current_trader = {}
 
 # ---------------------------------------------------------------------------
 # Cat system helpers
@@ -2686,126 +1746,6 @@ func cat_mine_at(grid_pos: Vector2i) -> void:
 	queue_redraw()
 
 # ---------------------------------------------------------------------------
-# Cat Tavern Shop
-# ---------------------------------------------------------------------------
-
-const CAT_TAVERN_MINING_IRON_BARS: int = 2    # Meteor Bars to hire a Mining Cat
-const CAT_TAVERN_COLLECT_COPPER_BARS: int = 2  # Lunar Bars to hire a Collecting Cat
-
-func _setup_cat_tavern_shop() -> void:
-	const VW: int = 1280
-	const VH: int = 720
-	const PANEL_W: int = 460
-	const PANEL_H: int = 300
-	const PX: int = (VW - PANEL_W) / 2
-	const PY: int = (VH - PANEL_H) / 2
-
-	_cat_tavern_layer = CanvasLayer.new()
-	_cat_tavern_layer.layer = 10
-	_cat_tavern_layer.visible = false
-	add_child(_cat_tavern_layer)
-
-	var dim := ColorRect.new()
-	dim.position = Vector2.ZERO
-	dim.size = Vector2(VW, VH)
-	dim.color = Color(0.0, 0.0, 0.0, 0.72)
-	dim.mouse_filter = Control.MOUSE_FILTER_STOP
-	_cat_tavern_layer.add_child(dim)
-
-	var border := ColorRect.new()
-	border.position = Vector2(PX - 3, PY - 3)
-	border.size = Vector2(PANEL_W + 6, PANEL_H + 6)
-	border.color = Color(0.75, 0.35, 0.90, 1.0)
-	_cat_tavern_layer.add_child(border)
-
-	var panel := ColorRect.new()
-	panel.position = Vector2(PX, PY)
-	panel.size = Vector2(PANEL_W, PANEL_H)
-	panel.color = Color(0.08, 0.05, 0.12, 0.97)
-	_cat_tavern_layer.add_child(panel)
-
-	var title := Label.new()
-	title.text = "Cat Tavern"
-	title.position = Vector2(PX, PY + 12)
-	title.size = Vector2(PANEL_W, 30)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 20)
-	title.modulate = Color(0.90, 0.70, 1.0)
-	_cat_tavern_layer.add_child(title)
-
-	_cat_tavern_label = Label.new()
-	_cat_tavern_label.position = Vector2(PX, PY + 46)
-	_cat_tavern_label.size = Vector2(PANEL_W, 48)
-	_cat_tavern_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_cat_tavern_label.modulate = Color(0.85, 0.85, 0.85)
-	_cat_tavern_layer.add_child(_cat_tavern_label)
-
-	var divider := ColorRect.new()
-	divider.position = Vector2(PX + 20, PY + 100)
-	divider.size = Vector2(PANEL_W - 40, 2)
-	divider.color = Color(0.75, 0.35, 0.90, 0.5)
-	_cat_tavern_layer.add_child(divider)
-
-	const BTN_X: int = PX + 30
-	const BTN_W: int = PANEL_W - 60
-	const BTN_H: int = 48
-
-	_cat_tavern_btn_mining = Button.new()
-	_cat_tavern_btn_mining.position = Vector2(BTN_X, PY + 110)
-	_cat_tavern_btn_mining.size = Vector2(BTN_W, BTN_H)
-	_cat_tavern_btn_mining.pressed.connect(_cat_tavern_hire_mining)
-	_cat_tavern_layer.add_child(_cat_tavern_btn_mining)
-
-	_cat_tavern_btn_collecting = Button.new()
-	_cat_tavern_btn_collecting.position = Vector2(BTN_X, PY + 168)
-	_cat_tavern_btn_collecting.size = Vector2(BTN_W, BTN_H)
-	_cat_tavern_btn_collecting.pressed.connect(_cat_tavern_hire_collecting)
-	_cat_tavern_layer.add_child(_cat_tavern_btn_collecting)
-
-	var close_btn := Button.new()
-	close_btn.text = "Leave Tavern"
-	close_btn.position = Vector2(BTN_X + (BTN_W - 180) / 2, PY + 240)
-	close_btn.size = Vector2(180, 40)
-	close_btn.pressed.connect(_hide_cat_tavern_shop)
-	_cat_tavern_layer.add_child(close_btn)
-
-func _show_cat_tavern_shop() -> void:
-	var iron_bars: int = _run_bar_counts.get("iron", 0)
-	var copper_bars: int = _run_bar_counts.get("copper", 0)
-	var mining_count := cat_system.get_mining_cat_count() if cat_system else 0
-	var collect_count := cat_system.get_collecting_cat_count() if cat_system else 0
-	_cat_tavern_label.text = "Meteor Bars: %d  |  Lunar Bars: %d\nHired: %d mining, %d collecting" % [
-		iron_bars, copper_bars, mining_count, collect_count]
-	_cat_tavern_btn_mining.text = "Hire Mining Cat  (%d Meteor Bars)" % CAT_TAVERN_MINING_IRON_BARS
-	_cat_tavern_btn_collecting.text = "Hire Collecting Cat  (%d Lunar Bars)" % CAT_TAVERN_COLLECT_COPPER_BARS
-	_cat_tavern_btn_mining.disabled = iron_bars < CAT_TAVERN_MINING_IRON_BARS
-	_cat_tavern_btn_collecting.disabled = copper_bars < CAT_TAVERN_COLLECT_COPPER_BARS
-	_cat_tavern_layer.visible = true
-	_cat_tavern_visible = true
-
-func _hide_cat_tavern_shop() -> void:
-	_cat_tavern_layer.visible = false
-	_cat_tavern_visible = false
-
-func _cat_tavern_hire_mining() -> void:
-	if _run_bar_counts.get("iron", 0) < CAT_TAVERN_MINING_IRON_BARS:
-		return
-	_run_bar_counts["iron"] = _run_bar_counts.get("iron", 0) - CAT_TAVERN_MINING_IRON_BARS
-	if cat_system and player_node:
-		cat_system.hire(CatSystem.CatRole.MINING, player_node.global_position + Vector2(CELL_SIZE, 0))
-	SoundManager.play_drill_sound()
-	_show_cat_tavern_shop()
-
-func _cat_tavern_hire_collecting() -> void:
-	if _run_bar_counts.get("copper", 0) < CAT_TAVERN_COLLECT_COPPER_BARS:
-		return
-	_run_bar_counts["copper"] = _run_bar_counts.get("copper", 0) - CAT_TAVERN_COLLECT_COPPER_BARS
-	if cat_system and player_node:
-		cat_system.hire(CatSystem.CatRole.COLLECTING, player_node.global_position + Vector2(-CELL_SIZE, 0))
-	SoundManager.play_drill_sound()
-	_show_cat_tavern_shop()
-
-# ---------------------------------------------------------------------------
 # Ladder placement
 # ---------------------------------------------------------------------------
 
@@ -2826,51 +1766,3 @@ func _try_place_ladder() -> void:
 	GameManager.save_game()
 	EventBus.ore_mined_popup.emit(0, "Ladder placed!  (%d remaining)" % GameManager.ladder_count)
 	queue_redraw()
-
-func _trader_purchase(item_key: String) -> void:
-	var item_def: Dictionary = {}
-	for item in TRADER_ITEMS:
-		if item["key"] == item_key:
-			item_def = item
-			break
-	if item_def.is_empty():
-		return
-
-	var cost: int = item_def["cost"]
-	if GameManager.run_mineral_currency < cost:
-		EventBus.ore_mined_popup.emit(0, "Not enough minerals")
-		return
-
-	match item_key:
-		"energy":
-			GameManager.run_mineral_currency -= cost
-			GameManager.restore_energy(50)
-			EventBus.ore_mined_popup.emit(0, "Fuel Cell Pack!")
-		"repair":
-			if player_node and player_node.is_at_max_health():
-				EventBus.ore_mined_popup.emit(0, "Already at full HP")
-				return
-			GameManager.run_mineral_currency -= cost
-			player_node.heal(1)
-			EventBus.ore_mined_popup.emit(0, "Spacesuit Patched!")
-		"shroom":
-			GameManager.run_mineral_currency -= cost
-			_shroom_charges += 12
-			EventBus.ore_mined_popup.emit(0, "Astro Shroom!")
-		"compass":
-			GameManager.run_mineral_currency -= cost
-			_lucky_compass_active = true
-			EventBus.ore_mined_popup.emit(0, "Lucky Compass!")
-		"map":
-			GameManager.run_mineral_currency -= cost
-			_ancient_map_active = true
-			EventBus.ore_mined_popup.emit(0, "Deep Space Map!")
-
-	EventBus.minerals_changed.emit(GameManager.run_mineral_currency)
-	SoundManager.play_drill_sound()
-	_close_trader_shop()
-	# Re-open with updated mineral count
-	if _current_trader.size() == 0:
-		_current_trader = _get_nearby_trader()
-	if _current_trader.size() > 0:
-		_show_trader_shop(_current_trader)
