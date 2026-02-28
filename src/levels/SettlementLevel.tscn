@@ -1,6 +1,15 @@
-[gd_scene load_steps=2 format=3 uid="uid://settlementlevel01"]
+[gd_scene load_steps=5 format=3 uid="uid://settlementlevel01"]
 
 [ext_resource type="Script" path="res://src/levels/SettlementLevel.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://c8x7k2q5y302" path="res://src/entities/player/PlayerProbe.tscn" id="2_player"]
+[ext_resource type="PackedScene" uid="uid://hud1234568aa" path="res://src/ui/HUD.tscn" id="3_hud"]
+[ext_resource type="PackedScene" uid="uid://dom6mgmv6ffss" path="res://src/ui/PauseMenu.tscn" id="4_pause"]
 
 [node name="SettlementLevel" type="Node2D"]
 script = ExtResource("1_script")
+
+[node name="PlayerProbe" parent="." instance=ExtResource("2_player")]
+
+[node name="HUD" parent="." instance=ExtResource("3_hud")]
+
+[node name="PauseMenu" parent="." instance=ExtResource("4_pause")]
