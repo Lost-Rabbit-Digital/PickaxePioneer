@@ -1,6 +1,5 @@
 https://opengameart.org/content/16-x-16-monster-items
 https://opengameart.org/content/16x16-swords-weird
-https://reactorcore.itch.io/explosion-spriteanim-sheet-minipack
 https://uselesspursuit.itch.io/celestial-objects-pixel-art-pack
 https://elthen.itch.io/2d-pixel-art-bumble-bee-sprites
 
@@ -13,3 +12,4 @@ https://opengameart.org/content/crickets-general-calm-ambient-music
 https://opengameart.org/content/16x16-block-texture-set
 https://opengameart.org/content/mining-platformer
 https://pizzadoggy.itch.io/cozy-tunes
+https://reactorcore.itch.io/explosion-spriteanim-sheet-minipack
