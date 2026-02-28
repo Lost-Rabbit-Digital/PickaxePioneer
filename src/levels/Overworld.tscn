@@ -1,10 +1,10 @@
 [gd_scene load_steps=6 format=3 uid="uid://overworld8aa"]
 
 [ext_resource type="Script" uid="uid://bk70fmvti7sbc" path="res://src/levels/Overworld.gd" id="1_overworld"]
-[ext_resource type="Texture2D" uid="uid://deychwmedo8ag" path="res://assets/pixelart_starfield.png" id="2_aphkn"]
+[ext_resource type="Texture2D" uid="uid://2i1s08p2mq37" path="res://assets/pixelart_starfield.png" id="2_aphkn"]
 [ext_resource type="PackedScene" uid="uid://mapnode123" path="res://src/entities/overworld/MapNode.tscn" id="2_node"]
 [ext_resource type="PackedScene" uid="uid://caravan456" path="res://src/entities/overworld/Caravan.tscn" id="3_caravan"]
-[ext_resource type="PackedScene" path="res://src/ui/PauseMenu.tscn" id="7_pausemenu"]
+[ext_resource type="PackedScene" uid="uid://dom6mgmv6ffss" path="res://src/ui/PauseMenu.tscn" id="7_pausemenu"]
 
 [node name="Overworld" type="Control"]
 layout_mode = 3
