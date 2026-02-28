@@ -2,7 +2,7 @@ class_name BossSystem
 extends RefCounted
 
 ## Boss encounter system (§4)
-## Spawns bosses at milestone depth rows.  Each boss is a cluster of
+## Spawns space bosses at milestone sector rows.  Each boss is a cluster of
 ## BOSS_SEGMENT / BOSS_CORE tiles placed into MiningLevel's grid.
 ## MiningLevel passes Callables for grid/collision/UI operations so this
 ## class has no direct Node dependency.  State needed for draw (boss_active,
@@ -15,7 +15,7 @@ extends RefCounted
 
 const BOSS_MILESTONES: Array[int] = [32, 64, 96, 112, 128]
 const BOSS_DRAIN_MULT: float      = 1.5   # energy drain multiplier while boss alive
-const BOSS_SEGMENT_COUNT: int     = 12    # body segments for Giant Rat King
+const BOSS_SEGMENT_COUNT: int     = 12    # body segments for Giant Space Rat
 const BOSS_REWARD_BONUS: int      = 100   # flat mineral bonus on defeat
 
 const BOSS_TYPE_NONE: int      = 0
@@ -25,7 +25,7 @@ const BOSS_TYPE_MOLE: int      = 3
 const BOSS_TYPE_GOLEM: int     = 4
 const BOSS_TYPE_ANCIENT: int   = 5
 
-# The Ancient Hound — three-phase final boss at row 128
+# The Ancient Star Beast — three-phase final boss at row 128
 const ANCIENT_VOID_PULSE_INTERVAL: float  = 6.0   # seconds between void pulses (phase 2)
 const ANCIENT_VOID_PULSE_WARNING: float   = 1.5   # warning window before pulse fires
 const ANCIENT_VOID_PULSE_RADIUS: int      = 7     # radius of void pulse collapse
@@ -230,7 +230,7 @@ func on_tile_mined(col: int, row: int, tile_type: int) -> void:
 				ancient_phase = 2
 				ancient_void_warning_active = false
 				_ancient_core_recharge_timer = ANCIENT_CORE_RECHARGE_INTERVAL
-				_show_banner.call("THE ANCIENT CORE EXPOSED!", Color(0.90, 0.70, 1.00))
+				_show_banner.call("THE STAR BEAST CORE EXPOSED!", Color(0.90, 0.70, 1.00))
 				EventBus.ore_mined_popup.emit(0, "Phase 3! Mine fast — it regenerates!")
 				_shake_camera.call(12.0, 0.8)
 
@@ -262,10 +262,10 @@ func _spawn_giant_rat_king(player_col: int) -> void:
 			positions.append(Vector2i(col, boss_row + 1))
 
 	_activate(positions, BOSS_TYPE_GIANT_RAT, boss_row)
-	_show_banner.call("GIANT RAT KING AWAKENS!", Color(0.90, 0.10, 0.05))
+	_show_banner.call("GIANT SPACE RAT AWAKENS!", Color(0.90, 0.10, 0.05))
 	EventBus.ore_mined_popup.emit(0, "Boss! Mine all segments to defeat it!")
 	_shake_camera.call(8.0, 0.4)
-	_pending_hints = ["Click each glowing tile to chip away at it!", "Defeat the boss to restore energy!"]
+	_pending_hints = ["Click each glowing tile to chip away at it!", "Defeat the boss to restore fuel!"]
 
 
 func _spawn_cave_spider_matriarch(player_col: int) -> void:
@@ -289,10 +289,10 @@ func _spawn_cave_spider_matriarch(player_col: int) -> void:
 		positions.append(Vector2i(col, row))
 
 	_activate(positions, BOSS_TYPE_SPIDER, boss_row)
-	_show_banner.call("CAVE SPIDER MATRIARCH!", Color(0.60, 0.10, 0.80))
+	_show_banner.call("VOID SPIDER MATRIARCH!", Color(0.60, 0.10, 0.80))
 	EventBus.ore_mined_popup.emit(0, "Boss! Mine all body parts to defeat it!")
 	_shake_camera.call(8.0, 0.4)
-	_pending_hints = ["Click each glowing segment to chip away at it!", "Defeat the boss to restore energy!"]
+	_pending_hints = ["Click each glowing segment to chip away at it!", "Defeat the boss to restore fuel!"]
 
 
 func _spawn_blind_mole(player_col: int) -> void:
@@ -323,10 +323,10 @@ func _spawn_blind_mole(player_col: int) -> void:
 	_mole_center = Vector2i(player_col, boss_row)
 	_mole_tremor_timer = MOLE_TREMOR_INTERVAL
 
-	_show_banner.call("THE BLIND MOLE STIRS!", Color(0.55, 0.35, 0.10))
+	_show_banner.call("THE COSMIC MOLE STIRS!", Color(0.55, 0.35, 0.85))
 	EventBus.ore_mined_popup.emit(0, "Boss! Mine all segments to defeat it!")
 	_shake_camera.call(12.0, 0.6)
-	_pending_hints = ["Watch for TREMOR warnings — get clear!", "Tremors refill mined tunnels around the boss!", "Defeat the boss to restore energy!"]
+	_pending_hints = ["Watch for TREMOR warnings — get clear!", "Tremors seal mined passages around the boss!", "Defeat the boss to restore fuel!"]
 
 
 func _spawn_stone_golem(player_col: int) -> void:
@@ -355,8 +355,8 @@ func _spawn_stone_golem(player_col: int) -> void:
 	_golem_segments_this_phase = 0
 
 	var required := GOLEM_PHASE_ORES[0].capitalize()
-	_show_banner.call("STONE GOLEM AWAKENS!", Color(0.60, 0.55, 0.45))
-	EventBus.ore_mined_popup.emit(0, "Armor boss! Mine nearby ore to unlock damage!")
+	_show_banner.call("ASTEROID GOLEM AWAKENS!", Color(0.60, 0.55, 0.85))
+	EventBus.ore_mined_popup.emit(0, "Armored boss! Mine nearby ore to unlock damage!")
 	_shake_camera.call(14.0, 0.8)
 	_pending_hints = ["Step 1: Mine " + required + " ore (not the boss!)", "Step 2: Then click the glowing boss tiles!", "Wrong ore type? It blocks all damage!"]
 
@@ -411,12 +411,12 @@ func _spawn_ancient_one(player_col: int) -> void:
 	ancient_void_warning_active = false
 	ancient_core_recharge_warning = false
 
-	_show_banner.call("THE ANCIENT HOUND AWAKENS!", Color(0.15, 0.70, 0.90))
+	_show_banner.call("THE ANCIENT STAR BEAST AWAKENS!", Color(0.15, 0.70, 0.90))
 	EventBus.ore_mined_popup.emit(0, "Final boss! Break the outer shell first!")
 	_shake_camera.call(16.0, 1.0)
 	_pending_hints = [
 		"Phase 1: Mine the outer ring of segments!",
-		"Phase 2: Void pulses will seal mined tunnels — keep moving!",
+		"Phase 2: Void pulses will seal mined passages — keep moving!",
 		"Phase 3: The core regenerates — strike fast!",
 	]
 
@@ -456,7 +456,7 @@ func _on_boss_defeated() -> void:
 	EventBus.ore_mined_popup.emit(BOSS_REWARD_BONUS, "Boss defeated!")
 	_show_banner.call("BOSS DEFEATED!", Color(0.30, 1.00, 0.40))
 	GameManager.restore_energy(50)
-	EventBus.ore_mined_popup.emit(50, "Energy restored!")
+	EventBus.ore_mined_popup.emit(50, "Fuel restored!")
 	_shake_camera.call(14.0, 0.6)
 
 
@@ -540,7 +540,7 @@ func _update_ancient_one(delta: float) -> void:
 			_ancient_core_recharge_timer = ANCIENT_CORE_RECHARGE_INTERVAL
 			ancient_core_recharge_warning = false
 			_erase_tile_state.call(_ancient_center)
-			EventBus.ore_mined_popup.emit(0, "Ancient One regenerates!")
+			EventBus.ore_mined_popup.emit(0, "Star Beast regenerates!")
 			_shake_camera.call(6.0, 0.4)
 
 

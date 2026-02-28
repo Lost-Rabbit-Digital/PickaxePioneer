@@ -1,9 +1,9 @@
 class_name SettlementLevel
 extends Node2D
 
-# Settlement rest stop — visited from the Overworld between mine runs.
-# Players spend banked minerals (mineral_currency) on energy caches, repairs,
-# and consumables that carry into their next mining run.
+# Space Outpost — visited from the Star Chart between mining runs.
+# Players spend banked minerals (mineral_currency) on fuel caches, repairs,
+# and consumables that carry into their next space mining run.
 
 const PANEL_W: int = 520
 const PANEL_H: int = 460
@@ -66,7 +66,7 @@ func _build_ui() -> void:
 
 	# Title
 	var title := Label.new()
-	title.text = "Settlement — Rest Stop"
+	title.text = "Space Outpost — Supply Dock"
 	title.position = Vector2(px, py + 12)
 	title.size = Vector2(PANEL_W, 32)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -76,7 +76,7 @@ func _build_ui() -> void:
 
 	# Subtitle / flavour
 	var subtitle := Label.new()
-	subtitle.text = "A small outpost where cat miners rest and resupply."
+	subtitle.text = "A small space outpost where cat miners refuel and resupply."
 	subtitle.position = Vector2(px, py + 46)
 	subtitle.size = Vector2(PANEL_W, 22)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -117,22 +117,22 @@ func _build_ui() -> void:
 	var by := py + 116
 
 	_btn_energy = _make_button(canvas, bx, by, bw, BTN_H,
-		"Energy Cache  —  +50 starting energy next run  (%d minerals)" % COST_ENERGY_CACHE,
+		"Fuel Cell Cache  —  +50 starting fuel next run  (%d minerals)" % COST_ENERGY_CACHE,
 		_buy_energy_cache)
 	by += BTN_GAP
 
 	_btn_rations = _make_button(canvas, bx, by, bw, BTN_H,
-		"Scout Snacks  —  +20 scout cat carry capacity next run  (%d minerals)" % COST_RATIONS,
+		"Space Snacks  —  +20 scout cat carry capacity next run  (%d minerals)" % COST_RATIONS,
 		_buy_rations)
 	by += BTN_GAP
 
 	_btn_shroom = _make_button(canvas, bx, by, bw, BTN_H,
-		"Mining Shroom  —  +12 ore yield charges next run  (%d minerals)" % COST_SHROOM,
+		"Astro Shroom  —  +12 ore yield charges next run  (%d minerals)" % COST_SHROOM,
 		_buy_shroom)
 	by += BTN_GAP
 
 	_btn_sharpen = _make_button(canvas, bx, by, bw, BTN_H,
-		"Claw Whetstone  —  +1 Claw power next run  (%d minerals)" % COST_SHARPENING,
+		"Pickaxe Sharpener  —  +1 Mining power next run  (%d minerals)" % COST_SHARPENING,
 		_buy_sharpening)
 	by += BTN_GAP
 
@@ -184,7 +184,7 @@ func _buy_energy_cache() -> void:
 	GameManager.mineral_currency -= COST_ENERGY_CACHE
 	GameManager.settlement_energy_bonus += 50
 	GameManager.save_game()
-	_set_status("+50 energy cache ready for next run!")
+	_set_status("+50 fuel cell cache ready for next run!")
 	_refresh_minerals()
 	_update_button_states()
 
@@ -204,7 +204,7 @@ func _buy_shroom() -> void:
 	GameManager.mineral_currency -= COST_SHROOM
 	GameManager.settlement_shroom_charges += 12
 	GameManager.save_game()
-	_set_status("+12 Mining Shroom charges next run!")
+	_set_status("+12 Astro Shroom charges next run!")
 	_refresh_minerals()
 	_update_button_states()
 
@@ -214,7 +214,7 @@ func _buy_sharpening() -> void:
 	GameManager.mineral_currency -= COST_SHARPENING
 	GameManager.settlement_mandible_bonus += 1
 	GameManager.save_game()
-	_set_status("+1 Claw power next run!")
+	_set_status("+1 Mining power next run!")
 	_refresh_minerals()
 	_update_button_states()
 

@@ -1,7 +1,7 @@
 class_name Overworld
 extends Node2D
 
-# Overworld Map
+# Star Chart Map
 
 @onready var caravan: Caravan = $Caravan
 @onready var city_node: MapNode = $CityNode
@@ -16,44 +16,44 @@ var nodes: Array[MapNode] = []
 var _modal: LevelInfoModal = null
 var _pending_node: MapNode = null
 
-# Mine name options for randomization
+# Asteroid mine name options for randomization
 var mine_names = [
-	"Iron Mine",
-	"Gold Mine",
-	"Copper Mine",
-	"Silver Mine",
-	"Coal Mine",
-	"Diamond Mine",
-	"Platinum Mine",
-	"Emerald Mine",
-	"Ruby Mine",
-	"Sapphire Mine",
-	"Tin Mine",
-	"Lead Mine",
-	"Uranium Mine",
-	"Crystal Cave",
-	"Obsidian Pit"
+	"Iron Asteroid",
+	"Golden Nebula",
+	"Copper Moon",
+	"Silver Comet",
+	"Carbon Asteroid",
+	"Diamond Cluster",
+	"Platinum Belt",
+	"Emerald Nebula",
+	"Ruby Sector",
+	"Sapphire Void",
+	"Tin Moon",
+	"Lead Asteroid",
+	"Uranium Nebula",
+	"Crystal Cavern",
+	"Obsidian Rift"
 ]
 
 # Difficulty, primary ore, and hazard info keyed by mine name.
 # Ore names must match the game's actual tile types: Copper, Iron, Gold, Gem.
-# Hazard names: "Explosives" (explosive tiles), "Lava" (lava tiles).
+# Hazard names: "Explosives" (space mines), "Lava" (plasma tiles).
 var mine_metadata: Dictionary = {
-	"Iron Mine":     {"difficulty": 1, "ores": ["Iron", "Copper"],  "hazards": ["Explosives"]},
-	"Gold Mine":     {"difficulty": 3, "ores": ["Gold", "Iron"],    "hazards": ["Explosives", "Lava"]},
-	"Copper Mine":   {"difficulty": 1, "ores": ["Copper"],          "hazards": []},
-	"Silver Mine":   {"difficulty": 2, "ores": ["Iron", "Copper"],  "hazards": ["Explosives"]},
-	"Coal Mine":     {"difficulty": 1, "ores": ["Copper", "Iron"],  "hazards": ["Explosives"]},
-	"Diamond Mine":  {"difficulty": 3, "ores": ["Gem", "Gold"],     "hazards": ["Explosives", "Lava"]},
-	"Platinum Mine": {"difficulty": 3, "ores": ["Gold", "Gem"],     "hazards": ["Explosives", "Lava"]},
-	"Emerald Mine":  {"difficulty": 2, "ores": ["Gem", "Iron"],     "hazards": ["Lava"]},
-	"Ruby Mine":     {"difficulty": 2, "ores": ["Gem", "Copper"],   "hazards": ["Lava"]},
-	"Sapphire Mine": {"difficulty": 2, "ores": ["Gem", "Iron"],     "hazards": ["Explosives"]},
-	"Tin Mine":      {"difficulty": 1, "ores": ["Copper"],          "hazards": []},
-	"Lead Mine":     {"difficulty": 1, "ores": ["Iron", "Copper"],  "hazards": []},
-	"Uranium Mine":  {"difficulty": 3, "ores": ["Gem", "Gold"],     "hazards": ["Explosives", "Lava"]},
-	"Crystal Cave":  {"difficulty": 2, "ores": ["Gem", "Iron"],     "hazards": ["Explosives"]},
-	"Obsidian Pit":  {"difficulty": 3, "ores": ["Iron", "Gem"],     "hazards": ["Explosives", "Lava"]},
+	"Iron Asteroid":    {"difficulty": 1, "ores": ["Iron", "Copper"],  "hazards": ["Explosives"]},
+	"Golden Nebula":    {"difficulty": 3, "ores": ["Gold", "Iron"],    "hazards": ["Explosives", "Lava"]},
+	"Copper Moon":      {"difficulty": 1, "ores": ["Copper"],          "hazards": []},
+	"Silver Comet":     {"difficulty": 2, "ores": ["Iron", "Copper"],  "hazards": ["Explosives"]},
+	"Carbon Asteroid":  {"difficulty": 1, "ores": ["Copper", "Iron"],  "hazards": ["Explosives"]},
+	"Diamond Cluster":  {"difficulty": 3, "ores": ["Gem", "Gold"],     "hazards": ["Explosives", "Lava"]},
+	"Platinum Belt":    {"difficulty": 3, "ores": ["Gold", "Gem"],     "hazards": ["Explosives", "Lava"]},
+	"Emerald Nebula":   {"difficulty": 2, "ores": ["Gem", "Iron"],     "hazards": ["Lava"]},
+	"Ruby Sector":      {"difficulty": 2, "ores": ["Gem", "Copper"],   "hazards": ["Lava"]},
+	"Sapphire Void":    {"difficulty": 2, "ores": ["Gem", "Iron"],     "hazards": ["Explosives"]},
+	"Tin Moon":         {"difficulty": 1, "ores": ["Copper"],          "hazards": []},
+	"Lead Asteroid":    {"difficulty": 1, "ores": ["Iron", "Copper"],  "hazards": []},
+	"Uranium Nebula":   {"difficulty": 3, "ores": ["Gem", "Gold"],     "hazards": ["Explosives", "Lava"]},
+	"Crystal Cavern":   {"difficulty": 2, "ores": ["Gem", "Iron"],     "hazards": ["Explosives"]},
+	"Obsidian Rift":    {"difficulty": 3, "ores": ["Iron", "Gem"],     "hazards": ["Explosives", "Lava"]},
 }
 
 func _ready() -> void:
@@ -65,12 +65,12 @@ func _ready() -> void:
 	_randomize_mines()
 
 	# Set static node metadata
-	city_node.description = "Your home Clowder. Spend your hard-earned minerals on upgrades to improve your mining operation."
-	settlement_node_3.description = "A small outpost along the mining route. Rest, resupply, and prepare for deeper delves."
+	city_node.description = "Your home Space Station. Spend your hard-earned minerals on upgrades to improve your space mining operation."
+	settlement_node_3.description = "A small outpost along the space route. Rest, resupply, and prepare for deeper sectors."
 	settlement_node_3.difficulty = 1
 	settlement_node_3.ore_types = []
 	settlement_node_3.hazard_types = []
-	settlement_node_4.description = "A remote camp near deeper deposits. Stock up before venturing into the lower zones."
+	settlement_node_4.description = "A remote station near deeper sectors. Stock up before venturing into the outer zones."
 	settlement_node_4.difficulty = 2
 	settlement_node_4.ore_types = []
 	settlement_node_4.hazard_types = []
