@@ -1585,13 +1585,13 @@ func _show_zone_banner(zone_name: String, color: Color) -> void:
 	add_child(layer)
 	var banner := ColorRect.new()
 	banner.size = Vector2(VW, BANNER_H)
-	banner.position = Vector2(0, VH / 2 - BANNER_H / 2)
+	banner.position = Vector2(0, VH * 2 / 3 - BANNER_H / 2)
 	banner.color = Color(0.0, 0.0, 0.0, 0.78)
 	layer.add_child(banner)
 	var label := Label.new()
 	label.text = zone_name.to_upper()
 	label.size = Vector2(VW, BANNER_H)
-	label.position = Vector2(0, VH / 2 - BANNER_H / 2)
+	label.position = Vector2(0, VH * 2 / 3 - BANNER_H / 2)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 26)
