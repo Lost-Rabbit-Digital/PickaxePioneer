@@ -262,7 +262,8 @@ func _on_caravan_arrived() -> void:
 func _find_path(from_node: MapNode, to_node: MapNode) -> Array[MapNode]:
 	# BFS over visible, connected nodes to find the shortest path.
 	if from_node == to_node:
-		return [from_node]
+		var direct: Array[MapNode] = [from_node]
+		return direct
 
 	var queue: Array = [[from_node]]
 	var visited: Array[MapNode] = [from_node]
@@ -276,7 +277,9 @@ func _find_path(from_node: MapNode, to_node: MapNode) -> Array[MapNode]:
 				continue
 			if neighbor == to_node:
 				path.append(neighbor)
-				return path
+				var result: Array[MapNode] = []
+				result.assign(path)
+				return result
 			if not visited.has(neighbor):
 				visited.append(neighbor)
 				var new_path := path.duplicate()
@@ -284,7 +287,8 @@ func _find_path(from_node: MapNode, to_node: MapNode) -> Array[MapNode]:
 				queue.append(new_path)
 
 	# Fallback: direct move if no path found
-	return [from_node, to_node]
+	var fallback: Array[MapNode] = [from_node, to_node]
+	return fallback
 
 func _enter_node(node: MapNode) -> void:
 	_modal.show_for_node(node)
