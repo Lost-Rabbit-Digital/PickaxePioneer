@@ -303,7 +303,7 @@ func _sync_collision_tilemap() -> void:
 	for col in range(GRID_COLS):
 		for row in range(GRID_ROWS):
 			var tile: int = grid[col][row]
-			if tile == Tile.GROUND or tile == Tile.GROUND_DEEP or tile == Tile.BUILDING or tile == Tile.SUPPLY_DOCK:
+			if tile == Tile.GROUND or tile == Tile.GROUND_DEEP:
 				collision_tilemap.set_cell(Vector2i(col, row), 0, Vector2i(0, 0))
 
 func _setup_map_barriers() -> void:
