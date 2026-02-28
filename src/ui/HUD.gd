@@ -78,6 +78,7 @@ const HOTBAR_BLOCK_TEXTURES: Array = [
 	"res://assets/blocks/basalt.png",
 ]
 var _hotbar_slots: Array[PanelContainer] = []
+var _hotbar_ladder_icon: Control  # Ladder slot content — shown/hidden based on ladder count
 
 # Ore colour mapping for the earnings popup
 const ORE_COLORS: Dictionary = {
@@ -541,6 +542,9 @@ func _update_ladder_display(count: int) -> void:
 	else:
 		_ladder_label.modulate.a = 0.0
 		_ladder_panel.modulate.a = 0.0
+	# Sync hotbar ladder slot icon visibility
+	if _hotbar_ladder_icon:
+		_hotbar_ladder_icon.visible = count > 0
 
 # Queues a boss hint and kicks off display if nothing is showing.
 func _on_boss_hint_popup(hint: String) -> void:
@@ -611,9 +615,9 @@ func _build_hotbar() -> void:
 
 		elif i == 1:
 			# Ladder tool — drawn as two poles + three rungs (matches in-game ladder style)
-			var ladder_icon := Control.new()
-			ladder_icon.custom_minimum_size = Vector2(HOTBAR_SLOT_SIZE - 6, HOTBAR_SLOT_SIZE - 6)
-			ladder_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_hotbar_ladder_icon = Control.new()
+			_hotbar_ladder_icon.custom_minimum_size = Vector2(HOTBAR_SLOT_SIZE - 6, HOTBAR_SLOT_SIZE - 6)
+			_hotbar_ladder_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 			var pole_color := Color(0.80, 0.60, 0.15, 0.90)
 			var rung_color := Color(0.70, 0.50, 0.10, 0.90)
@@ -624,7 +628,7 @@ func _build_hotbar() -> void:
 			left_pole.position = Vector2(7, 2)
 			left_pole.size = Vector2(5, 38)
 			left_pole.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			ladder_icon.add_child(left_pole)
+			_hotbar_ladder_icon.add_child(left_pole)
 
 			# Right pole
 			var right_pole := ColorRect.new()
@@ -632,7 +636,7 @@ func _build_hotbar() -> void:
 			right_pole.position = Vector2(30, 2)
 			right_pole.size = Vector2(5, 38)
 			right_pole.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			ladder_icon.add_child(right_pole)
+			_hotbar_ladder_icon.add_child(right_pole)
 
 			# Three rungs
 			for r in 3:
@@ -641,9 +645,11 @@ func _build_hotbar() -> void:
 				rung.position = Vector2(7, 7 + r * 13)
 				rung.size = Vector2(28, 4)
 				rung.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				ladder_icon.add_child(rung)
+				_hotbar_ladder_icon.add_child(rung)
 
-			slot.add_child(ladder_icon)
+			# Only visible when the player has at least one ladder
+			_hotbar_ladder_icon.visible = GameManager.ladder_count > 0
+			slot.add_child(_hotbar_ladder_icon)
 
 		# Slot 3 (i == 2) intentionally left empty
 
