@@ -741,7 +741,7 @@ func _place_ore_vein(spec: Dictionary) -> void:
 			var place_col := center_col - width / 2 + w
 			if place_col < 1 or place_col >= GRID_COLS - 1:
 				continue
-			var current := grid[place_col][row]
+			var current: int = grid[place_col][row]
 			# Only overwrite background rock — never hazards, stations, or surface.
 			if current in [TileType.DIRT, TileType.DIRT_DARK,
 							TileType.STONE, TileType.STONE_DARK]:
