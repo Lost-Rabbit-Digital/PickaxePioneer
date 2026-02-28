@@ -195,7 +195,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event.is_action_pressed("ui_accept"):
-		_enter_node(current_node)
+		if not caravan.is_moving:
+			_enter_node(current_node)
 		return
 
 	var direction = Vector2.ZERO
@@ -224,9 +225,14 @@ func _move_selection(direction: Vector2) -> void:
 			best_neighbor = neighbor
 
 	if best_neighbor:
+		if caravan.arrived.is_connected(_on_caravan_arrived):
+			caravan.arrived.disconnect(_on_caravan_arrived)
+		_modal.hide()
 		current_node.highlight(false)
 		current_node = best_neighbor
 		current_node.highlight(true)
+		_pending_node = best_neighbor
+		caravan.arrived.connect(_on_caravan_arrived, CONNECT_ONE_SHOT)
 		caravan.move_to(current_node.position)
 
 func _on_node_clicked(node: MapNode) -> void:
@@ -237,6 +243,9 @@ func _on_node_clicked(node: MapNode) -> void:
 	if node == current_node:
 		_enter_node(node)
 		return
+
+	# Hide the modal while the caravan is in transit
+	_modal.hide()
 
 	# Find shortest path through the graph so the caravan walks each segment
 	var path := _find_path(current_node, node)
