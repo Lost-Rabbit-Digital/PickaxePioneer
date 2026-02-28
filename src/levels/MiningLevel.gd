@@ -380,7 +380,8 @@ const FARM_NPC_ROW: int = 2  # Placed on the middle surface row
 var _pickaxe_texture: Texture2D
 
 func _ready() -> void:
-	_pickaxe_texture = load("res://assets/pickaxe_effect.png") as Texture2D
+	_pickaxe_texture = load("res://assets/db32_rpg_items/pickaxe_steel.png") as Texture2D
+	
 
 	texture_filter = TEXTURE_FILTER_NEAREST
 
@@ -1282,7 +1283,7 @@ func _spawn_pickaxe_effect(from: Vector2, to: Vector2) -> void:
 	var sprite := Sprite2D.new()
 	sprite.texture = _pickaxe_texture
 	sprite.position = from
-	sprite.scale = Vector2(0.5, 0.5)
+	sprite.scale = Vector2(2.5, 2.5)
 	sprite.rotation = from.angle_to_point(to) + PI * 0.25
 	sprite.texture_filter = TEXTURE_FILTER_NEAREST
 	add_child(sprite)
