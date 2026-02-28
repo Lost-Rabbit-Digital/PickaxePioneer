@@ -4,6 +4,7 @@ extends CharacterBody2D
 # Terraria-style CharacterBody2D player for the mining level.
 # Handles gravity, horizontal movement, jumping, and cursor-based mining.
 # MiningLevel provides the grid API for mining and hazard interactions.
+# Jetpack removed — player must plan routes and place ladders (F key) to climb.
 
 const CELL_SIZE: int = 64
 
@@ -11,6 +12,9 @@ const CELL_SIZE: int = 64
 var move_speed: float = 280.0
 var jump_velocity: float = -420.0
 var gravity: float = 980.0
+
+# Ladder climbing speed (tiles-per-second feel)
+const LADDER_CLIMB_SPEED: float = 160.0
 
 # Mining
 var mine_range: float = 4.5  # Range in tiles
@@ -22,6 +26,9 @@ const MINE_INTERVAL: float = 0.12  # Seconds between mining hits
 # Reference set by MiningLevel after instantiation
 var mining_level: Node = null
 
+# Whether the player is currently touching a ladder tile (set by MiningLevel each frame)
+var on_ladder: bool = false
+
 @onready var health_component: HealthComponent = $HealthComponent
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var interact_prompt: Label = $PromptLayer/InteractPrompt
@@ -29,20 +36,11 @@ var mining_level: Node = null
 # Facing direction
 var _facing_left: bool = true
 
-# Jetpack
-var has_jetpack: bool = true
-const JETPACK_THRUST: float = -220.0     # Upward velocity applied each frame while thrusting
-const JETPACK_ENERGY_RATE: float = 5.0     # Energy units consumed per second while thrusting
-var _jetpack_active: bool = false
-var _jetpack_energy_accum: float = 0.0
-
 # Sprint — hold Shift for 1.5× speed, costs extra energy
 const SPRINT_MULT: float = 1.5
 const SPRINT_ENERGY_RATE: float = 4.0     # Energy units consumed per second while sprinting
 var _sprinting: bool = false
 var _sprint_energy_accum: float = 0.0
-
-@onready var jetpack_sprite: Sprite2D = $JetpackSprite
 
 func _ready() -> void:
 	add_to_group("player")
@@ -53,11 +51,14 @@ func _ready() -> void:
 	sprite.play(&"idle")
 
 func _physics_process(delta: float) -> void:
-	if not mining_level or mining_level._game_over or mining_level._hub_visible or mining_level._energy_shop_visible or mining_level._trader_shop_visible:
+	if not mining_level or mining_level._game_over or mining_level._hub_visible \
+			or mining_level._energy_shop_visible or mining_level._trader_shop_visible:
 		return
 
-	# Gravity
-	if not is_on_floor():
+	# Gravity — reduced when on a ladder
+	if on_ladder:
+		velocity.y = 0.0   # gravity suppressed while gripping ladder
+	elif not is_on_floor():
 		velocity.y += gravity * delta
 	else:
 		if velocity.y > 0:
@@ -89,25 +90,16 @@ func _physics_process(delta: float) -> void:
 		_facing_left = false
 		sprite.flip_h = true
 
-	# Jump
-	if Input.is_action_just_pressed("jump") and is_on_floor():
-		velocity.y = jump_velocity
+	# Jump from floor OR climb ladder upward with jump/up key
+	if Input.is_action_just_pressed("jump"):
+		if is_on_floor():
+			velocity.y = jump_velocity
+		elif on_ladder:
+			velocity.y = -LADDER_CLIMB_SPEED
 
-	# Jetpack thrust — hold jump while airborne to fly upward, consumes energy
-	# Sprint also boosts vertical thrust by 20% when airborne
-	_jetpack_active = false
-	if has_jetpack and not is_on_floor() and Input.is_action_pressed("jump") and GameManager.current_energy > 0:
-		velocity.y = JETPACK_THRUST * (1.2 if _sprinting else 1.0)
-		_jetpack_active = true
-		_jetpack_energy_accum += JETPACK_ENERGY_RATE * delta
-		if _jetpack_energy_accum >= 1.0:
-			var to_consume := int(_jetpack_energy_accum)
-			_jetpack_energy_accum -= to_consume
-			GameManager.consume_energy(to_consume)
-
-	# Sync jetpack sprite with player facing and active state
-	jetpack_sprite.flip_h = sprite.flip_h
-	jetpack_sprite.modulate = Color(1.0, 0.5, 0.1) if _jetpack_active else Color(1, 1, 1, 1)
+	# Sustained upward movement while holding jump on a ladder
+	if on_ladder and Input.is_action_pressed("jump"):
+		velocity.y = -LADDER_CLIMB_SPEED
 
 	move_and_slide()
 
@@ -125,6 +117,8 @@ func _update_animation() -> void:
 
 	if _mining and is_on_floor():
 		anim = &"paw"
+	elif on_ladder:
+		anim = &"movement"
 	elif not is_on_floor():
 		anim = &"jump"
 	elif abs(velocity.x) > 0.1:
@@ -136,11 +130,6 @@ func _update_animation() -> void:
 		sprite.play(anim)
 
 func _handle_mining(delta: float) -> void:
-	# No mining while flying with the jetpack
-	if has_jetpack and not is_on_floor():
-		_mining = false
-		return
-
 	if Input.is_action_pressed("mine"):
 		var mouse_world := get_global_mouse_position()
 		var grid_pos := Vector2i(

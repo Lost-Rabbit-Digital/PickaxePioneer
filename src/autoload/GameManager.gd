@@ -35,9 +35,12 @@ func get_max_energy() -> int:
 
 # Settlement carry-over bonuses (applied on next mine entry, then cleared)
 var settlement_energy_bonus: int = 0       # extra starting energy from Energy Cache purchase
-var settlement_forager_bonus: int = 0    # extra scout cat carry capacity for one run
+var settlement_forager_bonus: int = 0    # kept for save compatibility; unused since ForagerSystem removed
 var settlement_shroom_charges: int = 0   # Mining Shroom charges pre-purchased
 var settlement_mandible_bonus: int = 0   # temporary +N mandible power for one run
+
+# Ladder count — persists across sessions; decremented each time player places a ladder
+var ladder_count: int = 0
 
 # Upgrade levels
 var carapace_level: int = 0
@@ -254,6 +257,7 @@ func save_game() -> void:
 		"long_scanner_built": long_scanner_built,
 		"gem_refinery_built": gem_refinery_built,
 		"trade_amplifier_built": trade_amplifier_built,
+		"ladder_count": ladder_count,
 	}
 	
 	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -300,6 +304,7 @@ func load_game() -> void:
 			long_scanner_built = data.get("long_scanner_built", false)
 			gem_refinery_built = data.get("gem_refinery_built", false)
 			trade_amplifier_built = data.get("trade_amplifier_built", false)
+			ladder_count = data.get("ladder_count", 0)
 			print("Game loaded")
 		else:
 			print("Failed to parse save file")
