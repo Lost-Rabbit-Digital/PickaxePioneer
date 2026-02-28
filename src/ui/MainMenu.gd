@@ -237,7 +237,7 @@ func _refresh_popup() -> void:
 	# Update title
 	var title_node: Label = _save_popup.get_node("PopupTitle")
 	if _popup_mode == "new_game":
-		title_node.text = "SELECT SAVE SLOT"
+		title_node.text = "New Game - Select Save"
 	else:
 		title_node.text = "CONTINUE — SELECT SAVE"
 
