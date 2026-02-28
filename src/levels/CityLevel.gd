@@ -12,36 +12,36 @@ const PANEL_Y: int = 65
 const LEFT_X: int  = (VW - PANEL_W * 2 - GAP) / 2   # 140
 const RIGHT_X: int = LEFT_X + PANEL_W + GAP           # 650
 
-const CHAMBERS: Array = [
+const SHIP_UPGRADES: Array = [
 	{
-		"key": "fungus_garden", "name": "Space Fish Pantry",
-		"effect": "+10% mineral yield",
+		"key": "warp_drive", "name": "Warp Drive",
+		"effect": "2x overworld travel speed",
 		"unlock_label": "Bank 500 minerals total to unlock",
-		"cost_const": "CHAMBER_COST_FUNGUS_GARDEN", "built_prop": "fungus_garden_built",
+		"cost_const": "SHIP_COST_WARP_DRIVE", "built_prop": "warp_drive_built",
 	},
 	{
-		"key": "brood_chamber", "name": "Zero-G Kitten Bay",
-		"effect": "Scout Cat carry +20",
+		"key": "cargo_bay", "name": "Cargo Bay Expansion",
+		"effect": "+25 ore carrying capacity",
 		"unlock_label": "Defeat first boss to unlock",
-		"cost_const": "CHAMBER_COST_BROOD_CHAMBER", "built_prop": "brood_chamber_built",
+		"cost_const": "SHIP_COST_CARGO_BAY", "built_prop": "cargo_bay_built",
 	},
 	{
-		"key": "armory", "name": "Laser Pickaxe Lab",
-		"effect": "Blast radius +1 tile",
+		"key": "long_scanner", "name": "Long-Range Scanner",
+		"effect": "Always shows both asteroid mines",
 		"unlock_label": "Bank 1000 minerals total to unlock",
-		"cost_const": "CHAMBER_COST_ARMORY", "built_prop": "armory_built",
+		"cost_const": "SHIP_COST_LONG_SCANNER", "built_prop": "long_scanner_built",
 	},
 	{
-		"key": "nursery_vault", "name": "Alien Artifact Vault",
-		"effect": "+5% space fossil find rate",
+		"key": "gem_refinery", "name": "Gem Refinery",
+		"effect": "+1 bonus gem per gem ore mined",
 		"unlock_label": "Find 10 space fossils total to unlock",
-		"cost_const": "CHAMBER_COST_NURSERY_VAULT", "built_prop": "nursery_vault_built",
+		"cost_const": "SHIP_COST_GEM_REFINERY", "built_prop": "gem_refinery_built",
 	},
 	{
-		"key": "deep_antenna", "name": "Deep Space Antenna",
-		"effect": "Scanner radius +3 tiles",
+		"key": "trade_amplifier", "name": "Trade Amplifier",
+		"effect": "+25% dollar payout on bar sales",
 		"unlock_label": "Reach sector 96 in a run to unlock",
-		"cost_const": "CHAMBER_COST_DEEP_ANTENNA", "built_prop": "deep_antenna_built",
+		"cost_const": "SHIP_COST_TRADE_AMPLIFIER", "built_prop": "trade_amplifier_built",
 	},
 ]
 
@@ -143,11 +143,11 @@ func _build_chambers_panel() -> void:
 	_panel_border(px, py)
 	_panel_body(px, py)
 
-	var title := _label("Station Modules", px, py + 12, PANEL_W, 30, 20)
+	var title := _label("Spaceship Upgrades", px, py + 12, PANEL_W, 30, 20)
 	title.modulate = Color(1.0, 0.80, 0.35)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	var sub := _label("Permanent station modules — built once, kept forever.", px, py + 48, PANEL_W, 22)
+	var sub := _label("Permanent ship upgrades — built once, kept forever.", px, py + 48, PANEL_W, 22)
 	sub.modulate = Color(0.70, 0.65, 0.55)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
@@ -159,10 +159,10 @@ func _build_chambers_panel() -> void:
 	var bx := px + 20
 	var by := py + 92
 
-	for chamber in CHAMBERS:
-		var btn := _button(bx, by, BTN_W, BTN_H, "", _on_chamber_pressed.bind(chamber["key"]))
+	for upgrade in SHIP_UPGRADES:
+		var btn := _button(bx, by, BTN_W, BTN_H, "", _on_chamber_pressed.bind(upgrade["key"]))
 		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		_chamber_buttons[chamber["key"]] = btn
+		_chamber_buttons[upgrade["key"]] = btn
 		by += BTN_GAP
 
 	_divider(px, py + PANEL_H - 64)
@@ -373,46 +373,46 @@ func _on_gem_sense_pressed() -> void:
 # ── Colony Chambers ───────────────────────────────────────────────────────────
 func _is_chamber_unlocked(key: String) -> bool:
 	match key:
-		"fungus_garden": return GameManager.total_minerals_banked >= 500
-		"brood_chamber": return GameManager.bosses_defeated_total >= 1
-		"armory":        return GameManager.total_minerals_banked >= 1000
-		"nursery_vault": return GameManager.total_fossils >= 10
-		"deep_antenna":  return GameManager.deepest_row_reached >= 96
+		"warp_drive":      return GameManager.total_minerals_banked >= 500
+		"cargo_bay":       return GameManager.bosses_defeated_total >= 1
+		"long_scanner":    return GameManager.total_minerals_banked >= 1000
+		"gem_refinery":    return GameManager.total_fossils >= 10
+		"trade_amplifier": return GameManager.deepest_row_reached >= 96
 	return false
 
 
 func _refresh_chamber_panel() -> void:
-	for chamber in CHAMBERS:
-		var btn: Button = _chamber_buttons.get(chamber["key"])
+	for upgrade in SHIP_UPGRADES:
+		var btn: Button = _chamber_buttons.get(upgrade["key"])
 		if not btn:
 			continue
-		var built: bool    = GameManager.get(chamber["built_prop"])
-		var cost_val: int  = GameManager.get(chamber["cost_const"])
-		var unlocked: bool = _is_chamber_unlocked(chamber["key"])
+		var built: bool    = GameManager.get(upgrade["built_prop"])
+		var cost_val: int  = GameManager.get(upgrade["cost_const"])
+		var unlocked: bool = _is_chamber_unlocked(upgrade["key"])
 
 		btn.disabled = built or not unlocked or GameManager.dollars < cost_val
 
 		if built:
-			btn.text = "[BUILT]  %s\n%s" % [chamber["name"], chamber["effect"]]
+			btn.text = "[INSTALLED]  %s\n%s" % [upgrade["name"], upgrade["effect"]]
 		elif not unlocked:
-			btn.text = "[LOCKED]  %s\n%s\n%s" % [chamber["name"], chamber["effect"], chamber["unlock_label"]]
+			btn.text = "[LOCKED]  %s\n%s\n%s" % [upgrade["name"], upgrade["effect"], upgrade["unlock_label"]]
 		else:
-			btn.text = "Build %s  —  %s\nCost: $%d" % [chamber["name"], chamber["effect"], cost_val]
+			btn.text = "Install %s  —  %s\nCost: $%d" % [upgrade["name"], upgrade["effect"], cost_val]
 
 
 func _on_chamber_pressed(key: String) -> void:
-	for chamber in CHAMBERS:
-		if chamber["key"] != key:
+	for upgrade in SHIP_UPGRADES:
+		if upgrade["key"] != key:
 			continue
-		var built: bool   = GameManager.get(chamber["built_prop"])
-		var cost_val: int = GameManager.get(chamber["cost_const"])
+		var built: bool   = GameManager.get(upgrade["built_prop"])
+		var cost_val: int = GameManager.get(upgrade["cost_const"])
 		if built or not _is_chamber_unlocked(key) or GameManager.dollars < cost_val:
 			return
 		GameManager.dollars -= cost_val
 		EventBus.dollars_changed.emit(GameManager.dollars)
-		GameManager.set(chamber["built_prop"], true)
+		GameManager.set(upgrade["built_prop"], true)
 		GameManager.save_game()
-		_set_status("%s constructed!" % chamber["name"])
+		_set_status("%s installed!" % upgrade["name"])
 		_refresh_chamber_panel()
 		_update_ui()
 		break

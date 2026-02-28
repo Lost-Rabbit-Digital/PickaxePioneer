@@ -216,7 +216,7 @@ func _on_minerals_changed(_amount: int) -> void:
 	var ore_count := 0
 	for count in GameManager.run_ore_counts.values():
 		ore_count += count
-	scrap_label.text = "Capacity: %d/%d" % [ore_count, GameManager.MAX_ORE_CAPACITY]
+	scrap_label.text = "Capacity: %d/%d" % [ore_count, GameManager.get_ore_capacity()]
 
 func _on_dollars_changed(amount: int) -> void:
 	dollars_label.text = "$%d" % amount

@@ -15,8 +15,8 @@ var dollars: int = 0  # Persistent currency earned by selling bars at the smelte
 var run_ore_counts: Dictionary = {}
 var run_ore_earnings: Dictionary = {}
 
-# Maximum number of ore pieces the player can carry per run
-const MAX_ORE_CAPACITY: int = 50
+# Base ore capacity per run (can be expanded by Cargo Bay spaceship upgrade)
+const BASE_ORE_CAPACITY: int = 50
 var last_overworld_node_name: String = ""
 
 # Ores allowed to spawn in the current level instance (set from MapNode.ore_types).
@@ -53,13 +53,13 @@ var legs_gem_socketed: bool = false          # +25 max energy, +15 move speed
 var mandibles_gem_socketed: bool = false     # +4 mining power
 var sense_gem_socketed: bool = false         # +3 sonar ping radius
 
-# Colony Chamber system — buildable rooms unlocked by milestone conditions
-# Unlock conditions are checked at runtime; build costs are spent from mineral_currency.
-const CHAMBER_COST_FUNGUS_GARDEN: int   = 200   # unlocks when total_minerals_banked >= 500
-const CHAMBER_COST_BROOD_CHAMBER: int   = 150   # unlocks when bosses_defeated_total >= 1
-const CHAMBER_COST_ARMORY: int          = 300   # unlocks when total_minerals_banked >= 1000
-const CHAMBER_COST_NURSERY_VAULT: int   = 250   # unlocks when total_fossils >= 10
-const CHAMBER_COST_DEEP_ANTENNA: int    = 200   # unlocks when deepest_row_reached >= 96
+# Spaceship Upgrade system — permanent ship upgrades unlocked by milestone conditions.
+# Unlock conditions are checked at runtime; build costs are spent from dollars.
+const SHIP_COST_WARP_DRIVE: int       = 200   # unlocks when total_minerals_banked >= 500
+const SHIP_COST_CARGO_BAY: int        = 150   # unlocks when bosses_defeated_total >= 1
+const SHIP_COST_LONG_SCANNER: int     = 300   # unlocks when total_minerals_banked >= 1000
+const SHIP_COST_GEM_REFINERY: int     = 250   # unlocks when total_fossils >= 10
+const SHIP_COST_TRADE_AMPLIFIER: int  = 200   # unlocks when deepest_row_reached >= 96
 
 # Cumulative milestone trackers (persisted to save)
 var total_minerals_banked: int = 0       # sum of all currency ever banked
@@ -67,12 +67,12 @@ var bosses_defeated_total: int = 0       # total boss encounters won
 var total_fossils: int = 0               # total fossils found across all runs
 var deepest_row_reached: int = 0         # deepest grid row ever reached
 
-# Chamber built flags (persisted to save)
-var fungus_garden_built: bool = false    # +10% mineral yield from all tiles
-var brood_chamber_built: bool = false    # scout cat carry cap +20
-var armory_built: bool = false           # explosive radius +1
-var nursery_vault_built: bool = false    # fossil find rate +5% base
-var deep_antenna_built: bool = false     # sonar radius +3
+# Spaceship upgrade built flags (persisted to save)
+var warp_drive_built: bool = false       # 2x caravan travel speed on overworld
+var cargo_bay_built: bool = false        # +25 ore carrying capacity per run
+var long_scanner_built: bool = false     # always show both asteroid mines on overworld
+var gem_refinery_built: bool = false     # +1 bonus gem per gem ore mined
+var trade_amplifier_built: bool = false  # +25% dollar payout when selling bars
 
 const SAVE_PATH = "user://save_data.json"
 
@@ -175,24 +175,23 @@ func upgrade_mineral_sense() -> void:
 	print("Mineral Sense upgraded to level ", mineral_sense_level)
 
 func get_sonar_ping_radius() -> float:
-	return 4.0 + mineral_sense_level * 3.0 + (3.0 if sense_gem_socketed else 0.0) \
-		+ (3.0 if deep_antenna_built else 0.0)
+	return 4.0 + mineral_sense_level * 3.0 + (3.0 if sense_gem_socketed else 0.0)
 
-## Multiplier applied to all mined tile mineral yields (Fungus Garden chamber).
-func get_mineral_yield_mult() -> float:
-	return 1.10 if fungus_garden_built else 1.0
+## Ore carrying capacity per run (boosted by Cargo Bay upgrade).
+func get_ore_capacity() -> int:
+	return BASE_ORE_CAPACITY + (25 if cargo_bay_built else 0)
 
-## Bonus carry capacity added to the Scout Cat (Kitten Den).
-func get_forager_carry_bonus() -> int:
-	return 20 if brood_chamber_built else 0
+## Caravan travel speed multiplier on the overworld (boosted by Warp Drive).
+func get_ship_speed_mult() -> float:
+	return 2.0 if warp_drive_built else 1.0
 
-## Extra tiles added to each side of the explosive blast radius (Armory).
-func get_explosive_radius_bonus() -> int:
-	return 1 if armory_built else 0
+## Bonus gems awarded per gem ore mined (boosted by Gem Refinery).
+func get_gem_mine_bonus() -> int:
+	return 1 if gem_refinery_built else 0
 
-## Extra base fossil find rate per eligible tile mined (Nursery Vault).
-func get_fossil_rate_bonus() -> float:
-	return 0.05 if nursery_vault_built else 0.0
+## Dollar sell multiplier for smeltery bars (boosted by Trade Amplifier).
+func get_dollar_sell_mult() -> float:
+	return 1.25 if trade_amplifier_built else 1.0
 
 func get_sonar_ping_energy_cost() -> int:
 	return maxi(3, 10 - mineral_sense_level * 2)
@@ -250,11 +249,11 @@ func save_game() -> void:
 		"bosses_defeated_total": bosses_defeated_total,
 		"total_fossils": total_fossils,
 		"deepest_row_reached": deepest_row_reached,
-		"fungus_garden_built": fungus_garden_built,
-		"brood_chamber_built": brood_chamber_built,
-		"armory_built": armory_built,
-		"nursery_vault_built": nursery_vault_built,
-		"deep_antenna_built": deep_antenna_built,
+		"warp_drive_built": warp_drive_built,
+		"cargo_bay_built": cargo_bay_built,
+		"long_scanner_built": long_scanner_built,
+		"gem_refinery_built": gem_refinery_built,
+		"trade_amplifier_built": trade_amplifier_built,
 	}
 	
 	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -296,11 +295,11 @@ func load_game() -> void:
 			bosses_defeated_total = data.get("bosses_defeated_total", 0)
 			total_fossils = data.get("total_fossils", 0)
 			deepest_row_reached = data.get("deepest_row_reached", 0)
-			fungus_garden_built = data.get("fungus_garden_built", false)
-			brood_chamber_built = data.get("brood_chamber_built", false)
-			armory_built = data.get("armory_built", false)
-			nursery_vault_built = data.get("nursery_vault_built", false)
-			deep_antenna_built = data.get("deep_antenna_built", false)
+			warp_drive_built = data.get("warp_drive_built", false)
+			cargo_bay_built = data.get("cargo_bay_built", false)
+			long_scanner_built = data.get("long_scanner_built", false)
+			gem_refinery_built = data.get("gem_refinery_built", false)
+			trade_amplifier_built = data.get("trade_amplifier_built", false)
 			print("Game loaded")
 		else:
 			print("Failed to parse save file")

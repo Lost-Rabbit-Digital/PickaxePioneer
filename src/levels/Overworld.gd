@@ -113,8 +113,8 @@ func _ready() -> void:
 	queue_redraw()
 
 func _randomize_mines() -> void:
-	# Randomly decide how many mines to show (1-2 mines)
-	var mine_count = randi_range(1, 2)
+	# Long-Range Scanner upgrade guarantees both mines are always visible.
+	var mine_count = 2 if GameManager.long_scanner_built else randi_range(1, 2)
 
 	# Get random mine names
 	var available_names = mine_names.duplicate()
