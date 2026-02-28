@@ -45,6 +45,10 @@ const FALL_DAMAGE_THRESHOLD: int = 3 * CELL_SIZE  # 3 tiles in pixels (192px)
 # Facing direction
 var _facing_left: bool = true
 
+# Idle to sleep transition
+var _idle_timer: float = 0.0
+const IDLE_TO_SLEEP_TIME: float = 5.0  # Seconds before transitioning to sleep
+
 # Sprint — hold Shift for 1.5× speed, costs extra energy
 const SPRINT_MULT: float = 1.5
 const SPRINT_ENERGY_RATE: float = 4.0     # Energy units consumed per second while sprinting
@@ -152,21 +156,30 @@ func _physics_process(delta: float) -> void:
 	_handle_mining(delta)
 
 	# Update animation based on current state
-	_update_animation()
+	_update_animation(delta)
 
-func _update_animation() -> void:
+func _update_animation(delta: float) -> void:
 	var anim: StringName
 
 	if _mining and is_on_floor():
 		anim = &"paw"
+		_idle_timer = 0.0
 	elif _gripping_ladder or _descending_ladder:
 		anim = &"movement"
+		_idle_timer = 0.0
 	elif not is_on_floor():
 		anim = &"jump"
+		_idle_timer = 0.0
 	elif abs(velocity.x) > 0.1:
 		anim = &"movement"
+		_idle_timer = 0.0
 	else:
-		anim = &"idle"
+		# Player is idle - track idle time
+		_idle_timer += delta
+		if _idle_timer >= IDLE_TO_SLEEP_TIME:
+			anim = &"sleep"
+		else:
+			anim = &"idle"
 
 	if sprite.animation != anim:
 		sprite.play(anim)
