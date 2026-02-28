@@ -140,7 +140,7 @@ func draw_to(
 
 	# Ancient One: phase label
 	if _boss.boss_type == BossSystem.BOSS_TYPE_ANCIENT:
-		var labels := ["SHELL PHASE", "CRYSTAL PHASE", "CORE PHASE"]
+		var labels: Array[String] = ["SHELL PHASE", "CRYSTAL PHASE", "CORE PHASE"]
 		var al := labels[clampi(_boss.ancient_phase, 0, labels.size() - 1)]
 		var label_px2 := _find_core_label_px(Vector2(-44.0, -22.0))
 		if label_px2.x > -9000.0:
