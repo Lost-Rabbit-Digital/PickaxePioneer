@@ -563,7 +563,7 @@ scale = Vector2(2.75, 2.75)
 sprite_frames = SubResource("SpriteFrames_aol7p")
 frame = 16
 offset = Vector2(3.55, -1.72)
-flip_h = true
+flip_h = false
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 texture_filter = 1
@@ -573,6 +573,7 @@ animation = &"jump"
 frame = 6
 frame_progress = 0.29225284
 offset = Vector2(0, -8)
+flip_h = true
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("2_health")
