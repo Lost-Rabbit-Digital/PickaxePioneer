@@ -55,6 +55,9 @@ func _play_next() -> void:
 	_crossfade_to(_tracks[_order[_index]])
 
 func _crossfade_to(stream: AudioStream) -> void:
+	var track_name := stream.resource_path.get_file().get_basename()
+	print("[MusicManager] Now playing: ", track_name)
+
 	var new_player := AudioStreamPlayer.new()
 	new_player.stream = stream
 	new_player.bus = &"Music"
