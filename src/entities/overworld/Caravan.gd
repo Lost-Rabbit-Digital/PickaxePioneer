@@ -6,6 +6,9 @@ extends Node2D
 @export var base_speed: float = 200.0
 @export var wiggle_amplitude: float = 3.0
 @export var wiggle_frequency: float = 4.0
+@export var orbit_radius: float = 30.0
+@export var orbit_speed: float = 0.15
+@export var orbit_scale: float = 0.5
 
 @onready var sprite: Sprite2D = $Sprite2D
 
@@ -15,6 +18,7 @@ var target_position: Vector2
 var is_moving: bool = false
 var movement_tween: Tween
 var _wiggle_time: float = 0.0
+var _orbit_time: float = 0.0
 var _travel_direction: Vector2 = Vector2.ZERO
 var _waypoints_remaining: Array[Vector2] = []
 
@@ -25,14 +29,18 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if is_moving:
+		sprite.scale = Vector2.ONE
 		_wiggle_time += delta
+		_orbit_time = 0.0
 		# Perpendicular wiggle: offset the sprite along the normal of the travel direction
 		var perp := Vector2(-_travel_direction.y, _travel_direction.x)
 		sprite.position = perp * sin(_wiggle_time * wiggle_frequency * TAU) * wiggle_amplitude
 	else:
-		# Smoothly settle the sprite back to center
-		sprite.position = sprite.position.lerp(Vector2.ZERO, 0.2)
 		_wiggle_time = 0.0
+		_orbit_time += delta
+		# Half size and orbit slowly around the node
+		sprite.scale = Vector2(orbit_scale, orbit_scale)
+		sprite.position = Vector2(cos(_orbit_time * orbit_speed * TAU), sin(_orbit_time * orbit_speed * TAU)) * orbit_radius
 
 func move_to(pos: Vector2) -> void:
 	move_along_path([pos])
@@ -107,4 +115,5 @@ func teleport_to(pos: Vector2) -> void:
 	target_position = pos
 	is_moving = false
 	_waypoints_remaining.clear()
+	_orbit_time = 0.0
 	sprite.position = Vector2.ZERO
