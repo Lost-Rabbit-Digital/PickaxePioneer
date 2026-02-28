@@ -18,6 +18,10 @@ var _popup_mode: String = ""  # "new_game" or "continue"
 var _slot_buttons: Array = []
 var _delete_buttons: Array = []
 
+# Confirmation dialog for overwriting saves
+var _confirm_dialog: Control = null
+var _pending_slot_index: int = -1
+
 func _ready() -> void:
 	$VBoxContainer/NewGameButton.pressed.connect(_on_new_game_pressed)
 	$VBoxContainer/ContinueButton.pressed.connect(_on_continue_pressed)
@@ -47,6 +51,7 @@ func _ready() -> void:
 	$VBoxContainer/ContinueButton.visible = SaveManager.has_any_save()
 
 	_build_save_popup()
+	_build_confirm_dialog()
 
 # ---------------------------------------------------------------------------
 # Menu buttons
@@ -257,10 +262,19 @@ func _refresh_popup() -> void:
 			del_btn.visible = true
 
 func _on_slot_selected(index: int) -> void:
-	_save_popup.hide()
 	if _popup_mode == "new_game":
+		# Check if slot has existing data
+		var slot_data = SaveManager.get_slot(index)
+		if slot_data != null:
+			# Slot has existing data, show confirmation dialog
+			_pending_slot_index = index
+			_show_confirm_dialog(index)
+			return
+		# Slot is empty, proceed with new game
+		_save_popup.hide()
 		SaveManager.new_game(index)
 	else:
+		_save_popup.hide()
 		SaveManager.load_slot(index)
 	GameManager.start_game()
 
@@ -272,3 +286,105 @@ func _on_slot_delete(index: int) -> void:
 
 func _on_popup_close() -> void:
 	_save_popup.hide()
+
+# ---------------------------------------------------------------------------
+# Confirmation Dialog — for overwriting existing saves
+# ---------------------------------------------------------------------------
+
+const CONFIRM_DIALOG_W := 440.0
+const CONFIRM_DIALOG_H := 240.0
+
+func _build_confirm_dialog() -> void:
+	# Full-screen dimmer + click blocker
+	_confirm_dialog = Control.new()
+	_confirm_dialog.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_confirm_dialog.mouse_filter = Control.MOUSE_FILTER_STOP
+	_confirm_dialog.hide()
+	add_child(_confirm_dialog)
+
+	var dimmer := ColorRect.new()
+	dimmer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dimmer.color = Color(0, 0, 0, 0.7)
+	_confirm_dialog.add_child(dimmer)
+
+	# Panel background with border
+	var px := (1280.0 - CONFIRM_DIALOG_W) / 2.0
+	var py := (720.0 - CONFIRM_DIALOG_H) / 2.0
+
+	var border := ColorRect.new()
+	border.position = Vector2(px - 2, py - 2)
+	border.size = Vector2(CONFIRM_DIALOG_W + 4, CONFIRM_DIALOG_H + 4)
+	border.color = Color(0.8, 0.4, 0.2, 0.85)
+	_confirm_dialog.add_child(border)
+
+	var bg := ColorRect.new()
+	bg.position = Vector2(px, py)
+	bg.size = Vector2(CONFIRM_DIALOG_W, CONFIRM_DIALOG_H)
+	bg.color = Color(0.07, 0.06, 0.05, 0.97)
+	_confirm_dialog.add_child(bg)
+
+	# Title label
+	var title := Label.new()
+	title.name = "ConfirmTitle"
+	title.position = Vector2(px, py + 15)
+	title.size = Vector2(CONFIRM_DIALOG_W, 32)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.3))
+	title.text = "OVERWRITE SAVE?"
+	_confirm_dialog.add_child(title)
+
+	# Message label
+	var message := Label.new()
+	message.name = "ConfirmMessage"
+	message.position = Vector2(px + 20, py + 60)
+	message.size = Vector2(CONFIRM_DIALOG_W - 40, 80)
+	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	message.add_theme_font_size_override("font_size", 14)
+	message.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+	message.autowrap_mode = TextServer.AUTOWRAP_WORD
+	message.text = "This save slot already contains data.\nAre you sure you want to overwrite it with a new game?"
+	_confirm_dialog.add_child(message)
+
+	# Button container
+	var button_container := HBoxContainer.new()
+	button_container.position = Vector2(px, py + CONFIRM_DIALOG_H - 50)
+	button_container.size = Vector2(CONFIRM_DIALOG_W, 40)
+	button_container.add_theme_constant_override("separation", 10)
+	button_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	_confirm_dialog.add_child(button_container)
+
+	# Cancel button
+	var cancel_btn := Button.new()
+	cancel_btn.text = "CANCEL"
+	cancel_btn.size = Vector2(120, 38)
+	cancel_btn.add_theme_font_size_override("font_size", 16)
+	cancel_btn.pressed.connect(_on_confirm_cancel)
+	button_container.add_child(cancel_btn)
+
+	# Confirm button
+	var confirm_btn := Button.new()
+	confirm_btn.text = "OVERWRITE"
+	confirm_btn.size = Vector2(120, 38)
+	confirm_btn.add_theme_font_size_override("font_size", 16)
+	confirm_btn.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
+	confirm_btn.pressed.connect(_on_confirm_overwrite)
+	button_container.add_child(confirm_btn)
+
+func _show_confirm_dialog(slot_index: int) -> void:
+	_pending_slot_index = slot_index
+	_confirm_dialog.show()
+
+func _on_confirm_cancel() -> void:
+	_confirm_dialog.hide()
+	_pending_slot_index = -1
+
+func _on_confirm_overwrite() -> void:
+	_confirm_dialog.hide()
+	_save_popup.hide()
+	if _pending_slot_index >= 0:
+		SaveManager.new_game(_pending_slot_index)
+		GameManager.start_game()
+	_pending_slot_index = -1
