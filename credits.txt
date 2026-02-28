@@ -1,16 +1,17 @@
 https://opengameart.org/content/mining-platformer
-https://opengameart.org/content/16x16-block-texture-set
 https://opengameart.org/content/16x16-ant-enemies
 https://opengameart.org/content/16-x-16-monster-items
-https://opengameart.org/content/16x16-rpg-items-db32
 https://opengameart.org/content/16x16-swords-weird
 
-https://lospec.com/palette-list/comfy52
 
-https://opengameart.org/content/crickets-general-calm-ambient-music
 
 https://uselesspursuit.itch.io/celestial-objects-pixel-art-pack
-https://elthen.itch.io/2d-pixel-art-cat-sprites
 https://elthen.itch.io/2d-pixel-art-bumble-bee-sprites
 
+Using:
 https://pixelsbyskab.itch.io/spaceships
+https://opengameart.org/content/16x16-rpg-items-db32
+https://elthen.itch.io/2d-pixel-art-cat-sprites
+https://lospec.com/palette-list/comfy52
+https://opengameart.org/content/crickets-general-calm-ambient-music
+https://opengameart.org/content/16x16-block-texture-set
