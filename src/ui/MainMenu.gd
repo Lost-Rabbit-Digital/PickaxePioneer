@@ -24,7 +24,7 @@ func _ready() -> void:
 	$VBoxContainer/WishlistButton.pressed.connect(_on_wishlist_pressed)
 	$VBoxContainer/QuitButton.pressed.connect(_on_quit_pressed)
 	$SettingsPanel/VBox/CloseButton.pressed.connect(_on_settings_close_pressed)
-	$CreditsButton.pressed.connect(_on_credits_pressed)
+	$VBoxContainer/CreditsButton.pressed.connect(_on_credits_pressed)
 	$CreditsPanel/VBox/CloseButton.pressed.connect(_on_credits_close_pressed)
 
 	master_slider.value_changed.connect(_on_master_changed)
