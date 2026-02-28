@@ -68,6 +68,11 @@ func _on_settings_pressed() -> void:
 func _on_wishlist_pressed() -> void:
 	OS.shell_open(WISHLIST_URL)
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel") and settings_panel.visible:
+		_on_settings_close_pressed()
+		accept_event()
+
 func _on_settings_close_pressed() -> void:
 	SettingsManager.save_settings()
 	settings_panel.hide()
