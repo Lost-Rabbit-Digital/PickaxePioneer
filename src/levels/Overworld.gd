@@ -57,10 +57,6 @@ var mine_metadata: Dictionary = {
 }
 
 func _ready() -> void:
-	# Start overworld music
-	var music = load("res://assets/music/crickets.mp3")
-	MusicManager.play_music(music)
-
 	# Randomize mine nodes
 	_randomize_mines()
 

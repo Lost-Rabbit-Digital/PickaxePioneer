@@ -68,8 +68,6 @@ var _chamber_buttons: Dictionary = {}
 
 func _ready() -> void:
 	GameManager.bank_currency()
-	var music := load("res://assets/music/crickets.mp3") as AudioStream
-	MusicManager.play_music(music)
 	_build_ui()
 
 
