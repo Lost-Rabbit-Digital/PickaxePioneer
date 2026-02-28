@@ -359,6 +359,8 @@ var _cursor_grid_pos: Vector2i = Vector2i(-1, -1)
 # Ladder ghost preview — shown when slot 1 (ladder) is selected
 var _ladder_ghost_pos: Vector2i = Vector2i(-1, -1)
 var _ladder_ghost_valid: bool = false
+# Tracks the last tile where a ladder placement was attempted (for continuous placement)
+var _last_ladder_attempt_pos: Vector2i = Vector2i(-2, -2)
 
 # Sonar ping subsystem (§3.2) — logic lives in SonarSystem.gd
 var sonar_system: SonarSystem = SonarSystem.new()
@@ -898,6 +900,13 @@ func _process(delta: float) -> void:
 	# Gravity tile falling (gravel etc. drop when unsupported)
 	_process_gravity(delta)
 
+	# Continuous ladder placement — keep placing while left mouse is held and cursor moves
+	if GameManager.selected_hotbar_slot == 1 \
+			and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) \
+			and _ladder_ghost_pos != _last_ladder_attempt_pos:
+		_try_place_ladder_at(_ladder_ghost_pos)
+		_last_ladder_attempt_pos = _ladder_ghost_pos
+
 	# Update sonar ping wave (§3.2) — delegated to SonarSystem
 	sonar_system.update(delta, 2.0 if _ancient_map_active[0] else 1.0)
 
@@ -1035,12 +1044,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("sonar_ping"):
 		if player_node:
 			sonar_system.try_ping(player_node.get_grid_pos())
-	# Right-click — place a ladder at the cursor when the ladder slot is active
+	# Left-click — place a ladder at the cursor when the ladder slot is active
 	if event is InputEventMouseButton and event.pressed \
-			and event.button_index == MOUSE_BUTTON_RIGHT:
+			and event.button_index == MOUSE_BUTTON_LEFT:
 		if GameManager.selected_hotbar_slot == 1:
 			_try_place_ladder_at(_ladder_ghost_pos)
-		return
+			_last_ladder_attempt_pos = _ladder_ghost_pos
+			return
 	# F key — also places a ladder at the cursor position (legacy binding)
 	if event is InputEventKey and event.pressed and not event.echo \
 			and event.keycode == KEY_F:
