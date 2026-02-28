@@ -922,8 +922,8 @@ func _process(delta: float) -> void:
 
 	# Emit lava embers for visible lava tiles (atmospheric effect)
 	if camera and not _game_over:
-		var vc_x := clamp(camera.position.x, VIEWPORT_W * 0.5, GRID_COLS * CELL_SIZE - VIEWPORT_W * 0.5)
-		var vc_y := clamp(camera.position.y, VIEWPORT_H * 0.5, GRID_ROWS * CELL_SIZE - VIEWPORT_H * 0.5)
+		var vc_x: float = clamp(camera.position.x, VIEWPORT_W * 0.5, GRID_COLS * CELL_SIZE - VIEWPORT_W * 0.5)
+		var vc_y: float = clamp(camera.position.y, VIEWPORT_H * 0.5, GRID_ROWS * CELL_SIZE - VIEWPORT_H * 0.5)
 		var em_col_min := maxi(0, int((vc_x - VIEWPORT_W * 0.5) / CELL_SIZE))
 		var em_col_max := mini(GRID_COLS - 1, int((vc_x + VIEWPORT_W * 0.5) / CELL_SIZE))
 		var em_row_min := maxi(0, int((vc_y - VIEWPORT_H * 0.5) / CELL_SIZE))
@@ -1189,7 +1189,7 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 			_check_streak_milestone()
 		# Particle burst on tile destruction
 		var tile_world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
-		var burst_color := TILE_COLORS.get(tile, Color(0.7, 0.6, 0.4))
+		var burst_color: Color = TILE_COLORS.get(tile, Color(0.7, 0.6, 0.4))
 		var burst_count := 14 if tile in ORE_TILES else 8
 		if tile == TileType.BOSS_SEGMENT or tile == TileType.BOSS_CORE:
 			burst_count = 20
