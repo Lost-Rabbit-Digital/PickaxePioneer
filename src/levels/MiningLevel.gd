@@ -389,7 +389,7 @@ var _settlement_mandible_bonus: int = 0
 var _hazard_cooldown: float = 0.0
 const HAZARD_COOLDOWN_TIME: float = 1.0
 
-@onready var player_node: PlayerProbe = $PlayerProbe
+@onready var player_node := $PlayerProbe as PlayerProbe
 @onready var pause_menu = $PauseMenu
 
 var _inventory_screen: InventoryScreen = null
