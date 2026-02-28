@@ -28,6 +28,10 @@ var mining_level: Node = null
 
 # Whether the player is currently touching a ladder tile (set by MiningLevel each frame)
 var on_ladder: bool = false
+# True when the player is actively gripping the ladder (W or Up held — not Space)
+var _gripping_ladder: bool = false
+# True when the player is descending a ladder (S or Down held)
+var _descending_ladder: bool = false
 
 @onready var health_component: HealthComponent = $HealthComponent
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
@@ -54,9 +58,15 @@ func _physics_process(delta: float) -> void:
 	if not mining_level or mining_level._game_over or mining_level.any_ui_open():
 		return
 
-	# Gravity — reduced when on a ladder
-	if on_ladder:
-		velocity.y = 0.0   # gravity suppressed while gripping ladder
+	# Grip/climb: W or Up held.  Descend: S or Down held.  Neither: freefall.
+	_gripping_ladder   = on_ladder and (Input.is_key_pressed(KEY_W)   or Input.is_key_pressed(KEY_UP))
+	_descending_ladder = on_ladder and (Input.is_key_pressed(KEY_S)   or Input.is_key_pressed(KEY_DOWN))
+
+	# Gravity — suppressed when actively using the ladder; otherwise normal physics
+	if _gripping_ladder:
+		velocity.y = -LADDER_CLIMB_SPEED  # Climb up
+	elif _descending_ladder:
+		velocity.y = LADDER_CLIMB_SPEED   # Controlled descent
 	elif not is_on_floor():
 		velocity.y += gravity * delta
 	else:
@@ -89,16 +99,12 @@ func _physics_process(delta: float) -> void:
 		_facing_left = false
 		sprite.flip_h = true
 
-	# Jump from floor OR climb ladder upward with jump/up key
+	# Jump from floor — any key (Space/W/Up); or launch off a gripped ladder with Space.
 	if Input.is_action_just_pressed("jump"):
 		if is_on_floor():
 			velocity.y = jump_velocity
-		elif on_ladder:
-			velocity.y = -LADDER_CLIMB_SPEED
-
-	# Sustained upward movement while holding jump on a ladder
-	if on_ladder and Input.is_action_pressed("jump"):
-		velocity.y = -LADDER_CLIMB_SPEED
+		elif _gripping_ladder and Input.is_key_pressed(KEY_SPACE):
+			velocity.y = jump_velocity  # Space launches the player off the ladder
 
 	move_and_slide()
 
@@ -116,7 +122,7 @@ func _update_animation() -> void:
 
 	if _mining and is_on_floor():
 		anim = &"paw"
-	elif on_ladder:
+	elif _gripping_ladder or _descending_ladder:
 		anim = &"movement"
 	elif not is_on_floor():
 		anim = &"jump"

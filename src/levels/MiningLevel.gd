@@ -1729,7 +1729,7 @@ func _setup_inventory_screen() -> void:
 func _queue_boss_hints(hints: Array) -> void:
 	for hint in hints:
 		await get_tree().create_timer(2.0).timeout
-		EventBus.ore_mined_popup.emit(0, hint)
+		EventBus.boss_hint_popup.emit(hint)
 
 
 # ---------------------------------------------------------------------------
@@ -1771,5 +1771,6 @@ func _try_place_ladder() -> void:
 	grid[gp.x][gp.y] = TileType.LADDER
 	GameManager.ladder_count -= 1
 	GameManager.save_game()
+	EventBus.ladder_count_changed.emit(GameManager.ladder_count)
 	EventBus.ore_mined_popup.emit(0, "Ladder placed!  (%d remaining)" % GameManager.ladder_count)
 	queue_redraw()

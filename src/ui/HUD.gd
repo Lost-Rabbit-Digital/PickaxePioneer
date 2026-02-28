@@ -34,6 +34,18 @@ var dollars_label: Label
 var dollars_panel: ColorRect
 var _earnings_tween: Tween
 
+# Ladder count indicator — upper-left, visible when player has ladders (F to place)
+var _ladder_panel: ColorRect
+var _ladder_label: Label
+
+# Boss hint notification — bottom-centre, larger and persistent, with a queue
+# so rapid hints (spawn warning + queued hints) don't overwrite each other.
+var _boss_hint_label: Label
+var _boss_hint_panel: ColorRect
+var _boss_hint_tween: Tween
+var _boss_hint_queue: Array[String] = []
+var _boss_hint_showing: bool = false
+
 # Low energy warning
 var _low_energy_warning: Label
 var _low_energy_tween: Tween
@@ -102,6 +114,8 @@ func _ready() -> void:
 	EventBus.player_health_changed.connect(_on_health_changed)
 	EventBus.energy_changed.connect(_on_energy_changed)
 	EventBus.ore_mined_popup.connect(_on_ore_mined_popup)
+	EventBus.boss_hint_popup.connect(_on_boss_hint_popup)
+	EventBus.ladder_count_changed.connect(_on_ladder_count_changed)
 	EventBus.depth_changed.connect(_on_depth_changed)
 	EventBus.dollars_changed.connect(_on_dollars_changed)
 
@@ -128,6 +142,7 @@ func _ready() -> void:
 	earnings_label.position = Vector2(16, 46)
 	earnings_label.custom_minimum_size = Vector2(220, 22)
 	earnings_label.modulate = Color(1.0, 0.88, 0.2, 0.0)  # Gold, starts invisible
+	earnings_label.add_theme_font_size_override("font_size", 14)
 	$Control.add_child(earnings_label)
 
 	# Background panel behind the depth meter label
@@ -161,6 +176,43 @@ func _ready() -> void:
 	dollars_label.text = "$%d" % GameManager.dollars
 	dollars_label.modulate = Color(0.30, 1.0, 0.40, 1.0)  # Green tint
 	$Control.add_child(dollars_label)
+
+	# Ladder count indicator — shown below dollars when the player has ladders.
+	# Keeps the player aware of their inventory without cluttering the screen.
+	_ladder_panel = ColorRect.new()
+	_ladder_panel.color = Color(0.0, 0.0, 0.0, 0.45)
+	_ladder_panel.position = Vector2(8, 136)
+	_ladder_panel.size = Vector2(148, 28)
+	_ladder_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$Control.add_child(_ladder_panel)
+
+	_ladder_label = Label.new()
+	_ladder_label.position = Vector2(12, 140)
+	_ladder_label.custom_minimum_size = Vector2(136, 20)
+	_ladder_label.modulate = Color(0.85, 0.65, 0.20, 1.0)  # Warm gold tint
+	_ladder_label.add_theme_font_size_override("font_size", 13)
+	$Control.add_child(_ladder_label)
+
+	_update_ladder_display(GameManager.ladder_count)
+
+	# Boss hint panel — bottom-centre, larger and more prominent than ore popups.
+	# Displays boss instructions and attack warnings so they don't compete with
+	# the upper-left mining feedback.
+	_boss_hint_panel = ColorRect.new()
+	_boss_hint_panel.color = Color(0.05, 0.02, 0.14, 0.88)
+	_boss_hint_panel.position = Vector2(240, 550)
+	_boss_hint_panel.size = Vector2(800, 44)
+	_boss_hint_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_boss_hint_panel.modulate.a = 0.0
+	$Control.add_child(_boss_hint_panel)
+
+	_boss_hint_label = Label.new()
+	_boss_hint_label.position = Vector2(244, 554)
+	_boss_hint_label.custom_minimum_size = Vector2(792, 36)
+	_boss_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_hint_label.modulate = Color(1.0, 0.95, 0.80, 0.0)  # Warm white, starts invisible
+	_boss_hint_label.add_theme_font_size_override("font_size", 16)
+	$Control.add_child(_boss_hint_label)
 
 	# Low energy warning — bottom-centre, pulses red when energy <= 20 %
 	_low_energy_warning = Label.new()
@@ -232,7 +284,7 @@ func _on_ore_mined_popup(amount: int, ore_name: String) -> void:
 	if _earnings_tween:
 		_earnings_tween.kill()
 	_earnings_tween = create_tween()
-	_earnings_tween.tween_interval(0.8)
+	_earnings_tween.tween_interval(1.5)
 	_earnings_tween.tween_property(earnings_label, "modulate:a", 0.0, 0.45)
 	_earnings_tween.parallel().tween_property(_pickup_panel, "modulate:a", 0.0, 0.45)
 
@@ -459,3 +511,38 @@ func _show_milestone_banner(text: String) -> void:
 	_milestone_tween.tween_property(_milestone_label, "modulate:a", 1.0, 0.3)
 	_milestone_tween.tween_interval(1.8)
 	_milestone_tween.tween_property(_milestone_label, "modulate:a", 0.0, 0.5)
+
+func _on_ladder_count_changed(count: int) -> void:
+	_update_ladder_display(count)
+
+func _update_ladder_display(count: int) -> void:
+	if count > 0:
+		_ladder_label.text = "Ladders: %d  [F]" % count
+		_ladder_label.modulate.a = 1.0
+		_ladder_panel.modulate.a = 1.0
+	else:
+		_ladder_label.modulate.a = 0.0
+		_ladder_panel.modulate.a = 0.0
+
+# Queues a boss hint and kicks off display if nothing is showing.
+func _on_boss_hint_popup(hint: String) -> void:
+	_boss_hint_queue.append(hint)
+	if not _boss_hint_showing:
+		_show_next_boss_hint()
+
+# Shows one hint from the queue, then chains to the next when done.
+func _show_next_boss_hint() -> void:
+	if _boss_hint_queue.is_empty():
+		_boss_hint_showing = false
+		return
+	_boss_hint_showing = true
+	_boss_hint_label.text = _boss_hint_queue.pop_front()
+	_boss_hint_label.modulate = Color(1.0, 0.95, 0.80, 1.0)
+	_boss_hint_panel.modulate.a = 1.0
+	if _boss_hint_tween:
+		_boss_hint_tween.kill()
+	_boss_hint_tween = create_tween()
+	_boss_hint_tween.tween_interval(3.5)
+	_boss_hint_tween.tween_property(_boss_hint_label, "modulate:a", 0.0, 0.6)
+	_boss_hint_tween.parallel().tween_property(_boss_hint_panel, "modulate:a", 0.0, 0.6)
+	_boss_hint_tween.tween_callback(_show_next_boss_hint)
