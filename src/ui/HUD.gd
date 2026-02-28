@@ -67,15 +67,13 @@ var _low_hp_tween: Tween
 # Hotbar — bottom-centre quick-slot strip (pickaxe, ladder, empty); click opens inventory
 const HOTBAR_SLOT_SIZE: int = 48
 const HOTBAR_SLOT_GAP: int = 4
-const HOTBAR_BLOCK_TEXTURES: Array = [
-	"res://assets/blocks/cobblestone.png",
-	"res://assets/blocks/stone_generic.png",
-	"res://assets/blocks/granite.png",
-	"res://assets/blocks/dirt.png",
-	"res://assets/blocks/sandstone.png",
-	"res://assets/blocks/obsidian.png",
-	"res://assets/blocks/slate.png",
-	"res://assets/blocks/basalt.png",
+const HOTBAR_PICKAXE_TEXTURES: Array = [
+	"res://assets/db32_rpg_items/pickaxe_crusty.png",
+	"res://assets/db32_rpg_items/pickaxe_gold.png",
+	"res://assets/db32_rpg_items/pickaxe_iron.png",
+	"res://assets/db32_rpg_items/pickaxe_platinum.png",
+	"res://assets/db32_rpg_items/pickaxe_silver.png",
+	"res://assets/db32_rpg_items/pickaxe_steel.png"
 ]
 var _hotbar_slots: Array[PanelContainer] = []
 var _hotbar_ladder_icon: Control  # Ladder slot content — shown/hidden based on ladder count
@@ -602,7 +600,7 @@ func _build_hotbar() -> void:
 
 		if i == 0:
 			# Pickaxe tool — random block texture
-			var tex_path: String = HOTBAR_BLOCK_TEXTURES[randi() % HOTBAR_BLOCK_TEXTURES.size()]
+			var tex_path: String = HOTBAR_PICKAXE_TEXTURES[randi() % HOTBAR_PICKAXE_TEXTURES.size()]
 			var tex: Texture2D = load(tex_path) as Texture2D
 			if tex:
 				var icon := TextureRect.new()
