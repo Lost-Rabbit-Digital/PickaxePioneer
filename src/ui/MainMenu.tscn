@@ -229,11 +229,13 @@ grow_horizontal = 0
 grow_vertical = 0
 script = ExtResource("3_ihbld")
 
-[node name="DiscordBackground" type="PanelContainer" parent="SocialButtons"]
+[node name="DiscordButton" type="TextureButton" parent="SocialButtons"]
 layout_mode = 2
-
-[node name="DiscordButton" type="TextureButton" parent="SocialButtons/DiscordBackground"]
-layout_mode = 2
+tooltip_text = "Join our community!"
 texture_normal = ExtResource("4_ihbld")
 
-[connection signal="pressed" from="SocialButtons/DiscordBackground/DiscordButton" to="SocialButtons" method="_on_discord_button_pressed"]
+[node name="DiscordBackground" type="PanelContainer" parent="SocialButtons"]
+visible = false
+layout_mode = 2
+
+[connection signal="pressed" from="SocialButtons/DiscordButton" to="SocialButtons" method="_on_discord_button_pressed"]
