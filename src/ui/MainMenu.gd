@@ -78,6 +78,11 @@ func _on_credits_pressed() -> void:
 func _on_credits_close_pressed() -> void:
 	credits_panel.hide()
 
+func _unhandled_input(event: InputEvent) -> void:
+	if credits_panel.visible and event.is_action_pressed("ui_cancel"):
+		_on_credits_close_pressed()
+		get_viewport().set_input_as_handled()
+
 # ---------------------------------------------------------------------------
 # Volume sliders
 # ---------------------------------------------------------------------------
