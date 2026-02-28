@@ -248,4 +248,88 @@ texture_normal = ExtResource("4_ihbld")
 visible = false
 layout_mode = 2
 
+[node name="CreditsButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -50.0
+offset_right = 50.0
+offset_bottom = -10.0
+grow_horizontal = 1
+grow_vertical = 0
+theme_override_font_sizes/font_size = 24
+tooltip_text = "View credits and attributions."
+text = "?"
+
+[node name="CreditsPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -220.0
+offset_right = 260.0
+offset_bottom = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_1")
+
+[node name="VBox" type="VBoxContainer" parent="CreditsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="CreditsTitle" type="Label" parent="CreditsPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.7, 0.3, 1)
+theme_override_font_sizes/font_size = 28
+text = "CREDITS"
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="CreditsPanel/VBox"]
+custom_minimum_size = Vector2(0, 260)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CreditsContent" type="Label" parent="CreditsPanel/VBox/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 14
+autowrap_mode = 2
+text = "ASSETS & ART
+
+  Bumble Bee Sprites       elthen.itch.io
+  Cat Sprites              elthen.itch.io
+  Celestial Objects        uselesspursuit.itch.io
+  Pixel Art Starfields     space-spheremaps.itch.io
+  Spaceships               pixelsbyskab.itch.io
+  16x16 RPG Items          OpenGameArt.org
+  16x16 Monster Items      OpenGameArt.org
+  16x16 Block Textures     OpenGameArt.org
+  Mining Platformer Art    OpenGameArt.org
+
+COLOUR PALETTE
+
+  Comfy52                  Lospec.com
+
+MUSIC & SOUND
+
+  Crickets Ambient Music   OpenGameArt.org
+  Cozy Tunes               pizzadoggy.itch.io
+  Explosion Sprite Sheet   reactorcore.itch.io
+  Rocket Engine SFX        OpenGameArt.org
+  Pop Sounds               OpenGameArt.org"
+
+[node name="CloseButton" type="Button" parent="CreditsPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+tooltip_text = "Back to the cosmos."
+text = "CLOSE"
+
 [connection signal="pressed" from="SocialButtons/DiscordButton" to="SocialButtons" method="_on_discord_button_pressed"]

@@ -3,6 +3,7 @@ extends Control
 const WISHLIST_URL = "https://lost-rabbit-digital.itch.io/pickaxe-pioneer"
 
 @onready var settings_panel: PanelContainer = $SettingsPanel
+@onready var credits_panel: PanelContainer = $CreditsPanel
 @onready var master_slider: HSlider = $SettingsPanel/VBox/MasterRow/MasterSlider
 @onready var music_slider: HSlider = $SettingsPanel/VBox/MusicRow/MusicSlider
 @onready var sfx_slider: HSlider = $SettingsPanel/VBox/SFXRow/SFXSlider
@@ -23,6 +24,8 @@ func _ready() -> void:
 	$VBoxContainer/WishlistButton.pressed.connect(_on_wishlist_pressed)
 	$VBoxContainer/QuitButton.pressed.connect(_on_quit_pressed)
 	$SettingsPanel/VBox/CloseButton.pressed.connect(_on_settings_close_pressed)
+	$CreditsButton.pressed.connect(_on_credits_pressed)
+	$CreditsPanel/VBox/CloseButton.pressed.connect(_on_credits_close_pressed)
 
 	master_slider.value_changed.connect(_on_master_changed)
 	music_slider.value_changed.connect(_on_music_changed)
@@ -35,6 +38,7 @@ func _ready() -> void:
 	_update_labels()
 
 	settings_panel.hide()
+	credits_panel.hide()
 
 	# Show/hide Continue based on whether any save exists
 	$VBoxContainer/ContinueButton.visible = SaveManager.has_any_save()
@@ -67,6 +71,12 @@ func _on_wishlist_pressed() -> void:
 func _on_settings_close_pressed() -> void:
 	SettingsManager.save_settings()
 	settings_panel.hide()
+
+func _on_credits_pressed() -> void:
+	credits_panel.show()
+
+func _on_credits_close_pressed() -> void:
+	credits_panel.hide()
 
 # ---------------------------------------------------------------------------
 # Volume sliders
