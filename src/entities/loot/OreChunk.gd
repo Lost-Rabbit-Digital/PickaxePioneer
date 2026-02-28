@@ -61,11 +61,15 @@ func _physics_process(delta: float) -> void:
 		collect()
 		return
 
-	# Settled chunks don't move — they act as a surface for other chunks to land on.
-	# But if the ground beneath them was removed, resume falling.
+	# Settled chunks keep probing downward so floor detection stays current.
+	# If the terrain beneath is mined away, they resume falling.
 	if is_settled:
+		velocity.y = GRAVITY * delta
+		move_and_slide()
 		if is_on_floor():
+			velocity = Vector2.ZERO
 			return
+		# Floor removed — resume falling.
 		is_settled = false
 		collision_layer = 4
 
