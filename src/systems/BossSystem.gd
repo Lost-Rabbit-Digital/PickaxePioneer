@@ -48,8 +48,15 @@ const _TILE_BOSS_SEGMENT: int = 23
 const _TILE_BOSS_CORE: int    = 24
 const _TILE_DIRT: int         = 1
 const _TILE_DIRT_DARK: int    = 2
+const _TILE_STONE: int        = 11
+const _TILE_STONE_DARK: int   = 12
 const _TILE_SURFACE: int      = 20
 const _TILE_EXIT_STATION: int = 22
+
+# Ore tile types for seeding around the Stone Golem
+const _TILE_ORE_COPPER: int   = 3
+const _TILE_ORE_IRON: int     = 5
+const _TILE_ORE_GOLD: int     = 7
 
 # ---------------------------------------------------------------------------
 # Public state (read by MiningLevel for draw and game logic)
@@ -354,11 +361,55 @@ func _spawn_stone_golem(player_col: int) -> void:
 	golem_phase = 0
 	_golem_segments_this_phase = 0
 
+	# Seed guaranteed ore pockets so the player is never locked out
+	_seed_golem_ores(player_col, boss_row, positions)
+
 	var required := GOLEM_PHASE_ORES[0].capitalize()
 	_show_banner.call("ASTEROID GOLEM AWAKENS!", Color(0.60, 0.55, 0.85))
 	EventBus.ore_mined_popup.emit(0, "Armored boss! Mine nearby ore to unlock damage!")
 	_shake_camera.call(14.0, 0.8)
 	_pending_hints = ["Step 1: Mine " + required + " ore (not the boss!)", "Step 2: Then click the glowing boss tiles!", "Wrong ore type? It blocks all damage!"]
+
+
+func _seed_golem_ores(center_col: int, center_row: int, boss_positions: Array[Vector2i]) -> void:
+	## Place guaranteed copper, iron, and gold ore near the golem so the player
+	## always has access to each phase-required ore type regardless of depth RNG.
+	var boss_set: Dictionary = {}
+	for bp in boss_positions:
+		boss_set[bp] = true
+
+	var replaceable: Array[int] = [_TILE_DIRT, _TILE_DIRT_DARK, _TILE_STONE, _TILE_STONE_DARK]
+	var phase_ores: Array[int] = [_TILE_ORE_COPPER, _TILE_ORE_IRON, _TILE_ORE_GOLD]
+
+	# Collect candidate positions in a ring around the boss (distance 3–6 tiles)
+	var candidates: Array[Vector2i] = []
+	for dc in range(-7, 8):
+		for dr in range(-5, 6):
+			var dist := Vector2(dc, dr).length()
+			if dist < 3.0 or dist > 6.5:
+				continue
+			var col := center_col + dc
+			var row := center_row + dr
+			if col < 1 or col >= _grid_cols - 1 or row <= _surface_rows or row >= _grid_rows - 1:
+				continue
+			var pos := Vector2i(col, row)
+			if boss_set.has(pos):
+				continue
+			if _grid[col][row] in replaceable:
+				candidates.append(pos)
+
+	# Shuffle so ore placement feels natural
+	candidates.shuffle()
+
+	# Place 4 of each ore type from the candidate pool
+	var idx := 0
+	for ore_tile in phase_ores:
+		var placed := 0
+		while placed < 4 and idx < candidates.size():
+			var pos: Vector2i = candidates[idx]
+			_grid[pos.x][pos.y] = ore_tile
+			idx += 1
+			placed += 1
 
 
 func _spawn_ancient_one(player_col: int) -> void:
