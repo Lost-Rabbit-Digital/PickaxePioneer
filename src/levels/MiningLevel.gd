@@ -287,7 +287,7 @@ const SOLID_TILES: Array = [
 ]
 
 # Tiles that fall when the block below them is removed (gravity behaviour)
-const GRAVITY_TILES: Array = [TileType.STONE_DARK]
+const GRAVITY_TILES: Array = [TileType.STONE_DARK, TileType.DIRT_DARK]
 
 # Seconds between each row-step a gravity tile falls
 const GRAVITY_FALL_DELAY: float = 0.2
