@@ -31,33 +31,33 @@ func show_for_node(node: MapNode) -> void:
 
 	match node.node_type:
 		MapNode.NodeType.STATION:
-			type_label.text = "[ Colony ]"
+			type_label.text = "[ Space Station ]"
 			type_label.modulate = Color(0.4, 0.8, 1.0)
 			difficulty_label.visible = false
 			ore_types_label.visible = false
 			hazards_label.visible = false
-			enter_button.text = "Visit Colony"
+			enter_button.text = "Dock at Station"
 		MapNode.NodeType.MINE:
-			type_label.text = "[ Mine ]"
+			type_label.text = "[ Asteroid Mine ]"
 			type_label.modulate = Color(1.0, 0.8, 0.3)
 			difficulty_label.visible = true
 			ore_types_label.visible = node.ore_types.size() > 0
 			hazards_label.visible = node.hazard_types.size() > 0
-			enter_button.text = "Enter"
+			enter_button.text = "Launch"
 		MapNode.NodeType.SETTLEMENT:
-			type_label.text = "[ Settlement ]"
+			type_label.text = "[ Outpost ]"
 			type_label.modulate = Color(0.85, 0.60, 1.0)
 			difficulty_label.visible = false
 			ore_types_label.visible = false
 			hazards_label.visible = false
-			enter_button.text = "Visit Settlement"
+			enter_button.text = "Visit Outpost"
 		_:
 			type_label.text = "[ Unknown ]"
 			type_label.modulate = Color(1.0, 1.0, 1.0)
 			difficulty_label.visible = false
 			ore_types_label.visible = false
 			hazards_label.visible = false
-			enter_button.text = "Enter Location"
+			enter_button.text = "Explore"
 
 	if difficulty_label.visible:
 		var diff_str = ""
@@ -76,12 +76,12 @@ func show_for_node(node: MapNode) -> void:
 func _default_description(node: MapNode) -> String:
 	match node.node_type:
 		MapNode.NodeType.STATION:
-			return "Your home Clowder. Visit the workshop to spend minerals on upgrades."
+			return "Your home Space Station. Visit the workshop to spend minerals on upgrades."
 		MapNode.NodeType.MINE:
-			return "A promising mining site. Dig deep to uncover rare ores."
+			return "A promising asteroid. Mine deep to uncover rare space ores."
 		MapNode.NodeType.SETTLEMENT:
-			return "A rest stop. Spend banked minerals on supplies for your next run."
-	return "An unexplored location."
+			return "A space outpost. Spend banked minerals on supplies for your next run."
+	return "An unexplored sector."
 
 func _on_enter_pressed() -> void:
 	hide()

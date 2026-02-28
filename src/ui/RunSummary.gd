@@ -4,19 +4,19 @@ extends CanvasLayer
 # Ore display info: tile_type_id -> { name, color, tex }
 # IDs match MiningLevel.TileType enum values.
 const ORE_INFO: Dictionary = {
-	21: {"name": "Topsoil",     "color": Color(0.25, 0.50, 0.25), "tex": "res://assets/blocks/grass_side.png"},
-	1:  {"name": "Dirt",        "color": Color(0.45, 0.28, 0.12), "tex": "res://assets/blocks/dirt.png"},
-	2:  {"name": "Dark Mud",    "color": Color(0.35, 0.20, 0.08), "tex": "res://assets/blocks/mud.png"},
-	11: {"name": "Stone",       "color": Color(0.50, 0.50, 0.50), "tex": "res://assets/blocks/stone_generic.png"},
-	12: {"name": "Dark Stone",  "color": Color(0.40, 0.40, 0.40), "tex": "res://assets/blocks/gravel.png"},
-	3:  {"name": "Copper",      "color": Color(0.80, 0.50, 0.20), "tex": "res://assets/blocks/stone_generic_ore_nuggets.png"},
-	4:  {"name": "Deep Copper", "color": Color(0.70, 0.40, 0.10), "tex": "res://assets/blocks/stone_generic_ore_crystalline.png"},
-	5:  {"name": "Iron",        "color": Color(0.65, 0.65, 0.72), "tex": "res://assets/blocks/gabbro.png"},
-	6:  {"name": "Deep Iron",   "color": Color(0.55, 0.55, 0.65), "tex": "res://assets/blocks/schist.png"},
-	7:  {"name": "Gold",        "color": Color(1.00, 0.85, 0.10), "tex": "res://assets/blocks/sandstone.png"},
-	8:  {"name": "Deep Gold",   "color": Color(0.90, 0.75, 0.05), "tex": "res://assets/blocks/granite.png"},
-	9:  {"name": "Gem",         "color": Color(0.15, 0.85, 0.75), "tex": "res://assets/blocks/amethyst.png"},
-	10: {"name": "Deep Gem",    "color": Color(0.10, 0.75, 0.65), "tex": "res://assets/blocks/obsidian.png"},
+	21: {"name": "Space Dust",        "color": Color(0.10, 0.20, 0.35), "tex": "res://assets/blocks/grass_side.png"},
+	1:  {"name": "Moon Rock",         "color": Color(0.30, 0.30, 0.38), "tex": "res://assets/blocks/dirt.png"},
+	2:  {"name": "Dense Moon Rock",   "color": Color(0.22, 0.22, 0.30), "tex": "res://assets/blocks/mud.png"},
+	11: {"name": "Asteroid",          "color": Color(0.35, 0.25, 0.55), "tex": "res://assets/blocks/stone_generic.png"},
+	12: {"name": "Dark Asteroid",     "color": Color(0.25, 0.18, 0.45), "tex": "res://assets/blocks/gravel.png"},
+	3:  {"name": "Lunar Copper",      "color": Color(0.90, 0.60, 0.25), "tex": "res://assets/blocks/stone_generic_ore_nuggets.png"},
+	4:  {"name": "Deep Lunar Copper", "color": Color(0.80, 0.50, 0.15), "tex": "res://assets/blocks/stone_generic_ore_crystalline.png"},
+	5:  {"name": "Meteor Iron",       "color": Color(0.90, 0.45, 0.70), "tex": "res://assets/blocks/gabbro.png"},
+	6:  {"name": "Deep Meteor Iron",  "color": Color(0.75, 0.35, 0.60), "tex": "res://assets/blocks/schist.png"},
+	7:  {"name": "Star Gold",         "color": Color(0.85, 0.80, 1.00), "tex": "res://assets/blocks/sandstone.png"},
+	8:  {"name": "Deep Star Gold",    "color": Color(0.70, 0.65, 0.90), "tex": "res://assets/blocks/granite.png"},
+	9:  {"name": "Cosmic Gem",        "color": Color(0.20, 0.90, 0.95), "tex": "res://assets/blocks/amethyst.png"},
+	10: {"name": "Deep Cosmic Gem",   "color": Color(0.10, 0.80, 0.85), "tex": "res://assets/blocks/obsidian.png"},
 }
 
 # Display order: highest-value ores first, then common materials
@@ -78,11 +78,11 @@ func _build_ui() -> void:
 	var px := (VW - PANEL_W) / 2.0
 	var py := (VH - panel_h) / 2.0
 
-	# Green border (starts brighter, settles to normal)
+	# Cosmic border (starts brighter, settles to normal)
 	_border = ColorRect.new()
 	_border.position = Vector2(px - 2.0, py - 2.0)
 	_border.size = Vector2(PANEL_W + 4.0, panel_h + 4.0)
-	_border.color = Color(0.5, 1.0, 0.65)
+	_border.color = Color(0.50, 0.70, 1.00)
 	_panel_node.add_child(_border)
 
 	# Panel background
@@ -94,13 +94,13 @@ func _build_ui() -> void:
 
 	# Title
 	var title := Label.new()
-	title.text = "Run Complete!"
+	title.text = "Mission Complete!"
 	title.position = Vector2(px, py + 8.0)
 	title.size = Vector2(PANEL_W, 44.0)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 30)
-	title.add_theme_color_override("font_color", Color(0.25, 0.95, 0.45))
+	title.add_theme_color_override("font_color", Color(0.40, 0.75, 1.00))
 	_panel_node.add_child(title)
 
 	# Header separator
@@ -194,14 +194,14 @@ func _build_ui() -> void:
 	var btn_left_x := px + (PANEL_W - total_btns_w) / 2.0
 
 	var btn_dive := Button.new()
-	btn_dive.text = "Dive Again"
+	btn_dive.text = "Launch Again"
 	btn_dive.position = Vector2(btn_left_x, btn_y)
 	btn_dive.size = Vector2(btn_w, 40.0)
 	btn_dive.pressed.connect(_on_dive_again_pressed)
 	_panel_node.add_child(btn_dive)
 
 	var btn_return := Button.new()
-	btn_return.text = "Return to Base"
+	btn_return.text = "Return to Station"
 	btn_return.position = Vector2(btn_left_x + btn_w + gap, btn_y)
 	btn_return.size = Vector2(btn_w, 40.0)
 	btn_return.pressed.connect(_on_return_pressed)
@@ -218,7 +218,7 @@ func _play_intro() -> void:
 	# 2. Settle border colour from bright flash to normal green
 	var border_tween := create_tween()
 	border_tween.tween_interval(0.12)
-	border_tween.tween_property(_border, "color", Color(0.20, 0.70, 0.30), 0.4)
+	border_tween.tween_property(_border, "color", Color(0.25, 0.45, 0.80), 0.4)
 
 	# 3. Stagger ore rows in
 	var row_delay := 0.22
@@ -249,7 +249,7 @@ func _add_separator(parent: Control, px: float, sep_y: float, width: float) -> v
 	var sep := ColorRect.new()
 	sep.position = Vector2(px + 12.0, sep_y)
 	sep.size = Vector2(width - 24.0, 2.0)
-	sep.color = Color(0.20, 0.70, 0.30, 0.45)
+	sep.color = Color(0.25, 0.45, 0.80, 0.45)
 	parent.add_child(sep)
 
 func _add_colour_icon(parent: Control, px: float, row_y: float, color: Color) -> ColorRect:

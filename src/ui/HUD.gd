@@ -1,7 +1,7 @@
 class_name HUD
 extends CanvasLayer
 
-# HUD — displays Ore Capacity (upper-left), health squares and energy gauge (upper-right).
+# HUD — displays Ore Capacity (upper-left), health squares and fuel gauge (upper-right).
 
 @onready var scrap_label: Label = $Control/ScrapLabel
 @onready var health_container: HBoxContainer = $Control/HealthContainer
@@ -54,47 +54,47 @@ var _low_hp_tween: Tween
 
 # Ore colour mapping for the earnings popup
 const ORE_COLORS: Dictionary = {
-	"Copper":      Color(0.80, 0.50, 0.20),
-	"Deep Copper": Color(0.70, 0.40, 0.10),
-	"Iron":        Color(0.65, 0.65, 0.72),
-	"Deep Iron":   Color(0.55, 0.55, 0.65),
-	"Gold":        Color(1.00, 0.85, 0.10),
-	"Deep Gold":   Color(0.90, 0.75, 0.05),
-	"Gem":         Color(0.15, 0.85, 0.75),
-	"Deep Gem":    Color(0.10, 0.75, 0.65),
-	"Energy":        Color(0.20, 0.90, 0.20),
-	"LUCKY!":          Color(1.0,  1.0,  0.30),   # Bright yellow for lucky double-strikes
-	"Discovery!":      Color(0.20, 0.90, 0.90),   # Teal for first zone visit
-	"Streak!":         Color(1.0,  0.60, 0.10),   # Orange for consecutive dig milestones
+	"Lunar Copper":      Color(0.90, 0.60, 0.25),
+	"Deep Lunar Copper": Color(0.80, 0.50, 0.15),
+	"Meteor Iron":       Color(0.90, 0.45, 0.70),
+	"Deep Meteor Iron":  Color(0.75, 0.35, 0.60),
+	"Star Gold":         Color(0.85, 0.80, 1.00),
+	"Deep Star Gold":    Color(0.70, 0.65, 0.90),
+	"Cosmic Gem":        Color(0.20, 0.90, 0.95),
+	"Deep Cosmic Gem":   Color(0.10, 0.80, 0.85),
+	"Fuel Cell":         Color(0.20, 0.80, 0.90),
+	"LUCKY!":            Color(1.0,  1.0,  0.30),   # Bright yellow for lucky double-strikes
+	"Discovery!":        Color(0.20, 0.90, 0.90),   # Teal for first zone visit
+	"Streak!":           Color(1.0,  0.60, 0.10),   # Orange for consecutive dig milestones
 	# Smelting chain / combo events (name + "!" suffix)
-	"Bronze Ingot!":    Color(0.80, 0.55, 0.20),
-	"Steel Ingot!":     Color(0.70, 0.70, 0.80),
-	"Pure Gold!":       Color(1.00, 0.90, 0.10),
-	"Faceted Gem!":     Color(0.10, 0.95, 0.85),
-	"Alloy Ore!":       Color(0.85, 0.60, 0.35),
-	"Gilded Steel!":    Color(1.00, 0.80, 0.30),
-	"Fool's Gold!":     Color(0.90, 0.75, 0.20),
-	# Sonar ping / system notifications
-	"No energy for ping":     Color(0.80, 0.20, 0.10),
-	# Wandering Trader events
-	"Wandering Trader!":    Color(1.00, 0.75, 0.10),
-	"Energy Pack!":           Color(0.20, 0.90, 0.20),
-	"Pelt Patched!":        Color(0.85, 0.08, 0.08),
-	"Mining Shroom!":       Color(0.50, 0.90, 0.20),
-	"Lucky Compass!":       Color(1.00, 0.90, 0.10),
-	"Ancient Map!":         Color(0.20, 0.90, 1.00),
-	"Not enough minerals":  Color(0.80, 0.20, 0.10),
-	"Already at full HP":   Color(0.60, 0.60, 0.60),
-	# Fossil finds — name + " Fossil!" suffix, warm amber/teal tones
-	"Ancient Root Fossil!":    Color(0.85, 0.65, 0.30),
-	"Root Fossil Fossil!":     Color(0.85, 0.65, 0.30),
-	"Trilobite Fossil!":       Color(0.90, 0.75, 0.40),
-	"Ammonite Fossil!":        Color(0.90, 0.75, 0.40),
-	"Mineralite Fossil!":      Color(0.80, 0.60, 0.90),
-	"Deep Mineralite Fossil!": Color(0.80, 0.60, 0.90),
-	"Iron Fossil Fossil!":     Color(0.65, 0.65, 0.90),
-	"Gilded Fossil Fossil!":   Color(1.00, 0.85, 0.20),
-	"Crystal Fossil Fossil!":  Color(0.20, 0.95, 1.00),
+	"Lunar Alloy!":      Color(0.90, 0.65, 0.30),
+	"Meteor Steel!":     Color(0.85, 0.50, 0.75),
+	"Star Ingot!":       Color(0.90, 0.85, 1.00),
+	"Nova Crystal!":     Color(0.15, 0.95, 1.00),
+	"Astro Alloy!":      Color(0.90, 0.55, 0.50),
+	"Cosmic Steel!":     Color(0.80, 0.65, 0.95),
+	"Stardust Blend!":   Color(0.85, 0.75, 0.60),
+	# Scanner / system notifications
+	"No fuel for scan":       Color(0.80, 0.20, 0.10),
+	# Space Trader events
+	"Space Trader!":         Color(1.00, 0.75, 0.10),
+	"Fuel Cell Pack!":       Color(0.20, 0.80, 0.90),
+	"Spacesuit Patched!":    Color(0.85, 0.08, 0.08),
+	"Astro Shroom!":         Color(0.50, 0.90, 0.20),
+	"Lucky Star Chart!":     Color(1.00, 0.90, 0.10),
+	"Deep Space Map!":       Color(0.20, 0.90, 1.00),
+	"Not enough minerals":   Color(0.80, 0.20, 0.10),
+	"Already at full HP":    Color(0.60, 0.60, 0.60),
+	# Legendary Space Finds — name + " Found!" suffix, cosmic tones
+	"Astro Kitten Found!":    Color(0.60, 0.70, 0.95),
+	"Stellar Kitten Found!":  Color(0.65, 0.75, 1.00),
+	"Nebula Cat Found!":      Color(0.70, 0.50, 0.90),
+	"Void Cat Found!":        Color(0.60, 0.40, 0.85),
+	"Comet Cat Found!":       Color(0.90, 0.60, 0.30),
+	"Meteor Cat Found!":      Color(0.85, 0.50, 0.25),
+	"Pulsar Cat Found!":      Color(0.80, 0.50, 0.90),
+	"Supernova Cat Found!":   Color(1.00, 0.85, 0.30),
+	"Quantum Cat Found!":     Color(0.20, 0.95, 1.00),
 }
 
 func _ready() -> void:
@@ -138,11 +138,11 @@ func _ready() -> void:
 	depth_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	$Control.add_child(depth_panel)
 
-	# Depth indicator — shows how far underground the ant is
+	# Depth indicator — shows how far into space the cat has traveled
 	depth_label = Label.new()
 	depth_label.position = Vector2(8, 72)
 	depth_label.custom_minimum_size = Vector2(148, 22)
-	depth_label.text = "Surface"
+	depth_label.text = "Orbit"
 	depth_label.modulate = Color(0.6, 0.85, 1.0, 1.0)  # Light blue tint
 	$Control.add_child(depth_label)
 
@@ -166,7 +166,7 @@ func _ready() -> void:
 	_low_energy_warning = Label.new()
 	_low_energy_warning.position = Vector2(540, 656)
 	_low_energy_warning.custom_minimum_size = Vector2(200, 28)
-	_low_energy_warning.text = "! LOW ENERGY !"
+	_low_energy_warning.text = "! LOW FUEL !"
 	_low_energy_warning.modulate = Color(1.0, 0.2, 0.1, 0.0)  # Red, starts invisible
 	_low_energy_warning.add_theme_font_size_override("font_size", 18)
 	$Control.add_child(_low_energy_warning)
@@ -201,7 +201,7 @@ func _ready() -> void:
 	_low_hp_warning = Label.new()
 	_low_hp_warning.position = Vector2(490, 628)
 	_low_hp_warning.custom_minimum_size = Vector2(300, 24)
-	_low_hp_warning.text = "! CRITICAL DAMAGE — return to surface !"
+	_low_hp_warning.text = "! CRITICAL DAMAGE — return to station !"
 	_low_hp_warning.modulate = Color(1.0, 0.10, 0.05, 0.0)  # Red, starts invisible
 	_low_hp_warning.add_theme_font_size_override("font_size", 14)
 	$Control.add_child(_low_hp_warning)
@@ -340,7 +340,7 @@ func _on_health_changed(current: int, max_hp: int) -> void:
 
 func _on_depth_changed(depth_rows: int) -> void:
 	if depth_rows <= 0:
-		depth_label.text = "Surface"
+		depth_label.text = "Orbit"
 		depth_label.modulate = Color(0.6, 0.85, 1.0, 1.0)
 		_next_milestone = 20  # Reset milestone tracking each time player surfaces
 		# Show pulsing exit hint to guide player toward the EXIT station
@@ -361,7 +361,7 @@ func _on_depth_changed(depth_rows: int) -> void:
 		_exit_hint_label.modulate.a = 0.0
 		_exit_hint_panel.modulate.a = 0.0
 
-		depth_label.text = "Depth: %dm" % (depth_rows * 12)
+		depth_label.text = "Sector: %d ly" % (depth_rows * 12)
 
 	# Colour shifts from light blue → orange-red as player goes deeper
 		var t: float = clampf(float(depth_rows) / 80.0, 0.0, 1.0)
@@ -369,11 +369,11 @@ func _on_depth_changed(depth_rows: int) -> void:
 
 		# Show a milestone banner at every 20 blocks of new depth
 		if depth_rows >= _next_milestone:
-			_show_milestone_banner("Depth: %dm" % (_next_milestone * 12))
+			_show_milestone_banner("Sector: %d ly" % (_next_milestone * 12))
 			_next_milestone += 20
 
 func _on_energy_changed(current_energy: int, max_energy: int) -> void:
-	energy_label.text = "Energy: %d/%d" % [current_energy, max_energy]
+	energy_label.text = "Fuel: %d/%d" % [current_energy, max_energy]
 
 	var energy_ratio := float(current_energy) / float(max_energy)
 	var is_low_energy := current_energy > 0 and energy_ratio <= 0.2

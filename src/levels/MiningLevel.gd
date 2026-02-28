@@ -1,10 +1,10 @@
 extends Node2D
 
-# Terraria-style Mining Level
+# Space Mining Level — a cat miner in SPACE!
 # Player is a CharacterBody2D that moves freely with gravity/jumping.
 # Terrain is a grid rendered via _draw() with collision provided by a TileMapLayer.
-# Mining is cursor-based: click to mine blocks within range.
-# Energy drains over time while underground (faster at depth).
+# Mining is cursor-based: click to mine space rocks and asteroids within range.
+# Fuel drains over time while in deep space (faster at distance).
 
 const GRID_COLS: int = 96
 const GRID_ROWS: int = 128
@@ -45,32 +45,32 @@ enum TileType {
 }
 
 const TILE_NAMES: Dictionary = {
-	TileType.SURFACE_GRASS:   "Topsoil",
-	TileType.DIRT:            "Dirt",
-	TileType.DIRT_DARK:       "Dark Mud",
-	TileType.STONE:           "Stone",
-	TileType.STONE_DARK:      "Dark Stone",
-	TileType.ORE_COPPER:      "Copper",
-	TileType.ORE_COPPER_DEEP: "Deep Copper",
-	TileType.ORE_IRON:        "Iron",
-	TileType.ORE_IRON_DEEP:   "Deep Iron",
-	TileType.ORE_GOLD:        "Gold",
-	TileType.ORE_GOLD_DEEP:   "Deep Gold",
-	TileType.ORE_GEM:         "Gem",
-	TileType.ORE_GEM_DEEP:    "Deep Gem",
-	TileType.ENERGY_NODE:       "Energy",
-	TileType.ENERGY_NODE_FULL:  "Energy",
-	TileType.EXPLOSIVE:       "Explosive",
-	TileType.EXPLOSIVE_ARMED: "Armed Explosive",
-	TileType.LAVA:            "Lava",
-	TileType.LAVA_FLOW:       "Lava Flow",
-	TileType.REENERGY_STATION:  "Reenergy Station",
-	TileType.SURFACE:         "Surface",
-	TileType.EXIT_STATION:    "Exit Station",
+	TileType.SURFACE_GRASS:   "Space Dust",
+	TileType.DIRT:            "Moon Rock",
+	TileType.DIRT_DARK:       "Dense Moon Rock",
+	TileType.STONE:           "Asteroid",
+	TileType.STONE_DARK:      "Dark Asteroid",
+	TileType.ORE_COPPER:      "Lunar Copper",
+	TileType.ORE_COPPER_DEEP: "Deep Lunar Copper",
+	TileType.ORE_IRON:        "Meteor Iron",
+	TileType.ORE_IRON_DEEP:   "Deep Meteor Iron",
+	TileType.ORE_GOLD:        "Star Gold",
+	TileType.ORE_GOLD_DEEP:   "Deep Star Gold",
+	TileType.ORE_GEM:         "Cosmic Gem",
+	TileType.ORE_GEM_DEEP:    "Deep Cosmic Gem",
+	TileType.ENERGY_NODE:       "Fuel Cell",
+	TileType.ENERGY_NODE_FULL:  "Fuel Cell",
+	TileType.EXPLOSIVE:       "Space Mine",
+	TileType.EXPLOSIVE_ARMED: "Armed Space Mine",
+	TileType.LAVA:            "Plasma",
+	TileType.LAVA_FLOW:       "Plasma Stream",
+	TileType.REENERGY_STATION:  "Refueling Dock",
+	TileType.SURFACE:         "Launchpad",
+	TileType.EXIT_STATION:    "Airlock",
 	TileType.BOSS_SEGMENT:    "Boss Segment",
 	TileType.BOSS_CORE:       "Boss Core",
-	TileType.UPGRADE_STATION: "Upgrade Station",
-	TileType.SMELTERY_STATION: "Smeltery",
+	TileType.UPGRADE_STATION: "Upgrade Bay",
+	TileType.SMELTERY_STATION: "Space Forge",
 }
 
 const MINEABLE_TILES: Array = [
@@ -85,32 +85,32 @@ const MINEABLE_TILES: Array = [
 ]
 
 const TILE_COLORS: Dictionary = {
-	TileType.DIRT:           Color(0.45, 0.28, 0.12),
-	TileType.DIRT_DARK:      Color(0.35, 0.20, 0.08),
-	TileType.ORE_COPPER:     Color(0.80, 0.50, 0.20),
-	TileType.ORE_COPPER_DEEP: Color(0.70, 0.40, 0.10),
-	TileType.ORE_IRON:       Color(0.65, 0.65, 0.72),
-	TileType.ORE_IRON_DEEP:  Color(0.55, 0.55, 0.65),
-	TileType.ORE_GOLD:       Color(1.00, 0.85, 0.10),
-	TileType.ORE_GOLD_DEEP:  Color(0.90, 0.75, 0.05),
-	TileType.ORE_GEM:        Color(0.15, 0.85, 0.75),
-	TileType.ORE_GEM_DEEP:   Color(0.10, 0.75, 0.65),
-	TileType.STONE:          Color(0.50, 0.50, 0.50),
-	TileType.STONE_DARK:     Color(0.40, 0.40, 0.40),
+	TileType.DIRT:           Color(0.30, 0.30, 0.38),
+	TileType.DIRT_DARK:      Color(0.22, 0.22, 0.30),
+	TileType.ORE_COPPER:     Color(0.90, 0.60, 0.25),
+	TileType.ORE_COPPER_DEEP: Color(0.80, 0.50, 0.15),
+	TileType.ORE_IRON:       Color(0.90, 0.45, 0.70),
+	TileType.ORE_IRON_DEEP:  Color(0.75, 0.35, 0.60),
+	TileType.ORE_GOLD:       Color(0.85, 0.80, 1.00),
+	TileType.ORE_GOLD_DEEP:  Color(0.70, 0.65, 0.90),
+	TileType.ORE_GEM:        Color(0.20, 0.90, 0.95),
+	TileType.ORE_GEM_DEEP:   Color(0.10, 0.80, 0.85),
+	TileType.STONE:          Color(0.35, 0.25, 0.55),
+	TileType.STONE_DARK:     Color(0.25, 0.18, 0.45),
 	TileType.EXPLOSIVE:      Color(0.90, 0.10, 0.10),
 	TileType.EXPLOSIVE_ARMED: Color(1.00, 0.00, 0.00),
-	TileType.LAVA:           Color(1.00, 0.45, 0.00),
-	TileType.LAVA_FLOW:      Color(1.00, 0.30, 0.00),
-	TileType.ENERGY_NODE:      Color(0.20, 0.80, 0.20),
-	TileType.ENERGY_NODE_FULL: Color(0.10, 1.00, 0.10),
-	TileType.REENERGY_STATION: Color(0.50, 0.50, 0.50),
-	TileType.SURFACE:        Color(0.35, 0.35, 0.35),
-	TileType.SURFACE_GRASS:  Color(0.25, 0.50, 0.25),
-	TileType.EXIT_STATION:   Color(0.15, 0.55, 0.15),
-	TileType.BOSS_SEGMENT:   Color(0.55, 0.12, 0.08),
-	TileType.BOSS_CORE:      Color(0.80, 0.05, 0.05),
-	TileType.UPGRADE_STATION: Color(0.50, 0.50, 0.50),
-	TileType.SMELTERY_STATION: Color(0.50, 0.50, 0.50),
+	TileType.LAVA:           Color(1.00, 0.65, 0.00),
+	TileType.LAVA_FLOW:      Color(1.00, 0.50, 0.00),
+	TileType.ENERGY_NODE:      Color(0.20, 0.80, 0.90),
+	TileType.ENERGY_NODE_FULL: Color(0.10, 1.00, 0.95),
+	TileType.REENERGY_STATION: Color(0.40, 0.50, 0.60),
+	TileType.SURFACE:        Color(0.15, 0.15, 0.25),
+	TileType.SURFACE_GRASS:  Color(0.10, 0.20, 0.35),
+	TileType.EXIT_STATION:   Color(0.15, 0.55, 0.70),
+	TileType.BOSS_SEGMENT:   Color(0.70, 0.15, 0.50),
+	TileType.BOSS_CORE:      Color(0.90, 0.10, 0.40),
+	TileType.UPGRADE_STATION: Color(0.40, 0.50, 0.60),
+	TileType.SMELTERY_STATION: Color(0.40, 0.50, 0.60),
 }
 
 const TILE_TEXTURE_PATHS: Dictionary = {
@@ -219,23 +219,23 @@ const SMELT_ORE_GROUPS: Dictionary = {
 }
 # Chain bonus at 3 consecutive: [bonus_pct, popup_label]
 const SMELT_CHAIN_BONUSES: Dictionary = {
-	"copper": [0.50, "Bronze Ingot"],
-	"iron":   [0.50, "Steel Ingot"],
-	"gold":   [0.75, "Pure Gold"],
-	"gem":    [1.00, "Faceted Gem"],
+	"copper": [0.50, "Lunar Alloy"],
+	"iron":   [0.50, "Meteor Steel"],
+	"gold":   [0.75, "Star Ingot"],
+	"gem":    [1.00, "Nova Crystal"],
 }
 # Two-ore cross-combos: "first+second" -> [bonus_pct, popup_label]
 const SMELT_COMBOS: Dictionary = {
-	"copper+iron": [1.00, "Alloy Ore"],
-	"iron+copper": [1.00, "Alloy Ore"],
-	"iron+gold":   [2.00, "Gilded Steel"],
-	"gold+iron":   [2.00, "Gilded Steel"],
-	"copper+gold": [1.50, "Fool's Gold"],
-	"gold+copper": [1.50, "Fool's Gold"],
+	"copper+iron": [1.00, "Astro Alloy"],
+	"iron+copper": [1.00, "Astro Alloy"],
+	"iron+gold":   [2.00, "Cosmic Steel"],
+	"gold+iron":   [2.00, "Cosmic Steel"],
+	"copper+gold": [1.50, "Stardust Blend"],
+	"gold+copper": [1.50, "Stardust Blend"],
 }
 
 # ---------------------------------------------------------------------------
-# Smeltery building — ore-to-bar conversion and bar selling
+# Space Forge — ore-to-bar conversion and bar selling
 # ---------------------------------------------------------------------------
 const SMELTERY_ORE_GROUPS_ORDER: Array = ["copper", "iron", "gold", "gem"]
 const SMELTERY_ORE_GROUP_TILES: Dictionary = {
@@ -252,34 +252,34 @@ const SMELTERY_BAR_SELL_VALUES: Dictionary = {
 	"gem":    75,
 }
 const SMELTERY_BAR_NAMES: Dictionary = {
-	"copper": "Copper Bar",
-	"iron":   "Iron Bar",
-	"gold":   "Gold Bar",
-	"gem":    "Gem Bar",
+	"copper": "Lunar Bar",
+	"iron":   "Meteor Bar",
+	"gold":   "Star Bar",
+	"gem":    "Cosmic Bar",
 }
 const SMELTERY_GROUP_COLORS: Dictionary = {
-	"copper": Color(0.80, 0.50, 0.20),
-	"iron":   Color(0.65, 0.65, 0.72),
-	"gold":   Color(1.00, 0.85, 0.10),
-	"gem":    Color(0.15, 0.85, 0.75),
+	"copper": Color(0.90, 0.60, 0.25),
+	"iron":   Color(0.90, 0.45, 0.70),
+	"gold":   Color(0.85, 0.80, 1.00),
+	"gem":    Color(0.20, 0.90, 0.95),
 }
 
 # ---------------------------------------------------------------------------
-# Fossil forgiveness system (§3.6)
+# Legendary Space Cat system (§3.6)
 # ---------------------------------------------------------------------------
 const FOSSIL_BASE_RATE: float  = 0.005
 const FOSSIL_DROUGHT_SCALE: float = 0.005
 const FOSSIL_CAP_RATE: float   = 0.30
 const FOSSIL_TYPES: Dictionary = {
-	TileType.DIRT:            {"name": "Ancient Root",    "minerals": 25},
-	TileType.DIRT_DARK:       {"name": "Root Fossil",     "minerals": 30},
-	TileType.STONE:           {"name": "Trilobite",       "minerals": 50},
-	TileType.STONE_DARK:      {"name": "Ammonite",        "minerals": 60},
-	TileType.ORE_COPPER:      {"name": "Mineralite",      "minerals": 40},
-	TileType.ORE_COPPER_DEEP: {"name": "Deep Mineralite", "minerals": 50},
-	TileType.ORE_IRON:        {"name": "Iron Fossil",     "minerals": 65},
-	TileType.ORE_GOLD:        {"name": "Gilded Fossil",   "minerals": 100},
-	TileType.ORE_GEM:         {"name": "Crystal Fossil",  "minerals": 120},
+	TileType.DIRT:            {"name": "Astro Kitten",    "minerals": 25},
+	TileType.DIRT_DARK:       {"name": "Stellar Kitten",  "minerals": 30},
+	TileType.STONE:           {"name": "Nebula Cat",      "minerals": 50},
+	TileType.STONE_DARK:      {"name": "Void Cat",        "minerals": 60},
+	TileType.ORE_COPPER:      {"name": "Comet Cat",       "minerals": 40},
+	TileType.ORE_COPPER_DEEP: {"name": "Meteor Cat",      "minerals": 50},
+	TileType.ORE_IRON:        {"name": "Pulsar Cat",      "minerals": 65},
+	TileType.ORE_GOLD:        {"name": "Supernova Cat",   "minerals": 100},
+	TileType.ORE_GEM:         {"name": "Quantum Cat",     "minerals": 120},
 }
 
 # ---------------------------------------------------------------------------
@@ -288,7 +288,7 @@ const FOSSIL_TYPES: Dictionary = {
 const SONAR_PING_DURATION: float = 3.0  # seconds until ping fades — also defined in SonarSystem
 
 # ---------------------------------------------------------------------------
-# Wandering Trader system
+# Wandering Space Trader system
 # ---------------------------------------------------------------------------
 # Depth rows that trigger a trader spawn — one per milestone
 const TRADER_DEPTH_MILESTONES: Array[int] = [32, 64, 96, 128]
@@ -297,11 +297,11 @@ const TRADER_INTERACT_RADIUS: float = 128.0  # px (~2 tiles)
 
 # Tier-scaled item definitions: [label, description, run_mineral_cost, tier_required]
 const TRADER_ITEMS: Array = [
-	{"key": "energy",    "label": "Energy Cache",      "desc": "+50 Energy",                      "cost": 12, "tier": 1},
-	{"key": "repair",  "label": "Pelt Patch",       "desc": "Restore 1 HP",                  "cost": 18, "tier": 1},
-	{"key": "shroom",  "label": "Mining Shroom",   "desc": "Next 12 ores yield +100%",       "cost": 30, "tier": 2},
-	{"key": "compass", "label": "Lucky Compass",   "desc": "2× Lucky Strike chance (run)",   "cost": 45, "tier": 3},
-	{"key": "map",     "label": "Ancient Map",     "desc": "2× Sonar radius (run)",          "cost": 65, "tier": 4},
+	{"key": "energy",    "label": "Fuel Cell Cache",    "desc": "+50 Fuel",                        "cost": 12, "tier": 1},
+	{"key": "repair",  "label": "Spacesuit Patch",   "desc": "Restore 1 HP",                   "cost": 18, "tier": 1},
+	{"key": "shroom",  "label": "Astro Shroom",     "desc": "Next 12 ores yield +100%",        "cost": 30, "tier": 2},
+	{"key": "compass", "label": "Lucky Star Chart", "desc": "2× Lucky Strike chance (run)",    "cost": 45, "tier": 3},
+	{"key": "map",     "label": "Deep Space Map",   "desc": "2× Scanner radius (run)",         "cost": 65, "tier": 4},
 ]
 
 # Tiles that block player movement (have collision)
@@ -321,13 +321,13 @@ const SOLID_TILES: Array = [
 
 # Depth zones
 const DEPTH_ZONE_ROWS   = [0, 16, 41, 71, 101]
-const DEPTH_ZONE_NAMES  = ["Topsoil", "Limestone Belt", "Iron Mantle", "Gold Seam", "Crystal Caverns"]
+const DEPTH_ZONE_NAMES  = ["Low Orbit", "Asteroid Belt", "Nebula Zone", "Star Cluster", "Deep Space"]
 const DEPTH_ZONE_COLORS = [
-	Color(0.55, 0.40, 0.20),
-	Color(0.65, 0.60, 0.50),
-	Color(0.45, 0.50, 0.55),
-	Color(0.80, 0.70, 0.15),
-	Color(0.30, 0.65, 0.85),
+	Color(0.40, 0.55, 0.80),
+	Color(0.50, 0.40, 0.70),
+	Color(0.60, 0.30, 0.75),
+	Color(0.85, 0.70, 1.00),
+	Color(0.20, 0.80, 0.95),
 ]
 
 # Time-based energy drain: base rate (energy per second) + depth multiplier
@@ -1461,7 +1461,7 @@ func _on_player_died() -> void:
 	if _game_over:
 		return
 	_game_over = true
-	_show_game_over_overlay("YOU DIED", "Run minerals have been lost...")
+	_show_game_over_overlay("LOST IN SPACE", "Run stardust has been lost...")
 	await get_tree().create_timer(2.5).timeout
 	GameManager.lose_run()
 
@@ -1469,7 +1469,7 @@ func _on_out_of_energy() -> void:
 	if _game_over:
 		return
 	_game_over = true
-	_show_game_over_overlay("OUT OF ENERGY", "Run minerals have been lost...")
+	_show_game_over_overlay("OUT OF FUEL", "Run stardust has been lost...")
 	await get_tree().create_timer(2.5).timeout
 	GameManager.lose_run()
 
@@ -1811,7 +1811,7 @@ func _setup_surface_hub() -> void:
 	_hub_layer.add_child(panel)
 
 	var title := Label.new()
-	title.text = "You surfaced!"
+	title.text = "You reached the station!"
 	title.position = Vector2(PX, PY + 14)
 	title.size = Vector2(PANEL_W, 32)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1835,21 +1835,21 @@ func _setup_surface_hub() -> void:
 	const BTN_H: int = 46
 
 	var bank_btn := Button.new()
-	bank_btn.text = "Bank Minerals & Keep Mining"
+	bank_btn.text = "Bank Minerals & Keep Exploring"
 	bank_btn.position = Vector2(BTN_X, PY + 100)
 	bank_btn.size = Vector2(BTN_W, BTN_H)
 	bank_btn.pressed.connect(_hub_bank_and_continue)
 	_hub_layer.add_child(bank_btn)
 
 	var shop_btn := Button.new()
-	shop_btn.text = "Open Colony Shop (banks minerals)"
+	shop_btn.text = "Open Station Shop (banks minerals)"
 	shop_btn.position = Vector2(BTN_X, PY + 156)
 	shop_btn.size = Vector2(BTN_W, BTN_H)
 	shop_btn.pressed.connect(_hub_open_shop)
 	_hub_layer.add_child(shop_btn)
 
 	var end_btn := Button.new()
-	end_btn.text = "End Run & Return to Colony"
+	end_btn.text = "End Run & Return to Station"
 	end_btn.position = Vector2(BTN_X, PY + 212)
 	end_btn.size = Vector2(BTN_W, BTN_H)
 	end_btn.pressed.connect(_hub_end_run)
@@ -1955,7 +1955,7 @@ func _setup_energy_station_shop() -> void:
 	_energy_shop_layer.add_child(panel)
 
 	var title := Label.new()
-	title.text = "Energy Station Shop"
+	title.text = "Refueling Dock"
 	title.position = Vector2(PX, PY + 12)
 	title.size = Vector2(PANEL_W, 30)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -2013,11 +2013,11 @@ func _setup_energy_station_shop() -> void:
 
 func _show_energy_station_shop() -> void:
 	_energy_shop_minerals_label.text = "Dollars: $%d" % GameManager.dollars
-	_energy_shop_btn_reenergy_full.text = "Full Reenergy  (%d -> %d energy)  -- $%d" % [
+	_energy_shop_btn_reenergy_full.text = "Full Refuel  (%d -> %d fuel)  -- $%d" % [
 		GameManager.current_energy, GameManager.get_max_energy(), SHOP_REENERGY_FULL_COST]
-	_energy_shop_btn_reenergy_half.text = "Reenergy 50%%  (+%d energy)  -- $%d" % [
+	_energy_shop_btn_reenergy_half.text = "Refuel 50%%  (+%d fuel)  -- $%d" % [
 		GameManager.get_max_energy() / 2, SHOP_REENERGY_HALF_COST]
-	_energy_shop_btn_repair.text = "Emergency Repair  (+1 HP)  -- $%d" % SHOP_REPAIR_COST
+	_energy_shop_btn_repair.text = "Spacesuit Repair  (+1 HP)  -- $%d" % SHOP_REPAIR_COST
 	_energy_shop_btn_reenergy_full.disabled = GameManager.dollars < SHOP_REENERGY_FULL_COST \
 		or GameManager.current_energy >= GameManager.get_max_energy()
 	_energy_shop_btn_reenergy_half.disabled = GameManager.dollars < SHOP_REENERGY_HALF_COST \
@@ -2096,7 +2096,7 @@ func _setup_upgrade_station_shop() -> void:
 	_upgrade_station_layer.add_child(panel)
 
 	var title := Label.new()
-	title.text = "Upgrade Station"
+	title.text = "Upgrade Bay"
 	title.position = Vector2(PX, PY + 12)
 	title.size = Vector2(PANEL_W, 30)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -2157,19 +2157,19 @@ func _show_upgrade_station_shop() -> void:
 
 	var carapace_cost := 50 + 25 * GameManager.carapace_level
 	var current_hp := GameManager.get_max_health()
-	_upgrade_station_btn_carapace.text = "Harden Carapace Lv%d — Max HP: %d → %d  ($%d)" % [
+	_upgrade_station_btn_carapace.text = "Reinforce Spacesuit Lv%d — Max HP: %d → %d  ($%d)" % [
 		GameManager.carapace_level, current_hp, current_hp + 1, carapace_cost]
 	_upgrade_station_btn_carapace.disabled = GameManager.dollars < carapace_cost
 
 	var legs_cost := 50 + 25 * GameManager.legs_level
 	var current_energy_cap := GameManager.get_max_energy()
-	_upgrade_station_btn_legs.text = "Strengthen Legs Lv%d — Energy Limit: %d → %d  ($%d)" % [
+	_upgrade_station_btn_legs.text = "Upgrade Jet Boots Lv%d — Fuel Limit: %d → %d  ($%d)" % [
 		GameManager.legs_level, current_energy_cap, current_energy_cap + 25, legs_cost]
 	_upgrade_station_btn_legs.disabled = GameManager.dollars < legs_cost
 
 	var mandibles_cost := 50 + 25 * GameManager.mandibles_level
 	var current_power := GameManager.get_mandibles_power()
-	_upgrade_station_btn_mandibles.text = "Sharpen Mandibles Lv%d — Mining Speed: %d → %d  ($%d)" % [
+	_upgrade_station_btn_mandibles.text = "Enhance Space Pickaxe Lv%d — Mining Power: %d → %d  ($%d)" % [
 		GameManager.mandibles_level, current_power, current_power + 3, mandibles_cost]
 	_upgrade_station_btn_mandibles.disabled = GameManager.dollars < mandibles_cost
 
@@ -2263,7 +2263,7 @@ func _setup_smeltery_shop() -> void:
 	_smeltery_layer.add_child(panel)
 
 	var title := Label.new()
-	title.text = "Smeltery"
+	title.text = "Space Forge"
 	title.position = Vector2(PX, PY + 10)
 	title.size = Vector2(PANEL_W, 30)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -2346,7 +2346,7 @@ func _setup_smeltery_shop() -> void:
 	_smeltery_layer.add_child(divider2)
 
 	var close_btn := Button.new()
-	close_btn.text = "Close Smeltery"
+	close_btn.text = "Close Forge"
 	close_btn.position = Vector2(PX + (PANEL_W - 200) / 2, row_y + 16)
 	close_btn.size = Vector2(200, 40)
 	close_btn.pressed.connect(_hide_smeltery_shop)
@@ -2430,7 +2430,7 @@ func _spawn_wandering_trader(tier: int) -> void:
 	# Place the trader a couple of tiles to the right of the player
 	var spawn_pos := player_node.global_position + Vector2(CELL_SIZE * 2.5, 0.0)
 	_active_traders.append({"world_pos": spawn_pos, "tier": tier, "pulse": 0.0})
-	EventBus.ore_mined_popup.emit(0, "Wandering Trader!")
+	EventBus.ore_mined_popup.emit(0, "Space Trader!")
 
 func _get_nearby_trader() -> Dictionary:
 	if not player_node:
@@ -2482,7 +2482,7 @@ func _show_trader_shop(trader: Dictionary) -> void:
 	_trader_shop_layer.add_child(panel)
 
 	var title := Label.new()
-	title.text = "Wandering Trader  —  Tier %d" % tier
+	title.text = "Space Trader  —  Tier %d" % tier
 	title.position = Vector2(PX, py + 10)
 	title.size = Vector2(PANEL_W, 30)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -2561,18 +2561,18 @@ func _trader_purchase(item_key: String) -> void:
 		"energy":
 			GameManager.run_mineral_currency -= cost
 			GameManager.restore_energy(50)
-			EventBus.ore_mined_popup.emit(0, "Energy Pack!")
+			EventBus.ore_mined_popup.emit(0, "Fuel Cell Pack!")
 		"repair":
 			if player_node and player_node.is_at_max_health():
 				EventBus.ore_mined_popup.emit(0, "Already at full HP")
 				return
 			GameManager.run_mineral_currency -= cost
 			player_node.heal(1)
-			EventBus.ore_mined_popup.emit(0, "Pelt Patched!")
+			EventBus.ore_mined_popup.emit(0, "Spacesuit Patched!")
 		"shroom":
 			GameManager.run_mineral_currency -= cost
 			_shroom_charges += 12
-			EventBus.ore_mined_popup.emit(0, "Mining Shroom!")
+			EventBus.ore_mined_popup.emit(0, "Astro Shroom!")
 		"compass":
 			GameManager.run_mineral_currency -= cost
 			_lucky_compass_active = true
@@ -2580,7 +2580,7 @@ func _trader_purchase(item_key: String) -> void:
 		"map":
 			GameManager.run_mineral_currency -= cost
 			_ancient_map_active = true
-			EventBus.ore_mined_popup.emit(0, "Ancient Map!")
+			EventBus.ore_mined_popup.emit(0, "Deep Space Map!")
 
 	EventBus.minerals_changed.emit(GameManager.run_mineral_currency)
 	SoundManager.play_drill_sound()
