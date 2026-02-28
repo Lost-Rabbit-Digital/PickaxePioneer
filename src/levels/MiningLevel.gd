@@ -495,8 +495,6 @@ func _ready() -> void:
 
 	EventBus.player_died.connect(_on_player_died)
 
-	var music = load("res://assets/music/crickets.mp3")
-	MusicManager.play_music(music)
 	QuestManager.clear_quest()
 	_setup_surface_hub()
 	_setup_energy_station_shop()

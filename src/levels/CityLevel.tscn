@@ -1,10 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://citylevel8aa"]
+[gd_scene load_steps=4 format=3 uid="uid://citylevel8aa"]
 
 [ext_resource type="Script" path="res://src/levels/CityLevel.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://bg_wasteland_svg" path="res://assets/bg_wasteland.svg" id="2_bg"]
 [ext_resource type="Script" path="res://src/systems/ChatterManager.gd" id="4_chatter"]
 [ext_resource type="PackedScene" uid="uid://chatbubble123" path="res://src/ui/ChatBubble.tscn" id="5_bubble"]
-[ext_resource type="AudioStream" uid="uid://city_mp3" path="res://assets/city.mp3" id="6_music"]
 
 [node name="CityLevel" type="Node2D"]
 script = ExtResource("1_script")
@@ -27,8 +26,3 @@ region_rect = Rect2(0, 0, 1280, 720)
 script = ExtResource("4_chatter")
 chat_bubble_scene = ExtResource("5_bubble")
 spawn_area = Rect2(50, 50, 1180, 620)
-
-[node name="Music" type="AudioStreamPlayer" parent="."]
-stream = ExtResource("6_music")
-autoplay = true
-bus = &"Music"

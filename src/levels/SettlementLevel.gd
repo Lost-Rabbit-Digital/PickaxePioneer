@@ -30,9 +30,6 @@ func _ready() -> void:
 	if GameManager.last_overworld_node_name != "":
 		_location_name = GameManager.last_overworld_node_name.replace("Node", "").replace("3", " (North)").replace("4", " (South)")
 
-	var music := load("res://assets/music/crickets.mp3") as AudioStream
-	MusicManager.play_music(music)
-
 	_build_ui()
 
 func _build_ui() -> void:

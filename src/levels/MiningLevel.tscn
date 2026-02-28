@@ -12,8 +12,4 @@ script = ExtResource("4_script")
 
 [node name="HUD" parent="." instance=ExtResource("2_hud")]
 
-[node name="Music" type="AudioStreamPlayer" parent="."]
-volume_db = -10.0
-autoplay = true
-
 [node name="PauseMenu" parent="." instance=ExtResource("5_pause")]
