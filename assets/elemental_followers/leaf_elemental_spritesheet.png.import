@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://eh7pprlsjl5b"
-path="res://.godot/imported/hat18.png-99675ed6899f50975c87cabced4b78ff.ctex"
+uid="uid://csyfsjmxfjarq"
+path="res://.godot/imported/leaf_elemental_spritesheet.png-fb323dd9b25dce1486b5022057532dc8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/hats/hat18.png"
-dest_files=["res://.godot/imported/hat18.png-99675ed6899f50975c87cabced4b78ff.ctex"]
+source_file="res://assets/elemental_followers/leaf_elemental_spritesheet.png"
+dest_files=["res://.godot/imported/leaf_elemental_spritesheet.png-fb323dd9b25dce1486b5022057532dc8.ctex"]
 
 [params]
 

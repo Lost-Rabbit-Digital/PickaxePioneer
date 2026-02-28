@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c5fvuryc0rca1"
-path="res://.godot/imported/hat1.png-4722e770fdb9c24138be219653489c4a.ctex"
+uid="uid://cbilu78cygpml"
+path="res://.godot/imported/ice_elemental_spritesheet.png-f6b668584bc1520eefa265e088a128d9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/hats/hat1.png"
-dest_files=["res://.godot/imported/hat1.png-4722e770fdb9c24138be219653489c4a.ctex"]
+source_file="res://assets/elemental_followers/ice_elemental_spritesheet.png"
+dest_files=["res://.godot/imported/ice_elemental_spritesheet.png-f6b668584bc1520eefa265e088a128d9.ctex"]
 
 [params]
 
