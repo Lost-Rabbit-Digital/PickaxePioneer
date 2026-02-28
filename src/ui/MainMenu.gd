@@ -79,6 +79,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif settings_panel.visible:
 			_on_settings_close_pressed()
 			get_viewport().set_input_as_handled()
+		elif _save_popup != null and _save_popup.visible:
+			_on_popup_close()
+			get_viewport().set_input_as_handled()
 
 func _on_settings_close_pressed() -> void:
 	SettingsManager.save_settings()
