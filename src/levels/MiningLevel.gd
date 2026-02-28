@@ -327,7 +327,6 @@ var trader_system: TraderSystem = null
 var _last_depth: int = 0
 var _current_zone_idx: int = -1
 
-var _ore_noise: FastNoiseLite
 var _game_over: bool = false
 
 # Per-tile damage/hit tracking for multi-hit mining
@@ -385,13 +384,9 @@ func _ready() -> void:
 
 	texture_filter = TEXTURE_FILTER_NEAREST
 
-	_ore_noise = FastNoiseLite.new()
-	_ore_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	_ore_noise.frequency = 0.06
-	_ore_noise.seed = randi()
-
 	_load_tile_textures()
 	_generate_grid()
+	_generate_ore_veins()   # hydrothermal veins — all ore originates here
 	_generate_cave_rooms()
 	_setup_collision_tilemap()
 	_sync_collision_tilemap()
@@ -613,7 +608,7 @@ func _generate_cave_rooms() -> void:
 					var nc := room_col + dc
 					var nr := room_row + dr
 					if nc >= 1 and nc < GRID_COLS - 1 and nr >= SURFACE_ROWS + 1 and nr < GRID_ROWS - 1:
-						if randf() < 0.38:
+						if randf() < 0.20:
 							var ore_tile := _depth_scaled_ore(depth)
 							if ore_tile != TileType.EMPTY:
 								grid[nc][nr] = ore_tile
@@ -638,7 +633,123 @@ func _depth_scaled_ore(depth: float) -> TileType:
 		return TileType.EMPTY
 	return tiers[randi() % tiers.size()]
 
-func _random_tile(col: int, row: int) -> TileType:
+# ---------------------------------------------------------------------------
+# Hydrothermal Vein Generation — modelled after porphyry deposit geology.
+#
+# Ore deposits form as tall, narrow vertical veins that meander slightly
+# through the rock.  Each vein tier is depth-stratified:
+#
+#   Copper  → shallow (Asteroid Belt, rows  5–41)
+#   Iron    → mid     (Asteroid Belt → Star Cluster, rows 16–71)
+#   Gold    → deep    (Nebula Zone → Deep Space, rows 41–101)
+#   Gem     → deepest (Star Cluster → bottom, rows 71–126)
+#
+# The top of every iron/gold/gem vein has a "cap" of shallower ore — so a
+# copper cap hints at an iron vein below; an iron cap hints at gold, etc.
+# This rewards players who follow veins down through multiple depth zones.
+# ---------------------------------------------------------------------------
+const VEIN_MEANDER_CHANCE: float = 0.35  # per-row probability of centre drift
+
+func _generate_ore_veins() -> void:
+	var allowed: Array = GameManager.allowed_ore_types
+
+	# Each spec defines a population of veins for one ore tier.
+	# zone:    [first_row, last_row] — primary depth band for this ore.
+	# cap:     ore tile used in the top portion of the vein (-1 = none).
+	# cap_len: [min, max] rows of cap material.
+	var specs := [
+		# ── Copper — shallow (Asteroid Belt) ──────────────────────────────
+		{
+			"ore": TileType.ORE_COPPER,      "ore_deep": TileType.ORE_COPPER_DEEP,
+			"cap": -1,                        "cap_len": [0, 0],
+			"zone":  [SURFACE_ROWS + 2,       DEPTH_ZONE_ROWS[2]],
+			"count": [4, 7],  "length": [14, 26],  "width": [1, 2],
+			"key": "Copper",
+		},
+		# ── Iron — mid-depth (Asteroid Belt → Star Cluster) ───────────────
+		{
+			"ore": TileType.ORE_IRON,        "ore_deep": TileType.ORE_IRON_DEEP,
+			"cap": TileType.ORE_COPPER_DEEP, "cap_len": [7, 14],
+			"zone":  [DEPTH_ZONE_ROWS[1],     DEPTH_ZONE_ROWS[3]],
+			"count": [4, 6],  "length": [18, 32],  "width": [1, 2],
+			"key": "Iron",
+		},
+		# ── Gold — deep (Nebula Zone → Deep Space) ────────────────────────
+		{
+			"ore": TileType.ORE_GOLD,        "ore_deep": TileType.ORE_GOLD_DEEP,
+			"cap": TileType.ORE_IRON_DEEP,   "cap_len": [8, 16],
+			"zone":  [DEPTH_ZONE_ROWS[2],     DEPTH_ZONE_ROWS[4]],
+			"count": [3, 5],  "length": [18, 32],  "width": [1, 2],
+			"key": "Gold",
+		},
+		# ── Gem — deepest (Star Cluster → bottom) ─────────────────────────
+		{
+			"ore": TileType.ORE_GEM,         "ore_deep": TileType.ORE_GEM_DEEP,
+			"cap": TileType.ORE_GOLD_DEEP,   "cap_len": [10, 20],
+			"zone":  [DEPTH_ZONE_ROWS[3],     GRID_ROWS - 2],
+			"count": [2, 4],  "length": [14, 24],  "width": [1, 2],
+			"key": "Gem",
+		},
+	]
+
+	for spec in specs:
+		if not allowed.is_empty() and not allowed.has(spec["key"]):
+			continue
+		var count := randi_range(spec["count"][0], spec["count"][1])
+		for _i in range(count):
+			_place_ore_vein(spec)
+
+func _place_ore_vein(spec: Dictionary) -> void:
+	var zone_start: int = spec["zone"][0]
+	var zone_end: int   = spec["zone"][1]
+	var length: int     = randi_range(spec["length"][0], spec["length"][1])
+	var width: int      = randi_range(spec["width"][0],  spec["width"][1])
+
+	# Start row inside the zone (ensure the full vein fits vertically).
+	var max_start := maxi(zone_start, zone_end - length)
+	var start_row: int  = randi_range(zone_start, max_start)
+
+	# Random horizontal centre, away from the map edges.
+	var center_col: int = randi_range(3, GRID_COLS - 4)
+
+	# Cap occupies the topmost rows with a shallower ore as a visual hint.
+	var cap_len: int = 0
+	if spec["cap"] != -1:
+		cap_len = randi_range(spec["cap_len"][0], spec["cap_len"][1])
+		cap_len = mini(cap_len, length - 4)  # guarantee at least 4 primary rows
+
+	for i in range(length):
+		var row := start_row + i
+		if row < SURFACE_ROWS + 1 or row >= GRID_ROWS - 1:
+			continue
+
+		# Ore type: cap at top, shallow primary variant in upper half, deep in lower.
+		var ore_tile: int
+		if i < cap_len:
+			ore_tile = spec["cap"]
+		else:
+			var primary_t := float(i - cap_len) / float(maxi(1, length - cap_len))
+			ore_tile = spec["ore_deep"] if primary_t > 0.5 else spec["ore"]
+
+		# Meander: random-walk the centre column.
+		if randf() < VEIN_MEANDER_CHANCE:
+			center_col += randi_range(-1, 1)
+			center_col = clampi(center_col, 2, GRID_COLS - 3)
+
+		# Place ore across the vein width, centred on center_col.
+		for w in range(width):
+			var place_col := center_col - width / 2 + w
+			if place_col < 1 or place_col >= GRID_COLS - 1:
+				continue
+			var current := grid[place_col][row]
+			# Only overwrite background rock — never hazards, stations, or surface.
+			if current in [TileType.DIRT, TileType.DIRT_DARK,
+							TileType.STONE, TileType.STONE_DARK]:
+				grid[place_col][row] = ore_tile
+
+func _random_tile(_col: int, row: int) -> TileType:
+	# All ore comes from hydrothermal veins (_generate_ore_veins).
+	# This function only determines background rock and hazard composition.
 	var r := randf()
 	var depth := float(row - SURFACE_ROWS) / float(GRID_ROWS - SURFACE_ROWS)
 
@@ -659,37 +770,7 @@ func _random_tile(col: int, row: int) -> TileType:
 	elif r < total_hazard + 0.02: return TileType.ENERGY_NODE
 	elif r < total_hazard + 0.03: return TileType.ENERGY_NODE_FULL
 
-	var copper_chance := 0.14 - depth * 0.12
-	var iron_chance   := 0.12 - depth * 0.04
-	var gold_chance   := 0.04 + depth * 0.16
-	var gem_chance    := 0.02 + depth * 0.18
-
-	var allowed: Array = GameManager.allowed_ore_types
-	if allowed.size() > 0:
-		if not allowed.has("Copper"): copper_chance = 0.0
-		if not allowed.has("Iron"):   iron_chance   = 0.0
-		if not allowed.has("Gold"):   gold_chance   = 0.0
-		if not allowed.has("Gem"):    gem_chance    = 0.0
-
-	var noise_val: float = (_ore_noise.get_noise_2d(float(col), float(row)) + 1.0) * 0.5
-	var ore_mult: float  = 0.3 + noise_val * 1.4
-	copper_chance = maxf(0.0, copper_chance * ore_mult)
-	iron_chance   = maxf(0.0, iron_chance   * ore_mult)
-	gold_chance   = maxf(0.0, gold_chance   * ore_mult)
-	gem_chance    = maxf(0.0, gem_chance    * ore_mult)
-
-	var deep_ratio := 0.30 + depth * 0.50
-
-	var ore_start := total_hazard + 0.03
-	if r < ore_start + gem_chance * deep_ratio:                                             return TileType.ORE_GEM_DEEP
-	elif r < ore_start + gem_chance:                                                         return TileType.ORE_GEM
-	elif r < ore_start + gem_chance + gold_chance * deep_ratio:                              return TileType.ORE_GOLD_DEEP
-	elif r < ore_start + gem_chance + gold_chance:                                           return TileType.ORE_GOLD
-	elif r < ore_start + gem_chance + gold_chance + iron_chance * deep_ratio:                return TileType.ORE_IRON_DEEP
-	elif r < ore_start + gem_chance + gold_chance + iron_chance:                             return TileType.ORE_IRON
-	elif r < ore_start + gem_chance + gold_chance + iron_chance + copper_chance * deep_ratio: return TileType.ORE_COPPER_DEEP
-	elif r < ore_start + gem_chance + gold_chance + iron_chance + copper_chance:              return TileType.ORE_COPPER
-
+	# Rock composition grows harder with depth.
 	var stone_chance := 0.10 + depth * 0.50
 	var r2 := randf()
 	if r2 < stone_chance * 0.6:    return TileType.STONE_DARK
