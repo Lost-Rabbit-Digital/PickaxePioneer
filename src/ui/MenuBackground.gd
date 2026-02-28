@@ -213,7 +213,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion and is_dragging:
 		# Drag right → world scrolls left. Divide by zoom so dragging feels
 		# consistent: one screen-pixel of drag always moves the same apparent amount.
-		var world_delta := event.relative / zoom_level
+		var world_delta: Vector2 = (event as InputEventMouseMotion).relative / zoom_level
 		scroll_offset -= world_delta
 		_mouse_delta_acc -= world_delta
 		idle_timer = 0.0
