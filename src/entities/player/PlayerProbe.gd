@@ -81,7 +81,7 @@ func _ready() -> void:
 	sprite.play(&"idle")
 
 func _physics_process(delta: float) -> void:
-	if not mining_level or mining_level._game_over or mining_level.any_ui_open() or mining_level._spawning:
+	if not mining_level or mining_level._game_over or mining_level.any_ui_open() or mining_level.get("_spawning", false):
 		return
 
 	var pre_floor := is_on_floor()
