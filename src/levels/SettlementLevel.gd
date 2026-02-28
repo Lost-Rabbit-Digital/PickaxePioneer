@@ -88,7 +88,7 @@ var _btn_sharpen: Button
 var _supply_dock_col: int = -1
 var _supply_dock_row: int = -1
 
-@onready var player_node: PlayerProbe = $PlayerProbe
+@onready var player_node := $PlayerProbe as PlayerProbe
 @onready var pause_menu = $PauseMenu
 
 func _ready() -> void:
