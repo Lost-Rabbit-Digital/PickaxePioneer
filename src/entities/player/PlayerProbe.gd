@@ -23,7 +23,7 @@ const MINE_INTERVAL: float = 0.12  # Seconds between mining hits
 var mining_level: Node = null
 
 @onready var health_component: HealthComponent = $HealthComponent
-@onready var sprite: Sprite2D = $Sprite2D
+@onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var interact_prompt: Label = $PromptLayer/InteractPrompt
 
 # Facing direction

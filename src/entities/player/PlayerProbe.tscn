@@ -320,7 +320,7 @@ animations = [{
 }],
 "loop": true,
 "name": &"jump",
-"speed": 5.0
+"speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -456,8 +456,9 @@ shape = SubResource("RectangleShape2D_player")
 texture_filter = 1
 scale = Vector2(4, 4)
 sprite_frames = SubResource("SpriteFrames_8ebmi")
-animation = &"idle"
-frame_progress = 0.5456301
+animation = &"jump"
+frame = 6
+frame_progress = 0.29225284
 offset = Vector2(0, -16)
 
 [node name="JetpackSprite" type="Sprite2D" parent="."]

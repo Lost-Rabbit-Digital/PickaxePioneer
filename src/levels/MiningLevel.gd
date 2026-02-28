@@ -493,7 +493,6 @@ func _ready() -> void:
 		spawn_row * CELL_SIZE + CELL_SIZE * 0.5
 	)
 	player_node.mining_level = self
-	player_node.sprite.scale = Vector2(0.5, 0.5)
 
 	EventBus.player_died.connect(_on_player_died)
 
