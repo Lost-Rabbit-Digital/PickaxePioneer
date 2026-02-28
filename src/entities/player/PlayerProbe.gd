@@ -119,7 +119,7 @@ func equip_hat(frame: int) -> void:
 		hat.offset = HAT_OFFSETS[frame]
 
 func _physics_process(delta: float) -> void:
-	if not mining_level or mining_level._game_over or mining_level.any_ui_open() or mining_level.get("_spawning", false):
+	if not mining_level or mining_level._game_over or mining_level.any_ui_open() or (mining_level.get("_spawning") == true):
 		return
 
 	var pre_floor := is_on_floor()
