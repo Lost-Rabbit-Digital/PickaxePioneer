@@ -159,10 +159,10 @@ func _physics_process(delta: float) -> void:
 
 	# Flip sprite
 	if direction > 0:
-		_facing_left = true
+		_facing_left = false
 		sprite.flip_h = false
 	elif direction < 0:
-		_facing_left = false
+		_facing_left = true
 		sprite.flip_h = true
 
 	# Jump from floor or release from ladder — Space jumps/launches in both cases.
@@ -355,7 +355,7 @@ func _spawn_poof() -> void:
 
 func _apply_fall_damage() -> void:
 	if _is_falling:
-		var fall_distance := _fall_start_y - global_position.y
+		var fall_distance := global_position.y - _fall_start_y
 		if fall_distance > FALL_DAMAGE_THRESHOLD:
 			var damage := health_component.max_health / 2
 			health_component.damage(damage)
