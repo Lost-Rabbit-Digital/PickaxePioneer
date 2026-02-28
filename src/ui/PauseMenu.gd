@@ -5,6 +5,7 @@ extends CanvasLayer
 
 @onready var master_slider: HSlider  = $Panel/VBox/MasterSlider
 @onready var music_slider: HSlider   = $Panel/VBox/MusicSlider
+@onready var sfx_slider: HSlider     = $Panel/VBox/SFXSlider
 @onready var resume_button: Button   = $Panel/VBox/ResumeButton
 @onready var exit_button: Button     = $Panel/VBox/ExitButton
 @onready var version_label: Label    = $Panel/VBox/VersionLabel
@@ -17,6 +18,7 @@ func _ready() -> void:
 	exit_button.pressed.connect(_on_exit_pressed)
 	master_slider.value_changed.connect(_on_master_volume_changed)
 	music_slider.value_changed.connect(_on_music_volume_changed)
+	sfx_slider.value_changed.connect(_on_sfx_volume_changed)
 
 func _unhandled_input(event: InputEvent) -> void:
 	# Close pause menu with Escape when visible
@@ -34,6 +36,13 @@ func show_menu() -> void:
 	else:
 		music_slider.value = 100.0
 		music_slider.editable = false
+	var sfx_idx := AudioServer.get_bus_index("SFX")
+	if sfx_idx >= 0:
+		sfx_slider.value = _db_to_percent(AudioServer.get_bus_volume_db(sfx_idx))
+		sfx_slider.editable = true
+	else:
+		sfx_slider.value = 100.0
+		sfx_slider.editable = false
 	show()
 	get_tree().paused = true
 
@@ -66,3 +75,6 @@ func _on_music_volume_changed(value: float) -> void:
 	var idx := AudioServer.get_bus_index("Music")
 	if idx >= 0:
 		AudioServer.set_bus_volume_db(idx, _percent_to_db(value))
+
+func _on_sfx_volume_changed(value: float) -> void:
+	SettingsManager.set_sfx_volume(value / 100.0)

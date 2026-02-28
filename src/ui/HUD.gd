@@ -76,6 +76,7 @@ const HOTBAR_PICKAXE_TEXTURES: Array = [
 	"res://assets/db32_rpg_items/pickaxe_steel.png"
 ]
 var _hotbar_slots: Array[PanelContainer] = []
+var _hotbar_styles: Array[StyleBoxFlat] = []  # One StyleBoxFlat per slot for border recolouring
 var _hotbar_ladder_icon: Control  # Ladder slot content — shown/hidden based on ladder count
 
 # Ore colour mapping for the earnings popup
@@ -569,8 +570,27 @@ func _show_next_boss_hint() -> void:
 
 # ---------------------------------------------------------------------------
 # Hotbar — 3 slots at bottom-centre (pickaxe tool, ladder tool, empty).
-# Clicking any slot toggles the full inventory screen.
+# Clicking a slot selects it; 1/2/3 keys also switch the active slot.
+# The selected slot is outlined yellow; others keep the default purple.
 # ---------------------------------------------------------------------------
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_1:
+			_set_hotbar_selection(0)
+		elif event.keycode == KEY_2:
+			_set_hotbar_selection(1)
+		elif event.keycode == KEY_3:
+			_set_hotbar_selection(2)
+
+func _set_hotbar_selection(slot: int) -> void:
+	GameManager.selected_hotbar_slot = slot
+	for i in range(_hotbar_styles.size()):
+		_hotbar_styles[i].border_color = (
+			Color(1.0, 0.90, 0.10, 1.0)      # Yellow — selected
+			if i == slot else
+			Color(0.50, 0.40, 0.65, 0.80)    # Purple — unselected
+		)
 
 func _build_hotbar() -> void:
 	var slot_outer: int = HOTBAR_SLOT_SIZE + 6  # content + border (3 px margin each side)
@@ -596,7 +616,8 @@ func _build_hotbar() -> void:
 		style.set_content_margin_all(3)
 		slot.add_theme_stylebox_override("panel", style)
 		slot.mouse_filter = Control.MOUSE_FILTER_STOP
-		slot.gui_input.connect(_on_hotbar_slot_input)
+		slot.gui_input.connect(_on_hotbar_slot_input.bind(i))
+		_hotbar_styles.append(style)
 
 		if i == 0:
 			# Pickaxe tool — random block texture
@@ -654,9 +675,9 @@ func _build_hotbar() -> void:
 		container.add_child(slot)
 		_hotbar_slots.append(slot)
 
-func _on_hotbar_slot_input(event: InputEvent) -> void:
+	# Highlight slot 0 (pickaxe) as selected by default
+	_set_hotbar_selection(0)
+
+func _on_hotbar_slot_input(event: InputEvent, slot_index: int) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var toggle := InputEventAction.new()
-		toggle.action = "toggle_inventory"
-		toggle.pressed = true
-		Input.parse_input_event(toggle)
+		_set_hotbar_selection(slot_index)
