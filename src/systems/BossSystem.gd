@@ -43,6 +43,22 @@ const MOLE_TREMOR_FILL_CHANCE: float = 0.55
 const GOLEM_PHASE_ORES: Array[String] = ["copper", "iron", "gold"]
 const GOLEM_SEGMENTS_PER_PHASE: int   = 5
 
+# Giant Rat King — directional charge attack toward the player
+const RAT_CHARGE_INTERVAL: float    = 5.0
+const RAT_CHARGE_WARNING: float     = 1.5
+const RAT_CHARGE_LENGTH: int        = 5
+const RAT_CHARGE_FILL_CHANCE: float = 0.70
+
+# Void Spider Matriarch — web trap around the player's position
+const SPIDER_WEB_INTERVAL: float    = 7.0
+const SPIDER_WEB_WARNING: float     = 1.5
+const SPIDER_WEB_RADIUS: int        = 3
+const SPIDER_WEB_FILL_CHANCE: float = 0.50
+
+# Boss spawn chance per milestone (0.0–1.0); each depth milestone has this
+# probability of actually spawning a boss, making encounters feel random.
+const BOSS_SPAWN_CHANCE: float = 0.5
+
 # TileType values needed internally (mirrors MiningLevel.TileType)
 const _TILE_BOSS_SEGMENT: int = 23
 const _TILE_BOSS_CORE: int    = 24
@@ -74,6 +90,16 @@ var mole_tremor_warning_timer: float = 0.0
 ## Stone Golem draw state
 var golem_phase: int = 0
 
+## Giant Rat charge draw state
+var rat_charge_warning_active: bool = false
+var rat_charge_warning_timer: float = 0.0
+var rat_charge_target_pos: Vector2i = Vector2i(-1, -1)
+
+## Void Spider web draw state
+var spider_web_warning_active: bool = false
+var spider_web_warning_timer: float = 0.0
+var spider_web_target_pos: Vector2i = Vector2i(-1, -1)
+
 ## The Ancient Hound draw state
 var ancient_phase: int = 0               # 0=outer shell, 1=inner ring, 2=core only
 var ancient_void_warning_active: bool = false
@@ -96,6 +122,12 @@ var _ancient_outer_count: int = 0
 var _ancient_inner_count: int = 0
 var _ancient_void_timer: float = 0.0
 var _ancient_core_recharge_timer: float = 0.0
+var _rat_center: Vector2i = Vector2i(-1, -1)
+var _rat_charge_timer: float = 0.0
+var _spider_center: Vector2i = Vector2i(-1, -1)
+var _spider_web_timer: float = 0.0
+var _player_col: int = -1
+var _player_row: int = -1
 
 # Grid layout constants injected at setup
 var _grid_cols: int = 96
@@ -135,10 +167,15 @@ func setup(
 # ---------------------------------------------------------------------------
 
 ## Call every frame while the game is running (even when menus are open).
-func update(delta: float) -> void:
+## player_col / player_row are the player's current grid coordinates.
+func update(delta: float, player_col: int = -1, player_row: int = -1) -> void:
+	_player_col = player_col
+	_player_row = player_row
 	if not boss_active:
 		return
 	boss_pulse_time += delta
+	_update_giant_rat(delta)
+	_update_spider(delta)
 	_update_blind_mole(delta)
 	_update_ancient_one(delta)
 
@@ -164,6 +201,8 @@ func check_milestone(depth_row: int, player_col: int) -> void:
 	for i in range(BOSS_MILESTONES.size()):
 		if not _boss_milestones_seen[i] and depth_row >= BOSS_MILESTONES[i]:
 			_boss_milestones_seen[i] = true
+			if randf() > BOSS_SPAWN_CHANCE:
+				continue  # boss doesn't appear this run — random event feel
 			match i:
 				0: _spawn_giant_rat_king(player_col)
 				1: _spawn_cave_spider_matriarch(player_col)
@@ -269,10 +308,12 @@ func _spawn_giant_rat_king(player_col: int) -> void:
 			positions.append(Vector2i(col, boss_row + 1))
 
 	_activate(positions, BOSS_TYPE_GIANT_RAT, boss_row)
+	_rat_center = Vector2i(player_col, boss_row)
+	_rat_charge_timer = RAT_CHARGE_INTERVAL
 	_show_banner.call("GIANT SPACE RAT AWAKENS!", Color(0.90, 0.10, 0.05))
-	EventBus.ore_mined_popup.emit(0, "Boss! Mine all segments to defeat it!")
+	EventBus.ore_mined_popup.emit(0, "Boss! Watch for charge attacks!")
 	_shake_camera.call(8.0, 0.4)
-	_pending_hints = ["Click each glowing tile to chip away at it!", "Defeat the boss to restore fuel!"]
+	_pending_hints = ["Watch for CHARGE warnings — dodge the debris!", "Click each glowing tile to chip away at it!", "Defeat the boss to restore fuel!"]
 
 
 func _spawn_cave_spider_matriarch(player_col: int) -> void:
@@ -296,10 +337,12 @@ func _spawn_cave_spider_matriarch(player_col: int) -> void:
 		positions.append(Vector2i(col, row))
 
 	_activate(positions, BOSS_TYPE_SPIDER, boss_row)
+	_spider_center = Vector2i(player_col, boss_row)
+	_spider_web_timer = SPIDER_WEB_INTERVAL
 	_show_banner.call("VOID SPIDER MATRIARCH!", Color(0.60, 0.10, 0.80))
-	EventBus.ore_mined_popup.emit(0, "Boss! Mine all body parts to defeat it!")
+	EventBus.ore_mined_popup.emit(0, "Boss! Beware of web traps!")
 	_shake_camera.call(8.0, 0.4)
-	_pending_hints = ["Click each glowing segment to chip away at it!", "Defeat the boss to restore fuel!"]
+	_pending_hints = ["Watch for WEB warnings — move before you're trapped!", "Click each glowing segment to chip away at it!", "Defeat the boss to restore fuel!"]
 
 
 func _spawn_blind_mole(player_col: int) -> void:
@@ -488,6 +531,16 @@ func _on_boss_defeated() -> void:
 	boss_active = false
 	boss_tile_positions.clear()
 	boss_type = BOSS_TYPE_NONE
+	_rat_center = Vector2i(-1, -1)
+	_rat_charge_timer = 0.0
+	rat_charge_warning_active = false
+	rat_charge_warning_timer = 0.0
+	rat_charge_target_pos = Vector2i(-1, -1)
+	_spider_center = Vector2i(-1, -1)
+	_spider_web_timer = 0.0
+	spider_web_warning_active = false
+	spider_web_warning_timer = 0.0
+	spider_web_target_pos = Vector2i(-1, -1)
 	_mole_tremor_timer = 0.0
 	mole_tremor_warning_active = false
 	_mole_center = Vector2i(-1, -1)
@@ -560,6 +613,116 @@ func _execute_mole_tremor() -> void:
 
 
 # ---------------------------------------------------------------------------
+# Giant Rat King charge logic
+# ---------------------------------------------------------------------------
+
+func _update_giant_rat(delta: float) -> void:
+	if boss_type != BOSS_TYPE_GIANT_RAT:
+		return
+
+	if rat_charge_warning_active:
+		rat_charge_warning_timer -= delta
+		if rat_charge_warning_timer <= 0.0:
+			rat_charge_warning_active = false
+			_execute_rat_charge()
+		return
+
+	_rat_charge_timer -= delta
+	if _rat_charge_timer <= 0.0:
+		_rat_charge_timer = RAT_CHARGE_INTERVAL
+		rat_charge_warning_active = true
+		rat_charge_warning_timer = RAT_CHARGE_WARNING
+		rat_charge_target_pos = Vector2i(_player_col, _player_row)
+		EventBus.ore_mined_popup.emit(0, "RAT KING CHARGES!")
+		_shake_camera.call(5.0, 0.3)
+
+
+func _execute_rat_charge() -> void:
+	var cx := _rat_center.x
+	var cy := _rat_center.y
+	var tx := rat_charge_target_pos.x
+	var ty := rat_charge_target_pos.y
+	if tx < 0 or ty < 0:
+		return
+
+	var dir := Vector2(tx - cx, ty - cy).normalized()
+	var filled := 0
+
+	for step in range(1, RAT_CHARGE_LENGTH + 1):
+		var col := cx + roundi(dir.x * step)
+		var row := cy + roundi(dir.y * step)
+		if col < 0 or col >= _grid_cols or row <= _surface_rows or row >= _grid_rows - 1:
+			continue
+		if _grid[col][row] != 0:   # not EMPTY
+			continue
+		if randf() < RAT_CHARGE_FILL_CHANCE:
+			var new_tile := _TILE_DIRT_DARK if row > _surface_rows + 8 else _TILE_DIRT
+			_grid[col][row] = new_tile
+			_set_collision.call(col, row, true)
+			_erase_tile_state.call(Vector2i(col, row))
+			filled += 1
+
+	if filled > 0:
+		EventBus.ore_mined_popup.emit(0, "Rat charge! " + str(filled) + " tiles filled!")
+	_shake_camera.call(8.0, 0.4)
+	rat_charge_target_pos = Vector2i(-1, -1)
+
+
+# ---------------------------------------------------------------------------
+# Void Spider web-trap logic
+# ---------------------------------------------------------------------------
+
+func _update_spider(delta: float) -> void:
+	if boss_type != BOSS_TYPE_SPIDER:
+		return
+
+	if spider_web_warning_active:
+		spider_web_warning_timer -= delta
+		if spider_web_warning_timer <= 0.0:
+			spider_web_warning_active = false
+			_execute_spider_web()
+		return
+
+	_spider_web_timer -= delta
+	if _spider_web_timer <= 0.0:
+		_spider_web_timer = SPIDER_WEB_INTERVAL
+		spider_web_warning_active = true
+		spider_web_warning_timer = SPIDER_WEB_WARNING
+		spider_web_target_pos = Vector2i(_player_col, _player_row)
+		EventBus.ore_mined_popup.emit(0, "WEB INCOMING!")
+		_shake_camera.call(4.0, 0.3)
+
+
+func _execute_spider_web() -> void:
+	var tx := spider_web_target_pos.x
+	var ty := spider_web_target_pos.y
+	if tx < 0 or ty < 0:
+		return
+
+	var r := SPIDER_WEB_RADIUS
+	var webbed := 0
+
+	for tc in range(maxi(0, tx - r), mini(_grid_cols, tx + r + 1)):
+		for tr in range(maxi(_surface_rows + 1, ty - r), mini(_grid_rows - 1, ty + r + 1)):
+			if _grid[tc][tr] != 0:   # not EMPTY
+				continue
+			var dist := Vector2(tc - tx, tr - ty).length()
+			if dist > float(r):
+				continue
+			if randf() < SPIDER_WEB_FILL_CHANCE:
+				var new_tile := _TILE_DIRT_DARK if tr > _surface_rows + 8 else _TILE_DIRT
+				_grid[tc][tr] = new_tile
+				_set_collision.call(tc, tr, true)
+				_erase_tile_state.call(Vector2i(tc, tr))
+				webbed += 1
+
+	if webbed > 0:
+		EventBus.ore_mined_popup.emit(0, "Webbed! " + str(webbed) + " tiles trapped!")
+	_shake_camera.call(6.0, 0.4)
+	spider_web_target_pos = Vector2i(-1, -1)
+
+
+# ---------------------------------------------------------------------------
 # The Ancient Hound phase logic
 # ---------------------------------------------------------------------------
 
@@ -627,6 +790,16 @@ func reset() -> void:
 	boss_pulse_time = 0.0
 	_boss_milestones_seen = [false, false, false, false, false]
 	_boss_spawn_row = -1
+	_rat_center = Vector2i(-1, -1)
+	_rat_charge_timer = 0.0
+	rat_charge_warning_active = false
+	rat_charge_warning_timer = 0.0
+	rat_charge_target_pos = Vector2i(-1, -1)
+	_spider_center = Vector2i(-1, -1)
+	_spider_web_timer = 0.0
+	spider_web_warning_active = false
+	spider_web_warning_timer = 0.0
+	spider_web_target_pos = Vector2i(-1, -1)
 	_mole_tremor_timer = 0.0
 	mole_tremor_warning_active = false
 	mole_tremor_warning_timer = 0.0

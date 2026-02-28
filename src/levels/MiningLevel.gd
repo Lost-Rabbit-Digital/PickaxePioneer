@@ -290,8 +290,11 @@ const SONAR_PING_DURATION: float = 3.0  # seconds until ping fades — also defi
 # ---------------------------------------------------------------------------
 # Wandering Space Trader system
 # ---------------------------------------------------------------------------
-# Depth rows that trigger a trader spawn — one per milestone
-const TRADER_DEPTH_MILESTONES: Array[int] = [32, 64, 96, 128]
+# Traders spawn randomly as the player mines deeper — independent of bosses.
+const TRADER_CHECK_INTERVAL: int   = 10    # check for a trader spawn every N depth rows
+const TRADER_FIRST_CHECK: int      = 15    # first eligible depth row
+const TRADER_SPAWN_CHANCE: float   = 0.15  # 15 % chance per check
+const TRADER_MAX_PER_RUN: int      = 3     # cap traders spawned per run
 # World-space radius within which the trader can be interacted with
 const TRADER_INTERACT_RADIUS: float = 128.0  # px (~2 tiles)
 
@@ -424,7 +427,8 @@ var forager_system: ForagerSystem = ForagerSystem.new()
 # Wandering Trader state
 # Each entry: {world_pos: Vector2, tier: int, pulse: float}
 var _active_traders: Array = []
-var _trader_milestones_seen: Array[bool] = [false, false, false, false]
+var _trader_last_check_row: int = 0   # last depth row where a spawn check was made
+var _traders_spawned_count: int = 0   # total traders spawned this run
 var _trader_shop_layer: CanvasLayer = null
 var _trader_shop_visible: bool = false
 var _current_trader: Dictionary = {}
@@ -578,9 +582,10 @@ func _setup_collision_tilemap() -> void:
 	add_child(collision_tilemap)
 
 func _setup_map_barriers() -> void:
-	# Invisible StaticBody2D walls on the left and right edges of the map
-	# so the player cannot fall or walk off the sides.
+	# Invisible StaticBody2D walls on the left, right, and bottom edges of the
+	# map so the player cannot fall or walk off.
 	var map_height := GRID_ROWS * CELL_SIZE
+	var map_width := GRID_COLS * CELL_SIZE
 	var barrier_thickness := CELL_SIZE
 
 	for side in ["left", "right"]:
@@ -596,10 +601,24 @@ func _setup_map_barriers() -> void:
 		if side == "left":
 			shape_node.position = Vector2(-barrier_thickness * 0.5, map_height * 0.5)
 		else:
-			shape_node.position = Vector2(GRID_COLS * CELL_SIZE + barrier_thickness * 0.5, map_height * 0.5)
+			shape_node.position = Vector2(map_width + barrier_thickness * 0.5, map_height * 0.5)
 
 		barrier.add_child(shape_node)
 		add_child(barrier)
+
+	# Bottom barrier
+	var bottom_barrier := StaticBody2D.new()
+	bottom_barrier.collision_layer = 1
+	bottom_barrier.collision_mask = 0
+
+	var bottom_shape := CollisionShape2D.new()
+	var bottom_rect := RectangleShape2D.new()
+	bottom_rect.size = Vector2(map_width, barrier_thickness)
+	bottom_shape.shape = bottom_rect
+	bottom_shape.position = Vector2(map_width * 0.5, map_height + barrier_thickness * 0.5)
+
+	bottom_barrier.add_child(bottom_shape)
+	add_child(bottom_barrier)
 
 func _sync_collision_tilemap() -> void:
 	collision_tilemap.clear()
@@ -985,6 +1004,44 @@ func _draw() -> void:
 			draw_rect(Rect2(max_col * CELL_SIZE, min_row * CELL_SIZE,
 				8, (max_row - min_row + 1) * CELL_SIZE), warn_color)
 
+		# Giant Rat: charge warning overlay — red/orange screen-edge pulse
+		if boss_system.boss_type == BossSystem.BOSS_TYPE_GIANT_RAT and boss_system.rat_charge_warning_active:
+			var rat_ratio := 1.0 - (boss_system.rat_charge_warning_timer / BossSystem.RAT_CHARGE_WARNING)
+			var rat_a := rat_ratio * 0.40
+			var rat_color := Color(0.90, 0.20, 0.05, rat_a)
+			draw_rect(Rect2(min_col * CELL_SIZE, min_row * CELL_SIZE,
+				(max_col - min_col + 1) * CELL_SIZE, 8), rat_color)
+			draw_rect(Rect2(min_col * CELL_SIZE, max_row * CELL_SIZE,
+				(max_col - min_col + 1) * CELL_SIZE, 8), rat_color)
+			draw_rect(Rect2(min_col * CELL_SIZE, min_row * CELL_SIZE,
+				8, (max_row - min_row + 1) * CELL_SIZE), rat_color)
+			draw_rect(Rect2(max_col * CELL_SIZE, min_row * CELL_SIZE,
+				8, (max_row - min_row + 1) * CELL_SIZE), rat_color)
+
+		# Void Spider: web warning — green screen-edge pulse + target indicator
+		if boss_system.boss_type == BossSystem.BOSS_TYPE_SPIDER and boss_system.spider_web_warning_active:
+			var web_ratio := 1.0 - (boss_system.spider_web_warning_timer / BossSystem.SPIDER_WEB_WARNING)
+			var web_a := web_ratio * 0.40
+			var web_color := Color(0.30, 0.80, 0.20, web_a)
+			draw_rect(Rect2(min_col * CELL_SIZE, min_row * CELL_SIZE,
+				(max_col - min_col + 1) * CELL_SIZE, 8), web_color)
+			draw_rect(Rect2(min_col * CELL_SIZE, max_row * CELL_SIZE,
+				(max_col - min_col + 1) * CELL_SIZE, 8), web_color)
+			draw_rect(Rect2(min_col * CELL_SIZE, min_row * CELL_SIZE,
+				8, (max_row - min_row + 1) * CELL_SIZE), web_color)
+			draw_rect(Rect2(max_col * CELL_SIZE, min_row * CELL_SIZE,
+				8, (max_row - min_row + 1) * CELL_SIZE), web_color)
+			# Draw target zone indicator so the player can dodge
+			var wt := boss_system.spider_web_target_pos
+			if wt.x >= 0:
+				var web_pulse := sin(boss_system.boss_pulse_time * 8.0) * 0.5 + 0.5
+				var web_zone := Rect2(
+					(wt.x - BossSystem.SPIDER_WEB_RADIUS) * CELL_SIZE,
+					(wt.y - BossSystem.SPIDER_WEB_RADIUS) * CELL_SIZE,
+					(BossSystem.SPIDER_WEB_RADIUS * 2 + 1) * CELL_SIZE,
+					(BossSystem.SPIDER_WEB_RADIUS * 2 + 1) * CELL_SIZE)
+				draw_rect(web_zone, Color(0.30, 0.80, 0.20, 0.15 + web_pulse * 0.20), false, 2.0)
+
 		# Stone Golem: show required ore type indicator near the golem core
 		if boss_system.boss_type == BossSystem.BOSS_TYPE_GOLEM \
 				and boss_system.golem_phase < BossSystem.GOLEM_PHASE_ORES.size():
@@ -1152,7 +1209,9 @@ func _process(delta: float) -> void:
 	# Pulse wandering traders and boss system regardless of menu state
 	for trader in _active_traders:
 		trader["pulse"] += delta
-	boss_system.update(delta)
+	var _boss_pcol := floori(player_node.global_position.x / CELL_SIZE) if player_node else -1
+	var _boss_prow := floori(player_node.global_position.y / CELL_SIZE) if player_node else -1
+	boss_system.update(delta, _boss_pcol, _boss_prow)
 
 	# Update forager regardless of menu state so it can animate returning home
 	var _surface_deposit_pos := Vector2(46.0 * CELL_SIZE, (SURFACE_ROWS - 1) * CELL_SIZE + CELL_SIZE * 0.5)
@@ -1220,6 +1279,10 @@ func _check_exit_zone() -> void:
 	if player_col < GRID_COLS - EXIT_COLS:
 		has_left_spawn = true
 	if has_left_spawn and player_col >= GRID_COLS - EXIT_COLS and player_row < SURFACE_ROWS:
+		_game_over = true
+		GameManager.complete_run()
+	# Reaching the bottom of the map also counts as a completed run
+	elif player_row >= GRID_ROWS - 1:
 		_game_over = true
 		GameManager.complete_run()
 
@@ -2405,7 +2468,7 @@ func _smeltery_sell(ore_group: String) -> void:
 # Boss encounter system (§4) — delegated to BossSystem
 # ---------------------------------------------------------------------------
 # boss_system.check_milestone(depth, player_col) is called from _update_depth().
-# boss_system.update(delta) is called from _process().
+# boss_system.update(delta, player_col, player_row) is called from _process().
 # boss_system.can_mine_boss_tile(tile, last_ore) and
 # boss_system.on_tile_mined(col, row, tile) are called from try_mine_at().
 # Hint queuing (uses await) lives here; BossSystem exposes get_pending_hints().
@@ -2419,10 +2482,20 @@ func _queue_boss_hints(hints: Array) -> void:
 
 
 func _check_trader_milestone(depth_row: int) -> void:
-	for i in range(TRADER_DEPTH_MILESTONES.size()):
-		if not _trader_milestones_seen[i] and depth_row >= TRADER_DEPTH_MILESTONES[i]:
-			_trader_milestones_seen[i] = true
-			_spawn_wandering_trader(i + 1)  # tier 1–4
+	if depth_row < TRADER_FIRST_CHECK:
+		return
+	if _traders_spawned_count >= TRADER_MAX_PER_RUN:
+		return
+	# Only check at regular intervals (every TRADER_CHECK_INTERVAL rows)
+	var check_row := (depth_row / TRADER_CHECK_INTERVAL) * TRADER_CHECK_INTERVAL
+	if check_row <= _trader_last_check_row:
+		return
+	_trader_last_check_row = check_row
+	if randf() > TRADER_SPAWN_CHANCE:
+		return
+	# Tier scales with depth: 1-4
+	var tier := clampi(depth_row / 32 + 1, 1, 4)
+	_spawn_wandering_trader(tier)
 
 func _spawn_wandering_trader(tier: int) -> void:
 	if not player_node:
@@ -2430,6 +2503,7 @@ func _spawn_wandering_trader(tier: int) -> void:
 	# Place the trader a couple of tiles to the right of the player
 	var spawn_pos := player_node.global_position + Vector2(CELL_SIZE * 2.5, 0.0)
 	_active_traders.append({"world_pos": spawn_pos, "tier": tier, "pulse": 0.0})
+	_traders_spawned_count += 1
 	EventBus.ore_mined_popup.emit(0, "Space Trader!")
 
 func _get_nearby_trader() -> Dictionary:
