@@ -4,8 +4,7 @@ extends HBoxContainer
 const DISCORD_URL = "https://discord.gg/e7M6DcU5fR"
 const STEAM_URL = "https://store.steampowered.com/search/?developer=Lost%20Rabbit%20Digital"
 
-@onready var discord_button: TextureButton = $DiscordBackground/DiscordButton
-@onready var steam_button: TextureButton = $SteamBackground/SteamButton
+@onready var discord_button: TextureButton = $DiscordButton
 
 
 func _on_discord_button_pressed() -> void:

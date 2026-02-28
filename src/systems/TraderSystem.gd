@@ -74,7 +74,7 @@ func get_nearby_trader() -> Dictionary:
 func _spawn_trader(tier: int) -> void:
 	if not _player_node:
 		return
-	var spawn_pos := _player_node.global_position + Vector2(CELL_SIZE * 2.5, 0.0)
+	var spawn_pos: Vector2 = _player_node.global_position + Vector2(CELL_SIZE * 2.5, 0.0)
 	_active_traders.append({"world_pos": spawn_pos, "tier": tier, "pulse": 0.0})
 	_traders_spawned_count += 1
 	EventBus.ore_mined_popup.emit(0, "Space Trader!")
