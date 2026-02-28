@@ -282,11 +282,10 @@ custom_minimum_size = Vector2(0, 260)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="CreditsContent" type="Label" parent="CreditsPanel/VBox/ScrollContainer"]
+[node name="CreditsContent" type="RichTextLabel" parent="CreditsPanel/VBox/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
-autowrap_mode = 2
 text = "DEVELOPERS
 
   BodenGameDev
@@ -294,27 +293,27 @@ text = "DEVELOPERS
 
 ASSETS & ART
 
-  Bumble Bee Sprites       elthen.itch.io
-  Cat Sprites              elthen.itch.io
-  Celestial Objects        uselesspursuit.itch.io
-  Pixel Art Starfields     space-spheremaps.itch.io
-  Spaceships               pixelsbyskab.itch.io
-  16x16 RPG Items          OpenGameArt.org
-  16x16 Monster Items      OpenGameArt.org
-  16x16 Block Textures     OpenGameArt.org
-  Mining Platformer Art    OpenGameArt.org
+  Bumble Bee Sprites       [url=https://elthen.itch.io]elthen[/url]
+  Cat Sprites              [url=https://elthen.itch.io]elthen[/url]
+  Celestial Objects        [url=https://uselesspursuit.itch.io]uselesspursuit[/url]
+  Pixel Art Starfields     [url=https://space-spheremaps.itch.io]space-spheremaps[/url]
+  Spaceships               [url=https://pixelsbyskab.itch.io]pixelsbyskab[/url]
+  16x16 RPG Items          [url=https://opengameart.org]OpenGameArt.org[/url]
+  16x16 Monster Items      [url=https://opengameart.org]OpenGameArt.org[/url]
+  16x16 Block Textures     [url=https://opengameart.org]OpenGameArt.org[/url]
+  Mining Platformer Art    [url=https://opengameart.org]OpenGameArt.org[/url]
 
 COLOUR PALETTE
 
-  Comfy52                  Lospec.com
+  Comfy52                  [url=https://lospec.com]Lospec[/url]
 
 MUSIC & SOUND
 
-  Crickets Ambient Music   OpenGameArt.org
-  Cozy Tunes               pizzadoggy.itch.io
-  Explosion Sprite Sheet   reactorcore.itch.io
-  Rocket Engine SFX        OpenGameArt.org
-  Pop Sounds               OpenGameArt.org"
+  Crickets Ambient Music   [url=https://opengameart.org]OpenGameArt.org[/url]
+  Cozy Tunes               [url=https://pizzadoggy.itch.io]pizzadoggy[/url]
+  Explosion Sprite Sheet   [url=https://reactorcore.itch.io]reactorcore[/url]
+  Rocket Engine SFX        [url=https://opengameart.org]OpenGameArt.org[/url]
+  Pop Sounds               [url=https://opengameart.org]OpenGameArt.org[/url]"
 
 [node name="CloseButton" type="Button" parent="CreditsPanel/VBox"]
 layout_mode = 2
