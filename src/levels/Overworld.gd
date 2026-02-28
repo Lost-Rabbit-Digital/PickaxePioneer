@@ -85,8 +85,22 @@ func _ready() -> void:
 	add_child(_modal)
 	_modal.confirmed.connect(_on_modal_confirmed)
 
-	# Arrange nodes in a circular formation with random layout
-	_arrange_nodes_in_circle()
+	# Define connections - create a connected network
+	_connect_nodes(city_node, mine_node_1)
+	_connect_nodes(city_node, mine_node_2)
+	_connect_nodes(mine_node_1, settlement_node_3)
+	_connect_nodes(mine_node_2, settlement_node_4)
+	_connect_nodes(settlement_node_3, settlement_node_4)
+
+	# Collect all nodes
+	nodes = [city_node, mine_node_1, mine_node_2, settlement_node_3, settlement_node_4]
+
+	# Arrange nodes - restore saved positions or randomize fresh
+	if saved_config.has("node_positions"):
+		_restore_node_positions(saved_config["node_positions"])
+	else:
+		_arrange_nodes_in_circle()
+		_save_node_positions()
 
 	# Connect click signals
 	for node in nodes:
@@ -185,8 +199,26 @@ func _arrange_nodes_in_circle() -> void:
 		var angle := start_angle + i * base_step + randf_range(-jitter, jitter)
 		ordered_nodes[i].position = center + Vector2(cos(angle), sin(angle)) * radius
 
-func _get_traversal_order() -> Array[MapNode]:
-	# BFS from city_node so that connected nodes sit near each other on the circle.
+func _save_node_positions() -> void:
+	var node_positions := {}
+	for node in nodes:
+		node_positions[node.name] = {"x": node.position.x, "y": node.position.y}
+	var config := SaveManager.get_planet_config()
+	config["node_positions"] = node_positions
+	SaveManager.save_planet_config(config)
+
+func _restore_node_positions(positions: Dictionary) -> void:
+	for node in nodes:
+		if positions.has(node.name):
+			var pos_data = positions[node.name]
+			node.position = Vector2(pos_data["x"], pos_data["y"])
+
+func _get_cycle_order() -> Array[MapNode]:
+	# Return visible nodes in the intended cycle order so edges stay on the
+	# perimeter and never cross through the centre.
+	var full_order: Array[MapNode] = [
+		city_node, mine_node_1, settlement_node_3, settlement_node_4, mine_node_2
+	]
 	var result: Array[MapNode] = []
 	var visited: Array[MapNode] = []
 	var queue: Array[MapNode] = [city_node]
