@@ -379,6 +379,14 @@ const FARM_NPC_ROW: int = 2  # Placed on the middle surface row
 
 var _pickaxe_texture: Texture2D
 
+# Spaceship entry animation — player and workers are deposited by the ship at run start
+var _spawning: bool = false
+var _spaceship_sprite: Sprite2D = null
+
+# Level-wide particle system (mining sparks, tile-break bursts, lava ash, boss explosions)
+var _level_particles: Array = []
+const LEVEL_PARTICLE_MAX: int = 300
+
 func _ready() -> void:
 	_pickaxe_texture = load("res://assets/pickaxe_effect.png") as Texture2D
 
@@ -388,6 +396,7 @@ func _ready() -> void:
 	_generate_grid()
 	_generate_ore_veins()   # hydrothermal veins — all ore originates here
 	_generate_cave_rooms()
+	_carve_tunnels()        # drunkard-walk passages connecting caves
 	_setup_collision_tilemap()
 	_sync_collision_tilemap()
 	_setup_map_barriers()
@@ -449,6 +458,11 @@ func _ready() -> void:
 
 	_setup_inventory_screen()
 	queue_redraw()
+
+	# Kick off the spaceship entry cinematic (hides player until ship deposits them)
+	player_node.visible = false
+	_spawning = true
+	_play_spawn_animation.call_deferred()
 
 # ---------------------------------------------------------------------------
 # Collision TileMapLayer setup
@@ -612,6 +626,34 @@ func _generate_cave_rooms() -> void:
 							var ore_tile := _depth_scaled_ore(depth)
 							if ore_tile != TileType.EMPTY:
 								grid[nc][nr] = ore_tile
+
+func _carve_tunnels() -> void:
+	# Drunkard-walk tunnel passages connecting cave rooms, mirroring MenuBackground style.
+	# More frequent turns + occasional width doubling creates organic branching networks.
+	const TCOUNT: int = 14
+	const TLEN_MIN: int = 10
+	const TLEN_MAX: int = 38
+	var dirs: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+	for _i in range(TCOUNT):
+		var cx: int = randi_range(3, GRID_COLS - 4)
+		var cy: int = randi_range(SURFACE_ROWS + 4, GRID_ROWS - 5)
+		var length: int = randi_range(TLEN_MIN, TLEN_MAX)
+		var dir: Vector2i = dirs[randi() % dirs.size()]
+		for _step in range(length):
+			if cx >= 1 and cx < GRID_COLS - 1 and cy >= SURFACE_ROWS + 1 and cy < GRID_ROWS - 1:
+				grid[cx][cy] = TileType.EMPTY
+				# 20% chance to carve a perpendicular neighbour, widening the passage
+				if randf() < 0.20:
+					var perp := Vector2i(-dir.y, dir.x)
+					var sx := cx + perp.x
+					var sy := cy + perp.y
+					if sx >= 1 and sx < GRID_COLS - 1 and sy >= SURFACE_ROWS + 1 and sy < GRID_ROWS - 1:
+						grid[sx][sy] = TileType.EMPTY
+			# 30% chance to turn, producing natural bends
+			if randf() < 0.30:
+				dir = dirs[randi() % dirs.size()]
+			cx = clampi(cx + dir.x, 1, GRID_COLS - 2)
+			cy = clampi(cy + dir.y, SURFACE_ROWS + 1, GRID_ROWS - 2)
 
 func _depth_scaled_ore(depth: float) -> TileType:
 	# Returns a depth-appropriate ore tile for cave room walls (respects allowed_ore_types)
@@ -828,10 +870,22 @@ func _draw() -> void:
 		var dirt_bottom := (max_row + 1) * CELL_SIZE
 		var bg_left: int = min_col * CELL_SIZE
 		var bg_width: int = (max_col - min_col + 1) * CELL_SIZE
-		var mid_row: float = float(min_row + max_row) * 0.5
-		var view_depth_t: float = clamp(float(mid_row - SURFACE_ROWS) / float(GRID_ROWS - SURFACE_ROWS), 0.0, 1.0)
-		var bg_color := Color(0.08, 0.06, 0.04).lerp(Color(0.10, 0.03, 0.05), view_depth_t)
-		draw_rect(Rect2(bg_left, dirt_top, bg_width, dirt_bottom - dirt_top), bg_color)
+		# Gradient background: sky-adjacent dark-blue/purple at surface → deep black-space at bottom.
+		# Drawn as 32 horizontal strips in world space so the gradient persists across the whole map.
+		const GRAD_STRIPS: int = 32
+		var total_underground_h := float((GRID_ROWS - SURFACE_ROWS) * CELL_SIZE)
+		var strip_h := total_underground_h / float(GRAD_STRIPS)
+		var surface_bg := Color(0.10, 0.08, 0.18)   # dark blue-purple near the sky
+		var deep_bg    := Color(0.02, 0.01, 0.06)   # near-black deep space
+		for gi in range(GRAD_STRIPS):
+			var sw_top := float(SURFACE_ROWS * CELL_SIZE) + gi * strip_h
+			var sw_bot := sw_top + strip_h + 1.0
+			if sw_bot < float(dirt_top) or sw_top > float(dirt_bottom):
+				continue
+			var t := float(gi) / float(GRAD_STRIPS - 1)
+			var gc := surface_bg.lerp(deep_bg, t * t)  # quadratic easing — slow at start, fast darkening deep
+			draw_rect(Rect2(float(bg_left), maxf(sw_top, float(dirt_top)),
+				float(bg_width), minf(sw_bot, float(dirt_bottom)) - maxf(sw_top, float(dirt_top))), gc)
 
 	# Tile sprites
 	for col in range(min_col, max_col + 1):
@@ -955,19 +1009,11 @@ func _draw() -> void:
 				seg_fill    = Color(phase_colors[pi][0], 0.18 + boss_pulse * 0.18)
 				seg_border  = Color(phase_colors[pi][1], 0.40 + boss_pulse * 0.25)
 
-		for bp in boss_system.boss_tile_positions:
-			if bp.x < min_col or bp.x > max_col or bp.y < min_row or bp.y > max_row:
-				continue
-			var btile: int = grid[bp.x][bp.y]
-			if btile != TileType.BOSS_SEGMENT and btile != TileType.BOSS_CORE:
-				continue
-			var brect := Rect2(bp.x * CELL_SIZE, bp.y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-			if btile == TileType.BOSS_CORE:
-				draw_rect(brect, core_fill)
-				draw_rect(brect, core_border, false, 2.5)
-			else:
-				draw_rect(brect, seg_fill)
-				draw_rect(brect, seg_border, false, 1.5)
+		# Draw each boss tile as an animated creature part rather than a plain square.
+		# The base colored rect is drawn first (keeps the damage flash / HP system intact),
+		# then an elaborate shape is layered on top per boss type.
+		_draw_boss_creatures(min_col, max_col, min_row, max_row,
+			boss_pulse, core_fill, core_border, seg_fill, seg_border)
 
 		# Boss energy-drain warning — red vignette flicker on screen edges
 		if boss_pulse > 0.75:
@@ -1136,6 +1182,367 @@ func _draw() -> void:
 		if wave_px > 0:
 			draw_arc(center_px, wave_px, 0.0, TAU, 48, Color(0.40, 1.0, 0.60, ping_alpha * 0.55), 2.0)
 
+	# Draw level particles (mining sparks, lava embers, ore bursts)
+	for p: Dictionary in _level_particles:
+		var sz: float = p["size"]
+		var alpha: float = p["life"] / p["max_life"]
+		var c: Color = p["color"]
+		c.a = alpha
+		draw_rect(Rect2(p["pos"].x - sz * 0.5, p["pos"].y - sz * 0.5, sz, sz), c)
+
+# ---------------------------------------------------------------------------
+# Boss creature rendering — animated procedural shapes drawn over boss tiles
+# ---------------------------------------------------------------------------
+
+## Entry point — dispatches to a per-boss-type draw function.
+func _draw_boss_creatures(min_col: int, max_col: int, min_row: int, max_row: int,
+		pulse: float, core_fill: Color, core_border: Color,
+		seg_fill: Color, seg_border: Color) -> void:
+	var t := boss_system.boss_pulse_time
+	match boss_system.boss_type:
+		BossSystem.BOSS_TYPE_GIANT_RAT:
+			_draw_boss_rat(min_col, max_col, min_row, max_row, t, pulse, core_fill, core_border, seg_fill, seg_border)
+		BossSystem.BOSS_TYPE_SPIDER:
+			_draw_boss_spider(min_col, max_col, min_row, max_row, t, pulse, core_fill, core_border, seg_fill, seg_border)
+		BossSystem.BOSS_TYPE_MOLE:
+			_draw_boss_mole(min_col, max_col, min_row, max_row, t, pulse, core_fill, core_border, seg_fill, seg_border)
+		BossSystem.BOSS_TYPE_GOLEM:
+			_draw_boss_golem(min_col, max_col, min_row, max_row, t, pulse, core_fill, core_border, seg_fill, seg_border)
+		BossSystem.BOSS_TYPE_ANCIENT:
+			_draw_boss_ancient(min_col, max_col, min_row, max_row, t, pulse, core_fill, core_border, seg_fill, seg_border)
+
+
+## Helper — returns the world-space centre of a tile.
+func _tile_center(col: int, row: int) -> Vector2:
+	return Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
+
+
+## Giant Rat King — horizontal worm body with a rat-head on the core.
+func _draw_boss_rat(min_col: int, max_col: int, min_row: int, max_row: int,
+		t: float, pulse: float,
+		core_fill: Color, core_border: Color, seg_fill: Color, seg_border: Color) -> void:
+	for bp in boss_system.boss_tile_positions:
+		if bp.x < min_col or bp.x > max_col or bp.y < min_row or bp.y > max_row:
+			continue
+		var btile: int = grid[bp.x][bp.y]
+		if btile != TileType.BOSS_SEGMENT and btile != TileType.BOSS_CORE:
+			continue
+		var cx := float(bp.x * CELL_SIZE + CELL_SIZE / 2)
+		var cy := float(bp.y * CELL_SIZE + CELL_SIZE / 2)
+		# Sinusoidal vertical bob — each column offset gives a "slithering" look
+		var wobble := sin(t * 3.5 + float(bp.x) * 0.6) * 6.0
+		cy += wobble
+
+		if btile == TileType.BOSS_CORE:
+			# Rat head: large oval body
+			var pts := PackedVector2Array()
+			var hw := 26.0
+			var hh := 22.0 + pulse * 4.0
+			for i in 12:
+				var a := float(i) / 12.0 * TAU
+				pts.append(Vector2(cx + cos(a) * hw, cy + sin(a) * hh))
+			draw_polygon(pts, PackedColorArray([core_fill]))
+			draw_polyline(pts + PackedVector2Array([pts[0]]), core_border, 2.5)
+			# Pointy ears
+			var ear_col := Color(core_border.r, core_border.g, core_border.b, 0.90)
+			draw_polygon(PackedVector2Array([
+				Vector2(cx - 18, cy - 20), Vector2(cx - 10, cy - 34), Vector2(cx - 4, cy - 20)
+			]), PackedColorArray([ear_col]))
+			draw_polygon(PackedVector2Array([
+				Vector2(cx + 4, cy - 20), Vector2(cx + 10, cy - 34), Vector2(cx + 18, cy - 20)
+			]), PackedColorArray([ear_col]))
+			# Eyes — two bright circles that blink with pulse
+			var eye_bright := Color(1.0, 0.85, 0.0, 0.7 + pulse * 0.3)
+			draw_circle(Vector2(cx - 9, cy - 5), 5.0 + pulse * 2.0, eye_bright)
+			draw_circle(Vector2(cx + 9, cy - 5), 5.0 + pulse * 2.0, eye_bright)
+			# Whiskers
+			var wc := Color(1.0, 0.9, 0.6, 0.55)
+			for side in [-1.0, 1.0]:
+				draw_line(Vector2(cx + side * 8, cy + 4), Vector2(cx + side * 28, cy + 1), wc, 1.5)
+				draw_line(Vector2(cx + side * 8, cy + 8), Vector2(cx + side * 28, cy + 8), wc, 1.5)
+		else:
+			# Body segment: smaller oval with slight scale variation
+			var sw := 20.0 + pulse * 3.0
+			var sh := 16.0 + sin(t * 2.8 + float(bp.x)) * 4.0
+			var spts := PackedVector2Array()
+			for i in 8:
+				var a := float(i) / 8.0 * TAU
+				spts.append(Vector2(cx + cos(a) * sw, cy + sin(a) * sh))
+			draw_polygon(spts, PackedColorArray([seg_fill]))
+			draw_polyline(spts + PackedVector2Array([spts[0]]), seg_border, 1.5)
+
+
+## Void Spider Matriarch — abdomen core + animated leg-segment arms.
+func _draw_boss_spider(min_col: int, max_col: int, min_row: int, max_row: int,
+		t: float, pulse: float,
+		core_fill: Color, core_border: Color, seg_fill: Color, seg_border: Color) -> void:
+	# Find core position first so we can draw legs toward it from segments
+	var core_px := Vector2(-1.0, -1.0)
+	for bp in boss_system.boss_tile_positions:
+		if grid[bp.x][bp.y] == TileType.BOSS_CORE:
+			core_px = _tile_center(bp.x, bp.y)
+			break
+
+	for bp in boss_system.boss_tile_positions:
+		if bp.x < min_col or bp.x > max_col or bp.y < min_row or bp.y > max_row:
+			continue
+		var btile: int = grid[bp.x][bp.y]
+		if btile != TileType.BOSS_SEGMENT and btile != TileType.BOSS_CORE:
+			continue
+		var ctr := _tile_center(bp.x, bp.y)
+
+		if btile == TileType.BOSS_CORE:
+			# Spider abdomen — large oval with inner pattern
+			var r_out := 26.0 + pulse * 5.0
+			var r_in  := 14.0
+			var pts_out := PackedVector2Array()
+			var pts_in  := PackedVector2Array()
+			for i in 16:
+				var a := float(i) / 16.0 * TAU + t * 0.4
+				pts_out.append(ctr + Vector2(cos(a) * r_out, sin(a) * r_out * 0.75))
+				pts_in.append(ctr + Vector2(cos(a) * r_in, sin(a) * r_in * 0.75))
+			draw_polygon(pts_out, PackedColorArray([core_fill]))
+			draw_polyline(pts_out + PackedVector2Array([pts_out[0]]), core_border, 2.5)
+			draw_polygon(pts_in, PackedColorArray([Color(core_border, 0.35 + pulse * 0.30)]))
+			# Fang pair below
+			var fc := Color(core_border.r * 1.2, core_border.g * 0.5, core_border.b * 0.5, 0.90)
+			draw_polygon(PackedVector2Array([
+				Vector2(ctr.x - 8, ctr.y + 20), Vector2(ctr.x - 4, ctr.y + 34), Vector2(ctr.x - 16, ctr.y + 22)
+			]), PackedColorArray([fc]))
+			draw_polygon(PackedVector2Array([
+				Vector2(ctr.x + 8, ctr.y + 20), Vector2(ctr.x + 4, ctr.y + 34), Vector2(ctr.x + 16, ctr.y + 22)
+			]), PackedColorArray([fc]))
+		else:
+			# Leg segment — tapered limb drawn toward the core with wave animation
+			var wave := sin(t * 4.5 + float(bp.x + bp.y) * 1.2) * 8.0
+			var leg_tip := ctr + Vector2(0, wave)
+			var leg_color := Color(seg_border.r, seg_border.g, seg_border.b, 0.75 + pulse * 0.20)
+			if core_px.x >= 0:
+				# Draw a thick tapered line from the core toward the segment tip
+				var dir := (leg_tip - core_px).normalized()
+				var perp := Vector2(-dir.y, dir.x)
+				var base := core_px + dir * 14.0
+				var pts := PackedVector2Array([
+					base + perp * 8.0, leg_tip + perp * 3.0,
+					leg_tip - perp * 3.0, base - perp * 8.0,
+				])
+				draw_polygon(pts, PackedColorArray([seg_fill]))
+				draw_polyline(pts + PackedVector2Array([pts[0]]), leg_color, 1.5)
+			# Claw tip
+			draw_circle(leg_tip, 5.0, Color(seg_border.r, seg_border.g, seg_border.b, 0.80))
+
+
+## Blind Mole — large burrowing body with claw protrusions.
+func _draw_boss_mole(min_col: int, max_col: int, min_row: int, max_row: int,
+		t: float, pulse: float,
+		core_fill: Color, core_border: Color, seg_fill: Color, seg_border: Color) -> void:
+	var rock := sin(t * 1.8) * 5.0  # side-to-side rock
+	for bp in boss_system.boss_tile_positions:
+		if bp.x < min_col or bp.x > max_col or bp.y < min_row or bp.y > max_row:
+			continue
+		var btile: int = grid[bp.x][bp.y]
+		if btile != TileType.BOSS_SEGMENT and btile != TileType.BOSS_CORE:
+			continue
+		var ctr := _tile_center(bp.x, bp.y) + Vector2(rock * 0.5, 0.0)
+
+		if btile == TileType.BOSS_CORE:
+			# Mole face: rounded snout + small beady eyes + large front claws
+			var hw := 24.0 + pulse * 4.0
+			var hh := 20.0
+			var fpts := PackedVector2Array()
+			for i in 12:
+				var a := float(i) / 12.0 * TAU
+				fpts.append(ctr + Vector2(cos(a) * hw, sin(a) * hh))
+			draw_polygon(fpts, PackedColorArray([core_fill]))
+			draw_polyline(fpts + PackedVector2Array([fpts[0]]), core_border, 2.5)
+			# Snout bump
+			var sc2 := Color(core_fill.r + 0.12, core_fill.g + 0.08, core_fill.b, core_fill.a)
+			draw_circle(ctr + Vector2(0, 8), 10.0, sc2)
+			draw_circle(ctr + Vector2(0, 8), 10.0, Color(core_border, 0.5), false, 1.5)
+			# Beady eyes
+			draw_circle(ctr + Vector2(-10, -5), 4.0, Color(0.05, 0.05, 0.05, 0.90))
+			draw_circle(ctr + Vector2(10, -5), 4.0, Color(0.05, 0.05, 0.05, 0.90))
+			draw_circle(ctr + Vector2(-9, -6), 1.5, Color(1.0, 1.0, 1.0, 0.70))
+			draw_circle(ctr + Vector2(11, -6), 1.5, Color(1.0, 1.0, 1.0, 0.70))
+			# Front claws
+			var cc := Color(0.30, 0.20, 0.05, 0.85)
+			for side in [-1.0, 1.0]:
+				draw_polygon(PackedVector2Array([
+					ctr + Vector2(side * 18, 14),
+					ctr + Vector2(side * 28, 28 + pulse * 5.0),
+					ctr + Vector2(side * 34, 22),
+					ctr + Vector2(side * 24, 10),
+				]), PackedColorArray([cc]))
+		else:
+			# Body chunk — irregular rounded blob
+			var bw := 18.0 + sin(t * 2.1 + float(bp.x)) * 4.0
+			var bh := 16.0 + sin(t * 1.7 + float(bp.y)) * 3.0
+			var bpts := PackedVector2Array()
+			for i in 8:
+				var a := float(i) / 8.0 * TAU
+				bpts.append(ctr + Vector2(cos(a) * bw, sin(a) * bh))
+			draw_polygon(bpts, PackedColorArray([seg_fill]))
+			draw_polyline(bpts + PackedVector2Array([bpts[0]]), seg_border, 1.5)
+			# Small claw bumps on some segments
+			if (bp.x + bp.y) % 3 == 0:
+				var clc := Color(seg_border.r * 0.6, seg_border.g * 0.5, 0.02, 0.75)
+				draw_polygon(PackedVector2Array([
+					ctr + Vector2(-4, -14), ctr + Vector2(0, -22 - pulse * 5.0), ctr + Vector2(4, -14)
+				]), PackedColorArray([clc]))
+
+
+## Stone Golem — geometric armored plates, colour-shifted per phase.
+func _draw_boss_golem(min_col: int, max_col: int, min_row: int, max_row: int,
+		t: float, pulse: float,
+		core_fill: Color, core_border: Color, seg_fill: Color, seg_border: Color) -> void:
+	var spin := t * 0.8  # slow overall rotation for the core gem
+	for bp in boss_system.boss_tile_positions:
+		if bp.x < min_col or bp.x > max_col or bp.y < min_row or bp.y > max_row:
+			continue
+		var btile: int = grid[bp.x][bp.y]
+		if btile != TileType.BOSS_SEGMENT and btile != TileType.BOSS_CORE:
+			continue
+		var ctr := _tile_center(bp.x, bp.y)
+
+		if btile == TileType.BOSS_CORE:
+			# Spinning gem / crystal core
+			var num_pts := 8
+			var r_outer := 22.0 + pulse * 6.0
+			var r_inner := 11.0
+			var star_pts := PackedVector2Array()
+			for i in num_pts * 2:
+				var a := spin + float(i) / float(num_pts * 2) * TAU
+				var r := r_outer if i % 2 == 0 else r_inner
+				star_pts.append(ctr + Vector2(cos(a) * r, sin(a) * r))
+			draw_polygon(star_pts, PackedColorArray([core_fill]))
+			draw_polyline(star_pts + PackedVector2Array([star_pts[0]]), core_border, 2.5)
+			# Inner glow dot
+			draw_circle(ctr, 8.0 + pulse * 4.0, Color(core_border.r, core_border.g, core_border.b, 0.60 + pulse * 0.30))
+		else:
+			# Armor plate — rotated hexagon / diamond
+			var rotate_offset := sin(t * 1.2 + float(bp.x * 7 + bp.y * 3)) * 0.3
+			var hw := 20.0 + pulse * 3.0
+			var hpts := PackedVector2Array()
+			for i in 6:
+				var a := rotate_offset + float(i) / 6.0 * TAU
+				hpts.append(ctr + Vector2(cos(a) * hw, sin(a) * hw * 0.75))
+			draw_polygon(hpts, PackedColorArray([seg_fill]))
+			draw_polyline(hpts + PackedVector2Array([hpts[0]]), seg_border, 2.0)
+			# Engraved lines (cross-hatch detail)
+			var lc := Color(seg_border.r, seg_border.g, seg_border.b, 0.35)
+			draw_line(ctr + Vector2(-14, 0), ctr + Vector2(14, 0), lc, 1.0)
+			draw_line(ctr + Vector2(0, -14), ctr + Vector2(0, 14), lc, 1.0)
+
+
+## Ancient Star Beast — nested crystalline rings with rotating energy tendrils.
+func _draw_boss_ancient(min_col: int, max_col: int, min_row: int, max_row: int,
+		t: float, pulse: float,
+		core_fill: Color, core_border: Color, seg_fill: Color, seg_border: Color) -> void:
+	var spin_a := t * 1.1
+	var spin_b := t * -0.7
+	for bp in boss_system.boss_tile_positions:
+		if bp.x < min_col or bp.x > max_col or bp.y < min_row or bp.y > max_row:
+			continue
+		var btile: int = grid[bp.x][bp.y]
+		if btile != TileType.BOSS_SEGMENT and btile != TileType.BOSS_CORE:
+			continue
+		var ctr := _tile_center(bp.x, bp.y)
+
+		if btile == TileType.BOSS_CORE:
+			# Void portal — double rotating star with radiant glow
+			for ring in 2:
+				var spin_r := spin_a if ring == 0 else spin_b
+				var r_out := (28.0 if ring == 0 else 16.0) + pulse * 5.0
+				var r_in := r_out * 0.45
+				var num := 6 if ring == 0 else 4
+				var spts := PackedVector2Array()
+				for i in num * 2:
+					var a := spin_r + float(i) / float(num * 2) * TAU
+					var rv := r_out if i % 2 == 0 else r_in
+					spts.append(ctr + Vector2(cos(a) * rv, sin(a) * rv))
+				var fc := core_fill if ring == 0 else Color(core_border, core_border.a * 0.65)
+				draw_polygon(spts, PackedColorArray([fc]))
+				draw_polyline(spts + PackedVector2Array([spts[0]]), core_border, 2.0 - float(ring) * 0.5)
+			# Central void circle
+			draw_circle(ctr, 8.0 + pulse * 3.0, Color(0.0, 0.0, 0.0, 0.85))
+			draw_circle(ctr, 5.0, Color(core_border.r, core_border.g, core_border.b, 0.65 + pulse * 0.30))
+		else:
+			# Crystal shard — elongated diamond pointing outward from boss area
+			var shard_len := 22.0 + pulse * 6.0
+			var shard_w := 9.0
+			# Oscillate the shard tip radially
+			var oscillate := sin(t * 3.0 + float(bp.x + bp.y) * 0.8) * 5.0
+			var pts := PackedVector2Array([
+				ctr + Vector2(0, -shard_len - oscillate),
+				ctr + Vector2(shard_w, 0),
+				ctr + Vector2(0, shard_len * 0.35),
+				ctr + Vector2(-shard_w, 0),
+			])
+			draw_polygon(pts, PackedColorArray([seg_fill]))
+			draw_polyline(pts + PackedVector2Array([pts[0]]), seg_border, 1.5)
+			# Inner highlight stripe
+			draw_line(ctr + Vector2(0, -shard_len * 0.7 - oscillate),
+				ctr + Vector2(0, shard_len * 0.25),
+				Color(1.0, 1.0, 1.0, 0.20 + pulse * 0.20), 2.0)
+
+# ---------------------------------------------------------------------------
+# Level particle system — mining sparks, ore bursts, lava embers, boss fx
+# ---------------------------------------------------------------------------
+
+func _spawn_mining_particles(world_pos: Vector2, color: Color, count: int, speed_min: float = 40.0, speed_max: float = 150.0) -> void:
+	var available := LEVEL_PARTICLE_MAX - _level_particles.size()
+	for _i in range(mini(count, available)):
+		var angle := randf() * TAU
+		var speed := randf_range(speed_min, speed_max)
+		_level_particles.append({
+			"pos": world_pos + Vector2(randf_range(-8.0, 8.0), randf_range(-8.0, 8.0)),
+			"vel": Vector2(cos(angle) * speed, sin(angle) * speed - speed * 0.3),
+			"life": randf_range(0.18, 0.55),
+			"max_life": 0.55,
+			"size": randf_range(3.0, 9.0),
+			"color": color,
+		})
+
+func _spawn_lava_ember(world_pos: Vector2) -> void:
+	if _level_particles.size() >= LEVEL_PARTICLE_MAX:
+		return
+	_level_particles.append({
+		"pos": world_pos + Vector2(randf_range(-10.0, 10.0), 0.0),
+		"vel": Vector2(randf_range(-18.0, 18.0), randf_range(-55.0, -20.0)),
+		"life": randf_range(0.5, 1.2),
+		"max_life": 1.2,
+		"size": randf_range(2.5, 5.5),
+		"color": Color(1.0, randf_range(0.25, 0.65), 0.0),
+	})
+
+func _update_level_particles(delta: float) -> void:
+	var i := _level_particles.size() - 1
+	while i >= 0:
+		var p: Dictionary = _level_particles[i]
+		p["life"] -= delta
+		if p["life"] <= 0.0:
+			_level_particles.remove_at(i)
+		else:
+			p["pos"] += p["vel"] * delta
+			p["vel"] *= 0.82  # air drag
+		i -= 1
+
+func _emit_lava_embers(delta: float, min_col: int, max_col: int, min_row: int, max_row: int) -> void:
+	# Occasionally emit rising embers from visible lava tiles for atmospheric effect.
+	const LAVA_EMBER_RATE: float = 0.04   # avg seconds between embers per lava tile
+	if randf() > delta / LAVA_EMBER_RATE:
+		return
+	# Pick a random visible lava tile
+	var lava_tiles: Array = []
+	for c in range(min_col, min(max_col + 1, GRID_COLS)):
+		for r in range(min_row, min(max_row + 1, GRID_ROWS)):
+			if grid[c][r] == TileType.LAVA or grid[c][r] == TileType.LAVA_FLOW:
+				lava_tiles.append(Vector2i(c, r))
+	if lava_tiles.is_empty():
+		return
+	var lt: Vector2i = lava_tiles[randi() % lava_tiles.size()]
+	_spawn_lava_ember(Vector2(lt.x * CELL_SIZE + CELL_SIZE * 0.5, lt.y * CELL_SIZE))
+
 # ---------------------------------------------------------------------------
 # UI-blocking helper — used by PlayerProbe to pause input while any shop is open
 # ---------------------------------------------------------------------------
@@ -1161,6 +1568,9 @@ func _process(delta: float) -> void:
 		for k in to_remove:
 			_flash_cells.erase(k)
 
+	# Update level particles
+	_update_level_particles(delta)
+
 	# Update sonar ping wave (§3.2) — delegated to SonarSystem
 	sonar_system.update(delta, 2.0 if _ancient_map_active[0] else 1.0)
 
@@ -1185,6 +1595,16 @@ func _process(delta: float) -> void:
 
 	# Update camera to follow player
 	_update_camera()
+
+	# Emit lava embers for visible lava tiles (atmospheric effect)
+	if camera and not _game_over:
+		var vc_x := clamp(camera.position.x, VIEWPORT_W * 0.5, GRID_COLS * CELL_SIZE - VIEWPORT_W * 0.5)
+		var vc_y := clamp(camera.position.y, VIEWPORT_H * 0.5, GRID_ROWS * CELL_SIZE - VIEWPORT_H * 0.5)
+		var em_col_min := maxi(0, int((vc_x - VIEWPORT_W * 0.5) / CELL_SIZE))
+		var em_col_max := mini(GRID_COLS - 1, int((vc_x + VIEWPORT_W * 0.5) / CELL_SIZE))
+		var em_row_min := maxi(0, int((vc_y - VIEWPORT_H * 0.5) / CELL_SIZE))
+		var em_row_max := mini(GRID_ROWS - 1, int((vc_y + VIEWPORT_H * 0.5) / CELL_SIZE))
+		_emit_lava_embers(delta, em_col_min, em_col_max, em_row_min, em_row_max)
 
 	# Update depth tracking
 	_update_depth()
@@ -1423,12 +1843,22 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 				EventBus.ore_mined_popup.emit(minerals, popup_label)
 			# Non-ore tiles (dirt, stone, grass) give no minerals.
 			_check_streak_milestone()
+		# Particle burst on tile destruction
+		var tile_world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
+		var burst_color := TILE_COLORS.get(tile, Color(0.7, 0.6, 0.4))
+		var burst_count := 14 if tile in ORE_TILES else 8
+		if tile == TileType.BOSS_SEGMENT or tile == TileType.BOSS_CORE:
+			burst_count = 20
+		_spawn_mining_particles(tile_world_pos, burst_color, burst_count, 60.0, 200.0)
 		SoundManager.play_drill_sound()
 	else:
 		_tile_damage[pos_key] = new_damage
 		_tile_hits[pos_key] = hits_so_far + 1
 		var damage_ratio := float(new_damage) / float(tile_hp)
 		_update_breaking_overlay(pos_key, damage_ratio)
+		# Small impact sparks on partial hits
+		var hit_world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
+		_spawn_mining_particles(hit_world_pos, TILE_COLORS.get(tile, Color(0.8, 0.7, 0.5)), 4, 30.0, 90.0)
 		SoundManager.play_impact_sound()
 		_shake_camera(1.5, 0.07)
 
@@ -1498,6 +1928,10 @@ func _explode_area(center_col: int, center_row: int) -> void:
 					GameManager.track_ore_mined(tile, minerals)
 				grid[nc][nr] = TileType.EMPTY
 				_set_tile_collision(nc, nr, false)
+	# Large explosion particle burst
+	var explosion_world := Vector2(center_col * CELL_SIZE + CELL_SIZE * 0.5, center_row * CELL_SIZE + CELL_SIZE * 0.5)
+	_spawn_mining_particles(explosion_world, Color(1.0, 0.55, 0.05), 28, 80.0, 280.0)
+	_spawn_mining_particles(explosion_world, Color(1.0, 0.90, 0.20, 0.8), 16, 50.0, 180.0)
 	SoundManager.play_explosion_sound()
 	_shake_camera(6.0, 0.35)
 	if player_node:
@@ -1571,6 +2005,53 @@ func _shake_camera(intensity: float = 5.0, duration: float = 0.3) -> void:
 		)
 		tween.tween_property(camera, "offset", offset, step_dur)
 	tween.tween_property(camera, "offset", Vector2.ZERO, 0.05)
+
+# ---------------------------------------------------------------------------
+# Spaceship entry animation
+# ---------------------------------------------------------------------------
+
+func _play_spawn_animation() -> void:
+	var spaceship_tex := load("res://assets/spaceship.png") as Texture2D
+	var spawn_px := Vector2(2 * CELL_SIZE + CELL_SIZE * 0.5, 2 * CELL_SIZE + CELL_SIZE * 0.5)
+
+	if spaceship_tex:
+		_spaceship_sprite = Sprite2D.new()
+		_spaceship_sprite.texture = spaceship_tex
+		_spaceship_sprite.texture_filter = TEXTURE_FILTER_NEAREST
+		_spaceship_sprite.scale = Vector2(2.0, 2.0)
+		_spaceship_sprite.z_index = 10
+		# Start high above the spawn point, just off-screen
+		_spaceship_sprite.position = spawn_px + Vector2(0.0, -900.0)
+		add_child(_spaceship_sprite)
+
+		# Swoop down to hover above the spawn tile
+		var hover_pos := spawn_px + Vector2(0.0, -float(CELL_SIZE) * 2.0)
+		var in_tween := create_tween()
+		in_tween.tween_property(_spaceship_sprite, "position", hover_pos, 1.1) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		await in_tween.finished
+
+	# Brief hover — ship "deposits" the player and any hired cats
+	await get_tree().create_timer(0.55).timeout
+
+	# Reveal player at spawn position
+	if player_node:
+		player_node.global_position = spawn_px
+		player_node.visible = true
+
+	# Tiny camera shake as players hits the surface
+	_shake_camera(4.0, 0.25)
+
+	if spaceship_tex and _spaceship_sprite:
+		# Fly back up and disappear
+		var out_tween := create_tween()
+		out_tween.tween_property(_spaceship_sprite, "position", spawn_px + Vector2(60.0, -1000.0), 0.9) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		await out_tween.finished
+		_spaceship_sprite.queue_free()
+		_spaceship_sprite = null
+
+	_spawning = false
 
 # ---------------------------------------------------------------------------
 # Sonar ping (§3.2) — delegated to SonarSystem
