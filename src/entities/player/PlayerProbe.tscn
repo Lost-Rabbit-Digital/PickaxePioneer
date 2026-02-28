@@ -1,11 +1,115 @@
-[gd_scene load_steps=64 format=3 uid="uid://c8x7k2q5y302"]
+[gd_scene load_steps=88 format=3 uid="uid://c8x7k2q5y302"]
 
 [ext_resource type="Script" uid="uid://qet53heo74tq" path="res://src/entities/player/PlayerProbe.gd" id="1_probe"]
 [ext_resource type="Script" uid="uid://c062iuy7bensn" path="res://src/components/HealthComponent.gd" id="2_health"]
+[ext_resource type="Texture2D" uid="uid://c5fvuryc0rca1" path="res://assets/hats/hat1.png" id="2_t7q6t"]
 [ext_resource type="Texture2D" uid="uid://bioqrfw288och" path="res://assets/player_cat_spritesheet.png" id="2_yx8hx"]
+[ext_resource type="Texture2D" uid="uid://bnf8oa01wt75d" path="res://assets/hats/hat2.png" id="3_gh7rg"]
+[ext_resource type="Texture2D" uid="uid://haaq4gqxlqs" path="res://assets/hats/hat3.png" id="4_oxs42"]
+[ext_resource type="Texture2D" uid="uid://cib7oklvcvj2f" path="res://assets/hats/hat4.png" id="5_ekt2c"]
+[ext_resource type="Texture2D" uid="uid://b5vyp84a56su5" path="res://assets/hats/hat5.png" id="6_8ixck"]
+[ext_resource type="Texture2D" uid="uid://dygvke81cexyw" path="res://assets/hats/hat6.png" id="7_0yi2b"]
+[ext_resource type="Texture2D" uid="uid://d217vxj1phnfq" path="res://assets/hats/hat7.png" id="8_b6wko"]
+[ext_resource type="Texture2D" uid="uid://depxifar52usa" path="res://assets/hats/hat8.png" id="9_xsp78"]
+[ext_resource type="Texture2D" uid="uid://b57q151e33sxp" path="res://assets/hats/hat9.png" id="10_pj583"]
+[ext_resource type="Texture2D" uid="uid://l4a2p25aj1r1" path="res://assets/hats/hat10.png" id="11_4aqxb"]
+[ext_resource type="Texture2D" uid="uid://c2f5kf2il5t7i" path="res://assets/hats/hat11.png" id="12_dufp8"]
+[ext_resource type="Texture2D" uid="uid://bsb67lualhpam" path="res://assets/hats/hat12.png" id="13_tvryq"]
+[ext_resource type="Texture2D" uid="uid://dhw5daxoirtbc" path="res://assets/hats/hat13.png" id="14_4igab"]
+[ext_resource type="Texture2D" uid="uid://cxqy4i6w5efqn" path="res://assets/hats/hat14.png" id="15_lipny"]
+[ext_resource type="Texture2D" uid="uid://dx4h3nf0drquy" path="res://assets/hats/hat15.png" id="16_87q7y"]
+[ext_resource type="Texture2D" uid="uid://34nl0noqxmdb" path="res://assets/hats/hat16.png" id="17_2frj1"]
+[ext_resource type="Texture2D" uid="uid://c1iib0tpdgmq4" path="res://assets/hats/hat17.png" id="18_vvu2x"]
+[ext_resource type="Texture2D" uid="uid://djymr7qulpn1d" path="res://assets/hats/hat19.png" id="20_1ujmx"]
+[ext_resource type="Texture2D" uid="uid://un16ohdguv14" path="res://assets/hats/hat20.png" id="21_bc6q1"]
+[ext_resource type="Texture2D" uid="uid://c2hchwthfs73s" path="res://assets/hats/hat21.png" id="22_nwabo"]
+[ext_resource type="Texture2D" uid="uid://bhoce72dkyoe6" path="res://assets/hats/hat22.png" id="23_gl3xj"]
+[ext_resource type="Texture2D" uid="uid://7l8ropa1axo1" path="res://assets/hats/hat23.png" id="24_5421a"]
+[ext_resource type="Texture2D" uid="uid://dq66jrv8qk6en" path="res://assets/hats/hat24.png" id="25_0xxkk"]
+[ext_resource type="Texture2D" uid="uid://cy3rosunebn1" path="res://assets/hats/hat25.png" id="26_wg1ue"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(56, 60)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_aol7p"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_t7q6t")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_gh7rg")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_oxs42")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_ekt2c")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_8ixck")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_0yi2b")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_b6wko")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_xsp78")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_pj583")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_4aqxb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_dufp8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_tvryq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_4igab")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_lipny")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_87q7y")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_2frj1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_vvu2x")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_1ujmx")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_bc6q1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_nwabo")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_gl3xj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_5421a")
+}, {
+"duration": 1.0,
+"texture": ExtResource("25_0xxkk")
+}, {
+"duration": 1.0,
+"texture": ExtResource("26_wg1ue")
+}],
+"loop": false,
+"name": &"default",
+"speed": 0.0
+}]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_sobun"]
 atlas = ExtResource("2_yx8hx")
@@ -451,6 +555,16 @@ script = ExtResource("1_probe")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_player")
 
+[node name="Hat" type="AnimatedSprite2D" parent="."]
+z_index = 1
+texture_filter = 1
+position = Vector2(0, -12.999999)
+scale = Vector2(2.75, 2.75)
+sprite_frames = SubResource("SpriteFrames_aol7p")
+frame = 16
+offset = Vector2(3.55, -1.72)
+flip_h = true
+
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 texture_filter = 1
 scale = Vector2(4, 4)
@@ -459,7 +573,6 @@ animation = &"jump"
 frame = 6
 frame_progress = 0.29225284
 offset = Vector2(0, -8)
-
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("2_health")
