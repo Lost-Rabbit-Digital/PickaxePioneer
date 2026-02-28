@@ -25,7 +25,7 @@ func _ready() -> void:
 	$VBoxContainer/WishlistButton.pressed.connect(_on_wishlist_pressed)
 	$VBoxContainer/QuitButton.pressed.connect(_on_quit_pressed)
 	$SettingsPanel/VBox/CloseButton.pressed.connect(_on_settings_close_pressed)
-	$VBoxContainer/CreditsButton.pressed.connect(_on_credits_pressed)
+	$CreditsButton.pressed.connect(_on_credits_pressed)
 	$CreditsPanel/VBox/CloseButton.pressed.connect(_on_credits_close_pressed)
 
 	master_slider.value_changed.connect(_on_master_changed)
@@ -72,9 +72,13 @@ func _on_wishlist_pressed() -> void:
 	OS.shell_open(WISHLIST_URL)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel") and settings_panel.visible:
-		_on_settings_close_pressed()
-		accept_event()
+	if event.is_action_pressed("ui_cancel"):
+		if credits_panel.visible:
+			_on_credits_close_pressed()
+			get_viewport().set_input_as_handled()
+		elif settings_panel.visible:
+			_on_settings_close_pressed()
+			get_viewport().set_input_as_handled()
 
 func _on_settings_close_pressed() -> void:
 	SettingsManager.save_settings()
@@ -85,11 +89,6 @@ func _on_credits_pressed() -> void:
 
 func _on_credits_close_pressed() -> void:
 	credits_panel.hide()
-
-func _unhandled_input(event: InputEvent) -> void:
-	if credits_panel.visible and event.is_action_pressed("ui_cancel"):
-		_on_credits_close_pressed()
-		get_viewport().set_input_as_handled()
 
 # ---------------------------------------------------------------------------
 # Volume sliders
