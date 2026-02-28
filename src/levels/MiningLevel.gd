@@ -42,6 +42,8 @@ enum TileType {
 	BOSS_CORE        = 24,   # Boss core / head — highest HP, big reward
 	UPGRADE_STATION  = 25,   # Upgrade station — permanent upgrades using banked minerals
 	SMELTERY_STATION = 26,   # Smeltery — smelt ores into bars and sell them
+	LADDER           = 27,   # Placeable ladder — player climbs up by pressing jump
+	CAT_TAVERN       = 28,   # Underground Cat Tavern — hire mining/collecting cats
 }
 
 const TILE_NAMES: Dictionary = {
@@ -71,6 +73,8 @@ const TILE_NAMES: Dictionary = {
 	TileType.BOSS_CORE:       "Boss Core",
 	TileType.UPGRADE_STATION: "Upgrade Bay",
 	TileType.SMELTERY_STATION: "Space Forge",
+	TileType.LADDER:          "Ladder",
+	TileType.CAT_TAVERN:      "Cat Tavern",
 }
 
 const MINEABLE_TILES: Array = [
@@ -109,8 +113,10 @@ const TILE_COLORS: Dictionary = {
 	TileType.EXIT_STATION:   Color(0.15, 0.55, 0.70),
 	TileType.BOSS_SEGMENT:   Color(0.70, 0.15, 0.50),
 	TileType.BOSS_CORE:      Color(0.90, 0.10, 0.40),
-	TileType.UPGRADE_STATION: Color(0.40, 0.50, 0.60),
+	TileType.UPGRADE_STATION:  Color(0.40, 0.50, 0.60),
 	TileType.SMELTERY_STATION: Color(0.40, 0.50, 0.60),
+	TileType.LADDER:           Color(0.80, 0.60, 0.15),
+	TileType.CAT_TAVERN:       Color(0.40, 0.50, 0.60),
 }
 
 const TILE_TEXTURE_PATHS: Dictionary = {
@@ -135,8 +141,9 @@ const TILE_TEXTURE_PATHS: Dictionary = {
 	TileType.REENERGY_STATION:  "res://assets/blocks/cobblestone_bricks.png",
 	TileType.SURFACE:         "res://assets/blocks/grass_top.png",
 	TileType.SURFACE_GRASS:   "res://assets/blocks/grass_side.png",
-	TileType.UPGRADE_STATION: "res://assets/blocks/cobblestone_bricks.png",
+	TileType.UPGRADE_STATION:  "res://assets/blocks/cobblestone_bricks.png",
 	TileType.SMELTERY_STATION: "res://assets/blocks/cobblestone_bricks.png",
+	TileType.CAT_TAVERN:       "res://assets/blocks/cobblestone_bricks.png",
 }
 
 const TILE_HP: Dictionary = {
@@ -322,6 +329,7 @@ const SOLID_TILES: Array = [
 	TileType.ENERGY_NODE, TileType.ENERGY_NODE_FULL,
 	TileType.SURFACE_GRASS,
 	TileType.BOSS_SEGMENT, TileType.BOSS_CORE,
+	TileType.CAT_TAVERN,
 ]
 
 # Depth zones
@@ -370,6 +378,7 @@ var _energy_shop_minerals_label: Label
 var _energy_shop_btn_reenergy_full: Button
 var _energy_shop_btn_reenergy_half: Button
 var _energy_shop_btn_repair: Button
+var _energy_shop_btn_ladders: Button
 
 # Upgrade Station Shop
 var _upgrade_station_layer: CanvasLayer
@@ -388,6 +397,13 @@ var _smeltery_bar_labels: Dictionary = {}       # ore_group -> Label showing bar
 var _smeltery_smelt_btns: Dictionary = {}       # ore_group -> Button to smelt
 var _smeltery_sell_btns: Dictionary = {}        # ore_group -> Button to sell bars
 var _run_bar_counts: Dictionary = {}            # ore_group -> int (bars smelted this run)
+
+# Cat Tavern shop
+var _cat_tavern_layer: CanvasLayer = null
+var _cat_tavern_visible: bool = false
+var _cat_tavern_label: Label = null
+var _cat_tavern_btn_mining: Button = null
+var _cat_tavern_btn_collecting: Button = null
 
 # Depth tracking
 var _last_depth: int = 0
@@ -420,8 +436,8 @@ var fossil_system: FossilSystem = FossilSystem.new()
 # Boss encounter subsystem (§4) — logic lives in BossSystem.gd
 var boss_system: BossSystem = BossSystem.new()
 
-# Forager Ant subsystem (§3.4) — logic lives in ForagerSystem.gd
-var forager_system: ForagerSystem = ForagerSystem.new()
+# Mining/Collecting Cat subsystem — logic lives in CatSystem.gd (Node2D child)
+var cat_system: CatSystem = null
 
 # Wandering Trader state
 # Each entry: {world_pos: Vector2, tier: int, pulse: float}
@@ -437,9 +453,6 @@ var _shroom_charges: int = 0       # Mining Shroom: remaining ores with doubled 
 var _lucky_compass_active: bool = false   # Lucky Compass: 2× lucky strike chance
 var _ancient_map_active: bool = false     # Ancient Map: 2× sonar ping radius
 
-# ---------------------------------------------------------------------------
-# Forager Ant companion (§3.4) — logic lives in ForagerSystem.gd
-# ---------------------------------------------------------------------------
 
 # Settlement whetstone bonus: temporary +N mandible power for this run only
 var _settlement_mandible_bonus: int = 0
@@ -513,17 +526,14 @@ func _ready() -> void:
 	if GameManager.settlement_mandible_bonus > 0:
 		_settlement_mandible_bonus = GameManager.settlement_mandible_bonus
 		GameManager.settlement_mandible_bonus = 0
-	var forager_bonus: int = 0
-	if GameManager.settlement_forager_bonus > 0:
-		forager_bonus += GameManager.settlement_forager_bonus
-		GameManager.settlement_forager_bonus = 0
 
-	# Initialise ForagerSystem near the player's starting position
-	var forager_spawn := Vector2(
-		(spawn_col + 2) * CELL_SIZE + CELL_SIZE * 0.5,
-		spawn_row * CELL_SIZE + CELL_SIZE * 0.5
-	)
-	forager_system.setup(forager_spawn, forager_bonus)
+	# Initialise CatSystem (Node2D child — handles its own _process and _draw)
+	cat_system = CatSystem.new()
+	add_child(cat_system)
+	cat_system.setup(self, grid, GRID_COLS, GRID_ROWS, SURFACE_ROWS)
+
+	# Build Cat Tavern inline shop UI
+	_setup_cat_tavern_shop()
 
 	# Initialise BossSystem with grid reference and MiningLevel callbacks
 	boss_system.setup(
@@ -651,6 +661,10 @@ func _generate_grid() -> void:
 	grid[reenergy_col][SURFACE_ROWS - 1] = TileType.REENERGY_STATION
 	grid[reenergy_col - 5][SURFACE_ROWS - 1] = TileType.UPGRADE_STATION
 	grid[reenergy_col + 5][SURFACE_ROWS - 1] = TileType.SMELTERY_STATION
+
+	# Underground Cat Tavern — placed in the first sub-zone (~17 rows below surface)
+	var tavern_col := clampi(reenergy_col + 10, 5, GRID_COLS - 6)
+	grid[tavern_col][SURFACE_ROWS + 17] = TileType.CAT_TAVERN
 
 	grid[GRID_COLS - 1][SURFACE_ROWS - 1] = TileType.EXIT_STATION
 
@@ -857,6 +871,17 @@ func _draw() -> void:
 					Color(0.35 + pulse * 0.45, 1.0, 0.35 + pulse * 0.20))
 				continue
 
+			# Ladders — transparent overlay (two poles + rungs), skip normal texture
+			if tile == TileType.LADDER:
+				var lx := col * CELL_SIZE
+				var ly := row * CELL_SIZE
+				draw_rect(Rect2(lx + 10, ly + 2, 8, CELL_SIZE - 4), Color(0.80, 0.60, 0.15, 0.90))
+				draw_rect(Rect2(lx + CELL_SIZE - 18, ly + 2, 8, CELL_SIZE - 4), Color(0.80, 0.60, 0.15, 0.90))
+				for rung in 3:
+					draw_rect(Rect2(lx + 10, ly + 10 + rung * 18, CELL_SIZE - 20, 5),
+						Color(0.70, 0.50, 0.10, 0.90))
+				continue
+
 			var tex: Texture2D = tile_textures.get(tile)
 			if tex:
 				draw_texture_rect(tex, tile_rect, false)
@@ -874,6 +899,14 @@ func _draw() -> void:
 			if tile == TileType.SMELTERY_STATION:
 				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
 					Color(1.0, 0.55, 0.0), false, 2.0)
+
+			if tile == TileType.CAT_TAVERN:
+				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
+					Color(0.75, 0.35, 0.90), false, 2.0)
+				var cfont := ThemeDB.fallback_font
+				draw_string(cfont,
+					Vector2(col * CELL_SIZE + 4, row * CELL_SIZE + CELL_SIZE / 2 + 5),
+					"CAT", HORIZONTAL_ALIGNMENT_CENTER, CELL_SIZE - 8, 11, Color(0.90, 0.70, 1.00))
 
 			# Breaking overlay is handled by child AnimatedSprite2D instances
 
@@ -1084,33 +1117,7 @@ func _draw() -> void:
 				draw_string(afont, label_px2, al,
 					HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.80, 0.55, 1.00, 0.90))
 
-	# Scout Cat companion — amber circle with carry indicator (§3.4)
-	# State is read from forager_system; draw calls remain in MiningLevel._draw()
-	var fg := forager_system.world_pos
-	var fg_col := floori(fg.x / CELL_SIZE)
-	var fg_row := floori(fg.y / CELL_SIZE)
-	if fg_col >= min_col - 1 and fg_col <= max_col + 1 and fg_row >= min_row - 1 and fg_row <= max_row + 1:
-		var carry_ratio := float(forager_system.carry) / float(max(forager_system.capacity, 1))
-		var forager_color: Color
-		match forager_system.state:
-			"follow":
-				forager_color = Color(0.95, 0.65, 0.05, 0.92)
-			"return":
-				forager_color = Color(0.55, 0.90, 0.30, 0.95)  # green when heading home
-			_:  # deposit
-				forager_color = Color(0.30, 0.70, 1.00, 0.85)  # blue while depositing
-		draw_circle(fg, 10.0, forager_color)
-		# Carry bar above the forager
-		var bar_w := 26.0
-		var bar_h := 4.0
-		var bar_x := fg.x - bar_w * 0.5
-		var bar_y := fg.y - 18.0
-		draw_rect(Rect2(bar_x, bar_y, bar_w, bar_h), Color(0.15, 0.15, 0.15, 0.80))
-		draw_rect(Rect2(bar_x, bar_y, bar_w * carry_ratio, bar_h), Color(0.95, 0.80, 0.05, 0.90))
-		# "F" glyph
-		var fnt := ThemeDB.fallback_font
-		draw_string(fnt, Vector2(fg.x - 4.0, fg.y + 6.0), "F",
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.10, 0.05, 0.00))
+	# CatSystem draws itself as a Node2D child (AnimatedSprite2D nodes + carry bars via its own _draw)
 
 	# Sonar ping overlay — expanding wave reveals ore tiles through rock (§3.2)
 	# State is read from sonar_system; draw calls remain in MiningLevel._draw()
@@ -1184,13 +1191,16 @@ func _process(delta: float) -> void:
 	var _boss_prow := floori(player_node.global_position.y / CELL_SIZE) if player_node else -1
 	boss_system.update(delta, _boss_pcol, _boss_prow)
 
-	# Update forager regardless of menu state so it can animate returning home
-	var _surface_deposit_pos := Vector2(46.0 * CELL_SIZE, (SURFACE_ROWS - 1) * CELL_SIZE + CELL_SIZE * 0.5)
-	forager_system.update(delta, player_node.global_position if player_node else Vector2.ZERO, _surface_deposit_pos)
-	if forager_system.sweep_due:
-		_forager_do_sweep()
+	# Update player on_ladder flag each frame (cats handle their own movement)
+	if player_node:
+		var pgp := player_node.get_grid_pos()
+		player_node.on_ladder = (
+			pgp.x >= 0 and pgp.x < GRID_COLS and pgp.y >= 0 and pgp.y < GRID_ROWS
+			and grid[pgp.x][pgp.y] == TileType.LADDER
+		)
 
-	if _hub_visible or _game_over or _energy_shop_visible or _trader_shop_visible or _smeltery_visible:
+	if _hub_visible or _game_over or _energy_shop_visible or _trader_shop_visible \
+			or _smeltery_visible or _cat_tavern_visible:
 		return
 
 	# Update cursor highlight
@@ -1262,7 +1272,8 @@ func _check_exit_zone() -> void:
 # ---------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _hub_visible or _game_over or _energy_shop_visible or _trader_shop_visible or _smeltery_visible:
+	if _hub_visible or _game_over or _energy_shop_visible or _trader_shop_visible \
+			or _smeltery_visible or _cat_tavern_visible:
 		return
 	if event.is_action_pressed("toggle_inventory"):
 		if _inventory_screen:
@@ -1281,6 +1292,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("sonar_ping"):
 		if player_node:
 			sonar_system.try_ping(player_node.get_grid_pos())
+	# F key — place a ladder on the tile the player currently occupies
+	if event is InputEventKey and event.pressed and not event.echo \
+			and event.keycode == KEY_F:
+		_try_place_ladder()
 
 # ---------------------------------------------------------------------------
 # Pickaxe throw effect — spawns a pickaxe sprite that flies to the target
@@ -1365,8 +1380,9 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 	if tile == TileType.LAVA or tile == TileType.LAVA_FLOW:
 		return
 
-	# Reenergy station / Exit station / Upgrade station / Smeltery — not mineable
-	if tile == TileType.REENERGY_STATION or tile == TileType.EXIT_STATION or tile == TileType.UPGRADE_STATION or tile == TileType.SMELTERY_STATION:
+	# Reenergy station / Exit station / Upgrade station / Smeltery / Tavern / Ladder — not mineable
+	if tile in [TileType.REENERGY_STATION, TileType.EXIT_STATION, TileType.UPGRADE_STATION,
+			TileType.SMELTERY_STATION, TileType.CAT_TAVERN, TileType.LADDER]:
 		return
 
 	# Stone Golem phase resistance — delegated to BossSystem
@@ -1737,6 +1753,17 @@ func _update_interact_prompt() -> void:
 				var screen_pos := get_viewport().get_canvas_transform() * world_pos
 				player_node.set_prompt_position(screen_pos)
 				return
+	# Check adjacent tiles for Cat Tavern
+	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+		var check: Vector2i = player_node.get_grid_pos() + offset
+		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
+			if grid[check.x][check.y] == TileType.CAT_TAVERN:
+				var key_name := _get_interact_key_name()
+				player_node.show_prompt("Press %s to enter Cat Tavern" % key_name)
+				var world_pos := Vector2(check.x * CELL_SIZE + CELL_SIZE * 0.5, check.y * CELL_SIZE)
+				var screen_pos := get_viewport().get_canvas_transform() * world_pos
+				player_node.set_prompt_position(screen_pos)
+				return
 	var nearby_trader := _get_nearby_trader()
 	if nearby_trader.size() > 0:
 		var key_name := _get_interact_key_name()
@@ -1794,6 +1821,13 @@ func _try_interact() -> void:
 		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
 			if grid[check.x][check.y] == TileType.SMELTERY_STATION:
 				_show_smeltery_shop()
+				return
+	# Check current + adjacent tiles for Cat Tavern
+	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+		var check: Vector2i = player_node.get_grid_pos() + offset
+		if check.x >= 0 and check.x < GRID_COLS and check.y >= 0 and check.y < GRID_ROWS:
+			if grid[check.x][check.y] == TileType.CAT_TAVERN:
+				_show_cat_tavern_shop()
 				return
 	var nearby_npc: FarmAnimalNPC = _get_nearby_farm_npc()
 	if nearby_npc:
@@ -1999,7 +2033,7 @@ func _setup_energy_station_shop() -> void:
 	const VW: int = 1280
 	const VH: int = 720
 	const PANEL_W: int = 420
-	const PANEL_H: int = 330
+	const PANEL_H: int = 390
 	const PX: int = (VW - PANEL_W) / 2
 	const PY: int = (VH - PANEL_H) / 2
 
@@ -2071,15 +2105,21 @@ func _setup_energy_station_shop() -> void:
 	_energy_shop_btn_repair.pressed.connect(_shop_repair)
 	_energy_shop_layer.add_child(_energy_shop_btn_repair)
 
+	_energy_shop_btn_ladders = Button.new()
+	_energy_shop_btn_ladders.position = Vector2(BTN_X, PY + 268)
+	_energy_shop_btn_ladders.size = Vector2(BTN_W, BTN_H)
+	_energy_shop_btn_ladders.pressed.connect(_shop_buy_ladders)
+	_energy_shop_layer.add_child(_energy_shop_btn_ladders)
+
 	var divider2 := ColorRect.new()
-	divider2.position = Vector2(PX + 20, PY + 268)
+	divider2.position = Vector2(PX + 20, PY + 326)
 	divider2.size = Vector2(PANEL_W - 40, 2)
 	divider2.color = Color(0.20, 0.60, 0.90, 0.5)
 	_energy_shop_layer.add_child(divider2)
 
 	var close_btn := Button.new()
 	close_btn.text = "Close Shop"
-	close_btn.position = Vector2(BTN_X + (BTN_W - 180) / 2, PY + 278)
+	close_btn.position = Vector2(BTN_X + (BTN_W - 180) / 2, PY + 336)
 	close_btn.size = Vector2(180, 40)
 	close_btn.pressed.connect(_hide_energy_station_shop)
 	_energy_shop_layer.add_child(close_btn)
@@ -2097,6 +2137,10 @@ func _show_energy_station_shop() -> void:
 		or GameManager.current_energy >= GameManager.get_max_energy()
 	var at_max_hp: bool = player_node != null and player_node.is_at_max_health()
 	_energy_shop_btn_repair.disabled = GameManager.dollars < SHOP_REPAIR_COST or at_max_hp
+	const LADDER_PACK_COST: int = 20
+	_energy_shop_btn_ladders.text = "Buy 5 Ladders  (%d remaining)  -- $%d" % [
+		GameManager.ladder_count, LADDER_PACK_COST]
+	_energy_shop_btn_ladders.disabled = GameManager.dollars < LADDER_PACK_COST
 	_energy_shop_layer.visible = true
 	_energy_shop_visible = true
 
@@ -2130,6 +2174,17 @@ func _shop_repair() -> void:
 		GameManager.save_game()
 		player_node.heal(1)
 		SoundManager.play_drill_sound()
+		_show_energy_station_shop()
+
+func _shop_buy_ladders() -> void:
+	const LADDER_PACK_COST: int = 20
+	if GameManager.dollars >= LADDER_PACK_COST:
+		GameManager.dollars -= LADDER_PACK_COST
+		GameManager.ladder_count += 5
+		EventBus.dollars_changed.emit(GameManager.dollars)
+		GameManager.save_game()
+		SoundManager.play_drill_sound()
+		EventBus.ore_mined_popup.emit(0, "5 Ladders purchased!")
 		_show_energy_station_shop()
 
 # ---------------------------------------------------------------------------
@@ -2611,21 +2666,166 @@ func _close_trader_shop() -> void:
 	_current_trader = {}
 
 # ---------------------------------------------------------------------------
-# Forager Ant movement and banking (§3.4) — delegated to ForagerSystem
+# Cat system helpers
 # ---------------------------------------------------------------------------
-# forager_system.update(delta, player_pos, surface_deposit_pos) is called from _process().
-# Ore chunk sweeping uses get_tree() so it stays here; ForagerSystem tracks the timer and carry.
-# See src/systems/ForagerSystem.gd.
 
-## Scan for ore chunks near the forager and let ForagerSystem collect them.
-func _forager_do_sweep() -> void:
-	var chunks := get_tree().get_nodes_in_group("ore_chunk")
-	var nearby: Array = []
-	for chunk in chunks:
-		if is_instance_valid(chunk) \
-				and forager_system.world_pos.distance_to(chunk.global_position) < ForagerSystem.COLLECT_RADIUS:
-			nearby.append(chunk)
-	forager_system.sweep_chunks(nearby)
+## Called by CatSystem's mining cats — lightweight mine that skips UI/streak logic.
+func cat_mine_at(grid_pos: Vector2i) -> void:
+	var col := grid_pos.x
+	var row := grid_pos.y
+	if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
+		return
+	var tile: int = grid[col][row]
+	if tile not in ORE_TILES:
+		return
+	var minerals: int = TILE_MINERALS.get(tile, 1)
+	_mine_cell(col, row)
+	var world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
+	_spawn_ore_chunks(tile, minerals, world_pos)
+	GameManager.track_ore_mined(tile, minerals)
+	queue_redraw()
+
+# ---------------------------------------------------------------------------
+# Cat Tavern Shop
+# ---------------------------------------------------------------------------
+
+const CAT_TAVERN_MINING_IRON_BARS: int = 2    # Meteor Bars to hire a Mining Cat
+const CAT_TAVERN_COLLECT_COPPER_BARS: int = 2  # Lunar Bars to hire a Collecting Cat
+
+func _setup_cat_tavern_shop() -> void:
+	const VW: int = 1280
+	const VH: int = 720
+	const PANEL_W: int = 460
+	const PANEL_H: int = 300
+	const PX: int = (VW - PANEL_W) / 2
+	const PY: int = (VH - PANEL_H) / 2
+
+	_cat_tavern_layer = CanvasLayer.new()
+	_cat_tavern_layer.layer = 10
+	_cat_tavern_layer.visible = false
+	add_child(_cat_tavern_layer)
+
+	var dim := ColorRect.new()
+	dim.position = Vector2.ZERO
+	dim.size = Vector2(VW, VH)
+	dim.color = Color(0.0, 0.0, 0.0, 0.72)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_cat_tavern_layer.add_child(dim)
+
+	var border := ColorRect.new()
+	border.position = Vector2(PX - 3, PY - 3)
+	border.size = Vector2(PANEL_W + 6, PANEL_H + 6)
+	border.color = Color(0.75, 0.35, 0.90, 1.0)
+	_cat_tavern_layer.add_child(border)
+
+	var panel := ColorRect.new()
+	panel.position = Vector2(PX, PY)
+	panel.size = Vector2(PANEL_W, PANEL_H)
+	panel.color = Color(0.08, 0.05, 0.12, 0.97)
+	_cat_tavern_layer.add_child(panel)
+
+	var title := Label.new()
+	title.text = "Cat Tavern"
+	title.position = Vector2(PX, PY + 12)
+	title.size = Vector2(PANEL_W, 30)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 20)
+	title.modulate = Color(0.90, 0.70, 1.0)
+	_cat_tavern_layer.add_child(title)
+
+	_cat_tavern_label = Label.new()
+	_cat_tavern_label.position = Vector2(PX, PY + 46)
+	_cat_tavern_label.size = Vector2(PANEL_W, 48)
+	_cat_tavern_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_cat_tavern_label.modulate = Color(0.85, 0.85, 0.85)
+	_cat_tavern_layer.add_child(_cat_tavern_label)
+
+	var divider := ColorRect.new()
+	divider.position = Vector2(PX + 20, PY + 100)
+	divider.size = Vector2(PANEL_W - 40, 2)
+	divider.color = Color(0.75, 0.35, 0.90, 0.5)
+	_cat_tavern_layer.add_child(divider)
+
+	const BTN_X: int = PX + 30
+	const BTN_W: int = PANEL_W - 60
+	const BTN_H: int = 48
+
+	_cat_tavern_btn_mining = Button.new()
+	_cat_tavern_btn_mining.position = Vector2(BTN_X, PY + 110)
+	_cat_tavern_btn_mining.size = Vector2(BTN_W, BTN_H)
+	_cat_tavern_btn_mining.pressed.connect(_cat_tavern_hire_mining)
+	_cat_tavern_layer.add_child(_cat_tavern_btn_mining)
+
+	_cat_tavern_btn_collecting = Button.new()
+	_cat_tavern_btn_collecting.position = Vector2(BTN_X, PY + 168)
+	_cat_tavern_btn_collecting.size = Vector2(BTN_W, BTN_H)
+	_cat_tavern_btn_collecting.pressed.connect(_cat_tavern_hire_collecting)
+	_cat_tavern_layer.add_child(_cat_tavern_btn_collecting)
+
+	var close_btn := Button.new()
+	close_btn.text = "Leave Tavern"
+	close_btn.position = Vector2(BTN_X + (BTN_W - 180) / 2, PY + 240)
+	close_btn.size = Vector2(180, 40)
+	close_btn.pressed.connect(_hide_cat_tavern_shop)
+	_cat_tavern_layer.add_child(close_btn)
+
+func _show_cat_tavern_shop() -> void:
+	var iron_bars: int = _run_bar_counts.get("iron", 0)
+	var copper_bars: int = _run_bar_counts.get("copper", 0)
+	var mining_count := cat_system.get_mining_cat_count() if cat_system else 0
+	var collect_count := cat_system.get_collecting_cat_count() if cat_system else 0
+	_cat_tavern_label.text = "Meteor Bars: %d  |  Lunar Bars: %d\nHired: %d mining, %d collecting" % [
+		iron_bars, copper_bars, mining_count, collect_count]
+	_cat_tavern_btn_mining.text = "Hire Mining Cat  (%d Meteor Bars)" % CAT_TAVERN_MINING_IRON_BARS
+	_cat_tavern_btn_collecting.text = "Hire Collecting Cat  (%d Lunar Bars)" % CAT_TAVERN_COLLECT_COPPER_BARS
+	_cat_tavern_btn_mining.disabled = iron_bars < CAT_TAVERN_MINING_IRON_BARS
+	_cat_tavern_btn_collecting.disabled = copper_bars < CAT_TAVERN_COLLECT_COPPER_BARS
+	_cat_tavern_layer.visible = true
+	_cat_tavern_visible = true
+
+func _hide_cat_tavern_shop() -> void:
+	_cat_tavern_layer.visible = false
+	_cat_tavern_visible = false
+
+func _cat_tavern_hire_mining() -> void:
+	if _run_bar_counts.get("iron", 0) < CAT_TAVERN_MINING_IRON_BARS:
+		return
+	_run_bar_counts["iron"] = _run_bar_counts.get("iron", 0) - CAT_TAVERN_MINING_IRON_BARS
+	if cat_system and player_node:
+		cat_system.hire(CatSystem.CatRole.MINING, player_node.global_position + Vector2(CELL_SIZE, 0))
+	SoundManager.play_drill_sound()
+	_show_cat_tavern_shop()
+
+func _cat_tavern_hire_collecting() -> void:
+	if _run_bar_counts.get("copper", 0) < CAT_TAVERN_COLLECT_COPPER_BARS:
+		return
+	_run_bar_counts["copper"] = _run_bar_counts.get("copper", 0) - CAT_TAVERN_COLLECT_COPPER_BARS
+	if cat_system and player_node:
+		cat_system.hire(CatSystem.CatRole.COLLECTING, player_node.global_position + Vector2(-CELL_SIZE, 0))
+	SoundManager.play_drill_sound()
+	_show_cat_tavern_shop()
+
+# ---------------------------------------------------------------------------
+# Ladder placement
+# ---------------------------------------------------------------------------
+
+func _try_place_ladder() -> void:
+	if not player_node:
+		return
+	if GameManager.ladder_count <= 0:
+		EventBus.ore_mined_popup.emit(0, "No ladders! Buy packs at the Refueling Dock.")
+		return
+	var gp := player_node.get_grid_pos()
+	if gp.x < 0 or gp.x >= GRID_COLS or gp.y < 0 or gp.y >= GRID_ROWS:
+		return
+	if grid[gp.x][gp.y] != TileType.EMPTY:
+		EventBus.ore_mined_popup.emit(0, "Can only place ladders in open space.")
+		return
+	grid[gp.x][gp.y] = TileType.LADDER
+	GameManager.ladder_count -= 1
+	GameManager.save_game()
+	EventBus.ore_mined_popup.emit(0, "Ladder placed!  (%d remaining)" % GameManager.ladder_count)
+	queue_redraw()
 
 func _trader_purchase(item_key: String) -> void:
 	var item_def: Dictionary = {}
