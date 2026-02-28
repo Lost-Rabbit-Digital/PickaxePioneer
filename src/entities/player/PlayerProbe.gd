@@ -367,7 +367,7 @@ func _update_followers() -> void:
 	if _trail_history.size() > TRAIL_HISTORY_MAX:
 		_trail_history.pop_front()
 
-	var is_moving := abs(velocity.x) > 10.0
+	var is_moving: bool = abs(velocity.x) > 10.0
 	var follower_anim: StringName = &"move" if is_moving else &"idle"
 
 	if _ice_follower.visible:
