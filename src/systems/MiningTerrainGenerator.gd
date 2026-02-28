@@ -1,0 +1,307 @@
+class_name MiningTerrainGenerator
+extends RefCounted
+
+# ---------------------------------------------------------------------------
+# Tile-type integer constants — must stay in sync with MiningLevel.TileType.
+# ---------------------------------------------------------------------------
+const T_EMPTY            = 0
+const T_DIRT             = 1
+const T_DIRT_DARK        = 2
+const T_ORE_COPPER       = 3
+const T_ORE_COPPER_DEEP  = 4
+const T_ORE_IRON         = 5
+const T_ORE_IRON_DEEP    = 6
+const T_ORE_GOLD         = 7
+const T_ORE_GOLD_DEEP    = 8
+const T_ORE_GEM          = 9
+const T_ORE_GEM_DEEP     = 10
+const T_STONE            = 11
+const T_STONE_DARK       = 12
+const T_EXPLOSIVE        = 13
+const T_EXPLOSIVE_ARMED  = 14
+const T_LAVA             = 15
+const T_LAVA_FLOW        = 16
+const T_ENERGY_NODE      = 17
+const T_ENERGY_NODE_FULL = 18
+const T_REENERGY_STATION = 19
+const T_SURFACE          = 20
+const T_SURFACE_GRASS    = 21
+const T_EXIT_STATION     = 22
+const T_UPGRADE_STATION  = 25
+const T_SMELTERY_STATION = 26
+const T_CAT_TAVERN       = 28
+
+# Vein generation parameter
+const VEIN_MEANDER_CHANCE: float = 0.35
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+## Fills `grid` with the initial tile layout, then generates ore veins, cave
+## rooms, and connecting tunnels.  `grid` must already be an empty Array —
+## this function will resize it to [cols][rows].
+##
+## `depth_zone_rows` = MiningLevel.DEPTH_ZONE_ROWS (used for vein zone bounds)
+func generate(
+		grid: Array,
+		cols: int,
+		rows: int,
+		surface_rows: int,
+		exit_cols: int,
+		depth_zone_rows: Array,
+		allowed_ore_types: Array,
+		allowed_hazard_types: Array) -> void:
+	_cols = cols
+	_rows = rows
+	_surface_rows = surface_rows
+	_exit_cols = exit_cols
+	_depth_zone_rows = depth_zone_rows
+	_allowed_ore = allowed_ore_types
+	_allowed_hazard = allowed_hazard_types
+	_grid = grid
+
+	_generate_grid()
+	_generate_ore_veins()
+	_generate_cave_rooms()
+	_carve_tunnels()
+
+# ---------------------------------------------------------------------------
+# Private state
+# ---------------------------------------------------------------------------
+
+var _grid: Array
+var _cols: int
+var _rows: int
+var _surface_rows: int
+var _exit_cols: int
+var _depth_zone_rows: Array
+var _allowed_ore: Array
+var _allowed_hazard: Array
+
+# ---------------------------------------------------------------------------
+# Grid initialisation
+# ---------------------------------------------------------------------------
+
+func _generate_grid() -> void:
+	_grid.clear()
+	for col in range(_cols):
+		var column: Array = []
+		for row in range(_rows):
+			if row < _surface_rows:
+				column.append(T_SURFACE)
+			else:
+				column.append(_random_tile(col, row))
+		_grid.append(column)
+
+	var reenergy_col := _cols / 2
+	_grid[reenergy_col][_surface_rows - 1]     = T_REENERGY_STATION
+	_grid[reenergy_col - 5][_surface_rows - 1] = T_UPGRADE_STATION
+	_grid[reenergy_col + 5][_surface_rows - 1] = T_SMELTERY_STATION
+
+	# Underground Cat Tavern — first sub-zone (~17 rows below surface)
+	var tavern_col := clampi(reenergy_col + 10, 5, _cols - 6)
+	_grid[tavern_col][_surface_rows + 17] = T_CAT_TAVERN
+
+	_grid[_cols - 1][_surface_rows - 1] = T_EXIT_STATION
+
+	for col in range(_cols - _exit_cols):
+		_grid[col][_surface_rows]     = T_SURFACE_GRASS
+	for col in range(_cols - _exit_cols):
+		_grid[col][_surface_rows + 1] = T_DIRT
+	for col in range(_cols - _exit_cols):
+		_grid[col][_surface_rows + 2] = T_DIRT
+
+func _random_tile(_col: int, row: int) -> int:
+	var r := randf()
+	var depth := float(row - _surface_rows) / float(_rows - _surface_rows)
+
+	var explosive_ok := _allowed_hazard.is_empty() or _allowed_hazard.has("Explosives")
+	var lava_ok      := _allowed_hazard.is_empty() or _allowed_hazard.has("Lava")
+
+	var base_hazard    := 0.08 + depth * 0.20
+	var explosive_bias := base_hazard * 0.6 if explosive_ok else 0.0
+	var lava_bias      := base_hazard * 0.4 if lava_ok      else 0.0
+	var total_hazard   := explosive_bias + lava_bias
+
+	if   r < explosive_bias * (2.0 / 3.0):       return T_EXPLOSIVE
+	elif r < explosive_bias:                       return T_EXPLOSIVE_ARMED
+	elif r < explosive_bias + lava_bias * 0.5:    return T_LAVA
+	elif r < total_hazard:                         return T_LAVA_FLOW
+	elif r < total_hazard + 0.02:                 return T_ENERGY_NODE
+	elif r < total_hazard + 0.03:                 return T_ENERGY_NODE_FULL
+
+	var stone_chance := 0.10 + depth * 0.50
+	var r2 := randf()
+	if   r2 < stone_chance * 0.6:   return T_STONE_DARK
+	elif r2 < stone_chance:          return T_STONE
+	elif r2 < stone_chance + 0.10:   return T_DIRT_DARK
+	else:                             return T_DIRT
+
+# ---------------------------------------------------------------------------
+# Cave rooms
+# ---------------------------------------------------------------------------
+
+func _generate_cave_rooms() -> void:
+	var num_rooms := randi_range(6, 10)
+	for _i in range(num_rooms):
+		var room_col := randi_range(5, _cols - 8)
+		var room_row := randi_range(_surface_rows + 6, _rows - 8)
+		var half_w   := randi_range(3, 7)
+		var half_h   := randi_range(2, 4)
+
+		# Carve the interior
+		for dc in range(-half_w, half_w + 1):
+			for dr in range(-half_h, half_h + 1):
+				var ell := float(dc * dc) / float(half_w * half_w) + float(dr * dr) / float(half_h * half_h)
+				if ell <= 0.85:
+					var nc := room_col + dc
+					var nr := room_row + dr
+					if nc >= 1 and nc < _cols - 1 and nr >= _surface_rows + 1 and nr < _rows - 1:
+						_grid[nc][nr] = T_EMPTY
+
+		# Ore pockets around the edge
+		var depth := float(room_row - _surface_rows) / float(_rows - _surface_rows)
+		for dc in range(-half_w - 1, half_w + 2):
+			for dr in range(-half_h - 1, half_h + 2):
+				var ell := float(dc * dc) / float(half_w * half_w) + float(dr * dr) / float(half_h * half_h)
+				if ell > 0.85 and ell <= 1.35:
+					var nc := room_col + dc
+					var nr := room_row + dr
+					if nc >= 1 and nc < _cols - 1 and nr >= _surface_rows + 1 and nr < _rows - 1:
+						if randf() < 0.20:
+							var ore_tile := _depth_scaled_ore(depth)
+							if ore_tile != T_EMPTY:
+								_grid[nc][nr] = ore_tile
+
+# ---------------------------------------------------------------------------
+# Drunkard-walk tunnels
+# ---------------------------------------------------------------------------
+
+func _carve_tunnels() -> void:
+	const TCOUNT   := 14
+	const TLEN_MIN := 10
+	const TLEN_MAX := 38
+	var dirs: Array[Vector2i] = [Vector2i(1,0), Vector2i(-1,0), Vector2i(0,1), Vector2i(0,-1)]
+	for _i in range(TCOUNT):
+		var cx  := randi_range(3, _cols - 4)
+		var cy  := randi_range(_surface_rows + 4, _rows - 5)
+		var length := randi_range(TLEN_MIN, TLEN_MAX)
+		var dir: Vector2i = dirs[randi() % dirs.size()]
+		for _step in range(length):
+			if cx >= 1 and cx < _cols - 1 and cy >= _surface_rows + 1 and cy < _rows - 1:
+				_grid[cx][cy] = T_EMPTY
+				if randf() < 0.20:
+					var perp := Vector2i(-dir.y, dir.x)
+					var sx := cx + perp.x
+					var sy := cy + perp.y
+					if sx >= 1 and sx < _cols - 1 and sy >= _surface_rows + 1 and sy < _rows - 1:
+						_grid[sx][sy] = T_EMPTY
+			if randf() < 0.30:
+				dir = dirs[randi() % dirs.size()]
+			cx = clampi(cx + dir.x, 1, _cols - 2)
+			cy = clampi(cy + dir.y, _surface_rows + 1, _rows - 2)
+
+# ---------------------------------------------------------------------------
+# Hydrothermal ore vein generation
+# ---------------------------------------------------------------------------
+
+func _generate_ore_veins() -> void:
+	var specs := [
+		{
+			"ore": T_ORE_COPPER, "ore_deep": T_ORE_COPPER_DEEP,
+			"cap": -1, "cap_len": [0, 0],
+			"zone":   [_surface_rows + 2, _depth_zone_rows[2]],
+			"count":  [4, 7], "length": [14, 26], "width": [1, 2],
+			"key": "Copper",
+		},
+		{
+			"ore": T_ORE_IRON, "ore_deep": T_ORE_IRON_DEEP,
+			"cap": T_ORE_COPPER_DEEP, "cap_len": [7, 14],
+			"zone":   [_depth_zone_rows[1], _depth_zone_rows[3]],
+			"count":  [4, 6], "length": [18, 32], "width": [1, 2],
+			"key": "Iron",
+		},
+		{
+			"ore": T_ORE_GOLD, "ore_deep": T_ORE_GOLD_DEEP,
+			"cap": T_ORE_IRON_DEEP, "cap_len": [8, 16],
+			"zone":   [_depth_zone_rows[2], _depth_zone_rows[4]],
+			"count":  [3, 5], "length": [18, 32], "width": [1, 2],
+			"key": "Gold",
+		},
+		{
+			"ore": T_ORE_GEM, "ore_deep": T_ORE_GEM_DEEP,
+			"cap": T_ORE_GOLD_DEEP, "cap_len": [10, 20],
+			"zone":   [_depth_zone_rows[3], _rows - 2],
+			"count":  [2, 4], "length": [14, 24], "width": [1, 2],
+			"key": "Gem",
+		},
+	]
+
+	for spec in specs:
+		if not _allowed_ore.is_empty() and not _allowed_ore.has(spec["key"]):
+			continue
+		var count := randi_range(spec["count"][0], spec["count"][1])
+		for _i in range(count):
+			_place_ore_vein(spec)
+
+func _place_ore_vein(spec: Dictionary) -> void:
+	var zone_start: int = spec["zone"][0]
+	var zone_end:   int = spec["zone"][1]
+	var length:     int = randi_range(spec["length"][0], spec["length"][1])
+	var width:      int = randi_range(spec["width"][0],  spec["width"][1])
+
+	var max_start  := maxi(zone_start, zone_end - length)
+	var start_row  := randi_range(zone_start, max_start)
+	var center_col := randi_range(3, _cols - 4)
+
+	var cap_len: int = 0
+	if spec["cap"] != -1:
+		cap_len = randi_range(spec["cap_len"][0], spec["cap_len"][1])
+		cap_len = mini(cap_len, length - 4)
+
+	for i in range(length):
+		var row := start_row + i
+		if row < _surface_rows + 1 or row >= _rows - 1:
+			continue
+
+		var ore_tile: int
+		if i < cap_len:
+			ore_tile = spec["cap"]
+		else:
+			var primary_t := float(i - cap_len) / float(maxi(1, length - cap_len))
+			ore_tile = spec["ore_deep"] if primary_t > 0.5 else spec["ore"]
+
+		if randf() < VEIN_MEANDER_CHANCE:
+			center_col += randi_range(-1, 1)
+			center_col = clampi(center_col, 2, _cols - 3)
+
+		for w in range(width):
+			var place_col := center_col - width / 2 + w
+			if place_col < 1 or place_col >= _cols - 1:
+				continue
+			var current: int = _grid[place_col][row]
+			if current in [T_DIRT, T_DIRT_DARK, T_STONE, T_STONE_DARK]:
+				_grid[place_col][row] = ore_tile
+
+# ---------------------------------------------------------------------------
+# Depth-scaled ore helper (used by cave room edge seeding)
+# ---------------------------------------------------------------------------
+
+func _depth_scaled_ore(depth: float) -> int:
+	var tiers: Array = []
+	if depth > 0.65:
+		if _allowed_ore.is_empty() or _allowed_ore.has("Gem"):    tiers.append(T_ORE_GEM_DEEP)
+		if _allowed_ore.is_empty() or _allowed_ore.has("Gold"):   tiers.append(T_ORE_GOLD_DEEP)
+		if _allowed_ore.is_empty() or _allowed_ore.has("Iron"):   tiers.append(T_ORE_IRON_DEEP)
+	elif depth > 0.35:
+		if _allowed_ore.is_empty() or _allowed_ore.has("Gold"):   tiers.append(T_ORE_GOLD)
+		if _allowed_ore.is_empty() or _allowed_ore.has("Iron"):   tiers.append(T_ORE_IRON_DEEP)
+		if _allowed_ore.is_empty() or _allowed_ore.has("Copper"): tiers.append(T_ORE_COPPER_DEEP)
+	else:
+		if _allowed_ore.is_empty() or _allowed_ore.has("Iron"):   tiers.append(T_ORE_IRON)
+		if _allowed_ore.is_empty() or _allowed_ore.has("Copper"): tiers.append(T_ORE_COPPER_DEEP)
+		if _allowed_ore.is_empty() or _allowed_ore.has("Copper"): tiers.append(T_ORE_COPPER)
+	if tiers.is_empty():
+		return T_EMPTY
+	return tiers[randi() % tiers.size()]
