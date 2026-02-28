@@ -405,10 +405,6 @@ var _exit_pulse_time: float = 0.0
 # Cursor highlight
 var _cursor_grid_pos: Vector2i = Vector2i(-1, -1)
 
-# Pheromone trails — mined tile positions with fade alpha (§3.3)
-var _pheromone_trails: Dictionary = {}
-const PHEROMONE_FADE_RATE: float = 0.025  # alpha units/sec (~40 s full fade
-
 # Sonar ping subsystem (§3.2) — logic lives in SonarSystem.gd
 var sonar_system: SonarSystem = SonarSystem.new()
 
@@ -899,15 +895,6 @@ func _draw() -> void:
 		var highlight_rect := Rect2(_cursor_grid_pos.x * CELL_SIZE, _cursor_grid_pos.y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
 		draw_rect(highlight_rect, Color(1.0, 1.0, 1.0, 0.2), false, 2.0)
 
-	# Pheromone trail overlay — faint purple on player-mined EMPTY tiles (§3.3)
-	for pk in _pheromone_trails:
-		var tc: int = pk.x
-		var tr: int = pk.y
-		if tc >= min_col and tc <= max_col and tr >= min_row and tr <= max_row:
-			var trail_alpha: float = _pheromone_trails[pk] * 0.22
-			draw_rect(Rect2(tc * CELL_SIZE, tr * CELL_SIZE, CELL_SIZE, CELL_SIZE),
-				Color(0.55, 0.30, 0.80, trail_alpha))
-
 	# Wandering Trader nodes — pulsing gold circle with "T" glyph
 	for trader in _active_traders:
 		var tp: Vector2 = trader["world_pos"]
@@ -1192,16 +1179,6 @@ func _process(delta: float) -> void:
 		for k in to_remove:
 			_flash_cells.erase(k)
 
-	# Fade pheromone trails (§3.3)
-	if _pheromone_trails.size() > 0:
-		var to_remove_pt: Array = []
-		for pk in _pheromone_trails:
-			_pheromone_trails[pk] -= PHEROMONE_FADE_RATE * delta
-			if _pheromone_trails[pk] <= 0.0:
-				to_remove_pt.append(pk)
-		for k in to_remove_pt:
-			_pheromone_trails.erase(k)
-
 	# Update sonar ping wave (§3.2) — delegated to SonarSystem
 	sonar_system.update(delta, 2.0 if _ancient_map_active else 1.0)
 
@@ -1471,8 +1448,6 @@ func _check_streak_milestone() -> void:
 func _mine_cell(col: int, row: int) -> void:
 	grid[col][row] = TileType.EMPTY
 	_set_tile_collision(col, row, false)
-	# Record pheromone trail on player-mined cells (§3.3)
-	_pheromone_trails[Vector2i(col, row)] = 1.0
 
 # Spawns physical ore chunks that scatter from the mined tile position.
 # The player and forager ant must collect them to bank the minerals.
