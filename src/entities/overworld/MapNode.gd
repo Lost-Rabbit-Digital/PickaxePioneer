@@ -23,6 +23,10 @@ signal node_clicked(node: MapNode)
 @onready var sprite: AnimatedSprite2D = $Sprite2D
 @onready var label: Label = $Label
 
+# Base sprite dimensions (64x64 at scale 1.0)
+const SPRITE_BASE_SIZE: float = 64.0
+const LABEL_HEIGHT: float = 23.0  # offset_bottom - offset_top (55 - 32)
+
 func _ready() -> void:
 	input_event.connect(_on_input_event)
 	_update_visuals()
@@ -44,7 +48,18 @@ func _update_visuals() -> void:
 		NodeType.EMPTY:
 			sprite.modulate = Color.WHITE
 
+	_update_label_position()
+
 var neighbors: Array[MapNode] = []
+
+func _update_label_position() -> void:
+	# Position label below sprite, accounting for sprite scale
+	var half_sprite_height = (SPRITE_BASE_SIZE / 2.0) * sprite.scale.y
+	var label_offset_top = half_sprite_height
+	var label_offset_bottom = label_offset_top + LABEL_HEIGHT
+
+	label.offset_top = label_offset_top
+	label.offset_bottom = label_offset_bottom
 
 func highlight(active: bool) -> void:
 	if active:
@@ -53,6 +68,8 @@ func highlight(active: bool) -> void:
 	else:
 		sprite.scale = Vector2(2.5, 2.5) if node_type == NodeType.MINE else Vector2(1.0, 1.0)
 		label.modulate = Color.WHITE
+
+	_update_label_position()
 
 func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
