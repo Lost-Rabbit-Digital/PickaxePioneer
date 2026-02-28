@@ -81,7 +81,8 @@ const SAVE_PATH = "user://save_data.json"
 
 func _ready() -> void:
 	print("GameManager initialized")
-	load_game()
+	# Legacy load_game() removed — SaveManager now handles slot-based persistence.
+	# On first boot, SaveManager._migrate_legacy_save() imports the old file.
 
 func add_currency(amount: int) -> void:
 	run_mineral_currency += amount
@@ -119,6 +120,8 @@ func lose_run() -> void:
 	run_ore_counts.clear()
 	run_ore_earnings.clear()
 	EventBus.minerals_changed.emit(0)
+	# Clear planet config so the overworld re-randomizes on next visit
+	SaveManager.clear_active_slot_run_data()
 	await _transition_to_scene("res://src/levels/Overworld.tscn")
 
 func complete_run() -> void:
@@ -260,6 +263,9 @@ func save_game() -> void:
 		"ladder_count": ladder_count,
 	}
 	
+	SaveManager.save_active_slot()
+	print("Game saved (slot %d)" % SaveManager.active_slot)
+  
 	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(save_data))

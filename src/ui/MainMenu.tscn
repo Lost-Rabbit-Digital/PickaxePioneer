@@ -73,32 +73,41 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -110.0
-offset_top = 30.0
-offset_right = 110.0
-offset_bottom = 210.0
+offset_left = -120.0
+offset_top = 0.0
+offset_right = 120.0
+offset_bottom = 280.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 16
 
-[node name="StartButton" type="Button" parent="VBoxContainer"]
+[node name="NewGameButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
-text = "START"
+text = "NEW GAME"
+
+[node name="ContinueButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+tooltip_text = "Boldly dig where no cat has dug before."
+text = "CONTINUE"
 
 [node name="SettingsButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
+tooltip_text = "Fiddle with the cosmic dials."
 text = "SETTINGS"
 
 [node name="WishlistButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
+tooltip_text = "Tell the galaxy you want this game."
 text = "WISHLIST NOW"
 
 [node name="QuitButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
+tooltip_text = "The asteroid belt will wait. (It won't.)"
 text = "QUIT"
 
 [node name="SettingsPanel" type="PanelContainer" parent="."]
@@ -212,6 +221,7 @@ vertical_alignment = 1
 [node name="CloseButton" type="Button" parent="SettingsPanel/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
+tooltip_text = "Close settings. Or don't. I'm a tooltip, not a cop."
 text = "CLOSE"
 
 [node name="SocialButtons" type="HBoxContainer" parent="."]
@@ -229,11 +239,13 @@ grow_horizontal = 0
 grow_vertical = 0
 script = ExtResource("3_ihbld")
 
-[node name="DiscordBackground" type="PanelContainer" parent="SocialButtons"]
+[node name="DiscordButton" type="TextureButton" parent="SocialButtons"]
 layout_mode = 2
-
-[node name="DiscordButton" type="TextureButton" parent="SocialButtons/DiscordBackground"]
-layout_mode = 2
+tooltip_text = "Join our community!"
 texture_normal = ExtResource("4_ihbld")
 
-[connection signal="pressed" from="SocialButtons/DiscordBackground/DiscordButton" to="SocialButtons" method="_on_discord_button_pressed"]
+[node name="DiscordBackground" type="PanelContainer" parent="SocialButtons"]
+visible = false
+layout_mode = 2
+
+[connection signal="pressed" from="SocialButtons/DiscordButton" to="SocialButtons" method="_on_discord_button_pressed"]
