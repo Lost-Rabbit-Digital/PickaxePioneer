@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://2i1s08p2mq37"
-path="res://.godot/imported/pixelart_starfield.png-6854e8a480f24f072511e69d30f72f8e.ctex"
+uid="uid://ccugob0fyy7k8"
+path="res://.godot/imported/planets.png-e95a91d74d5e348d6362f67ece641235.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/pixelart_starfield.png"
-dest_files=["res://.godot/imported/pixelart_starfield.png-6854e8a480f24f072511e69d30f72f8e.ctex"]
+source_file="res://assets/celestial_bodies/planets.png"
+dest_files=["res://.godot/imported/planets.png-e95a91d74d5e348d6362f67ece641235.ctex"]
 
 [params]
 
