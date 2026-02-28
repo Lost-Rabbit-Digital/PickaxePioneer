@@ -4,6 +4,7 @@ const WISHLIST_URL = "https://lost-rabbit-digital.itch.io/pickaxe-pioneer"
 
 @onready var settings_panel: PanelContainer = $SettingsPanel
 @onready var credits_panel: PanelContainer = $CreditsPanel
+@onready var version_label: Label = $VersionLabel
 @onready var master_slider: HSlider = $SettingsPanel/VBox/MasterRow/MasterSlider
 @onready var music_slider: HSlider = $SettingsPanel/VBox/MusicRow/MusicSlider
 @onready var sfx_slider: HSlider = $SettingsPanel/VBox/SFXRow/SFXSlider
@@ -39,6 +40,8 @@ func _ready() -> void:
 
 	settings_panel.hide()
 	credits_panel.hide()
+
+	version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
 
 	# Show/hide Continue based on whether any save exists
 	$VBoxContainer/ContinueButton.visible = SaveManager.has_any_save()
