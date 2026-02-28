@@ -1498,6 +1498,7 @@ func _explode_area(center_col: int, center_row: int) -> void:
 					GameManager.track_ore_mined(tile, minerals)
 				grid[nc][nr] = TileType.EMPTY
 				_set_tile_collision(nc, nr, false)
+				_remove_breaking_overlay(Vector2i(nc, nr))
 	SoundManager.play_explosion_sound()
 	_shake_camera(6.0, 0.35)
 	if player_node:
