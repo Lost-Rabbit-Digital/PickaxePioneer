@@ -40,7 +40,7 @@ var settlement_shroom_charges: int = 0   # Mining Shroom charges pre-purchased
 var settlement_mandible_bonus: int = 0   # temporary +N mandible power for one run
 
 # Ladder count — persists across sessions; decremented each time player places a ladder
-var ladder_count: int = 0
+var ladder_count: int = 10
 
 # Upgrade levels
 var carapace_level: int = 0

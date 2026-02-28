@@ -184,6 +184,7 @@ func _snapshot_game_manager() -> Dictionary:
 		"gem_refinery_built": gm.gem_refinery_built,
 		"trade_amplifier_built": gm.trade_amplifier_built,
 		"last_overworld_node_name": gm.last_overworld_node_name,
+		"ladder_count": gm.ladder_count,
 	}
 	# Preserve existing planet config if present
 	if active_slot >= 0 and active_slot < MAX_SLOTS and _slots[active_slot] != null:
@@ -219,6 +220,7 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 	gm.gem_refinery_built = data.get("gem_refinery_built", false)
 	gm.trade_amplifier_built = data.get("trade_amplifier_built", false)
 	gm.last_overworld_node_name = data.get("last_overworld_node_name", "")
+	gm.ladder_count = data.get("ladder_count", 10)
 
 func _reset_game_manager() -> void:
 	var gm = GameManager
@@ -253,3 +255,4 @@ func _reset_game_manager() -> void:
 	gm.long_scanner_built = false
 	gm.gem_refinery_built = false
 	gm.trade_amplifier_built = false
+	gm.ladder_count = 10
