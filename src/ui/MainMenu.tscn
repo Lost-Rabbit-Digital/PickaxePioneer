@@ -98,11 +98,6 @@ theme_override_font_sizes/font_size = 32
 tooltip_text = "Fiddle with the cosmic dials."
 text = "SETTINGS"
 
-[node name="CreditsButton" type="Button" parent="VBoxContainer"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 32
-tooltip_text = "View credits and attributions."
-text = "CREDITS"
 
 [node name="WishlistButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
@@ -326,6 +321,23 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 22
 tooltip_text = "Back to the cosmos."
 text = "CLOSE"
+
+[node name="CreditsButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -50.0
+offset_right = 50.0
+offset_bottom = -10.0
+grow_horizontal = 1
+grow_vertical = 0
+theme_override_font_sizes/font_size = 24
+tooltip_text = "View credits and attributions."
+text = "?"
 
 [node name="VersionLabel" type="Label" parent="."]
 layout_mode = 1
