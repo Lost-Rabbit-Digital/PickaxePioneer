@@ -1000,6 +1000,44 @@ func _draw() -> void:
 			draw_rect(Rect2(max_col * CELL_SIZE, min_row * CELL_SIZE,
 				8, (max_row - min_row + 1) * CELL_SIZE), warn_color)
 
+		# Giant Rat: charge warning overlay — red/orange screen-edge pulse
+		if boss_system.boss_type == BossSystem.BOSS_TYPE_GIANT_RAT and boss_system.rat_charge_warning_active:
+			var rat_ratio := 1.0 - (boss_system.rat_charge_warning_timer / BossSystem.RAT_CHARGE_WARNING)
+			var rat_a := rat_ratio * 0.40
+			var rat_color := Color(0.90, 0.20, 0.05, rat_a)
+			draw_rect(Rect2(min_col * CELL_SIZE, min_row * CELL_SIZE,
+				(max_col - min_col + 1) * CELL_SIZE, 8), rat_color)
+			draw_rect(Rect2(min_col * CELL_SIZE, max_row * CELL_SIZE,
+				(max_col - min_col + 1) * CELL_SIZE, 8), rat_color)
+			draw_rect(Rect2(min_col * CELL_SIZE, min_row * CELL_SIZE,
+				8, (max_row - min_row + 1) * CELL_SIZE), rat_color)
+			draw_rect(Rect2(max_col * CELL_SIZE, min_row * CELL_SIZE,
+				8, (max_row - min_row + 1) * CELL_SIZE), rat_color)
+
+		# Void Spider: web warning — green screen-edge pulse + target indicator
+		if boss_system.boss_type == BossSystem.BOSS_TYPE_SPIDER and boss_system.spider_web_warning_active:
+			var web_ratio := 1.0 - (boss_system.spider_web_warning_timer / BossSystem.SPIDER_WEB_WARNING)
+			var web_a := web_ratio * 0.40
+			var web_color := Color(0.30, 0.80, 0.20, web_a)
+			draw_rect(Rect2(min_col * CELL_SIZE, min_row * CELL_SIZE,
+				(max_col - min_col + 1) * CELL_SIZE, 8), web_color)
+			draw_rect(Rect2(min_col * CELL_SIZE, max_row * CELL_SIZE,
+				(max_col - min_col + 1) * CELL_SIZE, 8), web_color)
+			draw_rect(Rect2(min_col * CELL_SIZE, min_row * CELL_SIZE,
+				8, (max_row - min_row + 1) * CELL_SIZE), web_color)
+			draw_rect(Rect2(max_col * CELL_SIZE, min_row * CELL_SIZE,
+				8, (max_row - min_row + 1) * CELL_SIZE), web_color)
+			# Draw target zone indicator so the player can dodge
+			var wt := boss_system.spider_web_target_pos
+			if wt.x >= 0:
+				var web_pulse := sin(boss_system.boss_pulse_time * 8.0) * 0.5 + 0.5
+				var web_zone := Rect2(
+					(wt.x - BossSystem.SPIDER_WEB_RADIUS) * CELL_SIZE,
+					(wt.y - BossSystem.SPIDER_WEB_RADIUS) * CELL_SIZE,
+					(BossSystem.SPIDER_WEB_RADIUS * 2 + 1) * CELL_SIZE,
+					(BossSystem.SPIDER_WEB_RADIUS * 2 + 1) * CELL_SIZE)
+				draw_rect(web_zone, Color(0.30, 0.80, 0.20, 0.15 + web_pulse * 0.20), false, 2.0)
+
 		# Stone Golem: show required ore type indicator near the golem core
 		if boss_system.boss_type == BossSystem.BOSS_TYPE_GOLEM \
 				and boss_system.golem_phase < BossSystem.GOLEM_PHASE_ORES.size():
@@ -1167,7 +1205,9 @@ func _process(delta: float) -> void:
 	# Pulse wandering traders and boss system regardless of menu state
 	for trader in _active_traders:
 		trader["pulse"] += delta
-	boss_system.update(delta)
+	var _boss_pcol := floori(player_node.global_position.x / CELL_SIZE) if player_node else -1
+	var _boss_prow := floori(player_node.global_position.y / CELL_SIZE) if player_node else -1
+	boss_system.update(delta, _boss_pcol, _boss_prow)
 
 	# Update forager regardless of menu state so it can animate returning home
 	var _surface_deposit_pos := Vector2(46.0 * CELL_SIZE, (SURFACE_ROWS - 1) * CELL_SIZE + CELL_SIZE * 0.5)
@@ -2424,7 +2464,7 @@ func _smeltery_sell(ore_group: String) -> void:
 # Boss encounter system (§4) — delegated to BossSystem
 # ---------------------------------------------------------------------------
 # boss_system.check_milestone(depth, player_col) is called from _update_depth().
-# boss_system.update(delta) is called from _process().
+# boss_system.update(delta, player_col, player_row) is called from _process().
 # boss_system.can_mine_boss_tile(tile, last_ore) and
 # boss_system.on_tile_mined(col, row, tile) are called from try_mine_at().
 # Hint queuing (uses await) lives here; BossSystem exposes get_pending_hints().
