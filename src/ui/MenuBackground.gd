@@ -6,6 +6,8 @@ extends Node2D
 #
 # Interaction:
 #   - Click and drag anywhere on the background to pan manually.
+#   - Scroll wheel gives a vertical impulse (floaty throw).
+#   - Releasing a drag or scroll carries momentum that decays gradually.
 #   - After IDLE_TIMEOUT seconds of no interaction the background picks a new
 #     random direction and resumes slow auto-panning.
 
@@ -14,6 +16,12 @@ const GRID_ROWS: int = 20       # 20 * 64 = 1280 px – seamless vertical wrap
 const GRID_COLS: int = 40       # 40 * 64 = 2560 px – seamless horizontal wrap
 const AUTO_PAN_SPEED: float = 40.0  # Pixels per second during auto-pan
 const IDLE_TIMEOUT: float = 3.0     # Seconds before auto-pan resumes after interaction
+
+# Momentum / inertia tuning
+const MOMENTUM_DAMPING: float = 0.97        # Velocity multiplier per 60-fps tick (frame-rate independent)
+const MOMENTUM_THRESHOLD: float = 0.5       # px/s – below this speed momentum is considered stopped
+const SCROLL_IMPULSE: float = 400.0         # px/s added per scroll-wheel notch
+const DRAG_VEL_BLEND: float = 0.70          # How aggressively drag_velocity tracks instantaneous motion
 
 enum TileType {
 	EMPTY      = 0,
@@ -74,7 +82,14 @@ var is_dragging: bool = false
 var idle_timer: float = 0.0
 var is_autopanning: bool = true
 
+# Momentum / inertia state
+var momentum_velocity: Vector2 = Vector2.ZERO   # Current throw velocity
+var drag_velocity: Vector2 = Vector2.ZERO        # Rolling velocity estimate during drag
+var _mouse_delta_acc: Vector2 = Vector2.ZERO     # Mouse motion accumulated this frame
+
 func _ready() -> void:
+	# Nearest-neighbour filtering keeps pixel-art tiles crisp
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_load_tile_textures()
 	_init_tile_grid()
 	_pick_random_direction()
@@ -112,29 +127,65 @@ func _random_tile() -> TileType:
 	else:          return TileType.DIRT
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			is_dragging = true
-			is_autopanning = false
-			idle_timer = 0.0
-			get_viewport().set_input_as_handled()
-		else:
-			is_dragging = false
-			idle_timer = 0.0  # Begin countdown to resume auto-pan
+	if event is InputEventMouseButton:
+		match event.button_index:
+			MOUSE_BUTTON_LEFT:
+				if event.pressed:
+					is_dragging = true
+					is_autopanning = false
+					momentum_velocity = Vector2.ZERO
+					drag_velocity = Vector2.ZERO
+					_mouse_delta_acc = Vector2.ZERO
+					idle_timer = 0.0
+					get_viewport().set_input_as_handled()
+				else:
+					is_dragging = false
+					# Transfer the drag velocity as throw momentum
+					momentum_velocity = drag_velocity
+					drag_velocity = Vector2.ZERO
+					_mouse_delta_acc = Vector2.ZERO
+					idle_timer = 0.0
+					get_viewport().set_input_as_handled()
+
+			MOUSE_BUTTON_WHEEL_UP:
+				if event.pressed:
+					momentum_velocity.y -= SCROLL_IMPULSE
+					is_autopanning = false
+					idle_timer = 0.0
+					get_viewport().set_input_as_handled()
+
+			MOUSE_BUTTON_WHEEL_DOWN:
+				if event.pressed:
+					momentum_velocity.y += SCROLL_IMPULSE
+					is_autopanning = false
+					idle_timer = 0.0
+					get_viewport().set_input_as_handled()
+
 	elif event is InputEventMouseMotion and is_dragging:
 		# Drag right → world scrolls left (subtract relative motion)
 		scroll_offset -= event.relative
+		_mouse_delta_acc -= event.relative
 		idle_timer = 0.0
 		get_viewport().set_input_as_handled()
 
 func _process(delta: float) -> void:
-	if is_autopanning:
+	if is_dragging:
+		# Continuously estimate drag velocity so releasing feels natural
+		if delta > 0.0:
+			var instant := _mouse_delta_acc / delta
+			drag_velocity = drag_velocity.lerp(instant, DRAG_VEL_BLEND)
+		_mouse_delta_acc = Vector2.ZERO
+
+	elif momentum_velocity.length_squared() > MOMENTUM_THRESHOLD * MOMENTUM_THRESHOLD:
+		# Coast with throw momentum; damp it each frame (frame-rate independent)
+		scroll_offset += momentum_velocity * delta
+		momentum_velocity *= pow(MOMENTUM_DAMPING, delta * 60.0)
+		_wrap_scroll()
+
+	elif is_autopanning:
 		scroll_offset += auto_pan_velocity * delta
-		# Wrap to avoid unbounded float growth
-		var gw: float = float(GRID_COLS * CELL_SIZE)
-		var gh: float = float(GRID_ROWS * CELL_SIZE)
-		scroll_offset.x = fmod(scroll_offset.x, gw)
-		scroll_offset.y = fmod(scroll_offset.y, gh)
+		_wrap_scroll()
+
 	else:
 		idle_timer += delta
 		if idle_timer >= IDLE_TIMEOUT:
@@ -143,6 +194,12 @@ func _process(delta: float) -> void:
 			idle_timer = 0.0
 
 	queue_redraw()
+
+func _wrap_scroll() -> void:
+	var gw: float = float(GRID_COLS * CELL_SIZE)
+	var gh: float = float(GRID_ROWS * CELL_SIZE)
+	scroll_offset.x = fmod(scroll_offset.x, gw)
+	scroll_offset.y = fmod(scroll_offset.y, gh)
 
 func _draw() -> void:
 	var vp_size := get_viewport_rect().size
