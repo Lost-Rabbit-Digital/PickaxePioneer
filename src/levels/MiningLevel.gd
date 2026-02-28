@@ -513,7 +513,7 @@ func _ready() -> void:
 	if GameManager.settlement_mandible_bonus > 0:
 		_settlement_mandible_bonus = GameManager.settlement_mandible_bonus
 		GameManager.settlement_mandible_bonus = 0
-	var forager_bonus: int = GameManager.get_forager_carry_bonus()
+	var forager_bonus: int = 0
 	if GameManager.settlement_forager_bonus > 0:
 		forager_bonus += GameManager.settlement_forager_bonus
 		GameManager.settlement_forager_bonus = 0
@@ -1340,12 +1340,12 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 			boss_system.on_tile_mined(col, row, tile)
 		# Gem tile: award a gem item immediately on mining (primary value)
 		if tile == TileType.ORE_GEM or tile == TileType.ORE_GEM_DEEP:
-			var gems_gained := 2 if tile == TileType.ORE_GEM_DEEP else 1
+			var gems_gained := (2 if tile == TileType.ORE_GEM_DEEP else 1) + GameManager.get_gem_mine_bonus()
 			GameManager.gem_count += gems_gained
 			GameManager.save_game()
 			EventBus.ore_mined_popup.emit(gems_gained, "Gem collected!")
 		if tile in MINEABLE_TILES:
-			var minerals: int = roundi(TILE_MINERALS.get(tile, 1) * GameManager.get_mineral_yield_mult())
+			var minerals: int = TILE_MINERALS.get(tile, 1)
 			_mine_streak += 1
 			var lucky_chance := LUCKY_STRIKE_CHANCE * (2.0 if _lucky_compass_active else 1.0)
 			var lucky := tile in ORE_TILES and randf() < lucky_chance
@@ -1434,7 +1434,7 @@ func _spawn_ore_chunks(tile: int, minerals: int, world_pos: Vector2) -> void:
 		add_child(chunk)
 
 func _explode_area(center_col: int, center_row: int) -> void:
-	var r := 1 + GameManager.get_explosive_radius_bonus()
+	var r := 1
 	for dc in range(-r, r + 1):
 		for dr in range(-r, r + 1):
 			var nc := center_col + dc
@@ -1442,7 +1442,7 @@ func _explode_area(center_col: int, center_row: int) -> void:
 			if nc >= 0 and nc < GRID_COLS and nr >= 0 and nr < GRID_ROWS:
 				var tile: int = grid[nc][nr]
 				if tile in ORE_TILES:
-					var minerals: int = roundi(TILE_MINERALS.get(tile, 1) * GameManager.get_mineral_yield_mult())
+					var minerals: int = TILE_MINERALS.get(tile, 1)
 					var world_pos := Vector2(nc * CELL_SIZE + CELL_SIZE * 0.5, nr * CELL_SIZE + CELL_SIZE * 0.5)
 					_spawn_ore_chunks(tile, minerals, world_pos)
 					GameManager.track_ore_mined(tile, minerals)
@@ -2390,7 +2390,7 @@ func _smeltery_sell(ore_group: String) -> void:
 	var bar_count: int = _run_bar_counts.get(ore_group, 0)
 	if bar_count <= 0:
 		return
-	var sell_value: int = SMELTERY_BAR_SELL_VALUES[ore_group]
+	var sell_value: int = roundi(SMELTERY_BAR_SELL_VALUES[ore_group] * GameManager.get_dollar_sell_mult())
 	_run_bar_counts[ore_group] = bar_count - 1
 	GameManager.add_dollars(sell_value)
 	SoundManager.play_pickup_sound()
