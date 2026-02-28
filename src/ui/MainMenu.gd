@@ -22,6 +22,10 @@ var _delete_buttons: Array = []
 var _confirm_dialog: Control = null
 var _pending_slot_index: int = -1
 
+# Confirmation dialog for deleting saves
+var _delete_confirm_dialog: Control = null
+var _pending_delete_index: int = -1
+
 func _ready() -> void:
 	$VBoxContainer/NewGameButton.pressed.connect(_on_new_game_pressed)
 	$VBoxContainer/ContinueButton.pressed.connect(_on_continue_pressed)
@@ -52,6 +56,7 @@ func _ready() -> void:
 
 	_build_save_popup()
 	_build_confirm_dialog()
+	_build_delete_confirm_dialog()
 
 # ---------------------------------------------------------------------------
 # Menu buttons
@@ -279,10 +284,8 @@ func _on_slot_selected(index: int) -> void:
 	GameManager.start_game()
 
 func _on_slot_delete(index: int) -> void:
-	SaveManager.delete_slot(index)
-	_refresh_popup()
-	# Update continue button visibility
-	$VBoxContainer/ContinueButton.visible = SaveManager.has_any_save()
+	_pending_delete_index = index
+	_delete_confirm_dialog.show()
 
 func _on_popup_close() -> void:
 	_save_popup.hide()
@@ -388,3 +391,89 @@ func _on_confirm_overwrite() -> void:
 		SaveManager.new_game(_pending_slot_index)
 		GameManager.start_game()
 	_pending_slot_index = -1
+
+# ---------------------------------------------------------------------------
+# Delete Confirmation Dialog — for deleting existing saves
+# ---------------------------------------------------------------------------
+
+func _build_delete_confirm_dialog() -> void:
+	_delete_confirm_dialog = Control.new()
+	_delete_confirm_dialog.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_delete_confirm_dialog.mouse_filter = Control.MOUSE_FILTER_STOP
+	_delete_confirm_dialog.hide()
+	add_child(_delete_confirm_dialog)
+
+	var dimmer := ColorRect.new()
+	dimmer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dimmer.color = Color(0, 0, 0, 0.7)
+	_delete_confirm_dialog.add_child(dimmer)
+
+	var px := (1280.0 - CONFIRM_DIALOG_W) / 2.0
+	var py := (720.0 - CONFIRM_DIALOG_H) / 2.0
+
+	var border := ColorRect.new()
+	border.position = Vector2(px - 2, py - 2)
+	border.size = Vector2(CONFIRM_DIALOG_W + 4, CONFIRM_DIALOG_H + 4)
+	border.color = Color(0.8, 0.2, 0.2, 0.85)
+	_delete_confirm_dialog.add_child(border)
+
+	var bg := ColorRect.new()
+	bg.position = Vector2(px, py)
+	bg.size = Vector2(CONFIRM_DIALOG_W, CONFIRM_DIALOG_H)
+	bg.color = Color(0.07, 0.06, 0.05, 0.97)
+	_delete_confirm_dialog.add_child(bg)
+
+	var title := Label.new()
+	title.position = Vector2(px, py + 15)
+	title.size = Vector2(CONFIRM_DIALOG_W, 32)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	title.text = "DELETE SAVE?"
+	_delete_confirm_dialog.add_child(title)
+
+	var message := Label.new()
+	message.position = Vector2(px + 20, py + 60)
+	message.size = Vector2(CONFIRM_DIALOG_W - 40, 80)
+	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	message.add_theme_font_size_override("font_size", 14)
+	message.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+	message.autowrap_mode = TextServer.AUTOWRAP_WORD
+	message.text = "Are you sure you want to delete this save?\nThis action cannot be undone."
+	_delete_confirm_dialog.add_child(message)
+
+	var button_container := HBoxContainer.new()
+	button_container.position = Vector2(px, py + CONFIRM_DIALOG_H - 50)
+	button_container.size = Vector2(CONFIRM_DIALOG_W, 40)
+	button_container.add_theme_constant_override("separation", 10)
+	button_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	_delete_confirm_dialog.add_child(button_container)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = "CANCEL"
+	cancel_btn.size = Vector2(120, 38)
+	cancel_btn.add_theme_font_size_override("font_size", 16)
+	cancel_btn.pressed.connect(_on_delete_confirm_cancel)
+	button_container.add_child(cancel_btn)
+
+	var delete_btn := Button.new()
+	delete_btn.text = "DELETE"
+	delete_btn.size = Vector2(120, 38)
+	delete_btn.add_theme_font_size_override("font_size", 16)
+	delete_btn.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
+	delete_btn.pressed.connect(_on_delete_confirm_proceed)
+	button_container.add_child(delete_btn)
+
+func _on_delete_confirm_cancel() -> void:
+	_delete_confirm_dialog.hide()
+	_pending_delete_index = -1
+
+func _on_delete_confirm_proceed() -> void:
+	_delete_confirm_dialog.hide()
+	if _pending_delete_index >= 0:
+		SaveManager.delete_slot(_pending_delete_index)
+		_refresh_popup()
+		$VBoxContainer/ContinueButton.visible = SaveManager.has_any_save()
+	_pending_delete_index = -1
