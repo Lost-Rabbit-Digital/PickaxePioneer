@@ -14,14 +14,12 @@ signal cancelled
 @onready var ore_types_label: Label = $Control/Panel/MarginContainer/VBox/OreTypesLabel
 @onready var hazards_label: Label = $Control/Panel/MarginContainer/VBox/HazardsLabel
 @onready var enter_button: Button = $Control/Panel/MarginContainer/VBox/ButtonsBox/EnterButton
-@onready var cancel_button: Button = $Control/Panel/MarginContainer/VBox/ButtonsBox/CancelButton
 
 var _current_node: MapNode = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	enter_button.pressed.connect(_on_enter_pressed)
-	cancel_button.pressed.connect(_on_cancel_pressed)
 	hide()
 
 func show_for_node(node: MapNode) -> void:

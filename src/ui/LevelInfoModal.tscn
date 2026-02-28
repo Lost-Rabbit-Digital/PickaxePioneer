@@ -98,12 +98,6 @@ layout_mode = 2
 alignment = 1
 theme_override_constants/separation = 12
 
-[node name="CancelButton" type="Button" parent="Control/Panel/MarginContainer/VBox/ButtonsBox"]
-layout_mode = 2
-custom_minimum_size = Vector2(100, 36)
-tooltip_text = "Nope, not today. Back to the safety of the map."
-text = "Close"
-
 [node name="EnterButton" type="Button" parent="Control/Panel/MarginContainer/VBox/ButtonsBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(120, 36)
