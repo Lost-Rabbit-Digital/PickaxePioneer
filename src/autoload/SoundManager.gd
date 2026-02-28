@@ -37,17 +37,13 @@ func play_pickup_sound() -> void:
 	var player = AudioStreamPlayer.new()
 	add_child(player)
 
-	var stream = AudioStreamGenerator.new()
-	stream.mix_rate = sample_rate
-	stream.buffer_length = 0.1
-	player.stream = stream
+	player.stream = _pop_sounds[randi() % _pop_sounds.size()]
+	player.pitch_scale = randf_range(0.8, 1.2)
 	player.bus = &"SFX"
+	player.volume_db = -8.0
 	player.play()
-	
-	var playback = player.get_stream_playback()
-	_fill_pickup_buffer(playback)
-	
-	await get_tree().create_timer(0.2).timeout
+
+	await player.finished
 	player.queue_free()
 
 func play_drill_sound() -> void:
@@ -118,19 +114,6 @@ func play_explosion_sound() -> void:
 	
 	await get_tree().create_timer(0.6).timeout
 	player.queue_free()
-
-func _fill_pickup_buffer(playback: AudioStreamGeneratorPlayback) -> void:
-	var phase = 0.0
-	var frames = playback.get_frames_available()
-	
-	for i in range(frames):
-		var t = float(i) / sample_rate
-		# Simple high-pitched sine wave "ding"
-		var freq = 880.0 + (t * 1000.0) # Slide up
-		var increment = freq / sample_rate
-		phase = fmod(phase + increment, 1.0)
-		var sample = Vector2.ONE * sin(phase * TAU) * 0.5 * (1.0 - t * 10.0) # Decay
-		playback.push_frame(sample)
 
 
 func _fill_impact_buffer(playback: AudioStreamGeneratorPlayback) -> void:
