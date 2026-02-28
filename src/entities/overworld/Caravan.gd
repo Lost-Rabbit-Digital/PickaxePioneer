@@ -16,6 +16,7 @@ var is_moving: bool = false
 var movement_tween: Tween
 var _wiggle_time: float = 0.0
 var _travel_direction: Vector2 = Vector2.ZERO
+var _waypoints_remaining: Array[Vector2] = []
 
 signal arrived
 
@@ -41,13 +42,22 @@ func move_along_path(positions: Array[Vector2]) -> void:
 		arrived.emit()
 		return
 
-	target_position = positions[-1]
+	# If already moving, prepend the waypoints not yet reached so the caravan
+	# finishes its current road segment(s) before heading to the new destination.
+	# This prevents the caravan from cutting across non-road paths on redirect.
+	var full_path: Array[Vector2] = []
+	if is_moving and not _waypoints_remaining.is_empty():
+		full_path.assign(_waypoints_remaining)
+	full_path.append_array(positions)
+
+	_waypoints_remaining.assign(full_path)
+	target_position = full_path[-1]
 	is_moving = true
 	_wiggle_time = 0.0
 	SoundManager.start_rocket_engine_sound()
 
 	# Flip sprite based on horizontal direction to the first waypoint
-	_update_facing(positions[0])
+	_update_facing(full_path[0])
 
 	# Kill any existing tween
 	if movement_tween:
@@ -60,14 +70,15 @@ func move_along_path(positions: Array[Vector2]) -> void:
 	movement_tween.set_ease(Tween.EASE_IN_OUT)
 
 	var from := position
-	for i in range(positions.size()):
-		var pos := positions[i]
+	for i in range(full_path.size()):
+		var pos := full_path[i]
 		var distance := from.distance_to(pos)
 		var duration := distance / speed
 		# Update facing direction at each waypoint
 		if i > 0:
 			movement_tween.tween_callback(_update_facing.bind(pos))
 		movement_tween.tween_property(self, "position", pos, duration)
+		movement_tween.tween_callback(_consume_waypoint)
 		from = pos
 
 	movement_tween.tween_callback(func() -> void:
@@ -75,6 +86,10 @@ func move_along_path(positions: Array[Vector2]) -> void:
 		SoundManager.stop_rocket_engine_sound()
 		arrived.emit()
 	)
+
+func _consume_waypoint() -> void:
+	if not _waypoints_remaining.is_empty():
+		_waypoints_remaining.pop_front()
 
 func _update_facing(target: Vector2) -> void:
 	_travel_direction = position.direction_to(target)
@@ -91,4 +106,5 @@ func teleport_to(pos: Vector2) -> void:
 	position = pos
 	target_position = pos
 	is_moving = false
+	_waypoints_remaining.clear()
 	sprite.position = Vector2.ZERO
