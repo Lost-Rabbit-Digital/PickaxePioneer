@@ -81,7 +81,7 @@ func _ready() -> void:
 	sprite.play(&"idle")
 
 func _physics_process(delta: float) -> void:
-	if not mining_level or mining_level._game_over or mining_level.any_ui_open():
+	if not mining_level or mining_level._game_over or mining_level.any_ui_open() or mining_level._spawning:
 		return
 
 	var pre_floor := is_on_floor()
@@ -99,11 +99,13 @@ func _physics_process(delta: float) -> void:
 	_gripping_ladder   = on_ladder and (Input.is_key_pressed(KEY_W)   or Input.is_key_pressed(KEY_UP))
 	_descending_ladder = on_ladder and (Input.is_key_pressed(KEY_S)   or Input.is_key_pressed(KEY_DOWN))
 
-	# Gravity — suppressed when actively using the ladder; otherwise normal physics
+	# Gravity — suppressed when on a ladder; player holds position unless actively climbing.
 	if _gripping_ladder:
 		velocity.y = -LADDER_CLIMB_SPEED  # Climb up
 	elif _descending_ladder:
 		velocity.y = LADDER_CLIMB_SPEED   # Controlled descent
+	elif on_ladder:
+		velocity.y = 0  # Hold still on ladder — no input, no gravity
 	elif not is_on_floor():
 		velocity.y += gravity * delta
 	else:
@@ -136,12 +138,12 @@ func _physics_process(delta: float) -> void:
 		_facing_left = false
 		sprite.flip_h = true
 
-	# Jump from floor — any key (Space/W/Up); or launch off a gripped ladder with Space.
+	# Jump from floor or release from ladder — Space jumps/launches in both cases.
 	if Input.is_action_just_pressed("jump"):
 		if is_on_floor():
 			velocity.y = jump_velocity
-		elif _gripping_ladder and Input.is_key_pressed(KEY_SPACE):
-			velocity.y = jump_velocity  # Space launches the player off the ladder
+		elif on_ladder:
+			velocity.y = jump_velocity  # Jump releases the player from the ladder
 
 	var pre_vel_y := velocity.y
 	move_and_slide()
