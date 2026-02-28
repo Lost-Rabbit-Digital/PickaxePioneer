@@ -350,6 +350,10 @@ var _exit_pulse_time: float = 0.0
 # Cursor highlight
 var _cursor_grid_pos: Vector2i = Vector2i(-1, -1)
 
+# Ladder ghost preview — shown when slot 1 (ladder) is selected
+var _ladder_ghost_pos: Vector2i = Vector2i(-1, -1)
+var _ladder_ghost_valid: bool = false
+
 # Sonar ping subsystem (§3.2) — logic lives in SonarSystem.gd
 var sonar_system: SonarSystem = SonarSystem.new()
 
@@ -971,10 +975,34 @@ func _draw() -> void:
 			var frect := Rect2(fc * CELL_SIZE, fr * CELL_SIZE, CELL_SIZE, CELL_SIZE)
 			draw_rect(frect, Color(1.0, 1.0, 1.0, _flash_cells[pk]))
 
-	# Cursor mining highlight
-	if _cursor_grid_pos.x >= 0 and _cursor_grid_pos.y >= 0:
-		var highlight_rect := Rect2(_cursor_grid_pos.x * CELL_SIZE, _cursor_grid_pos.y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-		draw_rect(highlight_rect, Color(1.0, 1.0, 1.0, 0.2), false, 2.0)
+	# Cursor highlight — mining outline (slot 0) or ladder ghost (slot 1)
+	if GameManager.selected_hotbar_slot == 1:
+		# Ladder ghost preview: faint ladder shape tinted green (valid) or red (invalid)
+		if _ladder_ghost_pos.x >= 0 and _ladder_ghost_pos.y >= 0:
+			var lx := _ladder_ghost_pos.x * CELL_SIZE
+			var ly := _ladder_ghost_pos.y * CELL_SIZE
+			const GHOST_ALPHA := 0.45
+			var pole_c: Color
+			var rung_c: Color
+			var border_c: Color
+			if _ladder_ghost_valid:
+				pole_c   = Color(0.20, 0.90, 0.20, GHOST_ALPHA)
+				rung_c   = Color(0.15, 0.80, 0.15, GHOST_ALPHA)
+				border_c = Color(0.20, 0.90, 0.20, 0.65)
+			else:
+				pole_c   = Color(0.90, 0.15, 0.10, GHOST_ALPHA)
+				rung_c   = Color(0.80, 0.10, 0.08, GHOST_ALPHA)
+				border_c = Color(0.90, 0.15, 0.10, 0.65)
+			draw_rect(Rect2(lx + 10, ly + 2, 8, CELL_SIZE - 4), pole_c)
+			draw_rect(Rect2(lx + CELL_SIZE - 18, ly + 2, 8, CELL_SIZE - 4), pole_c)
+			for rung in 3:
+				draw_rect(Rect2(lx + 10, ly + 10 + rung * 18, CELL_SIZE - 20, 5), rung_c)
+			draw_rect(Rect2(lx, ly, CELL_SIZE, CELL_SIZE), border_c, false, 2.0)
+	else:
+		# Pickaxe mining highlight
+		if _cursor_grid_pos.x >= 0 and _cursor_grid_pos.y >= 0:
+			var highlight_rect := Rect2(_cursor_grid_pos.x * CELL_SIZE, _cursor_grid_pos.y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+			draw_rect(highlight_rect, Color(1.0, 1.0, 1.0, 0.2), false, 2.0)
 
 	# Trader nodes are drawn by TraderSystem._draw() (Node2D child)
 
@@ -1649,6 +1677,8 @@ func _process(delta: float) -> void:
 func _update_cursor_highlight() -> void:
 	if not player_node:
 		_cursor_grid_pos = Vector2i(-1, -1)
+		_ladder_ghost_pos = Vector2i(-1, -1)
+		_ladder_ghost_valid = false
 		return
 	var mouse_world := get_global_mouse_position()
 	var gp := Vector2i(floori(mouse_world.x / CELL_SIZE), floori(mouse_world.y / CELL_SIZE))
@@ -1661,6 +1691,18 @@ func _update_cursor_highlight() -> void:
 			_cursor_grid_pos = Vector2i(-1, -1)
 	else:
 		_cursor_grid_pos = Vector2i(-1, -1)
+
+	# Ladder ghost preview — only active when ladder slot (slot 1) is selected
+	if GameManager.selected_hotbar_slot == 1:
+		_ladder_ghost_pos = _cursor_grid_pos  # reuses the already range-checked position
+		_ladder_ghost_valid = (
+			_ladder_ghost_pos.x >= 0 and _ladder_ghost_pos.y >= 0
+			and GameManager.ladder_count > 0
+			and grid[_ladder_ghost_pos.x][_ladder_ghost_pos.y] == TileType.EMPTY
+		)
+	else:
+		_ladder_ghost_pos = Vector2i(-1, -1)
+		_ladder_ghost_valid = false
 
 func _check_exit_zone() -> void:
 	if not player_node or _game_over:
@@ -1700,10 +1742,16 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("sonar_ping"):
 		if player_node:
 			sonar_system.try_ping(player_node.get_grid_pos())
-	# F key — place a ladder on the tile the player currently occupies
+	# Right-click — place a ladder at the cursor when the ladder slot is active
+	if event is InputEventMouseButton and event.pressed \
+			and event.button_index == MOUSE_BUTTON_RIGHT:
+		if GameManager.selected_hotbar_slot == 1:
+			_try_place_ladder_at(_ladder_ghost_pos)
+		return
+	# F key — also places a ladder at the cursor position (legacy binding)
 	if event is InputEventKey and event.pressed and not event.echo \
 			and event.keycode == KEY_F:
-		_try_place_ladder()
+		_try_place_ladder_at(_ladder_ghost_pos)
 
 # ---------------------------------------------------------------------------
 # Pickaxe throw effect — spawns a pickaxe sprite that flies to the target
@@ -2413,7 +2461,7 @@ func cat_mine_at(grid_pos: Vector2i) -> void:
 # Ladder placement
 # ---------------------------------------------------------------------------
 
-func _try_place_ladder() -> void:
+func _try_place_ladder_at(gp: Vector2i) -> void:
 	if GameManager.selected_hotbar_slot != 1:
 		EventBus.ore_mined_popup.emit(0, "Select the ladder (slot 2) to place ladders.")
 		return
@@ -2422,8 +2470,13 @@ func _try_place_ladder() -> void:
 	if GameManager.ladder_count <= 0:
 		EventBus.ore_mined_popup.emit(0, "No ladders! Buy packs at the Refueling Dock.")
 		return
-	var gp := player_node.get_grid_pos()
 	if gp.x < 0 or gp.x >= GRID_COLS or gp.y < 0 or gp.y >= GRID_ROWS:
+		EventBus.ore_mined_popup.emit(0, "Aim the cursor at an empty tile to place a ladder.")
+		return
+	var player_tile := player_node.get_grid_pos()
+	var dist := Vector2(gp - player_tile).length()
+	if dist > player_node.mine_range:
+		EventBus.ore_mined_popup.emit(0, "Too far — move closer to place a ladder there.")
 		return
 	if grid[gp.x][gp.y] != TileType.EMPTY:
 		EventBus.ore_mined_popup.emit(0, "Can only place ladders in open space.")

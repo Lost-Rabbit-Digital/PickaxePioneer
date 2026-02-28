@@ -535,7 +535,7 @@ func _on_ladder_count_changed(count: int) -> void:
 
 func _update_ladder_display(count: int) -> void:
 	if count > 0:
-		_ladder_label.text = "Ladders: %d  [F]" % count
+		_ladder_label.text = "Ladders: %d  [RMB / F]" % count
 		_ladder_label.modulate.a = 1.0
 		_ladder_panel.modulate.a = 1.0
 	else:
