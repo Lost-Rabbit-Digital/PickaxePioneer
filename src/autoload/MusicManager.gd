@@ -1,45 +1,58 @@
 extends Node
 
 # MusicManager
-# Continuous shuffled playlist that starts on launch and plays seamlessly
-# through all scenes. Crossfades between songs when one finishes.
+# Auto-discovers all .mp3 files in res://assets/music/, shuffles them,
+# and loops continuously with crossfade. Starts on launch, persists
+# across all scene transitions.
+
+const MUSIC_DIR := "res://assets/music/"
 
 var current_player: AudioStreamPlayer
 var fade_duration: float = 1.5
 
-var _playlist: Array[AudioStream] = []
-var _play_order: Array[int] = []
-var _current_index: int = -1
+var _tracks: Array[AudioStream] = []
+var _order: Array[int] = []
+var _index: int = -1
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	_load_playlist()
-	_shuffle_order()
+	_scan_tracks()
+	if _tracks.is_empty():
+		return
+	_shuffle()
 	_play_next()
 
-func _load_playlist() -> void:
-	_playlist = [
-		load("res://assets/music/crickets.mp3"),
-		load("res://assets/city.mp3"),
-		load("res://assets/mine.mp3"),
-		load("res://assets/overworld.mp3"),
-	]
+func _scan_tracks() -> void:
+	var dir := DirAccess.open(MUSIC_DIR)
+	if not dir:
+		return
+	dir.list_dir_begin()
+	var file_name := dir.get_next()
+	while file_name != "":
+		if not dir.current_is_dir():
+			# In exported builds files appear as "song.mp3.import"
+			var clean := file_name.trim_suffix(".import")
+			if clean.ends_with(".mp3") or clean.ends_with(".ogg") or clean.ends_with(".wav"):
+				var path := MUSIC_DIR + clean
+				if ResourceLoader.exists(path):
+					var stream := load(path) as AudioStream
+					if stream:
+						_tracks.append(stream)
+		file_name = dir.get_next()
 
-func _shuffle_order() -> void:
-	_play_order.clear()
-	for i in range(_playlist.size()):
-		_play_order.append(i)
-	_play_order.shuffle()
-	_current_index = -1
+func _shuffle() -> void:
+	_order.clear()
+	for i in range(_tracks.size()):
+		_order.append(i)
+	_order.shuffle()
+	_index = -1
 
 func _play_next() -> void:
-	_current_index += 1
-	if _current_index >= _play_order.size():
-		_shuffle_order()
-		_current_index = 0
-
-	var stream := _playlist[_play_order[_current_index]]
-	_crossfade_to(stream)
+	_index += 1
+	if _index >= _order.size():
+		_shuffle()
+		_index = 0
+	_crossfade_to(_tracks[_order[_index]])
 
 func _crossfade_to(stream: AudioStream) -> void:
 	var new_player := AudioStreamPlayer.new()
@@ -59,7 +72,6 @@ func _crossfade_to(stream: AudioStream) -> void:
 		tween.chain().tween_callback(old.queue_free)
 
 	tween.tween_property(new_player, "volume_db", 0.0, fade_duration)
-
 	current_player = new_player
 
 func _on_song_finished(player: AudioStreamPlayer) -> void:
