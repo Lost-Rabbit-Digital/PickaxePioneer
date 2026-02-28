@@ -1,34 +1,34 @@
-[gd_scene load_steps=7 format=3 uid="uid://overworld8aa"]
+[gd_scene load_steps=6 format=3 uid="uid://overworld8aa"]
 
 [ext_resource type="Script" uid="uid://bk70fmvti7sbc" path="res://src/levels/Overworld.gd" id="1_overworld"]
+[ext_resource type="Texture2D" uid="uid://deychwmedo8ag" path="res://assets/pixelart_starfield.png" id="2_aphkn"]
 [ext_resource type="PackedScene" uid="uid://mapnode123" path="res://src/entities/overworld/MapNode.tscn" id="2_node"]
 [ext_resource type="PackedScene" uid="uid://caravan456" path="res://src/entities/overworld/Caravan.tscn" id="3_caravan"]
-[ext_resource type="Texture2D" uid="uid://ccpd0m6gir48o" path="res://assets/bg_wasteland.svg" id="5_bg_wasteland"]
-[ext_resource type="Texture2D" uid="uid://bdwjbhehbvqnc" path="res://assets/dust.svg" id="6_dust"]
 [ext_resource type="PackedScene" path="res://src/ui/PauseMenu.tscn" id="7_pausemenu"]
 
-[node name="Overworld" type="Node2D"]
+[node name="Overworld" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+mouse_filter = 1
 script = ExtResource("1_overworld")
 
-[node name="ParallaxBackground" type="ParallaxBackground" parent="."]
-
-[node name="ParallaxLayerBg" type="ParallaxLayer" parent="ParallaxBackground"]
-motion_scale = Vector2(0.1, 0.1)
-
-[node name="Sprite2D" type="Sprite2D" parent="ParallaxBackground/ParallaxLayerBg"]
-texture = ExtResource("5_bg_wasteland")
-centered = false
-region_enabled = true
-region_rect = Rect2(0, 0, 1280, 720)
-
-[node name="ParallaxLayerDust" type="ParallaxLayer" parent="ParallaxBackground"]
-motion_scale = Vector2(0.5, 0.5)
-
-[node name="Sprite2D" type="Sprite2D" parent="ParallaxBackground/ParallaxLayerDust"]
-texture = ExtResource("6_dust")
-centered = false
-region_enabled = true
-region_rect = Rect2(0, 0, 1280, 720)
+[node name="Sprite2D" type="TextureRect" parent="."]
+z_index = -2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_aphkn")
+stretch_mode = 1
 
 [node name="CityNode" parent="." instance=ExtResource("2_node")]
 position = Vector2(200, 360)
@@ -64,3 +64,4 @@ scene_path = "res://src/levels/SettlementLevel.tscn"
 position = Vector2(200, 360)
 
 [node name="PauseMenu" parent="." instance=ExtResource("7_pausemenu")]
+visible = false

@@ -1,5 +1,5 @@
 class_name Overworld
-extends Node2D
+extends Control
 
 # Star Chart Map
 
