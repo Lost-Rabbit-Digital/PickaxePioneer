@@ -290,8 +290,11 @@ const SONAR_PING_DURATION: float = 3.0  # seconds until ping fades — also defi
 # ---------------------------------------------------------------------------
 # Wandering Space Trader system
 # ---------------------------------------------------------------------------
-# Depth rows that trigger a trader spawn — one per milestone
-const TRADER_DEPTH_MILESTONES: Array[int] = [32, 64, 96, 128]
+# Traders spawn randomly as the player mines deeper — independent of bosses.
+const TRADER_CHECK_INTERVAL: int   = 10    # check for a trader spawn every N depth rows
+const TRADER_FIRST_CHECK: int      = 15    # first eligible depth row
+const TRADER_SPAWN_CHANCE: float   = 0.15  # 15 % chance per check
+const TRADER_MAX_PER_RUN: int      = 3     # cap traders spawned per run
 # World-space radius within which the trader can be interacted with
 const TRADER_INTERACT_RADIUS: float = 128.0  # px (~2 tiles)
 
@@ -424,7 +427,8 @@ var forager_system: ForagerSystem = ForagerSystem.new()
 # Wandering Trader state
 # Each entry: {world_pos: Vector2, tier: int, pulse: float}
 var _active_traders: Array = []
-var _trader_milestones_seen: Array[bool] = [false, false, false, false]
+var _trader_last_check_row: int = 0   # last depth row where a spawn check was made
+var _traders_spawned_count: int = 0   # total traders spawned this run
 var _trader_shop_layer: CanvasLayer = null
 var _trader_shop_visible: bool = false
 var _current_trader: Dictionary = {}
@@ -2478,10 +2482,20 @@ func _queue_boss_hints(hints: Array) -> void:
 
 
 func _check_trader_milestone(depth_row: int) -> void:
-	for i in range(TRADER_DEPTH_MILESTONES.size()):
-		if not _trader_milestones_seen[i] and depth_row >= TRADER_DEPTH_MILESTONES[i]:
-			_trader_milestones_seen[i] = true
-			_spawn_wandering_trader(i + 1)  # tier 1–4
+	if depth_row < TRADER_FIRST_CHECK:
+		return
+	if _traders_spawned_count >= TRADER_MAX_PER_RUN:
+		return
+	# Only check at regular intervals (every TRADER_CHECK_INTERVAL rows)
+	var check_row := (depth_row / TRADER_CHECK_INTERVAL) * TRADER_CHECK_INTERVAL
+	if check_row <= _trader_last_check_row:
+		return
+	_trader_last_check_row = check_row
+	if randf() > TRADER_SPAWN_CHANCE:
+		return
+	# Tier scales with depth: 1-4
+	var tier := clampi(depth_row / 32 + 1, 1, 4)
+	_spawn_wandering_trader(tier)
 
 func _spawn_wandering_trader(tier: int) -> void:
 	if not player_node:
@@ -2489,6 +2503,7 @@ func _spawn_wandering_trader(tier: int) -> void:
 	# Place the trader a couple of tiles to the right of the player
 	var spawn_pos := player_node.global_position + Vector2(CELL_SIZE * 2.5, 0.0)
 	_active_traders.append({"world_pos": spawn_pos, "tier": tier, "pulse": 0.0})
+	_traders_spawned_count += 1
 	EventBus.ore_mined_popup.emit(0, "Space Trader!")
 
 func _get_nearby_trader() -> Dictionary:
