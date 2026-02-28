@@ -54,10 +54,12 @@ func draw_to(
 				[Color(0.90, 0.90, 1.00), Color(1.00, 1.00, 0.60)],
 			]
 			var ap := clampi(_boss.ancient_phase, 0, ancient_phase_colors.size() - 1)
-			core_fill   = Color(ancient_phase_colors[ap][0], 0.35 + boss_pulse * 0.30)
-			core_border = Color(ancient_phase_colors[ap][1], 0.60 + boss_pulse * 0.30)
-			seg_fill    = Color(ancient_phase_colors[ap][0], 0.20 + boss_pulse * 0.20)
-			seg_border  = Color(ancient_phase_colors[ap][1], 0.45 + boss_pulse * 0.25)
+			var apc0: Color = ancient_phase_colors[ap][0]
+			var apc1: Color = ancient_phase_colors[ap][1]
+			core_fill   = Color(apc0, 0.35 + boss_pulse * 0.30)
+			core_border = Color(apc1, 0.60 + boss_pulse * 0.30)
+			seg_fill    = Color(apc0, 0.20 + boss_pulse * 0.20)
+			seg_border  = Color(apc1, 0.45 + boss_pulse * 0.25)
 		BossSystem.BOSS_TYPE_GOLEM:
 			var phase_colors: Array = [
 				[Color(0.80, 0.50, 0.20), Color(0.95, 0.70, 0.40)],
@@ -65,10 +67,12 @@ func draw_to(
 				[Color(1.00, 0.85, 0.10), Color(1.00, 1.00, 0.50)],
 			]
 			var pi := clampi(_boss.golem_phase, 0, phase_colors.size() - 1)
-			core_fill   = Color(phase_colors[pi][0], 0.30 + boss_pulse * 0.28)
-			core_border = Color(phase_colors[pi][1], 0.55 + boss_pulse * 0.30)
-			seg_fill    = Color(phase_colors[pi][0], 0.18 + boss_pulse * 0.18)
-			seg_border  = Color(phase_colors[pi][1], 0.40 + boss_pulse * 0.25)
+			var gpc0: Color = phase_colors[pi][0]
+			var gpc1: Color = phase_colors[pi][1]
+			core_fill   = Color(gpc0, 0.30 + boss_pulse * 0.28)
+			core_border = Color(gpc1, 0.55 + boss_pulse * 0.30)
+			seg_fill    = Color(gpc0, 0.18 + boss_pulse * 0.18)
+			seg_border  = Color(gpc1, 0.40 + boss_pulse * 0.25)
 
 	# Creature shapes
 	_draw_boss_creatures(canvas, min_col, max_col, min_row, max_row,
