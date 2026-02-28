@@ -1,112 +1,30 @@
 class_name HatMenu
 extends CanvasLayer
 
-# Hat Wardrobe — toggle with H key during a mining run.
-# Displays all 24 hats in a 6×4 grid; click to preview, Equip to apply.
-# Hat selection persists across runs via GameManager.equipped_hat.
+# Companion Menu — toggle with H key during a mining run.
+# Displays Leaf and Ice elemental followers; each can be independently equipped.
+# Selection persists across runs via GameManager.equipped_leaf / equipped_ice.
 
-const HAT_COUNT: int = 24
-const COLS: int = 6
-const ROWS: int = 4
-const BTN_SZ: int = 72
-const BTN_GAP: int = 6
-const PANEL_W: int = 720
-const PANEL_H: int = 520
+const PANEL_W: int = 620
+const PANEL_H: int = 340
 
-# Per-frame offsets [x, y] for the Hat AnimatedSprite2D on the player.
-const HAT_OFFSETS: Array = [
-	Vector2(2.75, 4.1),    # 0
-	Vector2(4.0, 5.1),     # 1
-	Vector2(2.75, 3.28),   # 2
-	Vector2(3.5, -5.45),   # 3
-	Vector2(3.75, 5.0),    # 4
-	Vector2(3.75, 3.75),   # 5
-	Vector2(3.75, 5.75),   # 6
-	Vector2(4.65, 10.12),  # 7
-	Vector2(3.75, 9.15),   # 8
-	Vector2(3.75, 6.78),   # 9
-	Vector2(3.65, 1.4),    # 10
-	Vector2(3.39, 0.4),    # 11
-	Vector2(3.39, 0.4),    # 12
-	Vector2(5.0, -0.7),    # 13
-	Vector2(5.0, -0.7),    # 14
-	Vector2(5.0, -0.7),    # 15
-	Vector2(3.75, -1.6),   # 16
-	Vector2(3.75, -2.7),   # 17
-	Vector2(3.75, 1.37),   # 18
-	Vector2(3.75, 1.37),   # 19
-	Vector2(3.75, 1.37),   # 20
-	Vector2(3.75, 1.37),   # 21
-	Vector2(3.75, 0.29),   # 22
-	Vector2(3.75, 1.285),  # 23
+const FOLLOWER_NAMES: Array = ["Leaf Elemental", "Ice Elemental"]
+const FOLLOWER_DESCS: Array = [
+	"A curious forest sprite that drifts through the mines beside you.",
+	"A frosty companion born from deep-mine cold. Cool and determined.",
 ]
-
-const HAT_NAMES: Array = [
-	"Miner's Cap",
-	"Top Hat",
-	"Knit Beanie",
-	"Royal Crown",
-	"Witch Hat",
-	"Cowboy Hat",
-	"Party Hat",
-	"Sombrero",
-	"Viking Helm",
-	"Knight Helm",
-	"Chef's Toque",
-	"Fez",
-	"Beret",
-	"Hard Hat",
-	"Miner's Lamp",
-	"Pirate Hat",
-	"Jester Cap",
-	"Cat Ears",
-	"Fox Hood",
-	"Bunny Ears",
-	"Bear Ears",
-	"Wizard Hat",
-	"Space Helmet",
-	"Halo",
+const FOLLOWER_SHEETS: Array = [
+	"res://assets/elemental_followers/leaf_elemental_spritesheet.png",
+	"res://assets/elemental_followers/ice_elemental_spritesheet.png",
 ]
-
-const HAT_DESCS: Array = [
-	"A sturdy cap worn by seasoned miners.",
-	"Elegant and distinguished. Pure class.",
-	"Keeps your head warm on cold digs.",
-	"For the feline of royal heritage.",
-	"Magical and mysterious. Beware.",
-	"Howdy, partner! Giddy up.",
-	"Every day underground is a celebration!",
-	"A big, bold statement piece.",
-	"Fear me, for I mine with fury!",
-	"Honor and steel, deep in the rock.",
-	"Whip up something delicious down here.",
-	"Stylish and tasseled. Very distinguished.",
-	"Mon dieu, tres chic in the mines.",
-	"Safety first in the deep dark.",
-	"Light the way through the darkness.",
-	"Yo ho ho and a pickaxe.",
-	"Three jokes for the price of one.",
-	"Purrfect for any occasion.",
-	"Cunning and swift as a fox.",
-	"Hoppy and cheerful underground.",
-	"Fluffy and cozy. Very huggable.",
-	"Ancient power flows through the brim.",
-	"One small step for cats, one giant dig.",
-	"Blessed by the stars above the surface.",
-]
-
-var _selected_frame: int = -1
-var _equipped_frame: int = -1
-var _hat_buttons: Array = []
-
-var _preview_icon: TextureRect
-var _hat_name_label: Label
-var _hat_desc_label: Label
-var _currently_label: Label
-var _equip_btn: Button
 
 # Set by MiningLevel after instantiation
 var player: PlayerProbe = null
+
+var _leaf_toggle_btn: Button
+var _ice_toggle_btn: Button
+var _leaf_card_border: ColorRect
+var _ice_card_border: ColorRect
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -134,17 +52,16 @@ func _build_ui() -> void:
 	add_child(panel)
 
 	# Border
-	var border_color := Color(0.80, 0.62, 0.22, 0.85)
 	for side in _border_rects(px, py, PANEL_W, PANEL_H, 2):
 		var br := ColorRect.new()
-		br.color = border_color
+		br.color = Color(0.80, 0.62, 0.22, 0.85)
 		br.position = side[0]
 		br.size = side[1]
 		add_child(br)
 
 	# Title
 	var title := Label.new()
-	title.text = "HAT WARDROBE"
+	title.text = "COMPANIONS"
 	title.position = Vector2(px + 20, py + 12)
 	title.add_theme_font_size_override("font_size", 20)
 	title.modulate = Color(1.00, 0.82, 0.35)
@@ -165,206 +82,130 @@ func _build_ui() -> void:
 	sep.size = Vector2(PANEL_W - 32, 1)
 	add_child(sep)
 
-	# Hat grid
-	_build_grid(px, py)
+	# Two follower cards
+	var card_w: int = 260
+	var card_h: int = 230
+	var card_y: int = py + 56
+	var gap: int = 20
+	var total_cards_w: int = card_w * 2 + gap
+	var card_start_x: int = px + (PANEL_W - total_cards_w) / 2
 
-	# Bottom section separator
-	var info_y: int = py + PANEL_H - 136
-	var bot_sep := ColorRect.new()
-	bot_sep.color = Color(0.80, 0.62, 0.22, 0.35)
-	bot_sep.position = Vector2(px + 16, info_y)
-	bot_sep.size = Vector2(PANEL_W - 32, 1)
-	add_child(bot_sep)
+	_build_follower_card(0, card_start_x, card_y, card_w, card_h)
+	_build_follower_card(1, card_start_x + card_w + gap, card_y, card_w, card_h)
 
-	# Preview icon
-	_preview_icon = TextureRect.new()
-	_preview_icon.position = Vector2(px + 20, info_y + 10)
-	_preview_icon.size = Vector2(88, 88)
-	_preview_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-	_preview_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_preview_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	add_child(_preview_icon)
-
-	# Preview icon border
-	for side in _border_rects(px + 20, info_y + 10, 88, 88, 1):
-		var br := ColorRect.new()
-		br.color = Color(0.80, 0.62, 0.22, 0.30)
-		br.position = side[0]
-		br.size = side[1]
-		add_child(br)
-
-	# Hat name
-	_hat_name_label = Label.new()
-	_hat_name_label.text = "Select a hat to preview"
-	_hat_name_label.position = Vector2(px + 124, info_y + 12)
-	_hat_name_label.custom_minimum_size = Vector2(360, 28)
-	_hat_name_label.add_theme_font_size_override("font_size", 17)
-	_hat_name_label.modulate = Color(1.0, 0.82, 0.35)
-	add_child(_hat_name_label)
-
-	# Hat description
-	_hat_desc_label = Label.new()
-	_hat_desc_label.text = ""
-	_hat_desc_label.position = Vector2(px + 124, info_y + 44)
-	_hat_desc_label.custom_minimum_size = Vector2(360, 36)
-	_hat_desc_label.add_theme_font_size_override("font_size", 12)
-	_hat_desc_label.modulate = Color(0.75, 0.75, 0.80)
-	_hat_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	add_child(_hat_desc_label)
-
-	# Currently wearing label
-	_currently_label = Label.new()
-	_currently_label.text = "No hat equipped"
-	_currently_label.position = Vector2(px + 124, info_y + 86)
-	_currently_label.custom_minimum_size = Vector2(340, 22)
-	_currently_label.add_theme_font_size_override("font_size", 11)
-	_currently_label.modulate = Color(0.55, 0.55, 0.60, 0.85)
-	add_child(_currently_label)
-
-	# Equip button
-	_equip_btn = Button.new()
-	_equip_btn.text = "EQUIP"
-	_equip_btn.position = Vector2(px + PANEL_W - 192, info_y + 24)
-	_equip_btn.size = Vector2(80, 34)
-	_equip_btn.add_theme_font_size_override("font_size", 14)
-	_equip_btn.pressed.connect(_on_equip_pressed)
-	_equip_btn.disabled = true
-	add_child(_equip_btn)
-
-	# Close button
+	# Close button at bottom center
 	var close_btn := Button.new()
 	close_btn.text = "CLOSE"
-	close_btn.position = Vector2(px + PANEL_W - 100, info_y + 24)
-	close_btn.size = Vector2(80, 34)
+	close_btn.position = Vector2(px + (PANEL_W - 90) / 2, py + PANEL_H - 46)
+	close_btn.size = Vector2(90, 32)
 	close_btn.add_theme_font_size_override("font_size", 14)
 	close_btn.pressed.connect(close)
 	add_child(close_btn)
 
-	# Remove hat button
-	var remove_btn := Button.new()
-	remove_btn.text = "Remove Hat"
-	remove_btn.position = Vector2(px + PANEL_W - 192, info_y + 68)
-	remove_btn.size = Vector2(172, 28)
-	remove_btn.add_theme_font_size_override("font_size", 11)
-	remove_btn.pressed.connect(_on_remove_pressed)
-	add_child(remove_btn)
+func _build_follower_card(index: int, cx: int, cy: int, w: int, h: int) -> void:
+	var is_leaf: bool = (index == 0)
 
-func _build_grid(px: int, py: int) -> void:
-	var grid_w: int = COLS * BTN_SZ + (COLS - 1) * BTN_GAP
-	var grid_start_x: int = px + (PANEL_W - grid_w) / 2
-	var grid_start_y: int = py + 54
+	# Card background
+	var card := ColorRect.new()
+	card.color = Color(0.13, 0.11, 0.17, 1.0)
+	card.position = Vector2(cx, cy)
+	card.size = Vector2(w, h)
+	add_child(card)
 
-	for i in HAT_COUNT:
-		var col := i % COLS
-		var row := i / COLS
-		var bx: int = grid_start_x + col * (BTN_SZ + BTN_GAP)
-		var by: int = grid_start_y + row * (BTN_SZ + BTN_GAP)
-		var frame_idx := i
-
-		var style_normal := StyleBoxFlat.new()
-		style_normal.bg_color = Color(0.15, 0.13, 0.18, 1.0)
-		style_normal.set_content_margin_all(8.0)
-		style_normal.border_width_left = 1
-		style_normal.border_width_right = 1
-		style_normal.border_width_top = 1
-		style_normal.border_width_bottom = 1
-		style_normal.border_color = Color(0.30, 0.26, 0.36, 0.60)
-
-		var style_hover := StyleBoxFlat.new()
-		style_hover.bg_color = Color(0.22, 0.19, 0.28, 1.0)
-		style_hover.set_content_margin_all(8.0)
-		style_hover.border_width_left = 1
-		style_hover.border_width_right = 1
-		style_hover.border_width_top = 1
-		style_hover.border_width_bottom = 1
-		style_hover.border_color = Color(0.80, 0.62, 0.22, 0.70)
-
-		var btn := Button.new()
-		btn.position = Vector2(bx, by)
-		btn.size = Vector2(BTN_SZ, BTN_SZ)
-		btn.custom_minimum_size = Vector2(BTN_SZ, BTN_SZ)
-		btn.add_theme_stylebox_override("normal", style_normal)
-		btn.add_theme_stylebox_override("hover", style_hover)
-		btn.add_theme_stylebox_override("pressed", style_hover)
-		btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-		btn.pressed.connect(func(): _on_hat_selected(frame_idx))
-
-		var tex: Texture2D = load(_get_hat_tex_path(i)) as Texture2D
-		var tex_rect := TextureRect.new()
-		tex_rect.texture = tex
-		tex_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		tex_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-		tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		tex_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		tex_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		btn.add_child(tex_rect)
-
-		add_child(btn)
-		_hat_buttons.append({"btn": btn, "style": style_normal, "frame": i})
-
-# Maps hat frame index to the hat texture file path.
-# Frames 0-16 → hat1-hat17; frames 17-23 → hat19-hat25 (hat18.png unused).
-func _get_hat_tex_path(frame: int) -> String:
-	var hat_num: int = frame + 1 if frame <= 16 else frame + 2
-	return "res://assets/hats/hat%d.png" % hat_num
-
-func _on_hat_selected(frame: int) -> void:
-	_selected_frame = frame
-	_preview_icon.texture = load(_get_hat_tex_path(frame)) as Texture2D
-	_hat_name_label.text = HAT_NAMES[frame]
-	_hat_desc_label.text = HAT_DESCS[frame]
-	_equip_btn.disabled = false
-	_refresh_highlights()
-
-func _refresh_highlights() -> void:
-	for entry in _hat_buttons:
-		var style: StyleBoxFlat = entry["style"]
-		var f: int = entry["frame"]
-		if f == _selected_frame:
-			style.bg_color = Color(0.32, 0.24, 0.48, 1.0)
-			style.border_color = Color(0.80, 0.62, 0.22, 1.0)
-		elif f == _equipped_frame:
-			style.bg_color = Color(0.14, 0.28, 0.14, 1.0)
-			style.border_color = Color(0.30, 0.80, 0.30, 0.70)
-		else:
-			style.bg_color = Color(0.15, 0.13, 0.18, 1.0)
-			style.border_color = Color(0.30, 0.26, 0.36, 0.60)
-
-func _on_equip_pressed() -> void:
-	if _selected_frame < 0:
-		return
-	_equipped_frame = _selected_frame
-	GameManager.equipped_hat = _equipped_frame
-	GameManager.save_game()
-	if player:
-		player.equip_hat(_equipped_frame)
-	_update_currently_label()
-	_refresh_highlights()
-
-func _on_remove_pressed() -> void:
-	_equipped_frame = -1
-	GameManager.equipped_hat = -1
-	GameManager.save_game()
-	if player:
-		player.equip_hat(-1)
-	_update_currently_label()
-	_refresh_highlights()
-
-func _update_currently_label() -> void:
-	if _equipped_frame < 0:
-		_currently_label.text = "No hat equipped"
+	# Card border (updated on open to show equip state)
+	var border := ColorRect.new()
+	border.position = Vector2(cx - 1, cy - 1)
+	border.size = Vector2(w + 2, h + 2)
+	border.z_index = -1
+	add_child(border)
+	if is_leaf:
+		_leaf_card_border = border
 	else:
-		_currently_label.text = "Wearing: " + HAT_NAMES[_equipped_frame]
+		_ice_card_border = border
+
+	# Preview icon (first idle frame from spritesheet)
+	var icon_size: int = 88
+	var icon_x: int = cx + (w - icon_size) / 2
+	var icon_y: int = cy + 12
+	var preview := TextureRect.new()
+	var atlas := AtlasTexture.new()
+	atlas.atlas = load(FOLLOWER_SHEETS[index]) as Texture2D
+	atlas.region = Rect2(0, 0, 32, 32)
+	preview.texture = atlas
+	preview.position = Vector2(icon_x, icon_y)
+	preview.size = Vector2(icon_size, icon_size)
+	preview.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(preview)
+
+	# Name label
+	var name_lbl := Label.new()
+	name_lbl.text = FOLLOWER_NAMES[index]
+	name_lbl.position = Vector2(cx + 8, cy + icon_size + 18)
+	name_lbl.custom_minimum_size = Vector2(w - 16, 24)
+	name_lbl.add_theme_font_size_override("font_size", 15)
+	name_lbl.modulate = Color(1.0, 0.82, 0.35)
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(name_lbl)
+
+	# Description label
+	var desc_lbl := Label.new()
+	desc_lbl.text = FOLLOWER_DESCS[index]
+	desc_lbl.position = Vector2(cx + 8, cy + icon_size + 44)
+	desc_lbl.custom_minimum_size = Vector2(w - 16, 44)
+	desc_lbl.add_theme_font_size_override("font_size", 11)
+	desc_lbl.modulate = Color(0.70, 0.70, 0.75)
+	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	add_child(desc_lbl)
+
+	# Toggle button
+	var toggle_btn := Button.new()
+	toggle_btn.position = Vector2(cx + (w - 120) / 2, cy + h - 44)
+	toggle_btn.size = Vector2(120, 32)
+	toggle_btn.add_theme_font_size_override("font_size", 13)
+	if is_leaf:
+		_leaf_toggle_btn = toggle_btn
+		toggle_btn.pressed.connect(_on_toggle_leaf)
+	else:
+		_ice_toggle_btn = toggle_btn
+		toggle_btn.pressed.connect(_on_toggle_ice)
+	add_child(toggle_btn)
+
+func _on_toggle_leaf() -> void:
+	GameManager.equipped_leaf = not GameManager.equipped_leaf
+	GameManager.save_game()
+	if player:
+		player.update_follower_visibility()
+	_refresh_cards()
+
+func _on_toggle_ice() -> void:
+	GameManager.equipped_ice = not GameManager.equipped_ice
+	GameManager.save_game()
+	if player:
+		player.update_follower_visibility()
+	_refresh_cards()
+
+func _refresh_cards() -> void:
+	var equipped_color := Color(0.20, 0.55, 0.20, 0.90)
+	var unequipped_color := Color(0.28, 0.24, 0.36, 0.60)
+
+	if GameManager.equipped_leaf:
+		_leaf_toggle_btn.text = "UNEQUIP"
+		_leaf_card_border.color = equipped_color
+	else:
+		_leaf_toggle_btn.text = "EQUIP"
+		_leaf_card_border.color = unequipped_color
+
+	if GameManager.equipped_ice:
+		_ice_toggle_btn.text = "UNEQUIP"
+		_ice_card_border.color = equipped_color
+	else:
+		_ice_toggle_btn.text = "EQUIP"
+		_ice_card_border.color = unequipped_color
 
 func open() -> void:
-	_equipped_frame = GameManager.equipped_hat
-	_selected_frame = -1
-	_preview_icon.texture = null
-	_hat_name_label.text = "Select a hat to preview"
-	_hat_desc_label.text = ""
-	_equip_btn.disabled = true
-	_update_currently_label()
-	_refresh_highlights()
+	_refresh_cards()
 	show()
 	get_tree().paused = true
 
