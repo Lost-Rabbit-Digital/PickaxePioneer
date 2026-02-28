@@ -1,0 +1,35 @@
+[gd_scene load_steps=6 format=3 uid="uid://djy6fmydoamls"]
+
+[ext_resource type="Texture2D" uid="uid://byhnm2yworv0j" path="res://assets/interaction/block_breaking_animation_spritesheet.png" id="1_bniex"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yngml"]
+atlas = ExtResource("1_bniex")
+region = Rect2(1, 1, 10, 10)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_qh8kp"]
+atlas = ExtResource("1_bniex")
+region = Rect2(1, 12, 10, 10)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sjqij"]
+atlas = ExtResource("1_bniex")
+region = Rect2(1, 23, 10, 10)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_tiu1y"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_yngml")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_qh8kp")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sjqij")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
+
+[node name="BreakingAnimation" type="AnimatedSprite2D"]
+sprite_frames = SubResource("SpriteFrames_tiu1y")
