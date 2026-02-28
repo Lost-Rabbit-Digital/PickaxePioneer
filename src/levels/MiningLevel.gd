@@ -455,7 +455,6 @@ var _inventory_screen: InventoryScreen = null
 
 # Farm animal NPCs
 var _farm_npcs: Array = []
-var _farm_npc_grid_cols: Array[int] = []
 const FARM_NPC_ROW: int = 2  # Placed on the middle surface row
 
 var _pickaxe_texture: Texture2D
@@ -1696,9 +1695,10 @@ func _get_nearby_farm_npc() -> FarmAnimalNPC:
 	var player_gp := player_node.get_grid_pos()
 	if player_gp.y >= SURFACE_ROWS:
 		return null
-	for i in range(_farm_npcs.size()):
-		if abs(_farm_npc_grid_cols[i] - player_gp.x) <= 1:
-			return _farm_npcs[i]
+	var player_pos := player_node.global_position
+	for npc in _farm_npcs:
+		if npc.global_position.distance_to(player_pos) <= CELL_SIZE * 2:
+			return npc
 	return null
 
 func _try_interact() -> void:
@@ -1748,20 +1748,28 @@ func _setup_farm_animals() -> void:
 		{"name": "Sheep",   "texture_path": "res://assets/creatures/sheep_spritesheet.png",   "col": 8},
 		{"name": "Pig",     "texture_path": "res://assets/creatures/pig_spritesheet.png",     "col": 12},
 	]
+	var bounce_left := 1.0 * CELL_SIZE
+	var bounce_right := 20.0 * CELL_SIZE
 	for a in animals:
 		var npc := npc_scene.instantiate() as FarmAnimalNPC
 		npc.animal_name = a["name"]
 		var tex := load(a["texture_path"]) as Texture2D
 		if tex:
-			npc.get_node("Sprite2D").texture = tex
+			var spr := npc.get_node("Sprite2D") as Sprite2D
+			spr.texture = tex
+			spr.hframes = 2
+			spr.frame = 0
 		npc.scale = Vector2(2.0, 2.0)
 		npc.position = Vector2(
 			a["col"] * CELL_SIZE + CELL_SIZE * 0.5,
 			FARM_NPC_ROW * CELL_SIZE + CELL_SIZE * 0.5
 		)
+		npc.bounce_left = bounce_left
+		npc.bounce_right = bounce_right
+		var speed := randf_range(40.0, 80.0)
+		npc.velocity = Vector2(speed * (1.0 if randf() > 0.5 else -1.0), 0.0)
 		add_child(npc)
 		_farm_npcs.append(npc)
-		_farm_npc_grid_cols.append(a["col"])
 
 # ---------------------------------------------------------------------------
 # Inventory Screen
