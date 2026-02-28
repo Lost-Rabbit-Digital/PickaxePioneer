@@ -35,9 +35,12 @@ func get_max_energy() -> int:
 
 # Settlement carry-over bonuses (applied on next mine entry, then cleared)
 var settlement_energy_bonus: int = 0       # extra starting energy from Energy Cache purchase
-var settlement_forager_bonus: int = 0    # extra scout cat carry capacity for one run
+var settlement_forager_bonus: int = 0    # kept for save compatibility; unused since ForagerSystem removed
 var settlement_shroom_charges: int = 0   # Mining Shroom charges pre-purchased
 var settlement_mandible_bonus: int = 0   # temporary +N mandible power for one run
+
+# Ladder count — persists across sessions; decremented each time player places a ladder
+var ladder_count: int = 0
 
 # Upgrade levels
 var carapace_level: int = 0
@@ -232,5 +235,82 @@ func is_out_of_energy() -> bool:
 	return current_energy <= 0
 
 func save_game() -> void:
+	var save_data = {
+		"mineral_currency": mineral_currency,
+		"dollars": dollars,
+		"carapace_level": carapace_level,
+		"legs_level": legs_level,
+		"mandibles_level": mandibles_level,
+		"mineral_sense_level": mineral_sense_level,
+		"settlement_energy_bonus": settlement_energy_bonus,
+		"settlement_forager_bonus": settlement_forager_bonus,
+		"settlement_shroom_charges": settlement_shroom_charges,
+		"settlement_mandible_bonus": settlement_mandible_bonus,
+		"gem_count": gem_count,
+		"carapace_gem_socketed": carapace_gem_socketed,
+		"legs_gem_socketed": legs_gem_socketed,
+		"mandibles_gem_socketed": mandibles_gem_socketed,
+		"sense_gem_socketed": sense_gem_socketed,
+		"total_minerals_banked": total_minerals_banked,
+		"bosses_defeated_total": bosses_defeated_total,
+		"total_fossils": total_fossils,
+		"deepest_row_reached": deepest_row_reached,
+		"warp_drive_built": warp_drive_built,
+		"cargo_bay_built": cargo_bay_built,
+		"long_scanner_built": long_scanner_built,
+		"gem_refinery_built": gem_refinery_built,
+		"trade_amplifier_built": trade_amplifier_built,
+		"ladder_count": ladder_count,
+	}
+	
 	SaveManager.save_active_slot()
 	print("Game saved (slot %d)" % SaveManager.active_slot)
+  
+	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.stringify(save_data))
+		file.close()
+		print("Game saved")
+
+func load_game() -> void:
+	if not FileAccess.file_exists(SAVE_PATH):
+		print("No save file found")
+		return
+	
+	var file = FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if file:
+		var json_string = file.get_as_text()
+		file.close()
+		
+		var json = JSON.new()
+		var error = json.parse(json_string)
+		if error == OK:
+			var data = json.data
+			mineral_currency = data.get("mineral_currency", 0)
+			dollars = data.get("dollars", 0)
+			carapace_level = data.get("carapace_level", 0)
+			legs_level = data.get("legs_level", 0)
+			mandibles_level = data.get("mandibles_level", 0)
+			mineral_sense_level = data.get("mineral_sense_level", 0)
+			settlement_energy_bonus = data.get("settlement_energy_bonus", 0)
+			settlement_forager_bonus = data.get("settlement_forager_bonus", 0)
+			settlement_shroom_charges = data.get("settlement_shroom_charges", 0)
+			settlement_mandible_bonus = data.get("settlement_mandible_bonus", 0)
+			gem_count = data.get("gem_count", 0)
+			carapace_gem_socketed = data.get("carapace_gem_socketed", false)
+			legs_gem_socketed = data.get("legs_gem_socketed", false)
+			mandibles_gem_socketed = data.get("mandibles_gem_socketed", false)
+			sense_gem_socketed = data.get("sense_gem_socketed", false)
+			total_minerals_banked = data.get("total_minerals_banked", 0)
+			bosses_defeated_total = data.get("bosses_defeated_total", 0)
+			total_fossils = data.get("total_fossils", 0)
+			deepest_row_reached = data.get("deepest_row_reached", 0)
+			warp_drive_built = data.get("warp_drive_built", false)
+			cargo_bay_built = data.get("cargo_bay_built", false)
+			long_scanner_built = data.get("long_scanner_built", false)
+			gem_refinery_built = data.get("gem_refinery_built", false)
+			trade_amplifier_built = data.get("trade_amplifier_built", false)
+			ladder_count = data.get("ladder_count", 0)
+			print("Game loaded")
+		else:
+			print("Failed to parse save file")
