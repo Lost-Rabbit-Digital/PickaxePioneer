@@ -432,7 +432,7 @@ func _enter_node(node: MapNode) -> void:
 	_modal.show_for_node(node)
 
 func _on_modal_confirmed(node: MapNode) -> void:
-	GameManager.last_overworld_node_name = node.name
+	GameManager.last_overworld_node_name = node.location_name
 	GameManager.allowed_ore_types = node.ore_types.duplicate()
 	GameManager.allowed_hazard_types = node.hazard_types.duplicate()
 	GameManager.save_game()
