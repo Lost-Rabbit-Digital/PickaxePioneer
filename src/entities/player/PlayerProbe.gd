@@ -73,6 +73,7 @@ const POOF_VEL_THRESHOLD: float = 100.0   # Min fall speed (px/s) to trigger poo
 
 var _particles: Array = []
 var _dust_timer: float = 0.0
+var _particle_layer: Node2D
 
 # Follower trail system
 const TRAIL_HISTORY_MAX: int = 30
@@ -90,6 +91,10 @@ func _ready() -> void:
 	EventBus.player_health_changed.emit(health_component.current_health, health_component.max_health)
 	sprite.play(&"idle")
 	_init_followers()
+	_particle_layer = Node2D.new()
+	_particle_layer.z_index = 1
+	add_child(_particle_layer)
+	_particle_layer.draw.connect(_draw_particles_on_layer)
 
 func _init_followers() -> void:
 	_ice_follower.visible = GameManager.equipped_ice
@@ -176,7 +181,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	_update_particles(delta, pre_floor, pre_vel_y)
-	queue_redraw()
+	_particle_layer.queue_redraw()
 
 	# Check hazard contact after moving
 	_check_hazard_contact()
@@ -359,6 +364,9 @@ func _apply_fall_damage() -> void:
 		if fall_distance > FALL_DAMAGE_THRESHOLD:
 			var damage := health_component.max_health / 2
 			health_component.damage(damage)
+			var cam := get_viewport().get_camera_2d()
+			if cam is CameraShake:
+				cam.add_trauma(0.5)
 		_is_falling = false
 
 func _update_followers() -> void:
@@ -386,9 +394,9 @@ func _update_followers() -> void:
 		if _leaf_follower.animation != follower_anim:
 			_leaf_follower.play(follower_anim)
 
-func _draw() -> void:
+func _draw_particles_on_layer() -> void:
 	for p: Dictionary in _particles:
-		var lpos := to_local(p["pos"])
+		var lpos := _particle_layer.to_local(p["pos"])
 		var alpha: float = p["life"] / p["max_life"]
 		var sz: float = p["size"]
-		draw_rect(Rect2(lpos.x - sz * 0.5, lpos.y - sz * 0.5, sz, sz), Color(1.0, 1.0, 1.0, alpha))
+		_particle_layer.draw_rect(Rect2(lpos.x - sz * 0.5, lpos.y - sz * 0.5, sz, sz), Color(1.0, 1.0, 1.0, alpha))
