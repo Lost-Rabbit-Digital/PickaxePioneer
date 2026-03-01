@@ -233,6 +233,7 @@ func _reset_game_manager() -> void:
 	gm.dollars = 0
 	gm.run_ore_counts.clear()
 	gm.run_ore_earnings.clear()
+	gm.run_ore_chunk_count = 0
 	gm.last_overworld_node_name = ""
 	gm.allowed_ore_types = []
 	gm.allowed_hazard_types = []
