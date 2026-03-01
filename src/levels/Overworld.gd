@@ -98,6 +98,7 @@ func _ready() -> void:
 	# Arrange nodes - restore saved positions or randomize fresh
 	if saved_config.has("node_positions"):
 		_restore_node_positions(saved_config["node_positions"])
+		_save_node_positions()  # Persist sprite frames if missing from a legacy save
 	else:
 		_arrange_nodes_in_circle()
 		_save_node_positions()
@@ -203,7 +204,7 @@ func _arrange_nodes_in_circle() -> void:
 func _save_node_positions() -> void:
 	var node_positions := {}
 	for node in nodes:
-		node_positions[node.name] = {"x": node.position.x, "y": node.position.y}
+		node_positions[node.name] = {"x": node.position.x, "y": node.position.y, "sprite_frame": node.sprite.frame}
 	var config := SaveManager.get_planet_config()
 	config["node_positions"] = node_positions
 	SaveManager.save_planet_config(config)
@@ -213,6 +214,8 @@ func _restore_node_positions(positions: Dictionary) -> void:
 		if positions.has(node.name):
 			var pos_data = positions[node.name]
 			node.position = Vector2(pos_data["x"], pos_data["y"])
+			if pos_data.has("sprite_frame"):
+				node.sprite.frame = pos_data["sprite_frame"]
 
 func _get_cycle_order() -> Array[MapNode]:
 	# Return visible nodes in the intended cycle order so edges stay on the
