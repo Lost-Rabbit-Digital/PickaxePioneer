@@ -541,8 +541,8 @@ func _ready() -> void:
 
 func _build_shop_protection_zones() -> void:
 	const SHOP_TILES: Array = [
-		TileType.REENERGY_STATION, TileType.EXIT_STATION,
-		TileType.UPGRADE_STATION, TileType.SMELTERY_STATION, TileType.CAT_TAVERN,
+		TileType.EXIT_STATION,
+		TileType.UPGRADE_STATION, TileType.SMELTERY_STATION,
 	]
 	_shop_protected_cells.clear()
 	for col in range(GRID_COLS):
