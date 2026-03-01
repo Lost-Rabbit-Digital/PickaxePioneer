@@ -1,6 +1,6 @@
 # Pickaxe Pioneer
 
-A 2D Terraria-style underground mining roguelite where you play as a mining cat digging for minerals deep in the earth.
+A 2D space mining roguelite where you play as a cat travelling between planets, scavenging ore and minerals to fuel your next jump across the galaxy.
 
 **Engine:** Godot 4.5 | **Genre:** Mining Roguelite | **Target:** Steam / Itch.io ($3–5)
 
@@ -8,7 +8,7 @@ A 2D Terraria-style underground mining roguelite where you play as a mining cat 
 
 ## Concept
 
-You are a mining cat from the Clowder, venturing into the earth below. Each expedition takes you deeper underground through procedurally generated layers of dirt, stone, and precious ore. Manage your energy carefully — go too deep without energy and you'll be stranded. Mine rare gems from the deepest veins, upgrade your Pelt, Paws, Claws, and Whiskers back at the Clowder, and unravel the mysteries buried beneath the surface.
+You are a mining cat from the Clowder — a feline space-station civilization. Your ship needs resources to keep flying, so you touch down on alien planets, dig through their rocky crust, and claw out precious ore before your energy gives out. Each planet has a different atmosphere, ore mix, and hazard profile. Upgrade your Pelt, Paws, Claws, and Whiskers back at the Clowder Space Station, and push deeper into the galaxy.
 
 Inspired by [Motherload](https://www.miniclip.com/games/motherlode/en/), [Super Motherload](https://store.steampowered.com/app/269110/Super_Motherload/), [Dwarf Fortress](http://www.bay12games.com/dwarves/), [Path of Exile](https://store.steampowered.com/app/238960/Path_of_Exile/), [ADOM](https://www.adom.de/home/index.html), and [Noita](https://store.steampowered.com/app/881100/Noita/).
 
@@ -73,7 +73,7 @@ res://
 | SonarSystem | `src/systems/SonarSystem.gd` | Sonar ping — radial ore detection through solid rock |
 | ForagerSystem | `src/systems/ForagerSystem.gd` | Scout Cat companion — auto-collects ore, banks when full |
 | BossSystem | `src/systems/BossSystem.gd` | Boss encounter logic for all five depth-milestone bosses |
-| CityLevel | `src/levels/CityLevel.gd` | Space Station hub — upgrades, gem sockets, spaceship upgrades |
+| CityLevel | `src/levels/CityLevel.gd` | Clowder Space Station — permanent upgrades (Pelt/Paws/Claws/Whiskers), gem sockets, ship chambers |
 | HUD | `src/ui/HUD.gd` | In-run display — minerals, health, energy bar, depth meter, banners |
 
 ---
@@ -82,10 +82,10 @@ res://
 
 | Track | Effect per Level | Base Cost |
 |-------|-----------------|-----------|
-| Reinforce Spacesuit | +1 max HP | 50 minerals |
-| Upgrade Jet Boots | +30 px/s move speed **and** +25 max energy | 50 minerals |
-| Enhance Space Pickaxe | +3 mining power | 50 minerals |
-| Tune Space Whiskers | Larger sonar scan radius, lower energy cost per ping | 50 minerals |
+| Thicken Pelt | +1 max HP | 50 minerals |
+| Strengthen Paws | +30 px/s move speed **and** +25 max energy | 50 minerals |
+| Sharpen Claws | +3 mining power | 50 minerals |
+| Refine Whiskers | Larger sonar scan radius, lower energy cost per ping | 50 minerals |
 
 All tracks scale by +25 minerals per level; max level 10.
 
@@ -98,7 +98,7 @@ Five depth-milestone encounters, all defeated using the player's existing tools 
 | Boss | Depth Row | Mechanic |
 |------|-----------|----------|
 | Giant Rat King | 32 | Mine through segments to destroy the core |
-| Void Spider Matriarch | 64 | Mine web segments to reach the core |
+| Void Spider Matriarch | 64 | Mine void-web segments to reach the core |
 | The Blind Mole | 96 | Dodge tremor AoE collapses, use warning overlay |
 | Stone Golem | 112 | Break armor phases by last-mining the required ore type |
 | The Ancient Star Beast | 128 | Three-phase final boss — stone shell, crystalline ring, regenerating core |
