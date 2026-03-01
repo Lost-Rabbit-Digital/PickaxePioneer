@@ -71,18 +71,6 @@ autowrap_mode = 3
 [node name="HSep2" type="HSeparator" parent="Control/Panel/MarginContainer/VBox"]
 layout_mode = 2
 
-[node name="DifficultyLabel" type="Label" parent="Control/Panel/MarginContainer/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Difficulty: ⛏"
-horizontal_alignment = 1
-
-[node name="OreTypesLabel" type="Label" parent="Control/Panel/MarginContainer/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 13
-text = "Ores: Copper, Iron"
-horizontal_alignment = 1
-
 [node name="HazardsLabel" type="Label" parent="Control/Panel/MarginContainer/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
