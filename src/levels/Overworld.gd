@@ -71,7 +71,7 @@ func _ready() -> void:
 
 	# Set static node metadata
 	city_node.description = "Your home Space Station. Spend your hard-earned minerals on upgrades to improve your space mining operation."
-	settlement_node_3.description = "A small outpost along the space route. Rest, resupply, and prepare for deeper sectors."
+	settlement_node_3.description = "A small settlement along the space route. Rest, resupply, and prepare for deeper sectors."
 	settlement_node_3.difficulty = 1
 	settlement_node_3.ore_types = []
 	settlement_node_3.hazard_types = []
