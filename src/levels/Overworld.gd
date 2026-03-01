@@ -117,6 +117,7 @@ func _ready() -> void:
 		current_node = city_node
 
 	caravan.teleport_to(current_node.position)
+	caravan.set_map_node(current_node)
 	current_node.highlight(true)
 
 	queue_redraw()
@@ -388,6 +389,7 @@ func _on_node_clicked(node: MapNode) -> void:
 	caravan.move_along_path(waypoints)
 
 func _on_caravan_arrived() -> void:
+	caravan.set_map_node(current_node)
 	if _pending_node:
 		_enter_node(_pending_node)
 		_pending_node = null
