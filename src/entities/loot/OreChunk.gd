@@ -96,7 +96,7 @@ func _settle() -> void:
 # Collected by the player — adds value to run currency and plays a sound.
 func collect() -> void:
 	GameManager.add_currency(value)
-	GameManager.track_ore_chunk_collected()
+	GameManager.track_ore_chunk_collected_by_type(ore_type)
 	SoundManager.play_pickup_sound()
 	queue_free()
 
