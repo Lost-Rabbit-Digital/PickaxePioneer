@@ -394,6 +394,39 @@ var _settlement_mandible_bonus: int = 0
 var _hazard_cooldown: float = 0.0
 const HAZARD_COOLDOWN_TIME: float = 1.0
 
+# Terrain decorations — visual sprites spawned after terrain generation
+var _web_sprites: Dictionary = {}  # Vector2i(col, row) -> Sprite2D
+
+const PLANT_TEXTURES: Array[String] = [
+	"res://assets/blocks/plants/grass.png",
+	"res://assets/blocks/plants/grass2.png",
+	"res://assets/blocks/plants/grass3.png",
+	"res://assets/blocks/plants/dandelion.png",
+	"res://assets/blocks/plants/thistle.png",
+	"res://assets/blocks/plants/fern.png",
+	"res://assets/blocks/plants/fern2.png",
+	"res://assets/blocks/plants/mushroom_brown.png",
+	"res://assets/blocks/plants/mushroom_red.png",
+	"res://assets/blocks/plants/oxeye_daisy.png",
+	"res://assets/blocks/plants/lily.png",
+	"res://assets/blocks/plants/aster.png",
+	"res://assets/blocks/plants/horsetail.png",
+	"res://assets/blocks/plants/cattail.png",
+]
+
+const CORAL_TEXTURES: Array[String] = [
+	"res://assets/blocks/plants/coral_brain.png",
+	"res://assets/blocks/plants/coral_cauliflower.png",
+	"res://assets/blocks/plants/coral_pore.png",
+	"res://assets/blocks/plants/coral_star.png",
+	"res://assets/blocks/plants/coral_brain_bleached.png",
+	"res://assets/blocks/plants/coral_cauliflower_bleached.png",
+	"res://assets/blocks/plants/coral_pore_bleached.png",
+	"res://assets/blocks/plants/coral_star_bleached.png",
+]
+
+const WEB_TEXTURE: String = "res://assets/blocks/plants/spiderweb.png"
+
 @onready var player_node := $PlayerProbe as PlayerProbe
 @onready var pause_menu = $PauseMenu
 
@@ -429,6 +462,7 @@ func _ready() -> void:
 	_setup_collision_tilemap()
 	_sync_collision_tilemap()
 	_setup_map_barriers()
+	_spawn_decorations(_terrain_generator.generate_decorations())
 
 	# Setup camera
 	camera = Camera2D.new()
@@ -1249,6 +1283,85 @@ func check_player_hazard(col: int, row: int) -> void:
 		_mine_cell(col, row)
 		_explode_area(col, row)
 		_hazard_cooldown = HAZARD_COOLDOWN_TIME
+
+	# Spider web — slow player on contact, then destroy the web
+	var web_key := Vector2i(col, row)
+	if _web_sprites.has(web_key):
+		var web_sprite: Sprite2D = _web_sprites[web_key]
+		_web_sprites.erase(web_key)
+		web_sprite.queue_free()
+		player_node.apply_web_slow()
+
+# ---------------------------------------------------------------------------
+# Terrain decorations — plants, coral, spider webs
+# ---------------------------------------------------------------------------
+
+func _spawn_decorations(data: Dictionary) -> void:
+	var plant_textures: Array = PLANT_TEXTURES.map(func(p): return load(p) as Texture2D)
+	var coral_textures: Array = CORAL_TEXTURES.map(func(p): return load(p) as Texture2D)
+	var web_texture: Texture2D = load(WEB_TEXTURE) as Texture2D
+
+	# Surface plants — sit at the top of the SURFACE_GRASS tiles (z below player)
+	for pos: Vector2i in data.get("plants", []):
+		var tex: Texture2D = plant_textures[randi() % plant_textures.size()]
+		if not tex:
+			continue
+		var sprite := Sprite2D.new()
+		sprite.texture = tex
+		sprite.texture_filter = TEXTURE_FILTER_NEAREST
+		sprite.position = Vector2(
+			pos.x * CELL_SIZE + CELL_SIZE * 0.5,
+			pos.y * CELL_SIZE + CELL_SIZE * 0.25
+		)
+		sprite.z_index = -1
+		add_child(sprite)
+
+	# Cave floor coral — grows upward from the solid tile below
+	for pos: Vector2i in data.get("coral_floor", []):
+		var tex: Texture2D = coral_textures[randi() % coral_textures.size()]
+		if not tex:
+			continue
+		var sprite := Sprite2D.new()
+		sprite.texture = tex
+		sprite.texture_filter = TEXTURE_FILTER_NEAREST
+		sprite.position = Vector2(
+			pos.x * CELL_SIZE + CELL_SIZE * 0.5,
+			pos.y * CELL_SIZE + CELL_SIZE * 0.75
+		)
+		sprite.z_index = -1
+		add_child(sprite)
+
+	# Cave ceiling coral — flipped, hanging from solid tile above
+	for pos: Vector2i in data.get("coral_ceiling", []):
+		var tex: Texture2D = coral_textures[randi() % coral_textures.size()]
+		if not tex:
+			continue
+		var sprite := Sprite2D.new()
+		sprite.texture = tex
+		sprite.texture_filter = TEXTURE_FILTER_NEAREST
+		sprite.flip_v = true
+		sprite.position = Vector2(
+			pos.x * CELL_SIZE + CELL_SIZE * 0.5,
+			pos.y * CELL_SIZE + CELL_SIZE * 0.25
+		)
+		sprite.z_index = -1
+		add_child(sprite)
+
+	# Spider webs — registered in _web_sprites for hazard detection
+	for pos: Vector2i in data.get("webs", []):
+		if not web_texture:
+			break
+		var sprite := Sprite2D.new()
+		sprite.texture = web_texture
+		sprite.texture_filter = TEXTURE_FILTER_NEAREST
+		sprite.modulate = Color(1.0, 1.0, 1.0, 0.85)
+		sprite.position = Vector2(
+			pos.x * CELL_SIZE + CELL_SIZE * 0.5,
+			pos.y * CELL_SIZE + CELL_SIZE * 0.5
+		)
+		sprite.z_index = 0
+		add_child(sprite)
+		_web_sprites[pos] = sprite
 
 # ---------------------------------------------------------------------------
 # Helpers
