@@ -1051,6 +1051,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			_try_place_ladder_at(_ladder_ghost_pos)
 			_last_ladder_attempt_pos = _ladder_ghost_pos
 			return
+	# Right-click — remove a placed ladder and return it to inventory when the ladder slot is active
+	if event is InputEventMouseButton and event.pressed \
+			and event.button_index == MOUSE_BUTTON_RIGHT:
+		if GameManager.selected_hotbar_slot == 1:
+			_try_remove_ladder_at(_ladder_ghost_pos)
+			return
 	# F key — also places a ladder at the cursor position (legacy binding)
 	if event is InputEventKey and event.pressed and not event.echo \
 			and event.keycode == KEY_F:
@@ -1794,4 +1800,30 @@ func _try_place_ladder_at(gp: Vector2i) -> void:
 	GameManager.save_game()
 	EventBus.ladder_count_changed.emit(GameManager.ladder_count)
 	EventBus.ore_mined_popup.emit(0, "Ladder placed!  (%d remaining)" % GameManager.ladder_count)
+	queue_redraw()
+
+# ---------------------------------------------------------------------------
+# Ladder removal — right-click a placed ladder while holding the ladder slot
+# ---------------------------------------------------------------------------
+
+func _try_remove_ladder_at(gp: Vector2i) -> void:
+	if GameManager.selected_hotbar_slot != 1:
+		return
+	if not player_node:
+		return
+	if gp.x < 0 or gp.x >= GRID_COLS or gp.y < 0 or gp.y >= GRID_ROWS:
+		return
+	if grid[gp.x][gp.y] != TileType.LADDER:
+		EventBus.ore_mined_popup.emit(0, "Right-click a placed ladder to retrieve it.")
+		return
+	var player_tile := player_node.get_grid_pos()
+	var dist := Vector2(gp - player_tile).length()
+	if dist > player_node.mine_range:
+		EventBus.ore_mined_popup.emit(0, "Too far — move closer to retrieve that ladder.")
+		return
+	grid[gp.x][gp.y] = TileType.EMPTY
+	GameManager.ladder_count += 1
+	GameManager.save_game()
+	EventBus.ladder_count_changed.emit(GameManager.ladder_count)
+	EventBus.ore_mined_popup.emit(0, "Ladder retrieved!  (%d in stock)" % GameManager.ladder_count)
 	queue_redraw()
