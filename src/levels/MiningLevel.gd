@@ -309,8 +309,8 @@ const DEPTH_ZONE_COLORS = [
 ]
 
 # Time-based energy drain: base rate (energy per second) + depth multiplier
-const ENERGY_DRAIN_BASE: float = 1.0      # 1 energy/sec on surface
-const ENERGY_DRAIN_DEPTH_MULT: float = 2.0 # Extra drain per depth ratio
+const ENERGY_DRAIN_BASE: float = 0.5      # 0.5 energy/sec on surface (halved)
+const ENERGY_DRAIN_DEPTH_MULT: float = 1.0 # Extra drain per depth ratio (halved)
 var _energy_drain_accum: float = 0.0
 
 # ---------------------------------------------------------------------------
@@ -960,10 +960,10 @@ func _process(delta: float) -> void:
 	if _hazard_cooldown > 0.0:
 		_hazard_cooldown -= delta
 
-	# Time-based energy drain (only underground)
+	# Time-based energy drain (only underground, halted while player sleeps)
 	if player_node:
 		var depth_row := player_node.get_depth_row()
-		if depth_row > 0:
+		if depth_row > 0 and not player_node.is_sleeping():
 			var depth_ratio := float(depth_row) / float(GRID_ROWS - SURFACE_ROWS)
 			var boss_mult := boss_system.get_energy_drain_mult()
 			var drain_rate := (ENERGY_DRAIN_BASE + depth_ratio * ENERGY_DRAIN_DEPTH_MULT) * boss_mult
@@ -973,6 +973,8 @@ func _process(delta: float) -> void:
 				_energy_drain_accum -= float(drain_amount)
 				if not GameManager.consume_energy(drain_amount):
 					_on_out_of_energy()
+		elif player_node.is_sleeping():
+			_energy_drain_accum = 0.0
 
 func _update_cursor_highlight() -> void:
 	if not player_node:
