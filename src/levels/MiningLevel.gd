@@ -356,6 +356,7 @@ var _breaking_overlays: Dictionary = {}  # Maps Vector2i -> AnimatedSprite2D ins
 var _gravity_pending: Dictionary = {}
 var _mine_streak: int = 0
 var _zones_discovered: Array[bool] = [false, false, false, false, false]
+var _last_banner_time_ms: int = -5000
 var _exit_pulse_time: float = 0.0
 
 # Cursor highlight
@@ -1713,6 +1714,11 @@ func _check_zone_transition(depth_row: int) -> void:
 				EventBus.ore_mined_popup.emit(DISCOVERY_ENERGY, "Discovery!")
 
 func _show_zone_banner(zone_name: String, color: Color) -> void:
+	const COOLDOWN_MS: int = 5000
+	var now_ms := Time.get_ticks_msec()
+	if now_ms - _last_banner_time_ms < COOLDOWN_MS:
+		return
+	_last_banner_time_ms = now_ms
 	const VW: int = 1280
 	const VH: int = 720
 	const BANNER_H: int = 52
