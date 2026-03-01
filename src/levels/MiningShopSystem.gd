@@ -621,10 +621,13 @@ func show_smeltery() -> void:
 		var ore_count := get_ore_group_count(ore_group)
 		var bar_count: int = run_bar_counts.get(ore_group, 0)
 		_smeltery_ore_labels[ore_group].text = "%s: %d" % [ore_group.capitalize(), ore_count]
-		_smeltery_smelt_btns[ore_group].text = "Smelt (%d ore)" % SMELTERY_ORES_PER_BAR
+		var bars_possible: int = ore_count / SMELTERY_ORES_PER_BAR
+		_smeltery_smelt_btns[ore_group].text = "Smelt All (%d ore → %d bar%s)" % [bars_possible * SMELTERY_ORES_PER_BAR, bars_possible, "s" if bars_possible != 1 else ""]
 		_smeltery_smelt_btns[ore_group].disabled = ore_count < SMELTERY_ORES_PER_BAR
 		_smeltery_bar_labels[ore_group].text = "%s: %d" % [SMELTERY_BAR_NAMES[ore_group], bar_count]
-		_smeltery_sell_btns[ore_group].text = "Sell (+$%d)" % SMELTERY_BAR_SELL_VALUES[ore_group]
+		var sell_per_bar: int = roundi(SMELTERY_BAR_SELL_VALUES[ore_group] * GameManager.get_dollar_sell_mult())
+		var sell_total: int = sell_per_bar * bar_count
+		_smeltery_sell_btns[ore_group].text = "Sell All ($%d/bar | $%d total)" % [sell_per_bar, sell_total]
 		_smeltery_sell_btns[ore_group].disabled = bar_count <= 0
 	_smeltery_layer.visible = true
 	smeltery_visible = true
@@ -636,12 +639,14 @@ func hide_smeltery() -> void:
 
 
 func _smeltery_smelt(ore_group: String) -> void:
-	if get_ore_group_count(ore_group) < SMELTERY_ORES_PER_BAR:
+	var ore_count := get_ore_group_count(ore_group)
+	if ore_count < SMELTERY_ORES_PER_BAR:
 		return
-	consume_ores_for_smelt(ore_group, SMELTERY_ORES_PER_BAR)
-	run_bar_counts[ore_group] = run_bar_counts.get(ore_group, 0) + 1
+	var bars_to_smelt: int = ore_count / SMELTERY_ORES_PER_BAR
+	consume_ores_for_smelt(ore_group, bars_to_smelt * SMELTERY_ORES_PER_BAR)
+	run_bar_counts[ore_group] = run_bar_counts.get(ore_group, 0) + bars_to_smelt
 	SoundManager.play_drill_sound()
-	EventBus.ore_mined_popup.emit(0, SMELTERY_BAR_NAMES[ore_group] + " smelted!")
+	EventBus.ore_mined_popup.emit(0, "%d %s smelted!" % [bars_to_smelt, SMELTERY_BAR_NAMES[ore_group]])
 	show_smeltery()
 
 
@@ -649,11 +654,11 @@ func _smeltery_sell(ore_group: String) -> void:
 	var bar_count: int = run_bar_counts.get(ore_group, 0)
 	if bar_count <= 0:
 		return
-	var sell_value: int = roundi(SMELTERY_BAR_SELL_VALUES[ore_group] * GameManager.get_dollar_sell_mult())
-	run_bar_counts[ore_group] = bar_count - 1
+	var sell_value: int = roundi(SMELTERY_BAR_SELL_VALUES[ore_group] * GameManager.get_dollar_sell_mult()) * bar_count
+	run_bar_counts[ore_group] = 0
 	GameManager.add_dollars(sell_value)
 	SoundManager.play_pickup_sound()
-	EventBus.ore_mined_popup.emit(sell_value, SMELTERY_BAR_NAMES[ore_group] + " sold!")
+	EventBus.ore_mined_popup.emit(sell_value, "%d %s sold!" % [bar_count, SMELTERY_BAR_NAMES[ore_group]])
 	show_smeltery()
 
 
