@@ -74,7 +74,6 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -120.0
-offset_top = 0.0
 offset_right = 120.0
 offset_bottom = 280.0
 grow_horizontal = 2
@@ -88,27 +87,26 @@ text = "NEW GAME"
 
 [node name="ContinueButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
 tooltip_text = "Boldly dig where no cat has dug before."
+theme_override_font_sizes/font_size = 32
 text = "CONTINUE"
 
 [node name="SettingsButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
 tooltip_text = "Fiddle with the cosmic dials."
+theme_override_font_sizes/font_size = 32
 text = "SETTINGS"
-
 
 [node name="WishlistButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
 tooltip_text = "Tell the galaxy you want this game."
+theme_override_font_sizes/font_size = 32
 text = "WISHLIST NOW"
 
 [node name="QuitButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
 tooltip_text = "The asteroid belt will wait. (It won't.)"
+theme_override_font_sizes/font_size = 32
 text = "QUIT"
 
 [node name="SettingsPanel" type="PanelContainer" parent="."]
@@ -221,8 +219,8 @@ vertical_alignment = 1
 
 [node name="CloseButton" type="Button" parent="SettingsPanel/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
 tooltip_text = "Close settings. Or don't. I'm a tooltip, not a cop."
+theme_override_font_sizes/font_size = 22
 text = "CLOSE"
 
 [node name="SocialButtons" type="HBoxContainer" parent="."]
@@ -248,7 +246,6 @@ texture_normal = ExtResource("4_ihbld")
 [node name="DiscordBackground" type="PanelContainer" parent="SocialButtons"]
 visible = false
 layout_mode = 2
-
 
 [node name="CreditsPanel" type="PanelContainer" parent="."]
 visible = false
@@ -286,9 +283,7 @@ size_flags_vertical = 3
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/default_color = Color(0.85, 0.8, 0.7, 1)
-theme_override_font_sizes/font_size = 14
 bbcode_enabled = true
-fit_content = true
 text = "DEVELOPERS
 
   BodenGameDev
@@ -296,49 +291,47 @@ text = "DEVELOPERS
 
 ASSETS & ART
 
-  Bumble Bee Sprites       [url=https://elthen.itch.io]elthen[/url]
-  Cat Sprites              [url=https://elthen.itch.io]elthen[/url]
-  Celestial Objects        [url=https://uselesspursuit.itch.io]uselesspursuit[/url]
-  Pixel Art Starfields     [url=https://space-spheremaps.itch.io]space-spheremaps[/url]
-  Spaceships               [url=https://pixelsbyskab.itch.io]pixelsbyskab[/url]
-  16x16 RPG Items          [url=https://opengameart.org]OpenGameArt.org[/url]
-  16x16 Monster Items      [url=https://opengameart.org]OpenGameArt.org[/url]
-  16x16 Block Textures     [url=https://opengameart.org]OpenGameArt.org[/url]
-  Mining Platformer Art    [url=https://opengameart.org]OpenGameArt.org[/url]
+  Bumble Bee Sprites ----- elthen
+  Cat Sprites ----- elthen
+  Celestial Objects ----- uselesspursuit
+  Pixel Art Starfields ----- space-spheremaps
+  Spaceships ----- pixelsbyskab
+  16x16 RPG Items ----- ARoachIFoundOnMyPillow
+  16x16 Monster Items ----- ARoachIFoundOnMyPillow
+  16x16 Block Textures ----- ARoachIFoundOnMyPillow
+  Mining Platformer Art ----- Bleddyuffles
+  Explosion Sprite Sheet ----- reactorcore
 
 COLOUR PALETTE
 
-  Comfy52                  [url=https://lospec.com]Lospec[/url]
+  Comfy52 ----- bess
 
 MUSIC & SOUND
 
-  Crickets Ambient Music   [url=https://opengameart.org]OpenGameArt.org[/url]
-  Cozy Tunes               [url=https://pizzadoggy.itch.io]pizzadoggy[/url]
-  Explosion Sprite Sheet   [url=https://reactorcore.itch.io]reactorcore[/url]
-  Rocket Engine SFX        [url=https://opengameart.org]OpenGameArt.org[/url]
-  Pop Sounds               [url=https://opengameart.org]OpenGameArt.org[/url]"
+  Cozy Tunes ----- pizzadoggy
+  Rocket Engine SFX ----- theMinesAreShakin
+  Pop Sounds ----- wubitog"
+fit_content = true
+horizontal_alignment = 1
 
 [node name="CloseButton" type="Button" parent="CreditsPanel/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
 tooltip_text = "Back to the cosmos."
+theme_override_font_sizes/font_size = 22
 text = "CLOSE"
 
 [node name="CreditsButton" type="Button" parent="."]
 layout_mode = 1
 anchors_preset = 2
-anchor_left = 0.0
 anchor_top = 1.0
-anchor_right = 0.0
 anchor_bottom = 1.0
 offset_left = 10.0
 offset_top = -50.0
 offset_right = 50.0
 offset_bottom = -10.0
-grow_horizontal = 1
 grow_vertical = 0
-theme_override_font_sizes/font_size = 24
 tooltip_text = "View credits and attributions."
+theme_override_font_sizes/font_size = 24
 text = "?"
 
 [node name="VersionLabel" type="Label" parent="."]
