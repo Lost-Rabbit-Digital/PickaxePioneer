@@ -93,7 +93,7 @@ text = "Upgrade Hull (50 Scrap)"
 
 [node name="EngineButton" type="Button" parent="Panel/VBoxContainer"]
 layout_mode = 2
-tooltip_text = "More fuel, more speed, fewer embarrassing slow-motion retreats."
+tooltip_text = "More energy, more speed, fewer embarrassing slow-motion retreats."
 text = "Upgrade Engine (50 Scrap)"
 
 [node name="DrillButton" type="Button" parent="Panel/VBoxContainer"]

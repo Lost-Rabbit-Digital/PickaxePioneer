@@ -684,7 +684,7 @@ func _setup_supply_dock_shop() -> void:
 
 	# Subtitle
 	var subtitle := Label.new()
-	subtitle.text = "A small space outpost where cat miners refuel and resupply."
+	subtitle.text = "A small space outpost where cat miners recharge and resupply."
 	subtitle.position = Vector2(px, py + 46)
 	subtitle.size = Vector2(PANEL_W, 22)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -724,7 +724,7 @@ func _setup_supply_dock_shop() -> void:
 	var by := py + 116
 
 	_btn_energy = _make_button(_shop_layer, bx, by, bw, BTN_H,
-		"Fuel Cell Cache  —  +50 starting fuel next run  (%d minerals)" % COST_ENERGY_CACHE,
+		"Energy Cell Cache  —  +50 starting energy next run  (%d minerals)" % COST_ENERGY_CACHE,
 		_buy_energy_cache)
 	by += BTN_GAP
 
@@ -802,7 +802,7 @@ func _buy_energy_cache() -> void:
 	GameManager.mineral_currency -= COST_ENERGY_CACHE
 	GameManager.settlement_energy_bonus += 50
 	GameManager.save_game()
-	_set_status("+50 fuel cell cache ready for next run!")
+	_set_status("+50 energy cell cache ready for next run!")
 	_refresh_minerals()
 	_update_button_states()
 

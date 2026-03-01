@@ -6,7 +6,7 @@ extends Node
 ##
 ## Shops managed:
 ##   • Surface Hub (bank & end-run panel)
-##   • Energy Station (refuel, repair, buy ladders)
+##   • Energy Station (recharge, repair, buy ladders)
 ##   • Upgrade Station (permanent upgrades with dollars)
 ##   • Space Forge / Smeltery (smelt ores into bars, sell bars)
 ##   • Cat Tavern (hire Mining Cats and Collecting Cats using bars)
@@ -303,7 +303,7 @@ func _build_energy_shop() -> void:
 	_energy_layer.add_child(panel)
 
 	var title := Label.new()
-	title.text = "Refueling Dock"
+	title.text = "Recharging Station"
 	title.position = Vector2(PX, PY + 12)
 	title.size = Vector2(PANEL_W, 30)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -343,9 +343,9 @@ func _build_energy_shop() -> void:
 func show_energy_shop() -> void:
 	_energy_minerals_label.text = "Dollars: $%d" % GameManager.dollars
 	var max_e := GameManager.get_max_energy()
-	_energy_btn_full.text = "Full Refuel  (%d→%d fuel)  — $%d" % [
+	_energy_btn_full.text = "Full Recharge  (%d→%d energy)  — $%d" % [
 		GameManager.current_energy, max_e, SHOP_REENERGY_FULL_COST]
-	_energy_btn_half.text = "Refuel 50%%  (+%d fuel)  — $%d" % [
+	_energy_btn_half.text = "Recharge 50%%  (+%d energy)  — $%d" % [
 		max_e / 2, SHOP_REENERGY_HALF_COST]
 	_energy_btn_repair.text = "Spacesuit Repair  (+1 HP)  — $%d" % SHOP_REPAIR_COST
 	_energy_btn_full.disabled   = GameManager.dollars < SHOP_REENERGY_FULL_COST or GameManager.current_energy >= max_e
@@ -475,7 +475,7 @@ func show_upgrade_station() -> void:
 
 	var legs_cost := 50 + 25 * GameManager.legs_level
 	var energy_cap := GameManager.get_max_energy()
-	_upgrade_btn_legs.text = "Upgrade Mining Boots Lv%d — Fuel Limit: %d → %d  ($%d)" % [
+	_upgrade_btn_legs.text = "Upgrade Mining Boots Lv%d — Energy Limit: %d → %d  ($%d)" % [
 		GameManager.legs_level, energy_cap, energy_cap + 25, legs_cost]
 	_upgrade_btn_legs.disabled = GameManager.dollars < legs_cost
 

@@ -74,7 +74,7 @@ res://
 | ForagerSystem | `src/systems/ForagerSystem.gd` | Scout Cat companion — auto-collects ore, banks when full |
 | BossSystem | `src/systems/BossSystem.gd` | Boss encounter logic for all five depth-milestone bosses |
 | CityLevel | `src/levels/CityLevel.gd` | Space Station hub — upgrades, gem sockets, spaceship upgrades |
-| HUD | `src/ui/HUD.gd` | In-run display — minerals, health, fuel bar, depth meter, banners |
+| HUD | `src/ui/HUD.gd` | In-run display — minerals, health, energy bar, depth meter, banners |
 
 ---
 
@@ -83,9 +83,9 @@ res://
 | Track | Effect per Level | Base Cost |
 |-------|-----------------|-----------|
 | Reinforce Spacesuit | +1 max HP | 50 minerals |
-| Upgrade Jet Boots | +30 px/s move speed **and** +25 max fuel | 50 minerals |
+| Upgrade Jet Boots | +30 px/s move speed **and** +25 max energy | 50 minerals |
 | Enhance Space Pickaxe | +3 mining power | 50 minerals |
-| Tune Space Whiskers | Larger sonar scan radius, lower fuel cost per ping | 50 minerals |
+| Tune Space Whiskers | Larger sonar scan radius, lower energy cost per ping | 50 minerals |
 
 All tracks scale by +25 minerals per level; max level 10.
 
