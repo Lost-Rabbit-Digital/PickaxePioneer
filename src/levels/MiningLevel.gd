@@ -299,13 +299,13 @@ const GRAVITY_FALL_DELAY: float = 0.2
 
 # Depth zones
 const DEPTH_ZONE_ROWS   = [0, 16, 41, 71, 101]
-const DEPTH_ZONE_NAMES  = ["Low Orbit", "Asteroid Belt", "Nebula Zone", "Star Cluster", "Deep Space"]
+const DEPTH_ZONE_NAMES  = ["The Crust", "The Mantle", "The Outer Core", "The Inner Core", "The Primordial Forge"]
 const DEPTH_ZONE_COLORS = [
-	Color(0.40, 0.55, 0.80),
-	Color(0.50, 0.40, 0.70),
-	Color(0.60, 0.30, 0.75),
-	Color(0.85, 0.70, 1.00),
-	Color(0.20, 0.80, 0.95),
+	Color(0.72, 0.56, 0.36),  # The Crust - sandy brown
+	Color(0.80, 0.40, 0.15),  # The Mantle - deep orange
+	Color(0.90, 0.22, 0.08),  # The Outer Core - molten red
+	Color(1.00, 0.70, 0.10),  # The Inner Core - golden yellow
+	Color(0.70, 0.10, 0.85),  # The Primordial Forge - arcane violet
 ]
 
 # Time-based energy drain: base rate (energy per second) + depth multiplier

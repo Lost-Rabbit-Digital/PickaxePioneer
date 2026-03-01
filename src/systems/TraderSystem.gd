@@ -16,7 +16,7 @@ const TRADER_ITEMS: Array = [
 	{"key": "repair",   "label": "Spacesuit Patch",    "desc": "Restore 1 HP",              "cost": 18, "tier": 1},
 	{"key": "shroom",   "label": "Astro Shroom",       "desc": "Next 12 ores yield +100%",  "cost": 30, "tier": 2},
 	{"key": "compass",  "label": "Lucky Star Chart",   "desc": "2× Lucky Strike (run)",     "cost": 45, "tier": 3},
-	{"key": "map",      "label": "Deep Space Map",     "desc": "2× Scanner radius (run)",   "cost": 65, "tier": 4},
+	{"key": "map",      "label": "Primordial Forge Map", "desc": "2× Scanner radius (run)",   "cost": 65, "tier": 4},
 ]
 
 const CELL_SIZE := 64
