@@ -597,7 +597,7 @@ func _build_hotbar() -> void:
 	var slot_outer: int = HOTBAR_SLOT_SIZE + 6  # content + border (3 px margin each side)
 	var total_w: int = 3 * slot_outer + 2 * HOTBAR_SLOT_GAP
 	var hb_x: int = (1280 - total_w) / 2
-	var hb_y: int = 720 - slot_outer - 6
+	var hb_y: int = 6
 
 	var container := HBoxContainer.new()
 	container.position = Vector2(hb_x, hb_y)
