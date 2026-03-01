@@ -46,13 +46,13 @@ func show_for_node(node: MapNode) -> void:
 			hsep2.visible = true
 			enter_button.text = "Launch"
 		MapNode.NodeType.SETTLEMENT:
-			type_label.text = "[ Outpost ]"
+			type_label.text = "[ Settlement ]"
 			type_label.modulate = Color(0.85, 0.60, 1.0)
 			difficulty_label.visible = false
 			ore_types_label.visible = false
 			hazards_label.visible = false
 			hsep2.visible = false
-			enter_button.text = "Visit Outpost"
+			enter_button.text = "Visit Settlement"
 		_:
 			type_label.text = "[ Unknown ]"
 			type_label.modulate = Color(1.0, 1.0, 1.0)
@@ -83,7 +83,7 @@ func _default_description(node: MapNode) -> String:
 		MapNode.NodeType.MINE:
 			return "A promising asteroid. Mine deep to uncover rare space ores."
 		MapNode.NodeType.SETTLEMENT:
-			return "A space outpost. Spend banked minerals on supplies for your next run."
+			return "A space settlement. Spend banked minerals on supplies for your next run."
 	return "An unexplored sector."
 
 func _on_enter_pressed() -> void:

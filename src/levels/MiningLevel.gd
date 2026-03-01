@@ -394,6 +394,10 @@ var _settlement_mandible_bonus: int = 0
 var _hazard_cooldown: float = 0.0
 const HAZARD_COOLDOWN_TIME: float = 1.0
 
+# Shop protection — blocks within this radius of a shop tile cannot be mined
+const SHOP_PROTECTION_RADIUS: int = 3
+var _shop_protected_cells: Dictionary = {}  # Vector2i -> true
+
 # Terrain decorations — visual sprites spawned after terrain generation
 var _web_sprites: Dictionary = {}  # Vector2i(col, row) -> Sprite2D
 
@@ -459,6 +463,7 @@ func _ready() -> void:
 		DEPTH_ZONE_ROWS,
 		GameManager.allowed_ore_types,
 		GameManager.allowed_hazard_types)
+	_build_shop_protection_zones()
 	_setup_collision_tilemap()
 	_sync_collision_tilemap()
 	_setup_map_barriers()
@@ -531,6 +536,24 @@ func _ready() -> void:
 
 # ---------------------------------------------------------------------------
 # Collision TileMapLayer setup
+# ---------------------------------------------------------------------------
+
+func _build_shop_protection_zones() -> void:
+	const SHOP_TILES: Array = [
+		TileType.REENERGY_STATION, TileType.EXIT_STATION,
+		TileType.UPGRADE_STATION, TileType.SMELTERY_STATION, TileType.CAT_TAVERN,
+	]
+	_shop_protected_cells.clear()
+	for col in range(GRID_COLS):
+		for row in range(GRID_ROWS):
+			if grid[col][row] in SHOP_TILES:
+				for dc in range(-SHOP_PROTECTION_RADIUS, SHOP_PROTECTION_RADIUS + 1):
+					for dr in range(-SHOP_PROTECTION_RADIUS, SHOP_PROTECTION_RADIUS + 1):
+						var nc := col + dc
+						var nr := row + dr
+						if nc >= 0 and nc < GRID_COLS and nr >= 0 and nr < GRID_ROWS:
+							_shop_protected_cells[Vector2i(nc, nr)] = true
+
 # ---------------------------------------------------------------------------
 
 func _setup_collision_tilemap() -> void:
@@ -1059,7 +1082,12 @@ func _check_exit_zone() -> void:
 # ---------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _game_over or shop_system.any_shop_open() or trader_system.shop_visible:
+	if _game_over:
+		return
+	if shop_system.any_shop_open() or trader_system.shop_visible:
+		if event.is_action_pressed("ui_cancel") and shop_system.any_shop_open():
+			shop_system.close_active_shop()
+			get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("toggle_inventory"):
 		if _inventory_screen:
@@ -1161,6 +1189,10 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 
 	var tile: int = grid[col][row]
 	if tile == TileType.EMPTY or tile == TileType.SURFACE:
+		return
+
+	# Shop protection — blocks within SHOP_PROTECTION_RADIUS of a shop are non-mineable
+	if _shop_protected_cells.has(Vector2i(col, row)):
 		return
 
 	# Pickaxe throw effect — flies from player to clicked tile
@@ -1876,6 +1908,8 @@ func cat_mine_at(grid_pos: Vector2i) -> void:
 	var col := grid_pos.x
 	var row := grid_pos.y
 	if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
+		return
+	if _shop_protected_cells.has(Vector2i(col, row)):
 		return
 	var tile: int = grid[col][row]
 	if tile not in ORE_TILES:

@@ -1,7 +1,7 @@
 class_name SettlementLevel
 extends Node2D
 
-# Space Outpost — a walkable tile-based settlement world.
+# Space Settlement — a walkable tile-based settlement world.
 # Players explore, interact with wandering NPCs and the supply dock,
 # and exit via the caravan ship on the left side of the map.
 # Mining is NOT allowed in settlements.
@@ -241,7 +241,7 @@ func _spawn_npcs() -> void:
 
 	for i in range(num_npcs):
 		var npc := npc_scene.instantiate() as FarmAnimalNPC
-		npc.animal_name = "Outpost Resident"
+		npc.animal_name = "Settlement Resident"
 
 		# Use a building texture for the NPC sprite (same as buildings)
 		var tex_idx := randi() % _building_textures_loaded.size()
@@ -486,7 +486,7 @@ func _try_interact() -> void:
 	if nearby_npc:
 		nearby_npc.wiggle()
 		var messages := [
-			"Welcome to the outpost, space cat!",
+			"Welcome to the settlement, space cat!",
 			"Stock up before your next mining run.",
 			"I heard there's rare ore in the deeper sectors...",
 			"The supply dock has everything you need.",
@@ -674,7 +674,7 @@ func _setup_supply_dock_shop() -> void:
 
 	# Title
 	var title := Label.new()
-	title.text = "Space Outpost — Supply Dock"
+	title.text = "Space Settlement — Supply Dock"
 	title.position = Vector2(px, py + 12)
 	title.size = Vector2(PANEL_W, 32)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -684,7 +684,7 @@ func _setup_supply_dock_shop() -> void:
 
 	# Subtitle
 	var subtitle := Label.new()
-	subtitle.text = "A small space outpost where cat miners recharge and resupply."
+	subtitle.text = "A small space settlement where cat miners recharge and resupply."
 	subtitle.position = Vector2(px, py + 46)
 	subtitle.size = Vector2(PANEL_W, 22)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
