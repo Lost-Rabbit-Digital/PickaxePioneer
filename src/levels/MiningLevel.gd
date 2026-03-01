@@ -1389,8 +1389,8 @@ func _spawn_decorations(data: Dictionary) -> void:
 		sprite.texture_filter = TEXTURE_FILTER_NEAREST
 		sprite.modulate = Color(1.0, 1.0, 1.0, 0.85)
 		sprite.position = Vector2(
-			pos.x * CELL_SIZE + CELL_SIZE * 0.5,
-			pos.y * CELL_SIZE + CELL_SIZE * 0.5
+			pos.x * CELL_SIZE + CELL_SIZE,
+			pos.y * CELL_SIZE + CELL_SIZE
 		)
 		sprite.z_index = 0
 		add_child(sprite)
