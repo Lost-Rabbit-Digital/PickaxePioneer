@@ -51,11 +51,11 @@ The mechanical core stays entirely intact — only terminology, art, and narrati
 | Quickstride Gem | Swift Paw Gem | Gem socket (+25 Energy, +15 Speed) |
 | Fracture Gem | Razor Claw Gem | Gem socket (+4 Mining Power) |
 | Echo Gem | Whisker Gem | Gem socket (+3 Sonar Radius) |
-| Centipede King | Giant Rat King | Boss 1 (row 32) — classic cat nemesis |
-| Cave Spider Matriarch | Cave Bat Matriarch | Boss 2 (row 64) — optional rename |
-| Blind Mole | Blind Mole | Boss 3 (row 96) — keep, cats vs moles is perfect |
-| Stone Golem | Stone Golem | Boss 4 (row 112) — keep, universal |
-| Ancient One | The Ancient Hound | Boss 5 (row 128) — dogs as ancient rivals |
+| Centipede King | Giant Rat King | Boss 1 (row 32) — classic cat nemesis ✅ |
+| Cave Spider Matriarch | Void Spider Matriarch | Boss 2 (row 64) — sci-fi name retained ✅ |
+| Blind Mole | Blind Mole | Boss 3 (row 96) — keep, cats vs moles is perfect ✅ |
+| Stone Golem | Stone Golem | Boss 4 (row 112) — keep, universal ✅ |
+| Ancient One | The Ancient Star Beast | Boss 5 (row 128) — sci-fi name retained ✅ |
 
 ---
 

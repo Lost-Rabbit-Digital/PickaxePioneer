@@ -81,7 +81,7 @@ You are a mining cat from the Clowder, venturing into the earth below. Armed wit
 - **Reenergy Station** — Refills energy to max for a mineral cost (interact with E)
 
 **Death & Extraction:**
-- **Carapace Destroyed (HP → 0):** Lose ALL collected run minerals, return to colony
+- **Pelt Shredded (HP → 0):** Lose ALL collected run minerals, return to Clowder
 - **Out of Energy:** Lose ALL collected run minerals, stranded (transported back)
 - **Successful Exit:** Keep everything + depth bonus
 - **Risk Tiers:** Deeper tiles yield far better ore but more hazards and higher energy cost
@@ -100,42 +100,42 @@ You are a mining cat from the Clowder, venturing into the earth below. Armed wit
   - Left-click: Mine the tile under the cursor (within 4.5-tile range)
 - **Abilities:**
   - `Q`: Sonar ping (costs energy; reveals ore in radius through solid rock)
-  - `F`: Place pheromone marker (directs forager ant)
+  - `F`: Place pheromone marker (directs Scout Cat companion)
 - **Interaction:**
   - `E`: Interact with Reenergy Station or NPC
   - `Esc`: Pause Menu
 - **HUD Indicators:**
   - Upper-left: Minerals collected this run
-  - Upper-right: Health squares (carapace HP), segmented energy bar, depth meter
+  - Upper-right: Health squares (pelt HP), segmented energy bar, depth meter
 
 ### 2.4 Entities
 
-#### The Ant (Player Character)
-The ant is a red forager from the colony, controlled directly by the player. Movement is grid-based — each keypress moves one tile. Entering a tile with ore mines it instantly and adds its minerals to the run total.
+#### The Cat (Player Character)
+You are a mining cat from the Clowder. Armed with razor-sharp Claws and impossibly sensitive Whiskers, you land on alien planets and dig for minerals. Movement is Terraria-style physics — gravity, jump, horizontal run. Mining is cursor-based: left-click within 4.5-tile range.
 
-**Ant Stats (affected by upgrades):**
-- **Carapace (Health):** Base 3 HP; +1 per Carapace upgrade level
-- **Legs (Speed/Energy):** +30 px/s move speed **and** +25 max energy per level
-- **Mandibles (Mining Power):** +3 mining power per level; affects damage to tough tiles and boss weak points
-- **Mineral Sense:** Increases sonar ping radius and reduces energy cost per activation
+**Cat Stats (affected by upgrades):**
+- **Pelt (Health):** Base 3 HP; +1 per Pelt upgrade level
+- **Paws (Speed/Energy):** +30 px/s move speed **and** +25 max energy per level
+- **Claws (Mining Power):** +3 mining power per level; affects damage to tough tiles and boss weak points
+- **Whiskers:** Increases sonar ping radius and reduces energy cost per activation
 
-#### Upgrades (Colony Workshop)
+#### Upgrades (Clowder Workshop)
 Four permanent upgrade tracks, each with scaling mineral costs (+25 per level):
 
-1. **Harden Carapace** (base cost: 50 minerals)
-   - Toughens the ant's exoskeleton
+1. **Thicken Pelt** (base cost: 50 minerals)
+   - Thickens the cat's protective fur and hide
    - Effect: +1 max HP per level (base: 3 HP)
 
-2. **Strengthen Legs** (base cost: 50 minerals)
-   - Builds leg muscle for faster movement and greater energy endurance
+2. **Strengthen Paws** (base cost: 50 minerals)
+   - Builds paw endurance for faster movement and greater energy stamina
    - Effect: +30 px/s move speed **and** +25 max energy per level
 
-3. **Sharpen Mandibles** (base cost: 50 minerals)
-   - Hones the ant's digging claws to a razor edge
+3. **Sharpen Claws** (base cost: 50 minerals)
+   - Hones the cat's retractable claws to a razor edge
    - Effect: +3 mining power per level (used for tough tiles and boss armor)
 
-4. **Mineral Sense** (base cost: 50 minerals)
-   - Refines the ant's antennae sensitivity for deeper sonar reads
+4. **Refine Whiskers** (base cost: 50 minerals)
+   - Tunes the cat's whisker sensitivity for deeper sonar reads
    - Effect: Larger sonar ping radius and lower energy cost per activation per level
 
 #### Mine Tiles
@@ -145,25 +145,24 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 - Deep (rows 70–128): Gold, gems, heavy hazards, energy nodes become critical
 
 #### NPCs
-1. **The Queen** (Colony Hub): Main upgrade vendor, story guide
-2. **Elder Forager** (Colony Hub): Mission giver, experienced miner
-3. **Colony Archivist** (Colony Hub): Fossil and lore collector
+1. **The Matriarch** (Clowder Hub): Faction leader, upgrade vendor, story guide
+2. **Elder Miner** (Clowder Hub): Mission giver, experienced mining cat
+3. **Clowder Archivist** (Clowder Hub): Fossil and lore collector
 4. **Wandering Trader** (Random Mine Event): Rare item exchange
-5. **Lost Worker Ants** (Mine Events): Rescue for colony rewards
+5. **Stray Mining Cats** (Mine Events): Rescue for Clowder rewards
 
 ## 3. Art & Audio Style
 
 ### 3.1 Visual Direction
 **Core Art Style:**
-- **Format:** Pixel art tiles, crisp sprite-based ant character
+- **Format:** Pixel art tiles, animated cat character sprite
 - **Tile System:** Individual block sprites with geological variety
-- **Color Palette by Depth:**
-  - Surface (rows 0–3): Sky blue, green grass
-  - Shallow (rows 3–30): Browns and warm soil tones
-  - Mid-depth (rows 30–70): Cool greys, stone, orange-copper
-  - Deep (rows 70–128): Dark purples, glowing cyan gems, warm gold
+- **Color Palette by Depth (planet-tinted):**
+  - Surface (rows 0–3): Planet atmosphere color (set per mine node)
+  - Shallow (rows 3–30): Darkened planet color (darkened 75%)
+  - Deep (rows 70–128): Near-void black with faint planet hue (darkened 96%)
 - **Style:** Clean pixel art with distinct tile silhouettes for readability
-- **Animation:** Ant walk cycle, mining particle dust (future)
+- **Animation:** Cat walk/idle/jump cycle, mining particle dust (future)
 
 **Visual Polish:**
 - Sky blue background for surface rows
@@ -187,19 +186,19 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 ### 3.2 Audio Design
 
 **Music:**
-1. **Colony Hub:** Calm ambient, soft insect/nature sounds, gentle percussion
-2. **Overworld Map:** Light adventurous theme, wind through tunnels
-3. **Mining Level:** Rhythmic underground ambience; tension rises at depth (crickets.mp3 currently)
+1. **Clowder Hub:** Calm ambient, cozy space-station atmosphere, gentle percussion
+2. **Overworld Map:** Light adventurous theme, wind through space
+3. **Mining Level:** Rhythmic underground ambience; tension rises at depth
 4. **Boss Fights:** Intense unique themes per encounter
 5. **Menu:** Minimal ambient
 
 **Sound Effects (Procedural + Library):**
-- **Digging:** Crunching, grinding tone (mandible buzz) — `play_drill_sound()`
+- **Digging:** Crunching, grinding claw scratch — `play_drill_sound()`
 - **Mineral Pickup:** Satisfying "clink" chime
 - **Explosion:** Deep impact boom — `play_explosion_sound()`
 - **Energy Restore:** Bubbly replenishment tone
-- **Damage:** Chitinous impact crack
-- **Energy Low Warning:** Anxious cricket chirp
+- **Damage:** Thud and cat yowl
+- **Energy Low Warning:** Anxious cat meow
 
 **Audio Mix:**
 - Clear priority: critical SFX > music > ambient
@@ -207,41 +206,38 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 
 ## 4. World Design
 
-### 4.1 The Hub: The Colony
+### 4.1 The Hub: The Clowder Space Station
 **Layout:**
-- **Colony Workshop (Left):** The Queen — Carapace/Legs/Mandibles upgrades
-- **Mission Board (Center):** Elder Forager — Daily challenges, bounties, discovery missions
-- **Fossil Archive (Right):** Colony Archivist — View collected fossils and colony lore
-- **Mine Entrance (Bottom):** Deploy to Overworld map
-- **Stats Chamber:** View colony wealth, depth records, achievements
+- **Clowder Workshop (Left):** The Matriarch — Pelt/Paws/Claws/Whiskers upgrades
+- **Mission Board (Center):** Elder Miner — Daily challenges, bounties, discovery missions
+- **Fossil Archive (Right):** Clowder Archivist — View collected fossils and Clowder lore
+- **Docking Bay (Bottom):** Deploy to Star Chart
+- **Stats Chamber:** View Clowder wealth, depth records, achievements
 
 **Atmosphere:**
-- Bustling ant colony at the surface
-- Tunnels lined with amber and bioluminescent fungi
-- Colony members with idle animations and ambient chatter
+- Bustling cat space station humming with activity
+- Corridors lined with cat-clan memorabilia and glowing mineral samples
+- Clowder members with idle animations and ambient chatter
 - Safe zone — no energy cost, no hazards
 
 **NPC Interactions:**
-- Story-driven dialogue about the colony's need for deeper minerals
+- Story-driven dialogue about the Clowder's need for minerals to fuel the next jump
 - Relationship system (unlocks special missions and upgrade discounts)
 - Rotating daily quests tied to ore types and depths
 
-### 4.2 Overworld: The Anthill Map
+### 4.2 Overworld: The Star Chart
 **Structure:**
-- **Map Type:** Node-based exploration network
-- **Player Token:** The ant moving between mine entrances
-- **Mine Unlock:** Complete shallower mines to access deeper ones
-- **Caravan Route:** Connected paths between nodes with distance costs
+- **Map Type:** Node-based navigation network
+- **Player Token:** The cat's ship (Caravan) moving between planets
+- **Planet Unlock:** Progress through planets to unlock deeper/richer ones
+- **Route:** Connected paths between nodes; ship travels each segment visually
 
-**Mine Nodes (Progressively Deeper/Richer):**
-1. **Surface Mound (Node 1)** — Tutorial mine, shallow, mostly dirt and copper
-2. **Iron Seam (Node 2)** — First real challenge, iron ore abundant, some explosives
-3. **Gold Canyon (Node 3)** — Deep gold veins, lava appears, energy management critical
-4. **Gem Cavern (Node 4)** — Maximum depth, gem ore, high hazard density
-5. **Ancient Chamber (Node 5)** — Boss encounter, legendary fossil rewards
-6. **The Deep (Node 6)** — Final mine, all hazards combined, ultimate gem deposits
+**Planet Nodes (Randomly Generated Per Run):**
+- **Mine Planets** — Procedurally named (e.g. "Ruby Sector", "Obsidian Rift"); each has a unique atmosphere color, ore mix, and hazard profile
+- **Settlement Stations** — Rest stops; spend minerals on pre-run consumables
+- **Clowder Space Station** — Hub; permanent upgrades and gem socketing
 
-**Node Types (Randomly Generated Per Run):**
+**Planet Node Types:**
 - **Rich Vein:** High ore density, low hazards
 - **Hazard Zone:** High hazards, bonus mineral multiplier
 - **Ancient Site:** Special fossil collectibles, moderate mining
@@ -264,7 +260,7 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 - Stone density increases with depth (more resistant to quick clear)
 
 **Camera System:**
-- Camera2D follows the ant with clamped map boundaries
+- Camera2D follows the cat with clamped map boundaries
 - Viewport culling renders only visible tiles for performance
 
 **Extraction System:**
@@ -277,9 +273,9 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 ### 5.1 Mineral Economy
 **Primary Currency: Minerals**
 - Collected by mining tiles underground
-- Lost if the ant dies or runs out of energy
+- Lost if the cat dies or runs out of energy
 - Banked permanently on successful exit
-- Used for all colony upgrades
+- Used for all Clowder upgrades
 
 **Secondary Collectibles (Planned):**
 - **Fossils:** Permanent story collectibles, never lost
@@ -288,70 +284,66 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 
 ### 5.2 Upgrade System
 
-**Colony Workshop — Four Tracks:**
+**Clowder Workshop — Four Tracks:**
 
 | Upgrade | Stat | Base Cost | Per Level | Max Levels |
 |---------|------|-----------|-----------|-----------|
-| Harden Carapace | +1 Max HP | 50 minerals | +25 minerals | 10 |
-| Strengthen Legs | +30 px/s speed & +25 max energy | 50 minerals | +25 minerals | 10 |
-| Sharpen Mandibles | +3 mining power | 50 minerals | +25 minerals | 10 |
-| Mineral Sense | Larger sonar radius, lower energy/ping | 50 minerals | +25 minerals | 10 |
+| Thicken Pelt | +1 Max HP | 50 minerals | +25 minerals | 10 |
+| Strengthen Paws | +30 px/s speed & +25 max energy | 50 minerals | +25 minerals | 10 |
+| Sharpen Claws | +3 mining power | 50 minerals | +25 minerals | 10 |
+| Refine Whiskers | Larger sonar radius, lower energy/ping | 50 minerals | +25 minerals | 10 |
 
 **Future Upgrade Tracks (Planned):**
-- **Energy Sac:** Increases max energy capacity
-- **Mineral Sense:** Shows ore richness of adjacent tiles (passive)
-- **Colony Bond:** Buffs near other rescued worker ants
+- **Energy Sac:** Increases max energy capacity (separate from Paws)
+- **Clowder Bond:** Buffs earned near other rescued stray cats
 
 ### 5.3 Research Tree (Meta-Progression, Planned)
 
-**Tier 1** (1–5 Colony Points Each):
-- Ore Nose: +10% mineral yield from all tiles
-- Thick Shell: +5% max HP
-- Efficient Stride: −5% energy consumption
-- Quick Mandibles: −10% between-tile dig delay
+**Tier 1** (1–5 Clowder Points Each):
+- Cat Nose: +10% mineral yield from all tiles
+- Thick Pelt: +5% max HP
+- Efficient Paws: −5% energy consumption
+- Quick Claws: −10% between-tile dig delay
 - Lucky Find: +2% chance to find Rare Crystals
 
 **Tier 2** (5–10 Points Each):
-- Deep Sense: Reveal tile types one step ahead
-- Armored Segments: +15% damage reduction
-- Venom Mandibles: Chain-mine explosive tiles safely
+- Deep Whiskers: Reveal tile types one step ahead
+- Armored Pelt: +15% damage reduction
+- Razor Claws: Chain-mine explosive tiles safely
 - Extended Energy Sac: +25% max energy capacity
 - Treasure Instinct: Highlight fossil locations
 
 **Tier 3** (10–20 Points Each):
-- Master Forager: +50% all mineral gains
-- Indestructible Carapace: Auto-survive one fatal hit per run
+- Master Hunter: +50% all mineral gains
+- Indestructible Pelt: Auto-survive one fatal hit per run
 - Deep Sight: Full tile map visible from surface
 - Extraction Savings: Keep 25% of minerals even on energy death
-- Colony Hero: +30% minerals near colony entrance
+- Clowder Hero: +30% minerals near the Clowder docking bay
 
 ## 6. Story & Lore
 
 ### 6.1 Premise
-The colony has thrived for generations in the shallow earth. But a great drought has dried up the surface food supply and the Queen has decreed: the workers must dig deeper than ever before. Ancient legends speak of vast mineral deposits and bioluminescent gem caverns far below — enough to sustain the colony for centuries.
+The Clowder drifts between star systems, a proud feline civilization aboard a great space station. Their ships need fuel — rare minerals scavenged from the crusts of dead planets. The Matriarch has sent her best mining cats across the star chart, each one touching down on a different world to dig as deep as their energy allows.
 
-You are a red forager, one of the most experienced diggers in the colony. The deeper you go, the richer the rewards — but also the stranger the rocks, the hotter the earth, and the older the things buried in it.
+You are one of those cats. Armed with razor-sharp Claws and impossibly sensitive Whiskers, you land on alien rock, dig through layers of stone and ore, and claw your way back out before your energy gives out. The deeper you go, the richer the haul — and the older, stranger, and more dangerous the things buried in the dark.
 
 ### 6.2 Fossil Collectibles (50 Total)
 Scattered across all mine depth levels:
 - **Surface Fossils (10):** Small insects, leaves, ancient seeds
 - **Mid-Depth Fossils (20):** Trilobites, ancient beetles, crystallized honeycomb
 - **Deep Fossils (15):** Massive arthropods, unknown creatures, glowing mineral formations
-- **Boss Chamber Relics (5):** Ancient colony artifacts, legendary specimens
+- **Boss Chamber Relics (5):** Ancient star-cat artifacts, legendary specimens
 
 Each fossil reveals lore about the earth's deep history and grants bonus colony experience.
 
-### 6.3 Boss Encounters (5 Total — Mine Progression)
-1. **The Centipede King** (Iron Seam) — HP: 500, multi-segment body
-   - Reward: Unlock Gold Canyon + Deep Mine Sense ability
-2. **Cave Spider Matriarch** (Gold Canyon) — HP: 800, web-laying ranged attacks
-   - Reward: Unlock Gem Cavern + Extended Energy Sac upgrade
-3. **The Blind Mole** (Gem Cavern) — HP: 1200, massive AOE tremor attacks
-   - Reward: Unlock Ancient Chamber + Venom Mandibles upgrade
-4. **Stone Golem** (Ancient Chamber) — HP: 1500, rock-armored phases
-   - Reward: Unlock The Deep + Indestructible Carapace upgrade
-5. **The Ancient One** (The Deep — Final Boss) — HP: 2500, three phases
-   - Reward: Colony saved, true ending, Legend of the Deep Forager title
+### 6.3 Boss Encounters (5 Total — Depth Milestones)
+All bosses are defeated using the player's existing tools — no separate combat system. Energy drains 2.5× while a boss is alive; defeating one rewards 100 minerals + 30 energy.
+
+1. **Giant Rat King** (row 32) — multi-segment horizontal body; mine through segments to reach and destroy the core
+2. **Void Spider Matriarch** (row 64) — diamond/cross body spawned below player; mine void-web segments to reach the core
+3. **The Blind Mole** (row 96) — tremor AoE collapses nearby empty tiles; warning overlay telegraphs incoming tremor
+4. **Stone Golem** (row 112) — three ore-phase armor (copper → iron → gold); player must last-mine the required ore type to crack each phase
+5. **The Ancient Star Beast** (row 128) — three-phase final boss: outer stone-shell ring (phase 1), crystalline inner ring with void pulses that reseal mined tunnels (phase 2), exposed regenerating core (phase 3); 2× energy drain throughout
 
 ## 7. Technical Design
 
@@ -377,37 +369,42 @@ res://
 - **SmeltingSystem:** Consecutive ore chain bonuses and alloy combos
 - **FossilSystem:** Fossil drop probability with forgiveness pity counter per block type
 - **SonarSystem:** Sonar ping — radial ore detection, energy cost per activation
-- **ForagerSystem:** Forager ant companion — collects 40% ore yield, auto-banks when full
+- **ForagerSystem:** Scout Cat companion — collects 40% ore yield, auto-banks when full
 - **BossSystem:** Five depth-milestone boss encounters; energy pressure, phase management
-- **UpgradeMenu:** Colony Workshop UI — Carapace / Legs / Mandibles / Mineral Sense upgrades
+- **UpgradeMenu:** Clowder Workshop UI — Pelt / Paws / Claws / Whiskers upgrades
 - **HUD:** Minerals counter, health squares, segmented energy bar, depth meter, milestone banners
 
 ### 7.3 Save System
 Persistent save via JSON (`user://save_data.json`):
-- `mineral_currency` — banked colony minerals
-- `carapace_level` — carapace upgrade level (0–10)
-- `legs_level` — legs upgrade level (0–10)
-- `mandibles_level` — mandibles upgrade level (0–10)
+- `mineral_currency` — banked Clowder minerals
+- `carapace_level` — pelt upgrade level (0–10) *(var rename to `pelt_level` pending Task 2.4)*
+- `legs_level` — paws upgrade level (0–10)
+- `mandibles_level` — claws upgrade level (0–10) *(var rename to `claws_level` pending Task 2.4)*
+- `mineral_sense_level` — whiskers upgrade level (0–10)
+- `gem_count`, `carapace_gem_socketed`, `legs_gem_socketed`, `mandibles_gem_socketed`, `sense_gem_socketed` — gem socket state
+- Spaceship upgrade flags, cumulative milestone trackers, planet config
 
 ## 8. Glossary
 
 | Term | Definition |
 |------|-----------|
-| **Minerals** | Primary currency — what the ant collects by mining tiles |
-| **Carapace** | Ant's exoskeleton; determines max HP |
-| **Legs** | Ant's movement system; determines speed and future energy efficiency |
-| **Mandibles** | Ant's digging claws; determines mining power |
-| **Energy** | The ant's energy reserve; depletes by 1 per underground tile entered |
-| **Run** | One mining expedition from colony surface → underground → return |
-| **Colony** | The hub area; safe zone where upgrades are purchased |
-| **Overworld** | The map of mine entrances and paths between them |
-| **Exit Station** | The mine exit on the surface layer; completing a run requires reaching it |
-| **Reenergy Station** | Mid-mine surface point; reenergys for a mineral cost |
+| **Minerals** | Primary currency — what the cat collects by mining tiles |
+| **Pelt** | Cat's protective fur and hide; determines max HP |
+| **Paws** | Cat's movement and endurance; determines speed and energy capacity |
+| **Claws** | Cat's retractable mining claws; determines mining power |
+| **Whiskers** | Cat's sonar sense; determines sonar ping radius and energy cost |
+| **Energy** | The cat's energy reserve; depletes with depth while underground |
+| **Run** | One mining expedition: land on planet → mine → return to ship |
+| **Clowder** | The cat civilization's space station; hub where upgrades are purchased |
+| **Star Chart** | The overworld map of planets, settlements, and the Clowder station |
+| **Exit Station** | The mine exit (airlock) on the surface layer; reach it to complete the run |
+| **Reenergy Station** | Mid-mine surface point; refills energy for a mineral cost |
 | **Energy Node** | Underground tile that restores 10 energy when mined |
-| **Depth** | How many rows below surface the ant has reached; higher depth = richer ore |
+| **Depth** | How many rows below surface the cat has reached; higher depth = richer ore |
 | **Fossil** | Permanent story collectible found underground; never lost on death |
-| **Mine Shaft** | A specific mine node on the overworld map |
-| **Boss** | Elite underground creature guarding a new mine zone |
+| **Planet Node** | A mine node on the Star Chart; each has unique ore, hazards, and atmosphere color |
+| **Boss** | Elite underground creature encountered at depth milestone rows (32/64/96/112/128) |
+| **Scout Cat** | Companion that takes 40% ore yield and auto-banks when carry cap is full |
 
 ## 9. Achievements (50+ Planned)
 
