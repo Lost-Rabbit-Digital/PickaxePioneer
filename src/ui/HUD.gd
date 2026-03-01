@@ -78,6 +78,7 @@ const HOTBAR_PICKAXE_TEXTURES: Array = [
 var _hotbar_slots: Array[PanelContainer] = []
 var _hotbar_styles: Array[StyleBoxFlat] = []  # One StyleBoxFlat per slot for border recolouring
 var _hotbar_ladder_icon: Control  # Ladder slot content — shown/hidden based on ladder count
+var _hotbar_container: HBoxContainer  # Root container for the hotbar strip
 
 # Ore colour mapping for the earnings popup
 const ORE_COLORS: Dictionary = {
@@ -603,6 +604,7 @@ func _build_hotbar() -> void:
 	container.add_theme_constant_override("separation", HOTBAR_SLOT_GAP)
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	$Control.add_child(container)
+	_hotbar_container = container
 
 	for i in range(3):
 		var slot := PanelContainer.new()
@@ -681,3 +683,7 @@ func _build_hotbar() -> void:
 func _on_hotbar_slot_input(event: InputEvent, slot_index: int) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_set_hotbar_selection(slot_index)
+
+func set_hotbar_visible(value: bool) -> void:
+	if _hotbar_container:
+		_hotbar_container.visible = value

@@ -90,6 +90,7 @@ var _supply_dock_row: int = -1
 
 @onready var player_node := $PlayerProbe as PlayerProbe
 @onready var pause_menu = $PauseMenu
+@onready var _hud := $HUD as HUD
 
 func _ready() -> void:
 	texture_filter = TEXTURE_FILTER_NEAREST
@@ -126,6 +127,7 @@ func _ready() -> void:
 
 	_spawn_npcs()
 	_setup_supply_dock_shop()
+	_hud.set_hotbar_visible(false)
 	queue_redraw()
 
 # ---------------------------------------------------------------------------
