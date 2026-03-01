@@ -592,7 +592,7 @@ func _build_slot_row(index: int, rx: float, ry: float, rw: float) -> Control:
 	var select_btn := Button.new()
 	select_btn.name = "SelectBtn"
 	select_btn.position = Vector2(4, 4)
-	select_btn.size = Vector2(rw - 90, SLOT_H - 8)
+	select_btn.size = Vector2(rw - 46, SLOT_H - 8)
 	select_btn.add_theme_font_size_override("font_size", 14)
 	select_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	select_btn.pressed.connect(_on_slot_selected.bind(index))
@@ -602,10 +602,10 @@ func _build_slot_row(index: int, rx: float, ry: float, rw: float) -> Control:
 	# Delete button
 	var del_btn := Button.new()
 	del_btn.name = "DeleteBtn"
-	del_btn.text = "DELETE"
-	del_btn.position = Vector2(rw - 82, (SLOT_H - 34) / 2.0)
-	del_btn.size = Vector2(76, 34)
-	del_btn.add_theme_font_size_override("font_size", 13)
+	del_btn.text = "X"
+	del_btn.position = Vector2(rw - 38, (SLOT_H - 34) / 2.0)
+	del_btn.size = Vector2(34, 34)
+	del_btn.add_theme_font_size_override("font_size", 16)
 	del_btn.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
 	del_btn.pressed.connect(_on_slot_delete.bind(index))
 	container.add_child(del_btn)
