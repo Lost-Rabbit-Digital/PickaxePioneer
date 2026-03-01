@@ -53,7 +53,7 @@ const IDLE_TO_SLEEP_TIME: float = 5.0  # Seconds before transitioning to sleep
 
 # Sprint — hold Shift for 1.5× speed, costs extra energy
 const SPRINT_MULT: float = 1.5
-const SPRINT_ENERGY_RATE: float = 4.0     # Energy units consumed per second while sprinting
+const SPRINT_ENERGY_RATE: float = 2.0     # Energy units consumed per second while sprinting (halved)
 var _sprinting: bool = false
 var _sprint_energy_accum: float = 0.0
 
@@ -289,6 +289,9 @@ func get_grid_pos() -> Vector2i:
 func get_depth_row() -> int:
 	var row := floori(global_position.y / CELL_SIZE)
 	return maxi(0, row - mining_level.SURFACE_ROWS) if mining_level else 0
+
+func is_sleeping() -> bool:
+	return sprite.animation == &"sleep"
 
 # Prompt helpers
 func show_prompt(text: String) -> void:

@@ -207,7 +207,7 @@ func get_dollar_sell_mult() -> float:
 	return 1.25 if trade_amplifier_built else 1.0
 
 func get_sonar_ping_energy_cost() -> int:
-	return maxi(3, 10 - mineral_sense_level * 2)
+	return maxi(1, 5 - mineral_sense_level)
 
 func get_max_health() -> int:
 	return 3 + carapace_level + (1 if carapace_gem_socketed else 0)
