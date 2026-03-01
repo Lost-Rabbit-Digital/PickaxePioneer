@@ -61,11 +61,11 @@ The mechanical core stays entirely intact — only terminology, art, and narrati
 
 ## Priority 1 — Critical (Blocks Playtesting)
 
-### TASK 1.1 — Create Cat Character Spritesheet
+### TASK 1.1 — Create Cat Character Spritesheet ✅ DONE
 **Type:** Art asset
-**Replaces:** `assets/creatures/red_ant_spritesheet.png`
+**Status:** Animated cat spritesheet is in place; player sprite is now a cat.
 
-The player sprite is the most visible ant reference. The new sheet must match the existing frame layout used by `PlayerProbe.gd` (loaded in `MiningLevel.gd`) and also serve as the Caravan token on the overworld map (`Caravan.tscn`).
+~~The player sprite is the most visible ant reference. The new sheet must match the existing frame layout used by `PlayerProbe.gd` (loaded in `MiningLevel.gd`) and also serve as the Caravan token on the overworld map (`Caravan.tscn`).~~
 
 **Spec:**
 - Match current ant spritesheet frame dimensions and animation layout (idle, walk left/right, jump)

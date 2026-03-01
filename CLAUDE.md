@@ -2,12 +2,13 @@
 
 ## WHY — What This Project Is
 
-**Pickaxe Pioneer** is a 2D Terraria-style underground mining roguelite built in Godot 4.5.
-The player is a **mining cat** from the **Clowder** — a feline civilization that mines for
-minerals deep underground. Inspired by Motherload / Super Motherload.
+**Pickaxe Pioneer** is a 2D Terraria-style space mining roguelite built in Godot 4.5.
+You play as a **mining cat** travelling between planets, scavenging ore to fuel your
+next jump. Your home base is **the Clowder** — a feline space-station civilization.
+Inspired by Motherload / Super Motherload.
 
 - **Genre:** Mining roguelite (side-scrolling, physics-based)
-- **Core loop:** Overworld map → mine run → bank minerals → buy permanent upgrades → repeat
+- **Core loop:** Star chart → land on planet → mine run → bank minerals → buy upgrades → next planet
 - **Platforms:** Steam (Windows/Linux/Mac) + Itch.io | **Price:** $3–5
 - **Engine:** Godot 4.5 | **Language:** GDScript (static typing required, no C#)
 - **Addons:** GUT (unit testing framework)
@@ -86,7 +87,11 @@ res://
 - `MapNode.NodeType` enum: `EMPTY(0)`, `MINE(1)`, `STATION(2)`, `SETTLEMENT(3)`
 - `MiningLevel.gd` is ~1,970 lines; do not add logic — extract to `src/systems/` instead
 - Bosses trigger at rows: **32, 64, 96, 112, 128** (energy drains 2.5× during boss)
-- Boss names: Giant Rat King · Cave Spider Matriarch · Blind Mole · Stone Golem · The Ancient Hound
+- Boss names: Giant Rat King · Void Spider Matriarch · Blind Mole · Stone Golem · The Ancient Star Beast
+- `MapNode.get_average_pixel_color()` samples the planet sprite's average RGB into
+  `GameManager.sky_color` on mine entry; `MiningLevel._draw()` uses it for the sky strip
+  and derives the underground gradient (darkened 75% → 96%), so every planet's atmosphere
+  automatically matches its art with no hardcoded colours needed
 
 ### Input map actions (defined in project.godot)
 
