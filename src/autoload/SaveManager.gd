@@ -47,6 +47,7 @@ func get_slot_summary(index: int) -> Dictionary:
 		"legs_level": slot.get("legs_level", 0),
 		"mandibles_level": slot.get("mandibles_level", 0),
 		"mineral_sense_level": slot.get("mineral_sense_level", 0),
+		"playtime_seconds": slot.get("total_playtime_seconds", 0.0),
 	}
 
 ## Start a new game in the given slot — resets GameManager and saves.
@@ -178,6 +179,7 @@ func _snapshot_game_manager() -> Dictionary:
 		"bosses_defeated_total": gm.bosses_defeated_total,
 		"total_fossils": gm.total_fossils,
 		"deepest_row_reached": gm.deepest_row_reached,
+		"total_playtime_seconds": gm.total_playtime_seconds,
 		"warp_drive_built": gm.warp_drive_built,
 		"cargo_bay_built": gm.cargo_bay_built,
 		"long_scanner_built": gm.long_scanner_built,
@@ -216,6 +218,7 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 	gm.bosses_defeated_total = data.get("bosses_defeated_total", 0)
 	gm.total_fossils = data.get("total_fossils", 0)
 	gm.deepest_row_reached = data.get("deepest_row_reached", 0)
+	gm.total_playtime_seconds = data.get("total_playtime_seconds", 0.0)
 	gm.warp_drive_built = data.get("warp_drive_built", false)
 	gm.cargo_bay_built = data.get("cargo_bay_built", false)
 	gm.long_scanner_built = data.get("long_scanner_built", false)
@@ -255,6 +258,7 @@ func _reset_game_manager() -> void:
 	gm.bosses_defeated_total = 0
 	gm.total_fossils = 0
 	gm.deepest_row_reached = 0
+	gm.total_playtime_seconds = 0.0
 	gm.warp_drive_built = false
 	gm.cargo_bay_built = false
 	gm.long_scanner_built = false

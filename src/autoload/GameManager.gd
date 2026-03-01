@@ -82,6 +82,7 @@ var total_minerals_banked: int = 0       # sum of all currency ever banked
 var bosses_defeated_total: int = 0       # total boss encounters won
 var total_fossils: int = 0               # total fossils found across all runs
 var deepest_row_reached: int = 0         # deepest grid row ever reached
+var total_playtime_seconds: float = 0.0  # total seconds played (accumulated while PLAYING)
 
 # Spaceship upgrade built flags (persisted to save)
 var warp_drive_built: bool = false       # 2x caravan travel speed on overworld
@@ -96,6 +97,10 @@ func _ready() -> void:
 	print("GameManager initialized")
 	# Legacy load_game() removed — SaveManager now handles slot-based persistence.
 	# On first boot, SaveManager._migrate_legacy_save() imports the old file.
+
+func _process(delta: float) -> void:
+	if current_state == GameState.PLAYING:
+		total_playtime_seconds += delta
 
 func add_currency(amount: int) -> void:
 	run_mineral_currency += amount
