@@ -16,6 +16,8 @@ var run_ore_counts: Dictionary = {}
 var run_ore_earnings: Dictionary = {}
 # Total individual ore chunks collected this run (used for capacity display)
 var run_ore_chunk_count: int = 0
+# Per-ore-type chunk counts (chunks physically picked up, used for inventory display)
+var run_ore_chunk_counts: Dictionary = {}
 
 # Base ore capacity per run (can be expanded by Cargo Bay spaceship upgrade)
 const BASE_ORE_CAPACITY: int = 200
@@ -118,6 +120,10 @@ func track_ore_mined(tile_type: int, minerals: int) -> void:
 func track_ore_chunk_collected() -> void:
 	run_ore_chunk_count += 1
 
+func track_ore_chunk_collected_by_type(ore_type: int) -> void:
+	run_ore_chunk_count += 1
+	run_ore_chunk_counts[ore_type] = run_ore_chunk_counts.get(ore_type, 0) + 1
+
 func bank_currency() -> void:
 	total_minerals_banked += run_mineral_currency
 	mineral_currency += run_mineral_currency
@@ -141,6 +147,7 @@ func lose_run() -> void:
 	run_ore_counts.clear()
 	run_ore_earnings.clear()
 	run_ore_chunk_count = 0
+	run_ore_chunk_counts.clear()
 	EventBus.minerals_changed.emit(0)
 	# Clear planet config so the overworld re-randomizes on next visit
 	SaveManager.clear_active_slot_run_data()
@@ -157,6 +164,7 @@ func load_mining_level(scene_path: String = "") -> void:
 	run_ore_counts.clear()
 	run_ore_earnings.clear()
 	run_ore_chunk_count = 0
+	run_ore_chunk_counts.clear()
 	current_energy = get_max_energy() # Reset energy on entry
 
 	# Apply settlement carry-over bonuses then clear them

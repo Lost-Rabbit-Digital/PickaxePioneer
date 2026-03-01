@@ -1095,7 +1095,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			if _inventory_screen.visible:
 				_inventory_screen.close()
 			else:
-				_inventory_screen.open(shop_system.run_ore_counts, _shroom_charges[0],
+				_inventory_screen.open(GameManager.run_ore_chunk_counts, _shroom_charges[0],
 					_lucky_compass_active[0], _ancient_map_active[0])
 		return
 	if event.is_action_pressed("toggle_hat_menu"):
