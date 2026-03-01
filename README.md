@@ -73,7 +73,7 @@ res://
 | SonarSystem | `src/systems/SonarSystem.gd` | Sonar ping — radial ore detection through solid rock |
 | ForagerSystem | `src/systems/ForagerSystem.gd` | Scout Cat companion — auto-collects ore, banks when full |
 | BossSystem | `src/systems/BossSystem.gd` | Boss encounter logic for all five depth-milestone bosses |
-| CityLevel | `src/levels/CityLevel.gd` | Space Station hub — upgrades, gem sockets, spaceship upgrades |
+| CityLevel | `src/levels/CityLevel.gd` | Clowder hub — permanent upgrades (Pelt/Paws/Claws/Whiskers), gem sockets, colony chambers |
 | HUD | `src/ui/HUD.gd` | In-run display — minerals, health, energy bar, depth meter, banners |
 
 ---
@@ -82,10 +82,10 @@ res://
 
 | Track | Effect per Level | Base Cost |
 |-------|-----------------|-----------|
-| Reinforce Spacesuit | +1 max HP | 50 minerals |
-| Upgrade Jet Boots | +30 px/s move speed **and** +25 max energy | 50 minerals |
-| Enhance Space Pickaxe | +3 mining power | 50 minerals |
-| Tune Space Whiskers | Larger sonar scan radius, lower energy cost per ping | 50 minerals |
+| Thicken Pelt | +1 max HP | 50 minerals |
+| Strengthen Paws | +30 px/s move speed **and** +25 max energy | 50 minerals |
+| Sharpen Claws | +3 mining power | 50 minerals |
+| Refine Whiskers | Larger sonar scan radius, lower energy cost per ping | 50 minerals |
 
 All tracks scale by +25 minerals per level; max level 10.
 
@@ -98,10 +98,10 @@ Five depth-milestone encounters, all defeated using the player's existing tools 
 | Boss | Depth Row | Mechanic |
 |------|-----------|----------|
 | Giant Rat King | 32 | Mine through segments to destroy the core |
-| Void Spider Matriarch | 64 | Mine web segments to reach the core |
+| Cave Spider Matriarch | 64 | Mine web segments to reach the core |
 | The Blind Mole | 96 | Dodge tremor AoE collapses, use warning overlay |
 | Stone Golem | 112 | Break armor phases by last-mining the required ore type |
-| The Ancient Star Beast | 128 | Three-phase final boss — stone shell, crystalline ring, regenerating core |
+| The Ancient Hound | 128 | Three-phase final boss — stone shell, crystalline ring, regenerating core |
 
 ---
 
