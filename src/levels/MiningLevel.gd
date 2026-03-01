@@ -1059,7 +1059,12 @@ func _check_exit_zone() -> void:
 # ---------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _game_over or shop_system.any_shop_open() or trader_system.shop_visible:
+	if _game_over:
+		return
+	if shop_system.any_shop_open() or trader_system.shop_visible:
+		if event.is_action_pressed("ui_cancel") and shop_system.any_shop_open():
+			shop_system.close_active_shop()
+			get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("toggle_inventory"):
 		if _inventory_screen:
