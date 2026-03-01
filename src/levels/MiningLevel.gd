@@ -684,25 +684,27 @@ func _draw() -> void:
 	var min_row: int = maxi(0,             int((cam_y - half_h) / float(CELL_SIZE)))
 	var max_row: int = mini(GRID_ROWS - 1, int((cam_y + half_h) / float(CELL_SIZE)))
 
-	# Background fills
+	# Background colours derived from the planet sprite's average pixel colour.
+	# sky_color is sampled by MapNode.get_average_pixel_color() on mine entry.
+	var sky_color: Color  = GameManager.sky_color
+	var surface_bg: Color = sky_color.darkened(0.75)  # planet-hued dark for shallow underground
+	var deep_bg: Color    = sky_color.darkened(0.96)  # near-black void with faint planet hue
 	if min_row < SURFACE_ROWS:
 		var sky_top := min_row * CELL_SIZE
 		var sky_bottom := mini(SURFACE_ROWS, max_row + 1) * CELL_SIZE
 		var bg_left: int = min_col * CELL_SIZE
 		var bg_width: int = (max_col - min_col + 1) * CELL_SIZE
-		draw_rect(Rect2(bg_left, sky_top, bg_width, sky_bottom - sky_top), GameManager.sky_color)
+		draw_rect(Rect2(bg_left, sky_top, bg_width, sky_bottom - sky_top), sky_color)
 	if max_row >= SURFACE_ROWS:
 		var dirt_top := maxi(min_row, SURFACE_ROWS) * CELL_SIZE
 		var dirt_bottom := (max_row + 1) * CELL_SIZE
 		var bg_left: int = min_col * CELL_SIZE
 		var bg_width: int = (max_col - min_col + 1) * CELL_SIZE
-		# Gradient background: sky-adjacent dark-blue/purple at surface → deep black-space at bottom.
+		# Gradient: planet-tinted dark near surface → near-black void at depth.
 		# Drawn as 32 horizontal strips in world space so the gradient persists across the whole map.
 		const GRAD_STRIPS: int = 32
 		var total_underground_h := float((GRID_ROWS - SURFACE_ROWS) * CELL_SIZE)
 		var strip_h := total_underground_h / float(GRAD_STRIPS)
-		var surface_bg := Color(0.10, 0.08, 0.18)   # dark blue-purple near the sky
-		var deep_bg    := Color(0.02, 0.01, 0.06)   # near-black deep space
 		for gi in range(GRAD_STRIPS):
 			var sw_top := float(SURFACE_ROWS * CELL_SIZE) + gi * strip_h
 			var sw_bot := sw_top + strip_h + 1.0

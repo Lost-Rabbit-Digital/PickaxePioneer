@@ -31,8 +31,9 @@ var allowed_ore_types: Array = []
 # Empty array means all hazards can spawn (default behaviour).
 var allowed_hazard_types: Array = []
 
-# Sky colour for the mining level — derived from the average pixel colour of the
-# selected mine node's planet sprite.  Defaults to the original hardcoded colour.
+# Sky colour for the mining level — sampled from the average pixel colour of the
+# selected mine node's planet sprite (set in Overworld._on_modal_confirmed).
+# MiningLevel._draw() uses it to tint the sky strip and underground gradient.
 var sky_color: Color = Color(0.40, 0.65, 0.90)
 
 # Energy system

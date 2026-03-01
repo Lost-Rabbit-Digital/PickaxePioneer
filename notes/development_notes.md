@@ -40,16 +40,39 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 
 ---
 
+## Next Public Update — Target Scope
+
+**"Cat Theme Launch" — v0.2**
+Everything the cat needs to feel like a cat, not an ant.
+
+**In scope (must ship together):**
+- [ ] Tasks 1.2–1.6: All in-game UI string updates (upgrade buttons, HUD labels, settlement consumable names, overworld modal text)
+- [ ] Task 2.1: Wandering Trader item name updates (Pelt Patch, etc.)
+- [ ] Task 2.2: Boss name banners in-game (Giant Rat King row 32, Void Spider Matriarch row 64, The Ancient Star Beast row 128)
+- [ ] Task 2.3: ForagerSystem — update any visible "forager ant" strings to "Scout Cat"
+- [ ] Planet color atmosphere tinting (done — merged)
+
+**Stretch (include if time allows):**
+- [ ] Task 4.1: Scout Cat visual upgrade — programmatic ear silhouette (Option A)
+- [ ] Task 4.2: FarmAnimalNPC cat-appropriate idle lines
+
+**Not in this update:**
+- Task 2.4 GameManager variable rename (safe to defer; no player-facing impact)
+- QuestManager integration (requires content)
+- StateMachine migration (refactor, not visible to players)
+
+---
+
 ## High Priority
 
 ### Core Gameplay Depth
 - [x] **Implement single Scout Cat companion** — follows player, auto-collects 40% of ore yield, returns to surface when carry capacity (30 minerals) is full, deposits directly to banked `mineral_currency` (safe from death). Rendered as amber circle with carry bar in MiningLevel._draw(). See docs/mining_game_design_lessons.md §3.4
 - [x] **Add underground boss encounters** — milestone rooms at specific depth rows. No separate combat system; defeated using existing mining tools. Energy drains 2.5× while a boss is alive; defeating one rewards 100 minerals + 30 energy. See docs/mining_game_design_lessons.md §4
   - *Giant Rat King (row 32):* [x] two-row horizontal body (12 segments + core); mine through the body to reach and destroy the core; energy pressure increases during encounter
-  - *Cave Spider Matriarch (row 64):* [x] diamond/cross pattern body spawned below player; mine segments to reach and destroy the core
+  - *Void Spider Matriarch (row 64):* [x] diamond/cross pattern body spawned below player; mine void-web segments to reach and destroy the core
   - *The Blind Mole (row 96):* [x] tremor AoE collapses nearby empty tiles; warning overlay telegraphs incoming tremor; brown screen-edge pulse on warning
   - *Stone Golem (row 112):* [x] three ore-phase armor (copper → iron → gold); resists damage until player last-mined the required ore; phase label drawn near core; ARMOR CRACKED banner on phase advance
-  - *The Ancient Hound (row 128):* [x] three-phase final boss — Phase 1: outer stone-shell ring (12 segments, teal); Phase 2: crystalline inner ring (8 segments, purple) with periodic void pulses that reseal mined tunnels; Phase 3: exposed core (white/gold) that regenerates every 8 s if not mined down quickly. 2× energy drain throughout.
+  - *The Ancient Star Beast (row 128):* [x] three-phase final boss — Phase 1: outer stone-shell ring (12 segments, teal); Phase 2: crystalline inner ring (8 segments, purple) with periodic void pulses that reseal mined tunnels; Phase 3: exposed core (white/gold) that regenerates every 8 s if not mined down quickly. 2× energy drain throughout.
 - [x] **Gem socketing system** — ORE_GEM/ORE_GEM_DEEP tiles now award 1–2 gem items immediately on mining (primary value; mineral yield reduced to 5/8). `GameManager.gem_count` tracks stockpile. Four permanent gem socket slots in UpgradeMenu (cost: 3 gems each): Fur Gem (+1 Max HP), Swift Paw Gem (+25 Energy, +15 Speed), Razor Claw Gem (+4 Mining Power), Whisker Gem (+3 Sonar Radius). Socketed bonuses apply via updated stat getters; saved/loaded with game data.
 - [x] **Develop Clowder passive skill tree** — Clowder Chamber system (see Medium Priority) provides the first tier of milestone-gated passive progression: 5 buildable rooms with distinct run-wide bonuses, each unlocked by a gameplay milestone. Gem socketing adds a second orthogonal layer (4 socket slots across upgrade tracks).
 
