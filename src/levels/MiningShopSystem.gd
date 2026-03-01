@@ -500,6 +500,10 @@ func _upgrade_buy_carapace() -> void:
 		GameManager.dollars -= cost
 		EventBus.dollars_changed.emit(GameManager.dollars)
 		GameManager.upgrade_carapace()
+		var player := get_tree().get_first_node_in_group("player")
+		if player:
+			player.health_component.max_health = GameManager.get_max_health()
+			EventBus.player_health_changed.emit(player.health_component.current_health, player.health_component.max_health)
 		SoundManager.play_drill_sound()
 		show_upgrade_station()
 
