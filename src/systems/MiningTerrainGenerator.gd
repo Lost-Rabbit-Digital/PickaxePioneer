@@ -285,6 +285,57 @@ func _place_ore_vein(spec: Dictionary) -> void:
 				_grid[place_col][row] = ore_tile
 
 # ---------------------------------------------------------------------------
+# Decoration placement — call after generate() to get decoration positions.
+# Returns a Dictionary with keys:
+#   "plants"         : Array[Vector2i]  — surface grass tiles to decorate
+#   "coral_floor"    : Array[Vector2i]  — cave floor tiles for coral
+#   "coral_ceiling"  : Array[Vector2i]  — cave ceiling tiles for coral (flipped)
+#   "webs"           : Array[Vector2i]  — cave positions for spider webs
+# ---------------------------------------------------------------------------
+
+const PLANT_CHANCE:          float = 0.35
+const CORAL_FLOOR_CHANCE:    float = 0.12
+const CORAL_CEILING_CHANCE:  float = 0.12
+const WEB_CHANCE:            float = 0.015
+
+func generate_decorations() -> Dictionary:
+	var plants:         Array[Vector2i] = []
+	var coral_floor:    Array[Vector2i] = []
+	var coral_ceiling:  Array[Vector2i] = []
+	var webs:           Array[Vector2i] = []
+
+	# Surface plants — one row of SURFACE_GRASS tiles
+	for col in range(_cols):
+		if _grid[col][_surface_rows] == T_SURFACE_GRASS:
+			if randf() < PLANT_CHANCE:
+				plants.append(Vector2i(col, _surface_rows))
+
+	# Underground decorations — scan all empty cells below the surface
+	for col in range(1, _cols - 1):
+		for row in range(_surface_rows + 4, _rows - 1):
+			if _grid[col][row] != T_EMPTY:
+				continue
+			var has_solid_below:  bool = _is_decoration_solid(_grid[col][row + 1])
+			var has_solid_above:  bool = _is_decoration_solid(_grid[col][row - 1])
+
+			if has_solid_below and randf() < CORAL_FLOOR_CHANCE:
+				coral_floor.append(Vector2i(col, row))
+			elif has_solid_above and randf() < CORAL_CEILING_CHANCE:
+				coral_ceiling.append(Vector2i(col, row))
+			elif randf() < WEB_CHANCE:
+				webs.append(Vector2i(col, row))
+
+	return {
+		"plants":        plants,
+		"coral_floor":   coral_floor,
+		"coral_ceiling": coral_ceiling,
+		"webs":          webs,
+	}
+
+func _is_decoration_solid(tile: int) -> bool:
+	return tile not in [T_EMPTY, T_LAVA, T_LAVA_FLOW, T_ENERGY_NODE, T_ENERGY_NODE_FULL]
+
+# ---------------------------------------------------------------------------
 # Depth-scaled ore helper (used by cave room edge seeding)
 # ---------------------------------------------------------------------------
 

@@ -57,6 +57,11 @@ const SPRINT_ENERGY_RATE: float = 2.0     # Energy units consumed per second whi
 var _sprinting: bool = false
 var _sprint_energy_accum: float = 0.0
 
+# Spider web slowdown — applied by MiningLevel when player touches a web
+const WEB_SLOW_MULT: float = 0.5          # Move at half speed while slowed
+const WEB_SLOW_DURATION: float = 2.0      # Seconds the slowdown lasts after web contact
+var _web_slow_timer: float = 0.0
+
 # Double jump
 var _double_jumped: bool = false
 
@@ -147,9 +152,14 @@ func _physics_process(delta: float) -> void:
 		if velocity.y > 0:
 			velocity.y = 0
 
+	# Web slowdown timer
+	if _web_slow_timer > 0.0:
+		_web_slow_timer -= delta
+
 	# Sprint — Shift held, burns energy, boosts horizontal speed
 	_sprinting = Input.is_action_pressed("sprint") and GameManager.current_energy > 0
-	var effective_speed := move_speed * (SPRINT_MULT if _sprinting else 1.0)
+	var web_mult := WEB_SLOW_MULT if _web_slow_timer > 0.0 else 1.0
+	var effective_speed := move_speed * (SPRINT_MULT if _sprinting else 1.0) * web_mult
 
 	# Horizontal movement
 	var direction := Input.get_axis("move_left", "move_right")
@@ -306,6 +316,10 @@ func set_prompt_position(screen_pos: Vector2) -> void:
 	if sz.x < 1.0:
 		sz = Vector2(320.0, 32.0)
 	interact_prompt.position = Vector2(screen_pos.x - sz.x * 0.5, screen_pos.y - sz.y - 4.0)
+
+# Spider web — called by MiningLevel when player contacts a web
+func apply_web_slow() -> void:
+	_web_slow_timer = WEB_SLOW_DURATION
 
 # Health
 func take_damage(amount: float) -> void:
