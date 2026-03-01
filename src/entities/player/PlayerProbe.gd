@@ -147,8 +147,8 @@ func _physics_process(delta: float) -> void:
 	var direction := Input.get_axis("move_left", "move_right")
 	velocity.x = direction * effective_speed
 
-	# Sprint energy drain (only while actually moving)
-	if _sprinting and abs(direction) > 0.1:
+	# Sprint energy drain (only while actually moving and underground)
+	if _sprinting and abs(direction) > 0.1 and get_depth_row() > 0:
 		_sprint_energy_accum += SPRINT_ENERGY_RATE * delta
 		if _sprint_energy_accum >= 1.0:
 			var to_consume := int(_sprint_energy_accum)
