@@ -6,7 +6,7 @@ description: Implement a boss fight with multi-phase mechanics
 
 Create a boss fight for Pickaxe Pioneer with multiple phases and unique mechanics.
 
-> **Game context:** The player character is a **mining cat** from the **Clowder** civilization. Upgrades are Pelt (HP), Paws (speed/fuel), Claws (mining power), and Whiskers (sonar). The companion is the **Scout Cat**. Bosses should fit a cat-vs-underground-menace theme. Existing bosses: Giant Rat King (row 32), Cave Spider Matriarch (row 64), Blind Mole (row 96), Stone Golem (row 112), The Ancient Hound (row 128). Use cat terminology in all names, banners, and flavor text.
+> **Game context:** The player character is a **mining cat** from the **Clowder** civilization. Upgrades are Pelt (HP), Paws (speed/energy), Claws (mining power), and Whiskers (sonar). The companion is the **Scout Cat**. Bosses should fit a cat-vs-underground-menace theme. Existing bosses: Giant Rat King (row 32), Cave Spider Matriarch (row 64), Blind Mole (row 96), Stone Golem (row 112), The Ancient Hound (row 128). Use cat terminology in all names, banners, and flavor text.
 
 ## Boss Details
 - **Name:** [e.g., "The Scrap King"]

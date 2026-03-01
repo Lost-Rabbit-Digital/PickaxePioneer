@@ -4,7 +4,7 @@ extends Node2D
 # Player is a CharacterBody2D that moves freely with gravity/jumping.
 # Terrain is a grid rendered via _draw() with collision provided by a TileMapLayer.
 # Mining is cursor-based: click to mine space rocks and asteroids within range.
-# Fuel drains over time while in deep space (faster at distance).
+# Energy drains over time while in deep space (faster at distance).
 
 const GRID_COLS: int = 96
 const GRID_ROWS: int = 128
@@ -60,13 +60,13 @@ const TILE_NAMES: Dictionary = {
 	TileType.ORE_GOLD_DEEP:   "Deep Star Gold",
 	TileType.ORE_GEM:         "Cosmic Gem",
 	TileType.ORE_GEM_DEEP:    "Deep Cosmic Gem",
-	TileType.ENERGY_NODE:       "Fuel Cell",
-	TileType.ENERGY_NODE_FULL:  "Fuel Cell",
+	TileType.ENERGY_NODE:       "Energy Cell",
+	TileType.ENERGY_NODE_FULL:  "Energy Cell",
 	TileType.EXPLOSIVE:       "Space Mine",
 	TileType.EXPLOSIVE_ARMED: "Armed Space Mine",
 	TileType.LAVA:            "Plasma",
 	TileType.LAVA_FLOW:       "Plasma Stream",
-	TileType.REENERGY_STATION:  "Refueling Dock",
+	TileType.REENERGY_STATION:  "Recharging Station",
 	TileType.SURFACE:         "Launchpad",
 	TileType.EXIT_STATION:    "Airlock",
 	TileType.BOSS_SEGMENT:    "Boss Segment",
@@ -1411,7 +1411,7 @@ func _on_out_of_energy() -> void:
 	if _game_over:
 		return
 	_game_over = true
-	_show_game_over_overlay("OUT OF FUEL", "Run stardust has been lost...")
+	_show_game_over_overlay("OUT OF ENERGY", "Run stardust has been lost...")
 	await get_tree().create_timer(2.5).timeout
 	GameManager.lose_run()
 
@@ -1783,7 +1783,7 @@ func _try_place_ladder_at(gp: Vector2i) -> void:
 	if not player_node:
 		return
 	if GameManager.ladder_count <= 0:
-		EventBus.ore_mined_popup.emit(0, "No ladders! Buy packs at the Refueling Dock.")
+		EventBus.ore_mined_popup.emit(0, "No ladders! Buy packs at the Recharging Station.")
 		return
 	if gp.x < 0 or gp.x >= GRID_COLS or gp.y < 0 or gp.y >= GRID_ROWS:
 		EventBus.ore_mined_popup.emit(0, "Aim the cursor at an empty tile to place a ladder.")

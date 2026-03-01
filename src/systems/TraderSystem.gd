@@ -12,7 +12,7 @@ const TRADER_MAX_PER_RUN: int      = 3
 const TRADER_INTERACT_RADIUS: float = 128.0
 
 const TRADER_ITEMS: Array = [
-	{"key": "energy",   "label": "Fuel Cell Cache",    "desc": "+50 Fuel",                  "cost": 12, "tier": 1},
+	{"key": "energy",   "label": "Energy Cell Cache",   "desc": "+50 Energy",                "cost": 12, "tier": 1},
 	{"key": "repair",   "label": "Spacesuit Patch",    "desc": "Restore 1 HP",              "cost": 18, "tier": 1},
 	{"key": "shroom",   "label": "Astro Shroom",       "desc": "Next 12 ores yield +100%",  "cost": 30, "tier": 2},
 	{"key": "compass",  "label": "Lucky Star Chart",   "desc": "2× Lucky Strike (run)",     "cost": 45, "tier": 3},
@@ -207,7 +207,7 @@ func _purchase(item_key: String) -> void:
 		"energy":
 			GameManager.run_mineral_currency -= cost
 			GameManager.restore_energy(50)
-			EventBus.ore_mined_popup.emit(0, "Fuel Cell Pack!")
+			EventBus.ore_mined_popup.emit(0, "Energy Cell Pack!")
 		"repair":
 			if _player_node and _player_node.is_at_max_health():
 				EventBus.ore_mined_popup.emit(0, "Already at full HP")

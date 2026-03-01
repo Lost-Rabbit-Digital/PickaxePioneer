@@ -313,7 +313,7 @@ func _spawn_giant_rat_king(player_col: int) -> void:
 	_show_banner.call("GIANT SPACE RAT AWAKENS!", Color(0.90, 0.10, 0.05))
 	EventBus.boss_hint_popup.emit("Boss! Watch for charge attacks!")
 	_shake_camera.call(8.0, 0.4)
-	_pending_hints = ["Watch for CHARGE warnings — dodge the debris!", "Click each glowing tile to chip away at it!", "Defeat the boss to restore fuel!"]
+	_pending_hints = ["Watch for CHARGE warnings — dodge the debris!", "Click each glowing tile to chip away at it!", "Defeat the boss to restore energy!"]
 
 
 func _spawn_cave_spider_matriarch(player_col: int) -> void:
@@ -342,7 +342,7 @@ func _spawn_cave_spider_matriarch(player_col: int) -> void:
 	_show_banner.call("VOID SPIDER MATRIARCH!", Color(0.60, 0.10, 0.80))
 	EventBus.boss_hint_popup.emit("Boss! Beware of web traps!")
 	_shake_camera.call(8.0, 0.4)
-	_pending_hints = ["Watch for WEB warnings — move before you're trapped!", "Click each glowing segment to chip away at it!", "Defeat the boss to restore fuel!"]
+	_pending_hints = ["Watch for WEB warnings — move before you're trapped!", "Click each glowing segment to chip away at it!", "Defeat the boss to restore energy!"]
 
 
 func _spawn_blind_mole(player_col: int) -> void:
@@ -376,7 +376,7 @@ func _spawn_blind_mole(player_col: int) -> void:
 	_show_banner.call("THE COSMIC MOLE STIRS!", Color(0.55, 0.35, 0.85))
 	EventBus.boss_hint_popup.emit("Boss! Mine all segments to defeat it!")
 	_shake_camera.call(12.0, 0.6)
-	_pending_hints = ["Watch for TREMOR warnings — get clear!", "Tremors seal mined passages around the boss!", "Defeat the boss to restore fuel!"]
+	_pending_hints = ["Watch for TREMOR warnings — get clear!", "Tremors seal mined passages around the boss!", "Defeat the boss to restore energy!"]
 
 
 func _spawn_stone_golem(player_col: int) -> void:
@@ -560,7 +560,7 @@ func _on_boss_defeated() -> void:
 	EventBus.ore_mined_popup.emit(BOSS_REWARD_BONUS, "Boss defeated!")
 	_show_banner.call("BOSS DEFEATED!", Color(0.30, 1.00, 0.40))
 	GameManager.restore_energy(50)
-	EventBus.ore_mined_popup.emit(50, "Fuel restored!")
+	EventBus.ore_mined_popup.emit(50, "Energy restored!")
 	_shake_camera.call(14.0, 0.6)
 
 

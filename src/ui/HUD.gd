@@ -1,7 +1,7 @@
 class_name HUD
 extends CanvasLayer
 
-# HUD — displays Ore Capacity (upper-left), health squares and fuel gauge (upper-right).
+# HUD — displays Ore Capacity (upper-left), health squares and energy gauge (upper-right).
 
 @onready var scrap_label: Label = $Control/ScrapLabel
 @onready var health_container: HBoxContainer = $Control/HealthContainer
@@ -90,7 +90,7 @@ const ORE_COLORS: Dictionary = {
 	"Deep Star Gold":    Color(0.70, 0.65, 0.90),
 	"Cosmic Gem":        Color(0.20, 0.90, 0.95),
 	"Deep Cosmic Gem":   Color(0.10, 0.80, 0.85),
-	"Fuel Cell":         Color(0.20, 0.80, 0.90),
+	"Energy Cell":       Color(0.20, 0.80, 0.90),
 	"LUCKY!":            Color(1.0,  1.0,  0.30),   # Bright yellow for lucky double-strikes
 	"Discovery!":        Color(0.20, 0.90, 0.90),   # Teal for first zone visit
 	"Streak!":           Color(1.0,  0.60, 0.10),   # Orange for consecutive dig milestones
@@ -103,10 +103,10 @@ const ORE_COLORS: Dictionary = {
 	"Cosmic Steel!":     Color(0.80, 0.65, 0.95),
 	"Stardust Blend!":   Color(0.85, 0.75, 0.60),
 	# Scanner / system notifications
-	"No fuel for scan":       Color(0.80, 0.20, 0.10),
+	"No energy for ping":     Color(0.80, 0.20, 0.10),
 	# Space Trader events
 	"Space Trader!":         Color(1.00, 0.75, 0.10),
-	"Fuel Cell Pack!":       Color(0.20, 0.80, 0.90),
+	"Energy Cell Pack!":     Color(0.20, 0.80, 0.90),
 	"Spacesuit Patched!":    Color(0.85, 0.08, 0.08),
 	"Astro Shroom!":         Color(0.50, 0.90, 0.20),
 	"Lucky Star Chart!":     Color(1.00, 0.90, 0.10),
@@ -234,7 +234,7 @@ func _ready() -> void:
 	_low_energy_warning = Label.new()
 	_low_energy_warning.position = Vector2(540, 656)
 	_low_energy_warning.custom_minimum_size = Vector2(200, 28)
-	_low_energy_warning.text = "! LOW FUEL !"
+	_low_energy_warning.text = "! LOW ENERGY !"
 	_low_energy_warning.modulate = Color(1.0, 0.2, 0.1, 0.0)  # Red, starts invisible
 	_low_energy_warning.add_theme_font_size_override("font_size", 18)
 	$Control.add_child(_low_energy_warning)
@@ -444,7 +444,7 @@ func _on_depth_changed(depth_rows: int) -> void:
 			_next_milestone += 20
 
 func _on_energy_changed(current_energy: int, max_energy: int) -> void:
-	energy_label.text = "Fuel: %d/%d" % [current_energy, max_energy]
+	energy_label.text = "Energy: %d/%d" % [current_energy, max_energy]
 
 	var energy_ratio := float(current_energy) / float(max_energy)
 	var is_low_energy := current_energy > 0 and energy_ratio <= 0.2

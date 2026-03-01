@@ -89,7 +89,7 @@ func _update_ui() -> void:
 
 	var current_energy_cap := GameManager.get_max_energy()
 	var current_speed := GameManager.get_max_speed()
-	engine_button.text = "Upgrade Jet Boots Lv%d — Fuel: %d→%d, Speed: %.0f→%.0f (%d Minerals)" % [
+	engine_button.text = "Upgrade Jet Boots Lv%d — Energy: %d→%d, Speed: %.0f→%.0f (%d Minerals)" % [
 		GameManager.legs_level, current_energy_cap, current_energy_cap + 25,
 		current_speed, current_speed + 30.0, legs_cost
 	]
@@ -104,7 +104,7 @@ func _update_ui() -> void:
 	var sense_radius_next := sense_radius + 3.0
 	var sense_energy := GameManager.get_sonar_ping_energy_cost()
 	var sense_energy_next := maxi(3, sense_energy - 2)
-	_sense_button.text = "Tune Space Whiskers (Scanner) Lv%d — Radius: %.0f→%.0f tiles, Fuel: %d→%d (%d Minerals)" % [
+	_sense_button.text = "Tune Space Whiskers (Scanner) Lv%d — Radius: %.0f→%.0f tiles, Energy: %d→%d (%d Minerals)" % [
 		sense_level, sense_radius, sense_radius_next, sense_energy, sense_energy_next, mineral_sense_cost
 	]
 
@@ -120,10 +120,10 @@ func _update_ui() -> void:
 		_gem_carapace_button.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
 
 	if GameManager.legs_gem_socketed:
-		_gem_legs_button.text = "[SOCKETED] Booster Gem — +25 Max Fuel, +15 Speed"
+		_gem_legs_button.text = "[SOCKETED] Booster Gem — +25 Max Energy, +15 Speed"
 		_gem_legs_button.disabled = true
 	else:
-		_gem_legs_button.text = "Socket Booster Gem into Jet Boots — +25 Fuel, +15 Speed (%d Gems)" % GameManager.GEM_SOCKET_COST
+		_gem_legs_button.text = "Socket Booster Gem into Jet Boots — +25 Energy, +15 Speed (%d Gems)" % GameManager.GEM_SOCKET_COST
 		_gem_legs_button.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
 
 	if GameManager.mandibles_gem_socketed:

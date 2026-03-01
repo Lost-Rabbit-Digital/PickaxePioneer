@@ -6,7 +6,7 @@ description: Create a new zone/biome with procedural generation templates
 
 Create a complete zone for Pickaxe Pioneer with unique visuals, enemies, and procedural generation.
 
-> **Game context:** The player is a **mining cat** from the **Clowder**. Zone names and flavor text should fit a cat-civilization theme. Upgrade tracks are: Pelt (HP), Paws (fuel/speed), Claws (mining power), Whiskers (sonar). Use cat terminology throughout; avoid ant/colony/queen/carapace/mandible.
+> **Game context:** The player is a **mining cat** from the **Clowder**. Zone names and flavor text should fit a cat-civilization theme. Upgrade tracks are: Pelt (HP), Paws (energy/speed), Claws (mining power), Whiskers (sonar). Use cat terminology throughout; avoid ant/colony/queen/carapace/mandible.
 
 ## Zone Details
 - **Zone Number:** [1-6]
