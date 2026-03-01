@@ -36,7 +36,7 @@ var _descending_ladder: bool = false
 # Fall damage tracking
 var _fall_start_y: float = 0.0
 var _is_falling: bool = false
-const FALL_DAMAGE_THRESHOLD: int = 6 * CELL_SIZE  # 3 tiles in pixels (192px)
+const FALL_DAMAGE_THRESHOLD: int = 12 * CELL_SIZE  # 3 tiles in pixels (192px)
 
 @onready var health_component: HealthComponent = $HealthComponent
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
