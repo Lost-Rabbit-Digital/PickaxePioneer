@@ -34,10 +34,6 @@ var dollars_label: Label
 var dollars_panel: ColorRect
 var _earnings_tween: Tween
 
-# Ladder count indicator — upper-left, visible when player has ladders (F to place)
-var _ladder_panel: ColorRect
-var _ladder_label: Label
-
 # Boss hint notification — bottom-centre, larger and persistent, with a queue
 # so rapid hints (spawn warning + queued hints) don't overwrite each other.
 var _boss_hint_label: Label
@@ -77,7 +73,8 @@ const HOTBAR_PICKAXE_TEXTURES: Array = [
 ]
 var _hotbar_slots: Array[PanelContainer] = []
 var _hotbar_styles: Array[StyleBoxFlat] = []  # One StyleBoxFlat per slot for border recolouring
-var _hotbar_ladder_icon: Control  # Ladder slot content — shown/hidden based on ladder count
+var _hotbar_ladder_icon: Control       # Ladder slot content — shown/hidden based on ladder count
+var _hotbar_ladder_count_label: Label  # Small count badge on the ladder hotbar slot
 var _hotbar_container: HBoxContainer  # Root container for the hotbar strip
 
 # Ore colour mapping for the earnings popup
@@ -192,22 +189,6 @@ func _ready() -> void:
 	dollars_label.text = "$%d" % GameManager.dollars
 	dollars_label.modulate = Color(0.30, 1.0, 0.40, 1.0)  # Green tint
 	$Control.add_child(dollars_label)
-
-	# Ladder count indicator — shown below dollars when the player has ladders.
-	# Keeps the player aware of their inventory without cluttering the screen.
-	_ladder_panel = ColorRect.new()
-	_ladder_panel.color = Color(0.0, 0.0, 0.0, 0.45)
-	_ladder_panel.position = Vector2(8, 136)
-	_ladder_panel.size = Vector2(148, 28)
-	_ladder_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	$Control.add_child(_ladder_panel)
-
-	_ladder_label = Label.new()
-	_ladder_label.position = Vector2(12, 140)
-	_ladder_label.custom_minimum_size = Vector2(136, 20)
-	_ladder_label.modulate = Color(0.85, 0.65, 0.20, 1.0)  # Warm gold tint
-	_ladder_label.add_theme_font_size_override("font_size", 13)
-	$Control.add_child(_ladder_label)
 
 	_update_ladder_display(GameManager.ladder_count)
 
@@ -532,14 +513,8 @@ func _on_ladder_count_changed(count: int) -> void:
 	_update_ladder_display(count)
 
 func _update_ladder_display(count: int) -> void:
-	if count > 0:
-		_ladder_label.text = "Ladders: %d  [RMB / F]" % count
-		_ladder_label.modulate.a = 1.0
-		_ladder_panel.modulate.a = 1.0
-	else:
-		_ladder_label.modulate.a = 0.0
-		_ladder_panel.modulate.a = 0.0
-	# Sync hotbar ladder slot icon visibility
+	if _hotbar_ladder_count_label:
+		_hotbar_ladder_count_label.text = str(count)
 	if _hotbar_ladder_icon:
 		_hotbar_ladder_icon.visible = count > 0
 
@@ -664,6 +639,17 @@ func _build_hotbar() -> void:
 				rung.size = Vector2(28, 4)
 				rung.mouse_filter = Control.MOUSE_FILTER_IGNORE
 				_hotbar_ladder_icon.add_child(rung)
+
+			# Count badge — small label in the bottom-right of the ladder icon
+			_hotbar_ladder_count_label = Label.new()
+			_hotbar_ladder_count_label.text = str(GameManager.ladder_count)
+			_hotbar_ladder_count_label.add_theme_font_size_override("font_size", 10)
+			_hotbar_ladder_count_label.modulate = Color(1.0, 1.0, 1.0, 0.95)
+			_hotbar_ladder_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			_hotbar_ladder_count_label.position = Vector2(18, 30)
+			_hotbar_ladder_count_label.custom_minimum_size = Vector2(20, 10)
+			_hotbar_ladder_count_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_hotbar_ladder_icon.add_child(_hotbar_ladder_count_label)
 
 			# Only visible when the player has at least one ladder
 			_hotbar_ladder_icon.visible = GameManager.ladder_count > 0
