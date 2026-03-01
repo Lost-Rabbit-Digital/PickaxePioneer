@@ -690,7 +690,7 @@ func _draw() -> void:
 		var sky_bottom := mini(SURFACE_ROWS, max_row + 1) * CELL_SIZE
 		var bg_left: int = min_col * CELL_SIZE
 		var bg_width: int = (max_col - min_col + 1) * CELL_SIZE
-		draw_rect(Rect2(bg_left, sky_top, bg_width, sky_bottom - sky_top), Color(0.40, 0.65, 0.90))
+		draw_rect(Rect2(bg_left, sky_top, bg_width, sky_bottom - sky_top), GameManager.sky_color)
 	if max_row >= SURFACE_ROWS:
 		var dirt_top := maxi(min_row, SURFACE_ROWS) * CELL_SIZE
 		var dirt_bottom := (max_row + 1) * CELL_SIZE
