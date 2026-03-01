@@ -289,16 +289,16 @@ func set_prompt_position(screen_pos: Vector2) -> void:
 	interact_prompt.position = Vector2(screen_pos.x - sz.x * 0.5, screen_pos.y - sz.y - 4.0)
 
 # Health
-func take_damage(amount: int) -> void:
+func take_damage(amount: float) -> void:
 	health_component.damage(amount)
 
 func heal(amount: int) -> void:
 	health_component.heal(amount)
 
 func is_at_max_health() -> bool:
-	return health_component.current_health >= health_component.max_health
+	return health_component.current_health >= float(health_component.max_health)
 
-func _on_health_changed(current: int, max_hp: int) -> void:
+func _on_health_changed(current: float, max_hp: int) -> void:
 	EventBus.player_health_changed.emit(current, max_hp)
 
 func _on_died() -> void:

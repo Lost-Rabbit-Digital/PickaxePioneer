@@ -373,10 +373,10 @@ func _update_health_bar_fills() -> void:
 			shine.size.y = minf(3.0, fill_h)
 			shine.position.y = float(HEALTH_BAR_H) - fill_h
 
-func _on_health_changed(current: int, max_hp: int) -> void:
+func _on_health_changed(current: float, max_hp: int) -> void:
 	# Rebuild bar nodes when count changes (first call or stat upgrade)
 	if health_bar_fills.size() != max_hp:
-		_displayed_health = float(current)
+		_displayed_health = current
 		_rebuild_health_bars(max_hp)
 		# Fall through to update low-HP warning below
 
@@ -385,16 +385,16 @@ func _on_health_changed(current: int, max_hp: int) -> void:
 		if _health_drain_tween:
 			_health_drain_tween.kill()
 
-		var is_healing := float(current) > _displayed_health
-		var bars_changing := absf(float(current) - _displayed_health)
+		var is_healing := current > _displayed_health
+		var bars_changing := absf(current - _displayed_health)
 		var speed := 0.15 if is_healing else 0.40
 		var duration := clampf(bars_changing * speed, 0.20, 1.0)
 
 		_health_drain_tween = create_tween()
-		_health_drain_tween.tween_method(_set_displayed_health, _displayed_health, float(current), duration)
+		_health_drain_tween.tween_method(_set_displayed_health, _displayed_health, current, duration)
 
 	# Flash danger warning when critically low HP
-	if current == 1:
+	if current <= 1.0:
 		if not _low_hp_tween or not _low_hp_tween.is_running():
 			_low_hp_tween = create_tween()
 			_low_hp_tween.set_loops()

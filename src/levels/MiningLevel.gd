@@ -86,6 +86,7 @@ const MINEABLE_TILES: Array = [
 	TileType.ORE_GOLD, TileType.ORE_GOLD_DEEP,
 	TileType.ORE_GEM, TileType.ORE_GEM_DEEP,
 	TileType.BOSS_SEGMENT, TileType.BOSS_CORE,
+	TileType.LAVA, TileType.LAVA_FLOW,
 ]
 
 const TILE_COLORS: Dictionary = {
@@ -162,6 +163,8 @@ const TILE_HP: Dictionary = {
 	TileType.ORE_GEM_DEEP:    32,
 	TileType.BOSS_SEGMENT:    14,
 	TileType.BOSS_CORE:       28,
+	TileType.LAVA:            6,
+	TileType.LAVA_FLOW:       6,
 }
 
 const TILE_MIN_HITS: Dictionary = {
@@ -180,6 +183,8 @@ const TILE_MIN_HITS: Dictionary = {
 	TileType.ORE_GEM_DEEP:    7,
 	TileType.BOSS_SEGMENT:    3,
 	TileType.BOSS_CORE:       5,
+	TileType.LAVA:            2,
+	TileType.LAVA_FLOW:       2,
 }
 
 const TILE_MINERALS: Dictionary = {
@@ -287,7 +292,7 @@ const SOLID_TILES: Array = [
 ]
 
 # Tiles that fall when the block below them is removed (gravity behaviour)
-const GRAVITY_TILES: Array = [TileType.STONE_DARK, TileType.DIRT_DARK]
+const GRAVITY_TILES: Array = [TileType.STONE_DARK, TileType.DIRT_DARK, TileType.LAVA, TileType.LAVA_FLOW]
 
 # Seconds between each row-step a gravity tile falls
 const GRAVITY_FALL_DELAY: float = 0.2
@@ -1135,10 +1140,6 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 		_explode_area(col, row)
 		return
 
-	# Lava — can't mine lava
-	if tile == TileType.LAVA or tile == TileType.LAVA_FLOW:
-		return
-
 	# Reenergy station / Exit station / Upgrade station / Smeltery / Tavern / Ladder — not mineable
 	if tile in [TileType.REENERGY_STATION, TileType.EXIT_STATION, TileType.UPGRADE_STATION,
 			TileType.SMELTERY_STATION, TileType.CAT_TAVERN, TileType.LADDER]:
@@ -1234,7 +1235,7 @@ func check_player_hazard(col: int, row: int) -> void:
 		return
 	var tile: int = grid[col][row]
 	if tile == TileType.LAVA or tile == TileType.LAVA_FLOW:
-		_damage_player(1)
+		_damage_player(0.5)
 		_hazard_cooldown = HAZARD_COOLDOWN_TIME
 	elif tile == TileType.EXPLOSIVE or tile == TileType.EXPLOSIVE_ARMED:
 		_mine_cell(col, row)
@@ -1386,7 +1387,7 @@ func _explode_area(center_col: int, center_row: int) -> void:
 		if abs(player_col - center_col) <= r and abs(player_row - center_row) <= r:
 			_damage_player(1)
 
-func _damage_player(amount: int) -> void:
+func _damage_player(amount: float) -> void:
 	if player_node and player_node.has_method("take_damage"):
 		player_node.take_damage(amount)
 		SoundManager.play_damage_sound()
