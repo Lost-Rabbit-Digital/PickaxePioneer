@@ -642,9 +642,18 @@ func _refresh_popup() -> void:
 			var last_node: String = summary.get("last_node", "")
 			if last_node != "":
 				lines += "  |  Last: %s" % last_node
+			lines += "  |  Playtime: %s" % _format_playtime(summary.get("playtime_seconds", 0.0))
 			btn.text = lines
 			btn.disabled = false
 			del_btn.visible = true
+
+func _format_playtime(seconds: float) -> String:
+	var total_minutes := int(seconds) / 60
+	var hours := total_minutes / 60
+	var minutes := total_minutes % 60
+	if hours > 0:
+		return "%dh %dm" % [hours, minutes]
+	return "%dm" % minutes
 
 func _on_slot_selected(index: int) -> void:
 	if _popup_mode == "new_game":
