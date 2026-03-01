@@ -1703,10 +1703,10 @@ func _setup_farm_animals() -> void:
 			spr.texture = tex
 			spr.hframes = 2
 			spr.frame = 0
-		npc.scale = Vector2(2.0, 2.0)
+		npc.scale = Vector2(4.0, 4.0)
 		npc.position = Vector2(
-			a["col"] * CELL_SIZE + CELL_SIZE * 0.5,
-			FARM_NPC_ROW * CELL_SIZE + CELL_SIZE * 0.5
+			a["col"] * CELL_SIZE + CELL_SIZE,
+			FARM_NPC_ROW * CELL_SIZE + CELL_SIZE - 16
 		)
 		npc.bounce_left = bounce_left
 		npc.bounce_right = bounce_right
