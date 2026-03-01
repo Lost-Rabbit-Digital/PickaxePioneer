@@ -1529,10 +1529,10 @@ func _explode_area(center_col: int, center_row: int) -> void:
 				_remove_breaking_overlay(Vector2i(nc, nr))
 				# Explosion may leave gravity tiles unsupported above cleared cells.
 				_trigger_gravity_above(nc, nr)
-	# Large explosion particle burst
-	var explosion_world := Vector2(center_col * CELL_SIZE + CELL_SIZE * 0.5, center_row * CELL_SIZE + CELL_SIZE * 0.5)
-	_spawn_mining_particles(explosion_world, Color(1.0, 0.55, 0.05), 28, 80.0, 280.0)
-	_spawn_mining_particles(explosion_world, Color(1.0, 0.90, 0.20, 0.8), 16, 50.0, 180.0)
+				# Particle burst at each cell so the explosion fills the full 3x3 area
+				var cell_world := Vector2(nc * CELL_SIZE + CELL_SIZE * 0.5, nr * CELL_SIZE + CELL_SIZE * 0.5)
+				_spawn_mining_particles(cell_world, Color(1.0, 0.55, 0.05), 4, 80.0, 280.0)
+				_spawn_mining_particles(cell_world, Color(1.0, 0.90, 0.20, 0.8), 2, 50.0, 180.0)
 	SoundManager.play_explosion_sound()
 	_shake_camera(6.0, 0.35)
 	if player_node:
