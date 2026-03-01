@@ -117,7 +117,20 @@ func setup(p_player_node: Node, p_cat_system: CatSystem) -> void:
 
 func any_shop_open() -> bool:
 	return hub_visible or energy_shop_visible or upgrade_station_visible \
-		or smeltery_visible or cat_tavern_visible
+		or smeltery_visible or cat_tavern_visible or _upgrade_overlay_layer != null
+
+
+func close_active_shop() -> void:
+	if smeltery_visible:
+		hide_smeltery()
+	elif energy_shop_visible:
+		hide_energy_shop()
+	elif upgrade_station_visible:
+		hide_upgrade_station()
+	elif cat_tavern_visible:
+		hide_cat_tavern()
+	elif _upgrade_overlay_layer != null:
+		_close_upgrade_overlay()
 
 
 # ---------------------------------------------------------------------------
