@@ -9,7 +9,7 @@ signal mining_started(node: Node)
 signal mining_finished(node: Node, success: bool)
 
 # Player Signals
-signal player_health_changed(new_health: int, max_health: int)
+signal player_health_changed(new_health: float, max_health: int)
 signal player_died
 signal inventory_updated(item_name: String, quantity: int)
 
