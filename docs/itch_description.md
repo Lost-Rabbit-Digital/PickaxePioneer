@@ -10,7 +10,7 @@
 ## Short Description (tagline field — 160 chars)
 
 ```
-Dig one row deeper. A cozy cat mining roguelite — energy is finite, the richest gems are always just below you, and the exit is far above.
+A cozy cat mining roguelite — energy is finite, the richest ores are always below you, and the exit is far above. Dig a bit deeper!
 ```
 
 ---
@@ -18,24 +18,21 @@ Dig one row deeper. A cozy cat mining roguelite — energy is finite, the riches
 ## Full Description (HTML for itch.io editor)
 
 ```html
-<p><strong>One more row. Always one more row.</strong></p>
-
 <p>
   <em>Pickaxe Pioneer</em> is a cozy 2D mining roguelite about a colony of cats — the Clowder —
-  scratching their way deeper into the earth in search of rare gems, buried fossils, and enough
+  scratching their way deeper into the earth in search of rare ores, buried fossils, and enough
   riches to keep the colony alive. Your energy is finite. The ore is richest at the bottom.
-  The exit is a long way above you.
 </p>
 
 <p>
   <em>
-    If you lost hours to Motherload or Super Motherload wondering what's one row deeper,
-    or you love the chill between-run progression of Stardew Valley —
+    If you lost hours to Motherload wondering what's deeper and the thrill of running out of fuel near the surface,
+    or you love the chill between-run progression of Coal LLC —
     Pickaxe Pioneer is built for you.
   </em>
 </p>
 
-<h2>⛏️ The Loop</h2>
+<h2>The Loop</h2>
 <p>
   Choose a mine from your overworld warren. Descend into a procedurally generated 128-row shaft.
   Mine ore with your cursor — richer veins wait deeper, but every underground tile costs a
@@ -44,7 +41,7 @@ Dig one row deeper. A cozy cat mining roguelite — energy is finite, the riches
   Clowder upgrades. Head back down — a little deeper this time.
 </p>
 
-<h2>✨ Features</h2>
+<h2>Features</h2>
 <ul>
   <li>
     <strong>Procedural mines</strong> — every run is unique, with depth-weighted ore distribution,
@@ -90,7 +87,7 @@ Dig one row deeper. A cozy cat mining roguelite — energy is finite, the riches
   </li>
 </ul>
 
-<h2>🐱 The Clowder</h2>
+<h2> The Clowder</h2>
 <p>
   Between runs you return to the Clowder — your feline civilization's hub. Amber-lit tunnels,
   idle colony cats, and the quiet satisfaction of upgrading your kit with a hard-earned haul.
@@ -111,7 +108,7 @@ Dig one row deeper. A cozy cat mining roguelite — energy is finite, the riches
   <li><strong>Pause:</strong> Esc</li>
 </ul>
 
-<h2>🖼️ Art &amp; Sound</h2>
+<h2>Art &amp; Sound</h2>
 <p>
   Pixel art visuals built on the <strong>Comfy52 palette</strong>. The mine shifts from warm soil
   browns near the surface through cool stone greys and glowing copper veins to deep purples and
@@ -119,7 +116,7 @@ Dig one row deeper. A cozy cat mining roguelite — energy is finite, the riches
   appears.
 </p>
 
-<h2>🚧 Early Access</h2>
+<h2>Early Access</h2>
 <p>
   Pickaxe Pioneer is in active early access development by <strong>Lost Rabbit Digital</strong>.
   Core gameplay, all five boss encounters, gem socketing, and Colony Chambers are playable now.
@@ -127,13 +124,13 @@ Dig one row deeper. A cozy cat mining roguelite — energy is finite, the riches
   Follow or wishlist to stay updated — and your feedback genuinely shapes what gets built next.
 </p>
 
-<h2>☕ Support the Dev</h2>
+<h2>Support the Developers</h2>
 <p>
   Pickaxe Pioneer is a passion project from a small indie team. If you enjoy it and want to help
   keep the lights on and the digging going, a Ko-fi tip means the world.
 </p>
 <p>
-  <a href="https://ko-fi.com/[YOUR-KO-FI-HANDLE]">☕ Support Lost Rabbit Digital on Ko-fi</a>
+  <a href="https://ko-fi.com/lostrabbitdigital">Support Lost Rabbit Digital on Ko-fi</a>
 </p>
 ```
 
