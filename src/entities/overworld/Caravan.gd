@@ -21,6 +21,7 @@ var _wiggle_time: float = 0.0
 var _orbit_time: float = 0.0
 var _travel_direction: Vector2 = Vector2.ZERO
 var _waypoints_remaining: Array[Vector2] = []
+var _current_map_node: MapNode = null
 
 signal arrived
 
@@ -38,9 +39,14 @@ func _process(delta: float) -> void:
 	else:
 		_wiggle_time = 0.0
 		_orbit_time += delta
-		# Half size and orbit slowly around the node
+		# Half size and orbit slowly around the node; scale radius to match planet size
+		var node_scale := _current_map_node.sprite.scale.x if _current_map_node else 1.0
+		var effective_radius := orbit_radius * node_scale
 		sprite.scale = Vector2(orbit_scale, orbit_scale)
-		sprite.position = Vector2(cos(_orbit_time * orbit_speed * TAU), sin(_orbit_time * orbit_speed * TAU)) * orbit_radius
+		sprite.position = Vector2(cos(_orbit_time * orbit_speed * TAU), sin(_orbit_time * orbit_speed * TAU)) * effective_radius
+
+func set_map_node(node: MapNode) -> void:
+	_current_map_node = node
 
 func move_to(pos: Vector2) -> void:
 	move_along_path([pos])
