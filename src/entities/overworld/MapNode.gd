@@ -71,6 +71,41 @@ func highlight(active: bool) -> void:
 
 	_update_label_position()
 
+func get_average_pixel_color() -> Color:
+	# Sample every non-transparent pixel from the current sprite frame and return
+	# their average RGB colour.  The AtlasTexture for each frame covers a 64×64
+	# region of the planets spritesheet, so we crop to that region explicitly.
+	var texture: Texture2D = sprite.sprite_frames.get_frame_texture("default", sprite.frame)
+	if texture == null:
+		return Color.WHITE
+
+	var image: Image
+	if texture is AtlasTexture:
+		var atlas_img: Image = texture.atlas.get_image()
+		image = atlas_img.get_region(Rect2i(texture.region))
+	else:
+		image = texture.get_image()
+
+	if image == null or image.is_empty():
+		return Color.WHITE
+
+	var total_r := 0.0
+	var total_g := 0.0
+	var total_b := 0.0
+	var count := 0
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
+			var px: Color = image.get_pixel(x, y)
+			if px.a > 0.1:
+				total_r += px.r
+				total_g += px.g
+				total_b += px.b
+				count += 1
+
+	if count == 0:
+		return Color.WHITE
+	return Color(total_r / count, total_g / count, total_b / count)
+
 func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		node_clicked.emit(self)
