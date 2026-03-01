@@ -57,6 +57,9 @@ const SPRINT_ENERGY_RATE: float = 4.0     # Energy units consumed per second whi
 var _sprinting: bool = false
 var _sprint_energy_accum: float = 0.0
 
+# Double jump
+var _double_jumped: bool = false
+
 # --- Particle system (walking dust + landing poof) ---
 const PARTICLE_FEET_Y: float = 26.0        # Offset below player center to feet
 const PARTICLE_MAX: int = 80               # Max simultaneous particles
@@ -170,12 +173,20 @@ func _physics_process(delta: float) -> void:
 		_facing_left = true
 		sprite.flip_h = true
 
+	# Reset double jump when grounded or on a ladder
+	if is_on_floor() or on_ladder:
+		_double_jumped = false
+
 	# Jump from floor or release from ladder — Space jumps/launches in both cases.
 	if Input.is_action_just_pressed("jump"):
 		if is_on_floor():
 			velocity.y = jump_velocity
 		elif on_ladder:
 			velocity.y = jump_velocity  # Jump releases the player from the ladder
+		elif not _double_jumped:
+			velocity.y = jump_velocity  # Double jump
+			_double_jumped = true
+			_spawn_poof()
 
 	var pre_vel_y := velocity.y
 	move_and_slide()
