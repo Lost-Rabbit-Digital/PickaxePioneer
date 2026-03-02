@@ -13,6 +13,7 @@ var fade_duration: float = 1.5
 var _tracks: Array[AudioStream] = []
 var _order: Array[int] = []
 var _index: int = -1
+var _paused: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -76,6 +77,39 @@ func _crossfade_to(stream: AudioStream) -> void:
 
 	tween.tween_property(new_player, "volume_db", 0.0, fade_duration)
 	current_player = new_player
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("music_prev"):
+		prev_song()
+	elif event.is_action_pressed("music_next"):
+		next_song()
+	elif event.is_action_pressed("music_toggle"):
+		toggle_pause()
+
+func prev_song() -> void:
+	if _tracks.is_empty():
+		return
+	_paused = false
+	if current_player and current_player.get_playback_position() > 3.0:
+		current_player.stream_paused = false
+		current_player.seek(0.0)
+		print("[MusicManager] Restarting current track")
+		return
+	_index = ((_index - 1 + _order.size()) % _order.size()) - 1
+	_play_next()
+
+func next_song() -> void:
+	if _tracks.is_empty():
+		return
+	_paused = false
+	_play_next()
+
+func toggle_pause() -> void:
+	if not current_player:
+		return
+	_paused = not _paused
+	current_player.stream_paused = _paused
+	print("[MusicManager] ", "Paused" if _paused else "Resumed")
 
 func _on_song_finished(player: AudioStreamPlayer) -> void:
 	if player == current_player:
