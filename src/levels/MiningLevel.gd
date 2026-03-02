@@ -547,9 +547,15 @@ func _ready() -> void:
 	_setup_customization_menu()
 	queue_redraw()
 
-	# Co-op: spawn second player and set up authorities before the cinematic runs
+	# Co-op: spawn second player and assign authorities.
+	# On the host machine, guest_peer_id may be -1 if the guest hasn't connected yet
+	# (drop-in scenario). In that case, defer setup until the guest actually arrives.
 	if NetworkManager.is_multiplayer_session:
-		_setup_multiplayer_players()
+		if not NetworkManager.is_host or NetworkManager.guest_peer_id > 0:
+			_setup_multiplayer_players()
+		else:
+			# Host is in the mine but guest hasn't joined yet — wait for them.
+			NetworkManager.guest_connected.connect(_on_guest_late_joined, CONNECT_ONE_SHOT)
 
 	# Kick off the spaceship entry cinematic (hides player until ship deposits them)
 	player_node.visible = false
@@ -625,6 +631,11 @@ func _show_kit_bonus_banner() -> void:
 
 func _on_coop_peer_disconnected() -> void:
 	_show_zone_banner("PARTNER DISCONNECTED", Color(1.0, 0.4, 0.2), -1)
+
+## Called when a guest connects after the host's MiningLevel is already running.
+## Sets up the second player node now that we have a valid guest peer ID.
+func _on_guest_late_joined(_peer_id: int) -> void:
+	_setup_multiplayer_players()
 
 # ---------------------------------------------------------------------------
 # Collision TileMapLayer setup
