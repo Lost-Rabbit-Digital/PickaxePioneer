@@ -2014,17 +2014,26 @@ func _setup_farm_animals() -> void:
 	var npc_scene := load("res://src/entities/npcs/FarmAnimalNPC.tscn") as PackedScene
 	if not npc_scene:
 		return
-	var animals := [
-		{"name": "Chicken", "texture_path": "res://assets/creatures/chicken_spritesheet.png", "col": 4},
-		{"name": "Sheep",   "texture_path": "res://assets/creatures/sheep_spritesheet.png",   "col": 8},
-		{"name": "Pig",     "texture_path": "res://assets/creatures/pig_spritesheet.png",     "col": 12},
+	var all_animal_types := [
+		{"name": "Chicken", "texture_path": "res://assets/creatures/chicken_spritesheet.png"},
+		{"name": "Sheep",   "texture_path": "res://assets/creatures/sheep_spritesheet.png"},
+		{"name": "Pig",     "texture_path": "res://assets/creatures/pig_spritesheet.png"},
 	]
+	# Pick one animal type for this entire planet
+	var chosen := all_animal_types[randi() % all_animal_types.size()]
+	var tex := load(chosen["texture_path"]) as Texture2D
+	# Randomise count between 2 and 5 NPCs
+	var count := randi_range(2, 5)
 	var bounce_left := 1.0 * CELL_SIZE
 	var bounce_right := 20.0 * CELL_SIZE
-	for a in animals:
+	# Build a pool of valid surface columns and shuffle them for unique spread
+	var col_pool: Array[int] = []
+	for c in range(2, 94):
+		col_pool.append(c)
+	col_pool.shuffle()
+	for i in count:
 		var npc := npc_scene.instantiate() as FarmAnimalNPC
-		npc.animal_name = a["name"]
-		var tex := load(a["texture_path"]) as Texture2D
+		npc.animal_name = chosen["name"]
 		if tex:
 			var spr := npc.get_node("Sprite2D") as Sprite2D
 			spr.texture = tex
@@ -2032,7 +2041,7 @@ func _setup_farm_animals() -> void:
 			spr.frame = 0
 		npc.scale = Vector2(4.0, 4.0)
 		npc.position = Vector2(
-			a["col"] * CELL_SIZE + CELL_SIZE,
+			col_pool[i] * CELL_SIZE + CELL_SIZE,
 			FARM_NPC_ROW * CELL_SIZE + CELL_SIZE - 16
 		)
 		npc.bounce_left = bounce_left
