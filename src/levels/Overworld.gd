@@ -124,7 +124,25 @@ func _ready() -> void:
 	caravan.set_map_node(current_node)
 	current_node.highlight(true)
 
+	# In co-op, show a banner reminding the guest they can only watch
+	if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
+		_show_coop_guest_banner()
+
 	queue_redraw()
+
+func _show_coop_guest_banner() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 20
+	add_child(layer)
+	var lbl := Label.new()
+	lbl.text = "CO-OP — Waiting for host to choose a destination..."
+	lbl.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	lbl.offset_top = -48.0
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", 16)
+	lbl.add_theme_color_override("font_color", Color(0.9, 0.7, 0.3))
+	layer.add_child(lbl)
 
 func _randomize_mines() -> void:
 	# Long-Range Scanner upgrade guarantees both mines are always visible.
@@ -367,6 +385,10 @@ func _move_selection(direction: Vector2) -> void:
 		caravan.move_to(current_node.position)
 
 func _on_node_clicked(node: MapNode) -> void:
+	# In co-op, only the host navigates the star chart; guest watches
+	if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
+		return
+
 	# Cancel any in-progress travel
 	if caravan.arrived.is_connected(_on_caravan_arrived):
 		caravan.arrived.disconnect(_on_caravan_arrived)

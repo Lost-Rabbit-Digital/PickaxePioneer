@@ -29,3 +29,10 @@ signal energy_changed(current_energy: int, max_energy: int)
 
 # Depth Signals
 signal depth_changed(depth_rows: int)  # Rows below surface (0 = surface)
+
+# Multiplayer Signals
+signal multiplayer_guest_connected(peer_id: int)    # Host: a guest joined
+signal multiplayer_guest_disconnected               # Host: guest left mid-session
+signal multiplayer_connected_to_host               # Guest: successfully connected
+signal multiplayer_connection_failed               # Guest: connection attempt failed
+signal multiplayer_guest_kit_updated               # Guest HUD should refresh to show host's kit
