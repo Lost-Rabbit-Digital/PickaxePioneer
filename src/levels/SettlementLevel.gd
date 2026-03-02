@@ -355,7 +355,7 @@ func try_mine_at(_grid_pos: Vector2i) -> void:
 	# Mining is disabled in settlements — do nothing
 	pass
 
-func check_player_hazard(_col: int, _row: int) -> void:
+func check_player_hazard(_col: int, _row: int, _source_player: Node = null) -> void:
 	# No hazards in settlements
 	pass
 
