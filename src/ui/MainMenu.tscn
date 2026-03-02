@@ -120,6 +120,14 @@ tooltip_text = "The asteroid belt will wait. (It won't.)"
 theme_override_font_sizes/font_size = 32
 text = "QUIT"
 
+[node name="MenuTitleLabel" type="Label" parent="VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.7, 0.3, 1)
+theme_override_font_sizes/font_size = 18
+text = ""
+horizontal_alignment = 1
+
 [node name="ContinueButton" type="Button" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
@@ -151,6 +159,25 @@ theme_override_font_sizes/font_size = 32
 text = "JOIN"
 
 [node name="MpBackButton" type="Button" parent="VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "BACK"
+
+[node name="LanButton" type="Button" parent="VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "LAN"
+
+[node name="SteamButton" type="Button" parent="VBoxContainer"]
+visible = false
+layout_mode = 2
+tooltip_text = "Coming Soon"
+theme_override_font_sizes/font_size = 32
+text = "STEAM"
+
+[node name="HostingBackButton" type="Button" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
