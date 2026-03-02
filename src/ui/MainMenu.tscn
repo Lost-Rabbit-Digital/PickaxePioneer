@@ -91,16 +91,15 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 16
 
-[node name="NewGameButton" type="Button" parent="VBoxContainer"]
+[node name="SingleplayerButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
-text = "NEW GAME"
+text = "SINGLEPLAYER"
 
-[node name="ContinueButton" type="Button" parent="VBoxContainer"]
+[node name="MultiplayerButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
-tooltip_text = "Boldly dig where no cat has dug before."
 theme_override_font_sizes/font_size = 32
-text = "CONTINUE"
+text = "MULTIPLAYER"
 
 [node name="SettingsButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2

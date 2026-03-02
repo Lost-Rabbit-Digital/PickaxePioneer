@@ -10,7 +10,7 @@ signal guest_disconnected
 signal connected_to_host
 signal connection_failed
 
-const DEFAULT_PORT: int = 7777
+const DEFAULT_PORT: int = 25565
 const MAX_CLIENTS: int = 1  # Host + 1 guest = 2 players total
 
 ## True once a host or join operation has established a session.
