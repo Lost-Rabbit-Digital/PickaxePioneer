@@ -21,6 +21,7 @@ var is_host: bool = false
 var guest_peer_id: int = -1
 
 func start_host(port: int = DEFAULT_PORT) -> Error:
+	_reset_peer()
 	var peer := ENetMultiplayerPeer.new()
 	var err := peer.create_server(port, MAX_CLIENTS)
 	if err != OK:
@@ -37,6 +38,7 @@ func start_host(port: int = DEFAULT_PORT) -> Error:
 	return OK
 
 func join_host(ip: String, port: int = DEFAULT_PORT) -> Error:
+	_reset_peer()
 	var peer := ENetMultiplayerPeer.new()
 	var err := peer.create_client(ip, port)
 	if err != OK:
@@ -52,14 +54,26 @@ func join_host(ip: String, port: int = DEFAULT_PORT) -> Error:
 	return OK
 
 func disconnect_session() -> void:
-	if multiplayer.multiplayer_peer != null:
-		var status := multiplayer.multiplayer_peer.get_connection_status()
-		if status != MultiplayerPeer.CONNECTION_DISCONNECTED:
-			multiplayer.multiplayer_peer.close()
+	_reset_peer()
 	is_multiplayer_session = false
 	is_host = false
 	guest_peer_id = -1
 	print("NetworkManager: session disconnected")
+
+## Closes any active ENet socket and disconnects multiplayer signals so that a
+## subsequent create_server / create_client call gets a clean slate.
+func _reset_peer() -> void:
+	if multiplayer.peer_connected.is_connected(_on_peer_connected):
+		multiplayer.peer_connected.disconnect(_on_peer_connected)
+	if multiplayer.peer_disconnected.is_connected(_on_peer_disconnected):
+		multiplayer.peer_disconnected.disconnect(_on_peer_disconnected)
+	if multiplayer.connected_to_server.is_connected(_on_connected_to_server):
+		multiplayer.connected_to_server.disconnect(_on_connected_to_server)
+	if multiplayer.connection_failed.is_connected(_on_connection_failed):
+		multiplayer.connection_failed.disconnect(_on_connection_failed)
+	if multiplayer.multiplayer_peer != null:
+		multiplayer.multiplayer_peer.close()
+		multiplayer.multiplayer_peer = null
 
 func _on_peer_connected(id: int) -> void:
 	print("NetworkManager: peer connected id=%d" % id)
