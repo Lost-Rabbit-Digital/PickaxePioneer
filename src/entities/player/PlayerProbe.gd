@@ -13,8 +13,8 @@ var move_speed: float = 280.0
 var jump_velocity: float = -420.0
 var gravity: float = 980.0
 
-# Ladder climbing speed (tiles-per-second feel)
-const LADDER_CLIMB_SPEED: float = 160.0
+# Ladder climbing speed — matches jump_velocity magnitude so up/down feel as fast as falling
+const LADDER_CLIMB_SPEED: float = 420.0
 
 # Mining
 var mine_range: float = 4.5  # Range in tiles
