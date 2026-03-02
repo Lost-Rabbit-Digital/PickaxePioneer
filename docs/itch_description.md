@@ -10,7 +10,7 @@
 ## Short Description (tagline field — 160 chars)
 
 ```
-A cozy cat mining roguelite — energy is finite, the richest ores are always below you, and the exit is far above. Dig a bit deeper!
+A cozy cat mining roguelite, the richest ores are always below you, and the exit is far above.
 ```
 
 ---
@@ -89,24 +89,13 @@ A cozy cat mining roguelite — energy is finite, the richest ores are always be
 
 <h2> The Clowder</h2>
 <p>
-  Between runs you return to the Clowder — your feline civilization's hub. Amber-lit tunnels,
+  Between runs you return to the Clowder, your feline civilization's hub. Amber-lit tunnels,
   idle colony cats, and the quiet satisfaction of upgrading your kit with a hard-earned haul.
   Spend banked minerals on four permanent upgrade tracks: thicken your <strong>Pelt</strong>,
   strengthen your <strong>Paws</strong>, sharpen your <strong>Claws</strong>, or refine your
   <strong>Whiskers</strong> for deeper sonar. Build out Colony Chambers for run-wide passive bonuses.
   The Clowder grows with every successful haul you bring home.
 </p>
-
-<h2>🎮 Controls</h2>
-<ul>
-  <li><strong>Move:</strong> WASD or Arrow Keys</li>
-  <li><strong>Jump:</strong> W / Up / Space</li>
-  <li><strong>Mine:</strong> Left-click (within 4.5 tiles)</li>
-  <li><strong>Sonar ping:</strong> Q</li>
-  <li><strong>Pheromone marker:</strong> F</li>
-  <li><strong>Interact:</strong> E</li>
-  <li><strong>Pause:</strong> Esc</li>
-</ul>
 
 <h2>Art &amp; Sound</h2>
 <p>
