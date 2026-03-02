@@ -10,6 +10,7 @@ extends Control
 @onready var settlement_node_3: MapNode = $SettlementNode3
 @onready var settlement_node_4: MapNode = $SettlementNode4
 @onready var pause_menu = $PauseMenu
+@onready var version_label: Label = $VersionLabel
 
 var current_node: MapNode
 var nodes: Array[MapNode] = []
@@ -57,6 +58,8 @@ var mine_metadata: Dictionary = {
 }
 
 func _ready() -> void:
+	version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
+
 	# Collect all nodes first — needed before connection generation/restore
 	nodes = [city_node, mine_node_1, mine_node_2, settlement_node_3, settlement_node_4]
 

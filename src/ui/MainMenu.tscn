@@ -1,9 +1,20 @@
-[gd_scene load_steps=6 format=3 uid="uid://cbasjhj0dn6w6"]
+[gd_scene load_steps=7 format=3 uid="uid://cbasjhj0dn6w6"]
 
 [ext_resource type="Script" uid="uid://djild5fqk5aii" path="res://src/ui/MainMenu.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://bxak3nvx2p7qd" path="res://src/ui/MenuBackground.gd" id="2_bgscript"]
 [ext_resource type="Script" uid="uid://b2f4ygsyu65y" path="res://src/ui/main_menu/social_buttons.gd" id="3_ihbld"]
 [ext_resource type="Texture2D" uid="uid://bhww7y11pvgal" path="res://assets/social_icons/discord_icon_normal.png" id="4_ihbld"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_version"]
+content_margin_left = 8.0
+content_margin_top = 3.0
+content_margin_right = 8.0
+content_margin_bottom = 3.0
+bg_color = Color(0.05, 0.05, 0.05, 0.6)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
 content_margin_left = 20.0
@@ -234,8 +245,9 @@ offset_right = 100.0
 offset_bottom = -8.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_colors/font_color = Color(0.5, 0.45, 0.35, 0.6)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_version")
 text = "v0.1.0"
 horizontal_alignment = 1
 
