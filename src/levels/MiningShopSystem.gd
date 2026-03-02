@@ -17,8 +17,8 @@ extends Node
 const SHOP_REENERGY_FULL_COST: int = 10
 const SHOP_REENERGY_HALF_COST: int = 5
 const SHOP_REPAIR_COST: int = 15
-const SHOP_LADDER_PACK_COST: int = 20   # buys 5 ladders
-const SHOP_LADDER_PACK_COUNT: int = 5
+const SHOP_LADDER_PACK_COST: int = 20   # buys 10 ladders
+const SHOP_LADDER_PACK_COUNT: int = 10
 
 # Cat Tavern hire costs (in bars)
 const CAT_TAVERN_MINING_CAT_COPPER_BARS: int = 0
@@ -354,13 +354,13 @@ func _build_energy_shop() -> void:
 
 
 func show_energy_shop() -> void:
-	_energy_minerals_label.text = "Dollars: $%d" % GameManager.dollars
+	_energy_minerals_label.text = "$%d" % GameManager.dollars
 	var max_e := GameManager.get_max_energy()
-	_energy_btn_full.text = "Full Recharge  (%d→%d energy)  — $%d" % [
+	_energy_btn_full.text = "Full Rest  (%d→%d energy)  — $%d" % [
 		GameManager.current_energy, max_e, SHOP_REENERGY_FULL_COST]
-	_energy_btn_half.text = "Recharge 50%%  (+%d energy)  — $%d" % [
+	_energy_btn_half.text = "Rest 50%%  (+%d energy)  — $%d" % [
 		max_e / 2, SHOP_REENERGY_HALF_COST]
-	_energy_btn_repair.text = "Spacesuit Repair  (+1 HP)  — $%d" % SHOP_REPAIR_COST
+	_energy_btn_repair.text = "+1 Health Bar  — $%d" % SHOP_REPAIR_COST
 	_energy_btn_full.disabled   = GameManager.dollars < SHOP_REENERGY_FULL_COST or GameManager.current_energy >= max_e
 	_energy_btn_half.disabled   = GameManager.dollars < SHOP_REENERGY_HALF_COST or GameManager.current_energy >= max_e
 	_energy_btn_repair.disabled = GameManager.dollars < SHOP_REPAIR_COST or (player_node != null and player_node.is_at_max_health())
