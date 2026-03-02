@@ -2020,7 +2020,7 @@ func _setup_farm_animals() -> void:
 		{"name": "Pig",     "texture_path": "res://assets/creatures/pig_spritesheet.png"},
 	]
 	# Pick one animal type for this entire planet
-	var chosen := all_animal_types[randi() % all_animal_types.size()]
+	var chosen: Dictionary = all_animal_types[randi() % all_animal_types.size()]
 	var tex := load(chosen["texture_path"]) as Texture2D
 	# Randomise count between 2 and 5 NPCs
 	var count := randi_range(2, 5)
