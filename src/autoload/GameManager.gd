@@ -103,6 +103,7 @@ func _ready() -> void:
 	print("GameManager initialized")
 	# Legacy load_game() removed — SaveManager now handles slot-based persistence.
 	# On first boot, SaveManager._migrate_legacy_save() imports the old file.
+	NetworkManager.guest_connected.connect(_on_guest_connected)
 	get_tree().set_auto_accept_quit(false)
 
 func _notification(what: int) -> void:
@@ -177,6 +178,16 @@ func rpc_start_game_as_guest(carapace_lvl: int, legs_lvl: int, mandibles_lvl: in
 	EventBus.multiplayer_guest_kit_updated.emit()
 	change_state(GameState.PLAYING)
 	await _transition_to_scene("res://src/levels/Overworld.tscn")
+
+## Drop-in: called when a guest connects while the host is already in-game.
+## Sends the guest the host's kit and loads them into the overworld.
+func _on_guest_connected(peer_id: int) -> void:
+	if not NetworkManager.is_host or current_state != GameState.PLAYING:
+		return
+	rpc_start_game_as_guest.rpc_id(peer_id,
+		carapace_level, legs_level, mandibles_level, mineral_sense_level,
+		carapace_gem_socketed, legs_gem_socketed, mandibles_gem_socketed, sense_gem_socketed,
+		warp_drive_built, cargo_bay_built, long_scanner_built, gem_refinery_built, trade_amplifier_built)
 
 func pause_game() -> void:
 	change_state(GameState.PAUSED)
