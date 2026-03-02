@@ -5,7 +5,6 @@ extends Node
 ## Extracted from MiningLevel to keep MiningLevel under 1,000 lines.
 ##
 ## Shops managed:
-##   • Surface Hub (bank & end-run panel)
 ##   • Energy Station (recharge, repair, buy ladders)
 ##   • Upgrade Station (permanent upgrades with dollars)
 ##   • Space Forge / Smeltery (smelt ores into bars, sell bars)
@@ -63,7 +62,6 @@ var cat_system: CatSystem = null
 var run_bar_counts: Dictionary = {}    # ore_group -> bars smelted this run
 
 # Visibility flags polled by MiningLevel._physics_process / _unhandled_input
-var hub_visible: bool = false
 var energy_shop_visible: bool = false
 var upgrade_station_visible: bool = false
 var smeltery_visible: bool = false
@@ -72,9 +70,6 @@ var cat_tavern_visible: bool = false
 # ---------------------------------------------------------------------------
 # UI node references
 # ---------------------------------------------------------------------------
-var _hub_layer: CanvasLayer
-var _hub_minerals_label: Label
-
 var _energy_layer: CanvasLayer
 var _energy_minerals_label: Label
 var _energy_btn_full: Button
@@ -100,14 +95,10 @@ var _cat_tavern_label: Label
 var _cat_tavern_btn_mining: Button
 var _cat_tavern_btn_collecting: Button
 
-# Overlay for permanent upgrade panel (opened from hub)
-var _upgrade_overlay_layer: CanvasLayer = null
-
 
 func setup(p_player_node: Node, p_cat_system: CatSystem) -> void:
 	player_node = p_player_node
 	cat_system = p_cat_system
-	_build_hub()
 	_build_energy_shop()
 	_build_upgrade_station()
 	_build_smeltery()
@@ -115,8 +106,8 @@ func setup(p_player_node: Node, p_cat_system: CatSystem) -> void:
 
 
 func any_shop_open() -> bool:
-	return hub_visible or energy_shop_visible or upgrade_station_visible \
-		or smeltery_visible or cat_tavern_visible or _upgrade_overlay_layer != null
+	return energy_shop_visible or upgrade_station_visible \
+		or smeltery_visible or cat_tavern_visible
 
 
 func close_active_shop() -> void:
@@ -128,8 +119,6 @@ func close_active_shop() -> void:
 		hide_upgrade_station()
 	elif cat_tavern_visible:
 		hide_cat_tavern()
-	elif _upgrade_overlay_layer != null:
-		_close_upgrade_overlay()
 
 
 # ---------------------------------------------------------------------------
@@ -154,135 +143,6 @@ func consume_ores_for_smelt(ore_group: String, count: int) -> void:
 		remaining -= take
 		if remaining <= 0:
 			break
-
-
-# ---------------------------------------------------------------------------
-# Surface Hub
-# ---------------------------------------------------------------------------
-
-func _build_hub() -> void:
-	const PANEL_W: int = 460
-	const PANEL_H: int = 310
-	const PX: int = (VW - PANEL_W) / 2
-	const PY: int = (VH - PANEL_H) / 2
-
-	_hub_layer = CanvasLayer.new()
-	_hub_layer.layer = 10
-	_hub_layer.visible = false
-	add_child(_hub_layer)
-
-	_hub_layer.add_child(_dim_rect())
-
-	var border := ColorRect.new()
-	border.position = Vector2(PX - 3, PY - 3)
-	border.size = Vector2(PANEL_W + 6, PANEL_H + 6)
-	border.color = Color(0.30, 0.70, 0.25)
-	_hub_layer.add_child(border)
-
-	var panel := ColorRect.new()
-	panel.position = Vector2(PX, PY)
-	panel.size = Vector2(PANEL_W, PANEL_H)
-	panel.color = Color(0.09, 0.08, 0.06, 0.97)
-	_hub_layer.add_child(panel)
-
-	var title := Label.new()
-	title.text = "You reached the station!"
-	title.position = Vector2(PX, PY + 14)
-	title.size = Vector2(PANEL_W, 32)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hub_layer.add_child(title)
-
-	_hub_minerals_label = Label.new()
-	_hub_minerals_label.position = Vector2(PX, PY + 50)
-	_hub_minerals_label.size = Vector2(PANEL_W, 28)
-	_hub_minerals_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hub_minerals_label.modulate = Color(1.0, 0.85, 0.2)
-	_hub_layer.add_child(_hub_minerals_label)
-
-	const BTN_X: int = PX + 30
-	const BTN_W: int = PANEL_W - 60
-	const BTN_H: int = 46
-
-	var bank_btn := Button.new()
-	bank_btn.text = "Bank Minerals & Keep Exploring"
-	bank_btn.position = Vector2(BTN_X, PY + 100)
-	bank_btn.size = Vector2(BTN_W, BTN_H)
-	bank_btn.pressed.connect(_hub_bank_and_continue)
-	_hub_layer.add_child(bank_btn)
-
-	var shop_btn := Button.new()
-	shop_btn.text = "Open Station Shop (banks minerals)"
-	shop_btn.position = Vector2(BTN_X, PY + 156)
-	shop_btn.size = Vector2(BTN_W, BTN_H)
-	shop_btn.pressed.connect(_hub_open_shop)
-	_hub_layer.add_child(shop_btn)
-
-	var end_btn := Button.new()
-	end_btn.text = "End Run & Return to Station"
-	end_btn.position = Vector2(BTN_X, PY + 212)
-	end_btn.size = Vector2(BTN_W, BTN_H)
-	end_btn.pressed.connect(_hub_end_run)
-	_hub_layer.add_child(end_btn)
-
-
-func show_hub() -> void:
-	_hub_minerals_label.text = "Minerals this run: %d" % GameManager.run_mineral_currency
-	_hub_layer.visible = true
-	hub_visible = true
-
-
-func hide_hub() -> void:
-	_hub_layer.visible = false
-	hub_visible = false
-
-
-func _hub_bank_and_continue() -> void:
-	GameManager.bank_currency()
-	hide_hub()
-
-
-func _hub_open_shop() -> void:
-	GameManager.bank_currency()
-	hide_hub()
-	_open_upgrade_overlay()
-
-
-func _hub_end_run() -> void:
-	hide_hub()
-	GameManager.complete_run()
-
-
-func _open_upgrade_overlay() -> void:
-	_upgrade_overlay_layer = CanvasLayer.new()
-	_upgrade_overlay_layer.layer = 10
-	add_child(_upgrade_overlay_layer)
-
-	var dim := ColorRect.new()
-	dim.position = Vector2.ZERO
-	dim.size = Vector2(VW, VH)
-	dim.color = Color(0, 0, 0, 0.75)
-	dim.mouse_filter = Control.MOUSE_FILTER_STOP
-	_upgrade_overlay_layer.add_child(dim)
-
-	var upgrade_scene := load("res://src/ui/UpgradeMenu.tscn") as PackedScene
-	if upgrade_scene:
-		var menu: Node = upgrade_scene.instantiate()
-		if menu is Control:
-			(menu as Control).set_anchors_preset(Control.PRESET_CENTER)
-		_upgrade_overlay_layer.add_child(menu)
-
-	var close_btn := Button.new()
-	close_btn.text = "Continue Mining"
-	close_btn.position = Vector2((VW - 260) / 2, VH - 70)
-	close_btn.size = Vector2(260, 44)
-	close_btn.pressed.connect(_close_upgrade_overlay)
-	_upgrade_overlay_layer.add_child(close_btn)
-
-
-func _close_upgrade_overlay() -> void:
-	if _upgrade_overlay_layer:
-		_upgrade_overlay_layer.queue_free()
-		_upgrade_overlay_layer = null
 
 
 # ---------------------------------------------------------------------------
