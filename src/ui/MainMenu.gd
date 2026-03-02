@@ -68,6 +68,8 @@ var _window_mode_option: OptionButton
 var _vsync_check: CheckButton
 var _fps_option: OptionButton
 var _refresh_option: OptionButton
+var _now_playing_label: Label
+var _play_pause_btn: Button
 var _keybind_buttons: Dictionary = {}  # action_name -> Button
 var _listening_action: String = ""  # action currently being rebound
 
@@ -843,6 +845,69 @@ func _build_audio_section(parent: VBoxContainer) -> void:
 	_sfx_slider.value_changed.connect(_on_sfx_changed)
 	parent.add_child(sfx_row)
 
+	_build_music_player_controls(parent)
+
+func _build_music_player_controls(parent: VBoxContainer) -> void:
+	var now_playing_row := HBoxContainer.new()
+	now_playing_row.add_theme_constant_override("separation", 12)
+	var np_lbl := Label.new()
+	np_lbl.text = "Now Playing"
+	np_lbl.custom_minimum_size = Vector2(160, 0)
+	np_lbl.add_theme_font_size_override("font_size", LABEL_FONT_SIZE)
+	np_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	now_playing_row.add_child(np_lbl)
+	_now_playing_label = Label.new()
+	_now_playing_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_now_playing_label.add_theme_font_size_override("font_size", LABEL_FONT_SIZE - 2)
+	_now_playing_label.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
+	_now_playing_label.clip_text = true
+	_now_playing_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	now_playing_row.add_child(_now_playing_label)
+	parent.add_child(now_playing_row)
+
+	var ctrl_row := HBoxContainer.new()
+	ctrl_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	ctrl_row.add_theme_constant_override("separation", 8)
+	parent.add_child(ctrl_row)
+
+	var prev_btn := Button.new()
+	prev_btn.text = "<<"
+	prev_btn.custom_minimum_size = Vector2(52, 32)
+	prev_btn.add_theme_font_size_override("font_size", LABEL_FONT_SIZE)
+	prev_btn.tooltip_text = "Previous track"
+	prev_btn.pressed.connect(_on_music_prev_pressed)
+	ctrl_row.add_child(prev_btn)
+
+	_play_pause_btn = Button.new()
+	_play_pause_btn.custom_minimum_size = Vector2(72, 32)
+	_play_pause_btn.add_theme_font_size_override("font_size", LABEL_FONT_SIZE)
+	_play_pause_btn.tooltip_text = "Play / Pause"
+	_play_pause_btn.pressed.connect(_on_music_play_pause_pressed)
+	ctrl_row.add_child(_play_pause_btn)
+
+	var next_btn := Button.new()
+	next_btn.text = ">>"
+	next_btn.custom_minimum_size = Vector2(52, 32)
+	next_btn.add_theme_font_size_override("font_size", LABEL_FONT_SIZE)
+	next_btn.tooltip_text = "Next track"
+	next_btn.pressed.connect(_on_music_next_pressed)
+	ctrl_row.add_child(next_btn)
+
+	_refresh_music_controls()
+
+func _refresh_music_controls() -> void:
+	if not _now_playing_label or not _play_pause_btn:
+		return
+	var has_music: bool = MusicManager.current_player != null \
+		and MusicManager.current_player.stream != null
+	if has_music:
+		_now_playing_label.text = MusicManager.current_player.stream.resource_path \
+			.get_file().get_basename()
+	else:
+		_now_playing_label.text = "—"
+	var is_paused: bool = MusicManager._paused or not has_music
+	_play_pause_btn.text = "▶" if is_paused else "⏸"
+
 func _make_slider_row(label_text: String) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
@@ -919,6 +984,7 @@ func _sync_settings_ui() -> void:
 	_master_label.text = "%d%%" % int(SettingsManager.master_volume * 100)
 	_music_label.text = "%d%%" % int(SettingsManager.music_volume * 100)
 	_sfx_label.text = "%d%%" % int(SettingsManager.sfx_volume * 100)
+	_refresh_music_controls()
 
 	# Display — resolution
 	var resolutions := SettingsManager.get_available_resolutions()
@@ -978,6 +1044,18 @@ func _on_music_changed(value: float) -> void:
 func _on_sfx_changed(value: float) -> void:
 	SettingsManager.set_sfx_volume(value)
 	_sfx_label.text = "%d%%" % int(value * 100)
+
+func _on_music_prev_pressed() -> void:
+	MusicManager.prev_song()
+	_refresh_music_controls()
+
+func _on_music_play_pause_pressed() -> void:
+	MusicManager.toggle_pause()
+	_refresh_music_controls()
+
+func _on_music_next_pressed() -> void:
+	MusicManager.next_song()
+	_refresh_music_controls()
 
 func _on_resolution_selected(idx: int) -> void:
 	var resolutions := SettingsManager.get_available_resolutions()
