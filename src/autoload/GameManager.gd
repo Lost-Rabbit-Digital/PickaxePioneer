@@ -148,7 +148,35 @@ func change_state(new_state: GameState) -> void:
 
 func start_game() -> void:
 	change_state(GameState.PLAYING)
+	# In multiplayer, host sends upgrade state to guest before loading overworld
+	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+		rpc_start_game_as_guest.rpc_id(NetworkManager.guest_peer_id,
+			carapace_level, legs_level, mandibles_level, mineral_sense_level,
+			carapace_gem_socketed, legs_gem_socketed, mandibles_gem_socketed, sense_gem_socketed,
+			warp_drive_built, cargo_bay_built, long_scanner_built, gem_refinery_built, trade_amplifier_built)
 	load_overworld()
+
+## Called on guest by host to apply kit/upgrade state and start the game.
+@rpc("authority", "call_remote", "reliable")
+func rpc_start_game_as_guest(carapace_lvl: int, legs_lvl: int, mandibles_lvl: int,
+		mineral_sense_lvl: int, carapace_gem: bool, legs_gem: bool, mandibles_gem: bool,
+		sense_gem: bool, warp: bool, cargo: bool, scanner: bool, refinery: bool, amplifier: bool) -> void:
+	carapace_level = carapace_lvl
+	legs_level = legs_lvl
+	mandibles_level = mandibles_lvl
+	mineral_sense_level = mineral_sense_lvl
+	carapace_gem_socketed = carapace_gem
+	legs_gem_socketed = legs_gem
+	mandibles_gem_socketed = mandibles_gem
+	sense_gem_socketed = sense_gem
+	warp_drive_built = warp
+	cargo_bay_built = cargo
+	long_scanner_built = scanner
+	gem_refinery_built = refinery
+	trade_amplifier_built = amplifier
+	EventBus.multiplayer_guest_kit_updated.emit()
+	change_state(GameState.PLAYING)
+	await _transition_to_scene("res://src/levels/Overworld.tscn")
 
 func pause_game() -> void:
 	change_state(GameState.PAUSED)
@@ -161,14 +189,37 @@ func lose_run() -> void:
 	run_ore_chunk_counts.clear()
 	EventBus.minerals_changed.emit(0)
 	# Clear planet config so the overworld re-randomizes on next visit
-	SaveManager.clear_active_slot_run_data()
+	if not NetworkManager.is_multiplayer_session or NetworkManager.is_host:
+		SaveManager.clear_active_slot_run_data()
+	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+		rpc_lose_run_as_guest.rpc_id(NetworkManager.guest_peer_id)
+	await _transition_to_scene("res://src/levels/Overworld.tscn")
+
+@rpc("authority", "call_remote", "reliable")
+func rpc_lose_run_as_guest() -> void:
+	run_mineral_currency = 0
+	run_ore_counts.clear()
+	run_ore_earnings.clear()
+	run_ore_chunk_count = 0
+	run_ore_chunk_counts.clear()
+	EventBus.minerals_changed.emit(0)
 	await _transition_to_scene("res://src/levels/Overworld.tscn")
 
 func complete_run() -> void:
+	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+		rpc_complete_run_as_guest.rpc_id(NetworkManager.guest_peer_id, run_mineral_currency)
 	var summary_scene = load("res://src/ui/RunSummary.tscn")
 	var summary = summary_scene.instantiate()
 	get_tree().root.add_child(summary)
 	# Note: RunSummary handles banking and returning to Overworld
+
+@rpc("authority", "call_remote", "reliable")
+func rpc_complete_run_as_guest(final_minerals: int) -> void:
+	run_mineral_currency = final_minerals
+	EventBus.minerals_changed.emit(run_mineral_currency)
+	var summary_scene = load("res://src/ui/RunSummary.tscn")
+	var summary = summary_scene.instantiate()
+	get_tree().root.add_child(summary)
 
 func load_mining_level(scene_path: String = "") -> void:
 	run_mineral_currency = 0 # Reset run currency on entry
@@ -186,7 +237,34 @@ func load_mining_level(scene_path: String = "") -> void:
 
 	EventBus.minerals_changed.emit(0)
 	EventBus.energy_changed.emit(current_energy, get_max_energy())
-	var path = scene_path if scene_path != "" else "res://src/levels/MiningLevel.tscn"
+	var path := scene_path if scene_path != "" else "res://src/levels/MiningLevel.tscn"
+	# In multiplayer, tell guest to load the same mine with the same starting state
+	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+		rpc_load_mine_as_guest.rpc_id(NetworkManager.guest_peer_id, path,
+			current_energy, sky_color.r, sky_color.g, sky_color.b,
+			allowed_ore_types, allowed_hazard_types,
+			settlement_shroom_charges, settlement_mandible_bonus)
+	await _transition_to_scene(path)
+
+## Guest RPC: mirror the host's mine-entry state then load the same level.
+@rpc("authority", "call_remote", "reliable")
+func rpc_load_mine_as_guest(path: String, start_energy: int,
+		sky_r: float, sky_g: float, sky_b: float,
+		ore_types: Array, hazard_types: Array,
+		shroom_charges: int, mandible_bonus: int) -> void:
+	run_mineral_currency = 0
+	run_ore_counts.clear()
+	run_ore_earnings.clear()
+	run_ore_chunk_count = 0
+	run_ore_chunk_counts.clear()
+	current_energy = start_energy
+	sky_color = Color(sky_r, sky_g, sky_b)
+	allowed_ore_types = ore_types.duplicate()
+	allowed_hazard_types = hazard_types.duplicate()
+	settlement_shroom_charges = shroom_charges
+	settlement_mandible_bonus = mandible_bonus
+	EventBus.minerals_changed.emit(0)
+	EventBus.energy_changed.emit(current_energy, get_max_energy())
 	await _transition_to_scene(path)
 
 func load_settlement_level(scene_path: String) -> void:
@@ -194,6 +272,12 @@ func load_settlement_level(scene_path: String) -> void:
 	await _transition_to_scene(scene_path)
 
 func load_overworld() -> void:
+	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+		rpc_load_overworld_as_guest.rpc_id(NetworkManager.guest_peer_id)
+	await _transition_to_scene("res://src/levels/Overworld.tscn")
+
+@rpc("authority", "call_remote", "reliable")
+func rpc_load_overworld_as_guest() -> void:
 	await _transition_to_scene("res://src/levels/Overworld.tscn")
 
 func _transition_to_scene(scene_path: String) -> void:

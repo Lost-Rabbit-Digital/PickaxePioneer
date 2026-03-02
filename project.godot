@@ -27,6 +27,7 @@ SceneTransition="*res://src/autoload/SceneTransition.tscn"
 QuestManager="*res://src/autoload/QuestManager.gd"
 SettingsManager="*res://src/autoload/SettingsManager.gd"
 SaveManager="*res://src/autoload/SaveManager.gd"
+NetworkManager="*res://src/autoload/NetworkManager.gd"
 
 [display]
 

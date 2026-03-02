@@ -272,6 +272,7 @@ const FOSSIL_TYPES: Dictionary = {
 const SONAR_PING_DURATION: float = 3.0  # seconds until ping fades — also defined in SonarSystem
 
 const BreakingAnimationScene: PackedScene = preload("res://assets/interaction/breaking_animation.tscn")
+const PlayerProbeScene: PackedScene = preload("res://src/entities/player/PlayerProbe.tscn")
 
 # Trader constants live in TraderSystem.gd
 
@@ -449,6 +450,20 @@ var _pickaxe_texture: Texture2D
 var _spawning: bool = false
 var _spaceship_sprite: Sprite2D = null
 
+# ---------------------------------------------------------------------------
+# Multiplayer co-op state
+# ---------------------------------------------------------------------------
+# The scene's $PlayerProbe is always the host player (authority = 1).
+# guest_player_node is spawned at runtime and given the guest's peer authority.
+# On the GUEST machine:  player_node = host visual,  guest_player_node = local player
+# On the HOST machine:   player_node = local player, guest_player_node = guest visual
+var guest_player_node: PlayerProbe = null
+# How often (seconds) the host broadcasts shared resource state to the guest
+const RESOURCE_SYNC_INTERVAL: float = 0.15
+var _resource_sync_timer: float = 0.0
+# Column the guest spawns at (slightly right of host spawn)
+const GUEST_SPAWN_COL: int = 5
+
 # Level-wide particle system (mining sparks, tile-break bursts, lava ash, boss explosions)
 var _level_particles: Array = []
 const LEVEL_PARTICLE_MAX: int = 300
@@ -532,10 +547,84 @@ func _ready() -> void:
 	_setup_customization_menu()
 	queue_redraw()
 
+	# Co-op: spawn second player and set up authorities before the cinematic runs
+	if NetworkManager.is_multiplayer_session:
+		_setup_multiplayer_players()
+
 	# Kick off the spaceship entry cinematic (hides player until ship deposits them)
 	player_node.visible = false
 	_spawning = true
 	_play_spawn_animation.call_deferred()
+
+# ---------------------------------------------------------------------------
+# Multiplayer setup
+# ---------------------------------------------------------------------------
+
+func _setup_multiplayer_players() -> void:
+	# Spawn the second player node (for whichever peer doesn't own the scene's $PlayerProbe)
+	var second := PlayerProbeScene.instantiate() as PlayerProbe
+	second.global_position = Vector2(
+		GUEST_SPAWN_COL * CELL_SIZE + CELL_SIZE * 0.5,
+		2 * CELL_SIZE + CELL_SIZE * 0.5
+	)
+	second.mining_level = self
+	add_child(second)
+	guest_player_node = second
+
+	if NetworkManager.is_host:
+		# Host's player_node already defaults to authority 1.
+		# Assign the second player to the guest peer so their machine drives it.
+		second.set_multiplayer_authority(NetworkManager.guest_peer_id)
+	else:
+		# On the guest machine our peer id is assigned by the ENet server.
+		var our_id := multiplayer.get_unique_id()
+		second.set_multiplayer_authority(our_id)
+		# The host's player_node should stay at authority 1 (it already is).
+
+	# Add a colour tint so players can tell each other apart:
+	# host = white (default), guest = orange-tinted
+	if NetworkManager.is_host:
+		second.sprite.modulate = Color(1.0, 0.65, 0.25)  # guest is orange
+	else:
+		player_node.sprite.modulate = Color(1.0, 0.65, 0.25)  # host looks orange to guest
+		second.sprite.modulate = GameManager.cat_color          # guest is their own colour
+
+	# Show the host's kit bonuses to the guest as an entry banner
+	if not NetworkManager.is_host:
+		_show_kit_bonus_banner()
+
+	# Connect NetworkManager disconnect signal so we can show a warning mid-mine
+	if NetworkManager.is_host:
+		NetworkManager.guest_disconnected.connect(_on_coop_peer_disconnected)
+	else:
+		NetworkManager.guest_disconnected.connect(_on_coop_peer_disconnected)
+
+## Returns the PlayerProbe that is locally authoritative (driven by this machine's input).
+func _get_local_player() -> PlayerProbe:
+	if not NetworkManager.is_multiplayer_session:
+		return player_node
+	if NetworkManager.is_host:
+		return player_node
+	return guest_player_node
+
+func _show_kit_bonus_banner() -> void:
+	# Display the host's upgrade kit to the guest at mine entry so they know what bonuses apply.
+	var lines: Array[String] = []
+	if GameManager.carapace_level > 0 or GameManager.carapace_gem_socketed:
+		lines.append("Pelt Lv%d%s" % [GameManager.carapace_level, " + gem" if GameManager.carapace_gem_socketed else ""])
+	if GameManager.legs_level > 0 or GameManager.legs_gem_socketed:
+		lines.append("Paws Lv%d%s" % [GameManager.legs_level, " + gem" if GameManager.legs_gem_socketed else ""])
+	if GameManager.mandibles_level > 0 or GameManager.mandibles_gem_socketed:
+		lines.append("Claws Lv%d%s" % [GameManager.mandibles_level, " + gem" if GameManager.mandibles_gem_socketed else ""])
+	if GameManager.mineral_sense_level > 0 or GameManager.sense_gem_socketed:
+		lines.append("Whiskers Lv%d%s" % [GameManager.mineral_sense_level, " + gem" if GameManager.sense_gem_socketed else ""])
+	if lines.is_empty():
+		lines.append("No upgrades yet")
+	var kit_text := "Host Kit: " + ", ".join(lines)
+	EventBus.ore_mined_popup.emit(0, kit_text)
+
+func _on_coop_peer_disconnected() -> void:
+	_show_zone_banner("PARTNER DISCONNECTED", Color(1.0, 0.4, 0.2), -1)
 
 # ---------------------------------------------------------------------------
 # Collision TileMapLayer setup
@@ -660,9 +749,11 @@ func _load_tile_textures() -> void:
 # ---------------------------------------------------------------------------
 
 func _update_camera() -> void:
-	if not camera or not player_node:
+	if not camera:
 		return
-	camera.position = player_node.global_position
+	var cam_target := _get_local_player()
+	if cam_target:
+		camera.position = cam_target.global_position
 
 # ---------------------------------------------------------------------------
 # Rendering
@@ -983,13 +1074,25 @@ func _process(delta: float) -> void:
 	var _boss_prow := floori(player_node.global_position.y / CELL_SIZE) if player_node else -1
 	boss_system.update(delta, _boss_pcol, _boss_prow)
 
-	# Update player on_ladder flag each frame
-	if player_node:
-		var pgp := player_node.get_grid_pos()
-		player_node.on_ladder = (
+	# Update on_ladder flag for all locally-authoritative players
+	for p_check in [player_node, guest_player_node]:
+		if p_check == null:
+			continue
+		if NetworkManager.is_multiplayer_session and not p_check.is_multiplayer_authority():
+			continue
+		var pgp := p_check.get_grid_pos()
+		p_check.on_ladder = (
 			pgp.x >= 0 and pgp.x < GRID_COLS and pgp.y >= 0 and pgp.y < GRID_ROWS
 			and grid[pgp.x][pgp.y] == TileType.LADDER
 		)
+
+	# Host broadcasts shared resource state to guest periodically
+	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+		_resource_sync_timer += delta
+		if _resource_sync_timer >= RESOURCE_SYNC_INTERVAL:
+			_resource_sync_timer = 0.0
+			rpc_sync_resources.rpc_id(NetworkManager.guest_peer_id,
+				GameManager.run_mineral_currency, GameManager.current_energy)
 
 	if _game_over or shop_system.any_shop_open() or trader_system.shop_visible:
 		return
@@ -1023,21 +1126,24 @@ func _process(delta: float) -> void:
 	if _hazard_cooldown > 0.0:
 		_hazard_cooldown -= delta
 
-	# Time-based energy drain (only underground, halted while player sleeps)
-	if player_node:
-		var depth_row := player_node.get_depth_row()
-		if depth_row > 0 and not player_node.is_sleeping():
-			var depth_ratio := float(depth_row) / float(GRID_ROWS - SURFACE_ROWS)
-			var boss_mult := boss_system.get_energy_drain_mult()
-			var drain_rate := (ENERGY_DRAIN_BASE + depth_ratio * ENERGY_DRAIN_DEPTH_MULT) * boss_mult
-			_energy_drain_accum += drain_rate * delta
-			if _energy_drain_accum >= 1.0:
-				var drain_amount := int(_energy_drain_accum)
-				_energy_drain_accum -= float(drain_amount)
-				if not GameManager.consume_energy(drain_amount):
-					_on_out_of_energy()
-		elif player_node.is_sleeping():
-			_energy_drain_accum = 0.0
+	# Time-based energy drain — host is authoritative over the shared energy pool.
+	# On guest machine the pool is kept current via rpc_sync_resources.
+	if not NetworkManager.is_multiplayer_session or NetworkManager.is_host:
+		var local_p := _get_local_player()
+		if local_p:
+			var depth_row := local_p.get_depth_row()
+			if depth_row > 0 and not local_p.is_sleeping():
+				var depth_ratio := float(depth_row) / float(GRID_ROWS - SURFACE_ROWS)
+				var boss_mult := boss_system.get_energy_drain_mult()
+				var drain_rate := (ENERGY_DRAIN_BASE + depth_ratio * ENERGY_DRAIN_DEPTH_MULT) * boss_mult
+				_energy_drain_accum += drain_rate * delta
+				if _energy_drain_accum >= 1.0:
+					var drain_amount := int(_energy_drain_accum)
+					_energy_drain_accum -= float(drain_amount)
+					if not GameManager.consume_energy(drain_amount):
+						_on_out_of_energy()
+			elif local_p.is_sleeping():
+				_energy_drain_accum = 0.0
 
 func _update_cursor_highlight() -> void:
 	if not player_node:
@@ -1070,18 +1176,28 @@ func _update_cursor_highlight() -> void:
 		_ladder_ghost_valid = false
 
 func _check_exit_zone() -> void:
-	if not player_node or _game_over:
+	if _game_over:
 		return
-	var player_col := floori(player_node.global_position.x / CELL_SIZE)
-	var player_row := floori(player_node.global_position.y / CELL_SIZE)
+	# Only the host triggers run completion — guest waits for rpc_trigger_run_end
+	if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
+		return
+	var local_p := _get_local_player()
+	if not local_p:
+		return
+	var player_col := floori(local_p.global_position.x / CELL_SIZE)
+	var player_row := floori(local_p.global_position.y / CELL_SIZE)
 	if player_col < GRID_COLS - EXIT_COLS:
 		has_left_spawn = true
 	if has_left_spawn and player_col >= GRID_COLS - EXIT_COLS and player_row < SURFACE_ROWS:
 		_game_over = true
+		if NetworkManager.is_multiplayer_session and NetworkManager.guest_peer_id > 0:
+			rpc_trigger_run_end.rpc_id(NetworkManager.guest_peer_id)
 		GameManager.complete_run()
 	# Reaching the bottom of the map also counts as a completed run
 	elif player_row >= GRID_ROWS - 1:
 		_game_over = true
+		if NetworkManager.is_multiplayer_session and NetworkManager.guest_peer_id > 0:
+			rpc_trigger_run_end.rpc_id(NetworkManager.guest_peer_id)
 		GameManager.complete_run()
 
 # ---------------------------------------------------------------------------
@@ -1259,6 +1375,10 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 		_tile_hits.erase(pos_key)
 		_remove_breaking_overlay(pos_key)
 		_mine_cell(col, row)
+		# Sync tile break to guest
+		if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+			var bc := TILE_COLORS.get(tile, Color(0.7, 0.6, 0.4))
+			rpc_tile_broken.rpc_id(NetworkManager.guest_peer_id, pos_key, bc.r, bc.g, bc.b)
 		# Boss tile tracking — delegated to BossSystem
 		if tile == TileType.BOSS_SEGMENT or tile == TileType.BOSS_CORE:
 			boss_system.on_tile_mined(col, row, tile)
@@ -1311,29 +1431,36 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 		_spawn_mining_particles(hit_world_pos, TILE_COLORS.get(tile, Color(0.8, 0.7, 0.5)), 4, 30.0, 90.0)
 		SoundManager.play_impact_sound()
 		_shake_camera(1.5, 0.07)
+		# Sync partial damage to guest so their breaking overlay matches
+		if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+			rpc_tile_hit.rpc_id(NetworkManager.guest_peer_id, pos_key, damage_ratio)
 
-# Called by PlayerProbe when it overlaps a hazard tile
-func check_player_hazard(col: int, row: int) -> void:
+# Called by PlayerProbe when it overlaps a hazard tile.
+# source_player is the PlayerProbe that triggered the check.
+func check_player_hazard(col: int, row: int, source_player: PlayerProbe = null) -> void:
 	if _hazard_cooldown > 0.0 or _game_over:
 		return
 	if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
 		return
 	var tile: int = grid[col][row]
+	var target_player := source_player if source_player else player_node
 	if tile == TileType.LAVA or tile == TileType.LAVA_FLOW:
-		_damage_player(0.5)
+		target_player.take_damage(0.5)
+		SoundManager.play_damage_sound()
+		_shake_camera(5.0, 0.25)
 		_hazard_cooldown = HAZARD_COOLDOWN_TIME
 	elif tile == TileType.EXPLOSIVE or tile == TileType.EXPLOSIVE_ARMED:
 		_mine_cell(col, row)
 		_explode_area(col, row)
 		_hazard_cooldown = HAZARD_COOLDOWN_TIME
 
-	# Spider web — slow player on contact, then destroy the web
+	# Spider web — slow this specific player on contact, then destroy the web
 	var web_key := Vector2i(col, row)
 	if _web_sprites.has(web_key):
 		var web_sprite: Sprite2D = _web_sprites[web_key]
 		_web_sprites.erase(web_key)
 		web_sprite.queue_free()
-		player_node.apply_web_slow()
+		target_player.apply_web_slow()
 
 # ---------------------------------------------------------------------------
 # Terrain decorations — plants, coral, spider webs
@@ -1501,9 +1628,14 @@ func _mine_cell(col: int, row: int) -> void:
 	_trigger_gravity_above(col, row)
 
 # Spawns physical ore chunks that scatter from the mined tile position.
-# The player and forager ant must collect them to bank the minerals.
+# In multiplayer, minerals are awarded immediately (no physical chunks to sync across peers).
 func _spawn_ore_chunks(tile: int, minerals: int, world_pos: Vector2) -> void:
 	if minerals <= 0:
+		return
+	if NetworkManager.is_multiplayer_session:
+		# Host awards directly; the synced resource broadcast keeps guest HUD current.
+		GameManager.add_currency(minerals)
+		GameManager.track_ore_chunk_collected_by_type(tile)
 		return
 	# Random chunk count — more minerals create more pieces (capped to keep it tidy).
 	var chunk_count: int = randi_range(3, mini(6, minerals))
@@ -1560,6 +1692,13 @@ func _damage_player(amount: float) -> void:
 func _on_player_died() -> void:
 	if _game_over:
 		return
+	if NetworkManager.is_multiplayer_session:
+		# Co-op death = ghost mode, not game over.  The run continues until energy runs out.
+		var local_p := _get_local_player()
+		if local_p:
+			local_p.visible = false
+		_show_zone_banner("YOU DIED — SPECTATING", Color(1.0, 0.25, 0.25), -1)
+		return
 	_game_over = true
 	_show_game_over_overlay("LOST IN SPACE", "Run stardust has been lost...")
 	await get_tree().create_timer(2.5).timeout
@@ -1568,8 +1707,13 @@ func _on_player_died() -> void:
 func _on_out_of_energy() -> void:
 	if _game_over:
 		return
+	# Only host triggers game over; guest waits for rpc_trigger_game_over
+	if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
+		return
 	_game_over = true
 	_show_game_over_overlay("OUT OF ENERGY", "Run stardust has been lost...")
+	if NetworkManager.is_multiplayer_session and NetworkManager.guest_peer_id > 0:
+		rpc_trigger_game_over.rpc_id(NetworkManager.guest_peer_id)
 	await get_tree().create_timer(2.5).timeout
 	GameManager.lose_run()
 
@@ -1688,9 +1832,10 @@ func _play_spawn_animation() -> void:
 # ---------------------------------------------------------------------------
 
 func _update_depth() -> void:
-	if not player_node:
+	var local_p := _get_local_player()
+	if not local_p:
 		return
-	var depth: int = player_node.get_depth_row()
+	var depth: int = local_p.get_depth_row()
 	if depth != _last_depth:
 		_last_depth = depth
 		EventBus.depth_changed.emit(depth)
@@ -1777,8 +1922,10 @@ func _get_interact_key_name() -> String:
 	return "E"
 
 func _update_interact_prompt() -> void:
-	if not player_node:
+	var local_p := _get_local_player()
+	if not local_p:
 		return
+	# Reuse player_node reference for prompt display helpers (always host's node for prompt UI)
 	var key := _get_interact_key_name()
 	var adj := [Vector2i(0,0), Vector2i(-1,0), Vector2i(1,0), Vector2i(0,-1), Vector2i(0,1)]
 	# Station prompts
@@ -1789,46 +1936,52 @@ func _update_interact_prompt() -> void:
 		TileType.CAT_TAVERN:       "Press %s to enter Cat Tavern",
 	}
 	for offset in adj:
-		var check: Vector2i = player_node.get_grid_pos() + offset
+		var check: Vector2i = local_p.get_grid_pos() + offset
 		if check.x < 0 or check.x >= GRID_COLS or check.y < 0 or check.y >= GRID_ROWS:
 			continue
 		var t: int = grid[check.x][check.y]
 		if t in STATION_PROMPTS:
-			player_node.show_prompt(STATION_PROMPTS[t] % key)
+			local_p.show_prompt(STATION_PROMPTS[t] % key)
 			var world_pos := Vector2(check.x * CELL_SIZE + CELL_SIZE * 0.5, check.y * CELL_SIZE)
-			player_node.set_prompt_position(get_viewport().get_canvas_transform() * world_pos)
+			local_p.set_prompt_position(get_viewport().get_canvas_transform() * world_pos)
 			return
 	# Trader prompt
 	var nearby_trader := trader_system.get_nearby_trader()
 	if nearby_trader.size() > 0:
-		player_node.show_prompt("Press %s to trade" % key)
-		player_node.set_prompt_position(
+		local_p.show_prompt("Press %s to trade" % key)
+		local_p.set_prompt_position(
 			get_viewport().get_canvas_transform() * (nearby_trader["world_pos"] as Vector2)
 			+ Vector2(0, -CELL_SIZE))
 		return
 	# Farm NPC prompt
 	var nearby_npc: FarmAnimalNPC = _get_nearby_farm_npc()
 	if nearby_npc:
-		player_node.show_prompt("Press %s to pet the %s" % [key, nearby_npc.animal_name])
-		player_node.set_prompt_position(
-			get_viewport().get_canvas_transform() * (player_node.global_position + Vector2(0, -CELL_SIZE)))
+		local_p.show_prompt("Press %s to pet the %s" % [key, nearby_npc.animal_name])
+		local_p.set_prompt_position(
+			get_viewport().get_canvas_transform() * (local_p.global_position + Vector2(0, -CELL_SIZE)))
 	else:
-		player_node.hide_prompt()
+		local_p.hide_prompt()
 
 func _get_nearby_farm_npc() -> FarmAnimalNPC:
-	if not player_node:
+	var local_p := _get_local_player()
+	if not local_p:
 		return null
-	var player_gp := player_node.get_grid_pos()
+	var player_gp := local_p.get_grid_pos()
 	if player_gp.y >= SURFACE_ROWS:
 		return null
-	var player_pos := player_node.global_position
+	var player_pos := local_p.global_position
 	for npc in _farm_npcs:
 		if npc.global_position.distance_to(player_pos) <= CELL_SIZE * 2:
 			return npc
 	return null
 
 func _try_interact() -> void:
-	if not player_node:
+	var local_p := _get_local_player()
+	if not local_p:
+		return
+	# In multiplayer only the host can use stations (resource spending is host-authoritative)
+	if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
+		EventBus.ore_mined_popup.emit(0, "Only the host can interact with stations.")
 		return
 	var nearby_trader := trader_system.get_nearby_trader()
 	if nearby_trader.size() > 0:
@@ -1841,7 +1994,7 @@ func _try_interact() -> void:
 		TileType.CAT_TAVERN:       "show_cat_tavern",
 	}
 	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
-		var check: Vector2i = player_node.get_grid_pos() + offset
+		var check: Vector2i = local_p.get_grid_pos() + offset
 		if check.x < 0 or check.x >= GRID_COLS or check.y < 0 or check.y >= GRID_ROWS:
 			continue
 		var t: int = grid[check.x][check.y]
@@ -2009,3 +2162,79 @@ func _try_remove_ladder_at(gp: Vector2i) -> void:
 	EventBus.ladder_count_changed.emit(GameManager.ladder_count)
 	EventBus.ore_mined_popup.emit(0, "Ladder retrieved!  (%d in stock)" % GameManager.ladder_count)
 	queue_redraw()
+
+# ---------------------------------------------------------------------------
+# Multiplayer RPCs
+# ---------------------------------------------------------------------------
+
+## Guest → Host: request a tile mine at grid_pos.
+## Host validates range using the synced guest position, then executes try_mine_at.
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_request_mine(grid_pos: Vector2i) -> void:
+	if not NetworkManager.is_host:
+		return
+	# Validate that the guest's current (synced) position is within range
+	if guest_player_node:
+		var player_tile := Vector2i(
+			floori(guest_player_node.global_position.x / CELL_SIZE),
+			floori(guest_player_node.global_position.y / CELL_SIZE)
+		)
+		var dist := Vector2(grid_pos - player_tile).length()
+		if dist > player_node.mine_range:
+			return
+	try_mine_at(grid_pos)
+
+## Host → Guest: a tile was fully destroyed — update grid and play break visuals.
+@rpc("authority", "call_remote", "reliable")
+func rpc_tile_broken(grid_pos: Vector2i, burst_r: float, burst_g: float, burst_b: float) -> void:
+	var col := grid_pos.x
+	var row := grid_pos.y
+	if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
+		return
+	_mine_cell(col, row)
+	var burst_color := Color(burst_r, burst_g, burst_b)
+	var world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
+	_spawn_mining_particles(world_pos, burst_color, 8, 60.0, 200.0)
+	SoundManager.play_drill_sound()
+	queue_redraw()
+
+## Host → Guest: partial hit on a tile — sync the breaking overlay.
+@rpc("authority", "call_remote", "reliable")
+func rpc_tile_hit(grid_pos: Vector2i, damage_ratio: float) -> void:
+	_update_breaking_overlay(grid_pos, damage_ratio)
+	_flash_cells[grid_pos] = 1.0
+	SoundManager.play_impact_sound()
+
+## Host → Guest: sync shared run resources so the guest HUD stays accurate.
+@rpc("authority", "call_remote", "unreliable")
+func rpc_sync_resources(minerals: int, energy: int) -> void:
+	GameManager.run_mineral_currency = minerals
+	GameManager.current_energy = energy
+	EventBus.minerals_changed.emit(minerals)
+	EventBus.energy_changed.emit(energy, GameManager.get_max_energy())
+
+## Host → Guest: the run has ended successfully (exit station reached).
+@rpc("authority", "call_remote", "reliable")
+func rpc_trigger_run_end() -> void:
+	if not _game_over:
+		_game_over = true
+		GameManager.complete_run()
+
+## Host → Guest: the run failed (energy ran out / host died).
+@rpc("authority", "call_remote", "reliable")
+func rpc_trigger_game_over() -> void:
+	if not _game_over:
+		_game_over = true
+		_show_game_over_overlay("OUT OF ENERGY", "Run stardust has been lost...")
+		await get_tree().create_timer(2.5).timeout
+		GameManager.lose_run()
+
+## Host → Guest: deal damage to the guest player (hazard or explosion).
+@rpc("authority", "call_remote", "reliable")
+func rpc_damage_guest(amount: float) -> void:
+	# On the guest machine, guest_player_node is the local player
+	var local_p := _get_local_player()
+	if local_p:
+		local_p.take_damage(amount)
+		SoundManager.play_damage_sound()
+		_shake_camera(5.0, 0.25)

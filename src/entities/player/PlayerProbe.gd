@@ -105,6 +105,9 @@ func _ready() -> void:
 	add_child(_particle_layer)
 	_particle_layer.draw.connect(_draw_particles_on_layer)
 
+	# Multiplayer: set authority based on peer assignment (0 = not yet assigned / single player)
+	# MiningLevel sets multiplayer_authority after instantiating the second player.
+
 func _init_followers() -> void:
 	_ice_follower.visible = GameManager.equipped_ice
 	_leaf_follower.visible = GameManager.equipped_leaf
@@ -121,7 +124,19 @@ func update_follower_visibility() -> void:
 	if GameManager.equipped_leaf and not _leaf_follower.is_playing():
 		_leaf_follower.play(&"idle")
 
+## RPC called each frame by the authoritative peer to keep the visual in sync.
+@rpc("any_peer", "call_remote", "unreliable_ordered")
+func rpc_sync_transform(pos: Vector2, facing_left: bool, anim: StringName) -> void:
+	global_position = pos
+	sprite.flip_h = facing_left
+	if sprite.animation != anim:
+		sprite.play(anim)
+
 func _physics_process(delta: float) -> void:
+	# Non-authority instances are driven solely by rpc_sync_transform — no local simulation.
+	if NetworkManager.is_multiplayer_session and not is_multiplayer_authority():
+		return
+
 	if not mining_level or mining_level._game_over or mining_level.any_ui_open() or (mining_level.get("_spawning") == true):
 		return
 
@@ -217,6 +232,10 @@ func _physics_process(delta: float) -> void:
 	# Update follower trail and animations
 	_update_followers()
 
+	# Broadcast transform to the remote peer each frame (unreliable — slight lag is fine)
+	if NetworkManager.is_multiplayer_session:
+		rpc_sync_transform.rpc(global_position, _facing_left, sprite.animation)
+
 func _update_animation(delta: float) -> void:
 	var anim: StringName
 
@@ -272,7 +291,11 @@ func _handle_mining(delta: float) -> void:
 		if _mine_timer >= MINE_INTERVAL:
 			_mine_timer -= MINE_INTERVAL
 			if mining_level:
-				mining_level.try_mine_at(grid_pos)
+				if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
+					# Guest: send mine request to host for server-side validation
+					mining_level.rpc_request_mine.rpc_id(1, grid_pos)
+				else:
+					mining_level.try_mine_at(grid_pos)
 		_mining = true
 	else:
 		_mining = false
@@ -289,7 +312,7 @@ func _check_hazard_contact() -> void:
 
 	for col in range(min_col, max_col + 1):
 		for row in range(min_row, max_row + 1):
-			mining_level.check_player_hazard(col, row)
+			mining_level.check_player_hazard(col, row, self)
 
 func get_grid_pos() -> Vector2i:
 	return Vector2i(
