@@ -103,6 +103,13 @@ func _ready() -> void:
 	print("GameManager initialized")
 	# Legacy load_game() removed — SaveManager now handles slot-based persistence.
 	# On first boot, SaveManager._migrate_legacy_save() imports the old file.
+	get_tree().set_auto_accept_quit(false)
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		if SaveManager.active_slot >= 0:
+			SaveManager.save_active_slot()
+		get_tree().quit()
 
 func _process(delta: float) -> void:
 	if current_state == GameState.PLAYING:
