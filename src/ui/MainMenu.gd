@@ -5,6 +5,16 @@ const WISHLIST_URL = "https://lost-rabbit-digital.itch.io/pickaxe-pioneer"
 @onready var credits_panel: PanelContainer = $CreditsPanel
 @onready var version_label: Label = $VersionLabel
 
+# Inline sub-menu buttons
+@onready var _continue_btn: Button = $VBoxContainer/ContinueButton
+@onready var _new_game_btn: Button = $VBoxContainer/NewGameButton
+@onready var _sp_back_btn: Button = $VBoxContainer/SpBackButton
+@onready var _host_btn: Button = $VBoxContainer/HostButton
+@onready var _join_btn: Button = $VBoxContainer/JoinButton
+@onready var _mp_back_btn: Button = $VBoxContainer/MpBackButton
+
+var _active_submenu: String = ""  # "sp", "mp", or ""
+
 # Save slot popup (built in code)
 var _save_popup: Control = null
 var _popup_mode: String = ""  # "new_game" or "continue"
@@ -66,6 +76,13 @@ func _ready() -> void:
 	$CreditsButton.pressed.connect(_on_credits_pressed)
 	$CreditsPanel/VBox/CloseButton.pressed.connect(_on_credits_close_pressed)
 
+	_continue_btn.pressed.connect(_on_inline_continue_pressed)
+	_new_game_btn.pressed.connect(_on_inline_new_game_pressed)
+	_sp_back_btn.pressed.connect(_show_main_buttons)
+	_host_btn.pressed.connect(_on_inline_host_pressed)
+	_join_btn.pressed.connect(_on_inline_join_pressed)
+	_mp_back_btn.pressed.connect(_show_main_buttons)
+
 	version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
 
 	_build_settings_overlay()
@@ -86,11 +103,54 @@ func _ready() -> void:
 # ---------------------------------------------------------------------------
 
 func _on_singleplayer_pressed() -> void:
-	_sp_continue_btn.visible = SaveManager.has_any_save()
-	_sp_overlay.show()
+	_active_submenu = "sp"
+	_hide_main_buttons()
+	_continue_btn.visible = SaveManager.has_any_save()
+	_new_game_btn.show()
+	_sp_back_btn.show()
 
 func _on_multiplayer_pressed() -> void:
-	_mp_show_page("menu")
+	_active_submenu = "mp"
+	_hide_main_buttons()
+	_host_btn.show()
+	_join_btn.show()
+	_mp_back_btn.show()
+
+func _hide_main_buttons() -> void:
+	$VBoxContainer/SingleplayerButton.hide()
+	$VBoxContainer/MultiplayerButton.hide()
+	$VBoxContainer/SettingsButton.hide()
+	$VBoxContainer/QuitButton.hide()
+
+func _show_main_buttons() -> void:
+	_active_submenu = ""
+	$VBoxContainer/SingleplayerButton.show()
+	$VBoxContainer/MultiplayerButton.show()
+	$VBoxContainer/SettingsButton.show()
+	$VBoxContainer/QuitButton.show()
+	_continue_btn.hide()
+	_new_game_btn.hide()
+	_sp_back_btn.hide()
+	_host_btn.hide()
+	_join_btn.hide()
+	_mp_back_btn.hide()
+
+func _on_inline_continue_pressed() -> void:
+	_popup_mode = "continue"
+	_refresh_popup()
+	_save_popup.show()
+
+func _on_inline_new_game_pressed() -> void:
+	_popup_mode = "new_game"
+	_refresh_popup()
+	_save_popup.show()
+
+func _on_inline_host_pressed() -> void:
+	_mp_show_page("host_type")
+	_mp_overlay.show()
+
+func _on_inline_join_pressed() -> void:
+	_mp_show_page("join")
 	_mp_overlay.show()
 
 func _on_quit_pressed() -> void:
@@ -120,8 +180,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif _mp_overlay != null and _mp_overlay.visible:
 			_on_mp_back_pressed()
 			get_viewport().set_input_as_handled()
-		elif _sp_overlay != null and _sp_overlay.visible:
-			_on_sp_back_pressed()
+		elif _active_submenu != "":
+			_show_main_buttons()
 			get_viewport().set_input_as_handled()
 
 func _on_credits_pressed() -> void:
@@ -506,7 +566,7 @@ func _on_mp_back_pressed() -> void:
 				NetworkManager.disconnect_session()
 			_mp_overlay.hide()
 		"host_type":
-			_mp_show_page("menu")
+			_mp_overlay.hide()
 		"host_save":
 			_mp_show_page("host_type")
 		"lobby":
@@ -517,7 +577,7 @@ func _on_mp_back_pressed() -> void:
 		"join":
 			if NetworkManager.is_multiplayer_session:
 				NetworkManager.disconnect_session()
-			_mp_show_page("menu")
+			_mp_overlay.hide()
 
 func _start_mp_hosting() -> void:
 	var port := NetworkManager.DEFAULT_PORT
