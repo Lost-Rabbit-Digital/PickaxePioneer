@@ -59,7 +59,7 @@ func _ready() -> void:
 	_gem_legs_button.pressed.connect(_on_gem_legs_pressed)
 
 	_gem_mandibles_button = Button.new()
-	_gem_mandibles_button.tooltip_text = "A gem in your pickaxe? Overkill. Absolutely do it."
+	_gem_mandibles_button.tooltip_text = "A gem in your cargo hold? More space, more ore. Absolutely do it."
 	$Panel/VBoxContainer.add_child(_gem_mandibles_button)
 	_gem_mandibles_button.pressed.connect(_on_gem_mandibles_pressed)
 
@@ -94,9 +94,9 @@ func _update_ui() -> void:
 		current_speed, current_speed + 30.0, legs_cost
 	]
 
-	var current_power := GameManager.get_mandibles_power()
-	drill_button.text = "Enhance Space Pickaxe Lv%d — Mining Power: %d → %d (%d Minerals)" % [
-		GameManager.mandibles_level, current_power, current_power + 3, mandibles_cost
+	var current_cap := GameManager.get_ore_capacity()
+	drill_button.text = "Expand Cargo Hold Lv%d — Ore Capacity: %d → %d (%d Minerals)" % [
+		GameManager.mandibles_level, current_cap, current_cap + 25, mandibles_cost
 	]
 
 	var sense_level := GameManager.mineral_sense_level
@@ -127,10 +127,10 @@ func _update_ui() -> void:
 		_gem_legs_button.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
 
 	if GameManager.mandibles_gem_socketed:
-		_gem_mandibles_button.text = "[SOCKETED] Pickaxe Gem — +4 Mining Power"
+		_gem_mandibles_button.text = "[SOCKETED] Cargo Gem — +25 Ore Capacity"
 		_gem_mandibles_button.disabled = true
 	else:
-		_gem_mandibles_button.text = "Socket Pickaxe Gem into Space Pickaxe — +4 Mining Power (%d Gems)" % GameManager.GEM_SOCKET_COST
+		_gem_mandibles_button.text = "Socket Cargo Gem into Cargo Hold — +25 Ore Capacity (%d Gems)" % GameManager.GEM_SOCKET_COST
 		_gem_mandibles_button.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
 
 	if GameManager.sense_gem_socketed:

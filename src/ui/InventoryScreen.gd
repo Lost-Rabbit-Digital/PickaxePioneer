@@ -254,7 +254,7 @@ func _draw_equipment(parent: Control, x: int, y: int, w: int) -> int:
 			"label": "Claws",
 			"color": Color(0.95, 0.65, 0.15),
 			"level": GameManager.mandibles_level,
-			"stat": "Power: %d" % GameManager.get_mandibles_power(),
+			"stat": "Capacity: %d" % GameManager.get_ore_capacity(),
 		},
 		{
 			"label": "Whiskers",
