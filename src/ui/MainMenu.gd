@@ -16,8 +16,11 @@ const WISHLIST_URL = "https://lost-rabbit-digital.itch.io/pickaxe-pioneer"
 @onready var _lan_btn: Button = $VBoxContainer/LanButton
 @onready var _steam_btn: Button = $VBoxContainer/SteamButton
 @onready var _hosting_back_btn: Button = $VBoxContainer/HostingBackButton
+@onready var _host_save_continue_btn: Button = $VBoxContainer/HostSaveContinueButton
+@onready var _host_save_new_game_btn: Button = $VBoxContainer/HostSaveNewGameButton
+@onready var _host_save_back_btn: Button = $VBoxContainer/HostSaveBackButton
 
-var _active_submenu: String = ""  # "sp", "mp", or ""
+var _active_submenu: String = ""  # "sp", "mp", "hosting", "host_save", or ""
 
 # Save slot popup (built in code)
 var _save_popup: Control = null
@@ -89,6 +92,9 @@ func _ready() -> void:
 	_lan_btn.pressed.connect(_on_lan_pressed)
 	_steam_btn.disabled = true
 	_hosting_back_btn.pressed.connect(_on_hosting_back_pressed)
+	_host_save_continue_btn.pressed.connect(_on_inline_host_save_continue_pressed)
+	_host_save_new_game_btn.pressed.connect(_on_inline_host_save_new_game_pressed)
+	_host_save_back_btn.pressed.connect(_on_inline_host_save_back_pressed)
 
 	version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
 
@@ -149,6 +155,9 @@ func _show_main_buttons() -> void:
 	_lan_btn.hide()
 	_steam_btn.hide()
 	_hosting_back_btn.hide()
+	_host_save_continue_btn.hide()
+	_host_save_new_game_btn.hide()
+	_host_save_back_btn.hide()
 
 func _on_inline_continue_pressed() -> void:
 	_popup_mode = "continue"
@@ -176,8 +185,14 @@ func _on_inline_join_pressed() -> void:
 
 func _on_lan_pressed() -> void:
 	_mp_host_method = "lan"
-	_mp_show_page("host_save")
-	_mp_overlay.show()
+	_active_submenu = "host_save"
+	_lan_btn.hide()
+	_steam_btn.hide()
+	_hosting_back_btn.hide()
+	_menu_title_label.text = "HOST — SELECT SAVE"
+	_host_save_continue_btn.visible = SaveManager.has_any_save()
+	_host_save_new_game_btn.show()
+	_host_save_back_btn.show()
 
 func _on_hosting_back_pressed() -> void:
 	_active_submenu = "mp"
@@ -188,6 +203,28 @@ func _on_hosting_back_pressed() -> void:
 	_host_btn.show()
 	_join_btn.show()
 	_mp_back_btn.show()
+
+func _on_inline_host_save_back_pressed() -> void:
+	_active_submenu = "hosting"
+	_host_save_continue_btn.hide()
+	_host_save_new_game_btn.hide()
+	_host_save_back_btn.hide()
+	_menu_title_label.text = "HOSTING"
+	_lan_btn.show()
+	_steam_btn.show()
+	_hosting_back_btn.show()
+
+func _on_inline_host_save_continue_pressed() -> void:
+	_mp_host_pending = true
+	_popup_mode = "continue"
+	_refresh_popup()
+	_save_popup.show()
+
+func _on_inline_host_save_new_game_pressed() -> void:
+	_mp_host_pending = true
+	_popup_mode = "new_game"
+	_refresh_popup()
+	_save_popup.show()
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()
@@ -603,18 +640,16 @@ func _on_mp_back_pressed() -> void:
 			_mp_overlay.hide()
 		"host_type":
 			_mp_overlay.hide()
-		"host_save":
-			_mp_overlay.hide()
-			_active_submenu = "hosting"
-			_menu_title_label.text = "HOSTING"
-			_lan_btn.show()
-			_steam_btn.show()
-			_hosting_back_btn.show()
 		"lobby":
 			if NetworkManager.is_multiplayer_session:
 				NetworkManager.disconnect_session()
 			_mp_lobby_start_btn.visible = false
-			_mp_show_page("host_save")
+			_mp_overlay.hide()
+			_active_submenu = "host_save"
+			_menu_title_label.text = "HOST — SELECT SAVE"
+			_host_save_continue_btn.visible = SaveManager.has_any_save()
+			_host_save_new_game_btn.show()
+			_host_save_back_btn.show()
 		"join":
 			if NetworkManager.is_multiplayer_session:
 				NetworkManager.disconnect_session()
@@ -1427,6 +1462,5 @@ func _on_delete_confirm_proceed() -> void:
 		_refresh_popup()
 		if _sp_continue_btn != null:
 			_sp_continue_btn.visible = SaveManager.has_any_save()
-		if _mp_page_host_save_continue_btn != null:
-			_mp_page_host_save_continue_btn.visible = SaveManager.has_any_save()
+		_host_save_continue_btn.visible = SaveManager.has_any_save()
 	_pending_delete_index = -1

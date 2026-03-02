@@ -183,6 +183,24 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "BACK"
 
+[node name="HostSaveContinueButton" type="Button" parent="VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "CONTINUE"
+
+[node name="HostSaveNewGameButton" type="Button" parent="VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "NEW GAME"
+
+[node name="HostSaveBackButton" type="Button" parent="VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "BACK"
+
 [node name="SocialButtons" type="HBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 3
