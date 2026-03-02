@@ -22,6 +22,9 @@ var run_ore_chunk_counts: Dictionary = {}
 # Base ore capacity per run (can be expanded by Cargo Bay spaceship upgrade)
 const BASE_ORE_CAPACITY: int = 200
 var last_overworld_node_name: String = ""
+## Path of the scene currently loaded — used by drop-in logic to route a late-joining guest
+## to the same location as the host rather than always sending them to the overworld.
+var current_scene_path: String = ""
 
 # Ores allowed to spawn in the current level instance (set from MapNode.ore_types).
 # Empty array means all ores can spawn (default behaviour).
@@ -180,14 +183,25 @@ func rpc_start_game_as_guest(carapace_lvl: int, legs_lvl: int, mandibles_lvl: in
 	await _transition_to_scene("res://src/levels/Overworld.tscn")
 
 ## Drop-in: called when a guest connects while the host is already in-game.
-## Sends the guest the host's kit and loads them into the overworld.
+## Sends the guest the host's kit and routes them to the host's current location.
 func _on_guest_connected(peer_id: int) -> void:
 	if not NetworkManager.is_host or current_state != GameState.PLAYING:
 		return
-	rpc_start_game_as_guest.rpc_id(peer_id,
-		carapace_level, legs_level, mandibles_level, mineral_sense_level,
-		carapace_gem_socketed, legs_gem_socketed, mandibles_gem_socketed, sense_gem_socketed,
-		warp_drive_built, cargo_bay_built, long_scanner_built, gem_refinery_built, trade_amplifier_built)
+	if "MiningLevel" in current_scene_path:
+		# Host is mid-mine — send guest directly into the same mine.
+		rpc_drop_in_to_mine_as_guest.rpc_id(peer_id,
+			carapace_level, legs_level, mandibles_level, mineral_sense_level,
+			carapace_gem_socketed, legs_gem_socketed, mandibles_gem_socketed, sense_gem_socketed,
+			warp_drive_built, cargo_bay_built, long_scanner_built, gem_refinery_built, trade_amplifier_built,
+			current_scene_path, current_energy,
+			sky_color.r, sky_color.g, sky_color.b,
+			allowed_ore_types, allowed_hazard_types)
+	else:
+		# Host is on the overworld (or a settlement) — send guest to overworld.
+		rpc_start_game_as_guest.rpc_id(peer_id,
+			carapace_level, legs_level, mandibles_level, mineral_sense_level,
+			carapace_gem_socketed, legs_gem_socketed, mandibles_gem_socketed, sense_gem_socketed,
+			warp_drive_built, cargo_bay_built, long_scanner_built, gem_refinery_built, trade_amplifier_built)
 
 func pause_game() -> void:
 	change_state(GameState.PAUSED)
@@ -278,6 +292,43 @@ func rpc_load_mine_as_guest(path: String, start_energy: int,
 	EventBus.energy_changed.emit(current_energy, get_max_energy())
 	await _transition_to_scene(path)
 
+## Guest RPC: drop in to the host's active mine run mid-session.
+## Applies the host's kit then loads the same MiningLevel the host is already in.
+@rpc("authority", "call_remote", "reliable")
+func rpc_drop_in_to_mine_as_guest(carapace_lvl: int, legs_lvl: int, mandibles_lvl: int,
+		mineral_sense_lvl: int, carapace_gem: bool, legs_gem: bool, mandibles_gem: bool,
+		sense_gem: bool, warp: bool, cargo: bool, scanner: bool, refinery: bool, amplifier: bool,
+		mine_path: String, start_energy: int,
+		sky_r: float, sky_g: float, sky_b: float,
+		ore_types: Array, hazard_types: Array) -> void:
+	carapace_level = carapace_lvl
+	legs_level = legs_lvl
+	mandibles_level = mandibles_lvl
+	mineral_sense_level = mineral_sense_lvl
+	carapace_gem_socketed = carapace_gem
+	legs_gem_socketed = legs_gem
+	mandibles_gem_socketed = mandibles_gem
+	sense_gem_socketed = sense_gem
+	warp_drive_built = warp
+	cargo_bay_built = cargo
+	long_scanner_built = scanner
+	gem_refinery_built = refinery
+	trade_amplifier_built = amplifier
+	EventBus.multiplayer_guest_kit_updated.emit()
+	run_mineral_currency = 0
+	run_ore_counts.clear()
+	run_ore_earnings.clear()
+	run_ore_chunk_count = 0
+	run_ore_chunk_counts.clear()
+	current_energy = start_energy
+	sky_color = Color(sky_r, sky_g, sky_b)
+	allowed_ore_types = ore_types.duplicate()
+	allowed_hazard_types = hazard_types.duplicate()
+	EventBus.minerals_changed.emit(0)
+	EventBus.energy_changed.emit(current_energy, get_max_energy())
+	change_state(GameState.PLAYING)
+	await _transition_to_scene(mine_path)
+
 func load_settlement_level(scene_path: String) -> void:
 	# Visit a settlement without resetting run state — player keeps banked minerals
 	await _transition_to_scene(scene_path)
@@ -293,6 +344,7 @@ func rpc_load_overworld_as_guest() -> void:
 
 func _transition_to_scene(scene_path: String) -> void:
 	await SceneTransition.fade_to_black(0.5)
+	current_scene_path = scene_path
 	get_tree().change_scene_to_file(scene_path)
 	await get_tree().create_timer(0.1).timeout
 	await SceneTransition.fade_from_black(0.5)
