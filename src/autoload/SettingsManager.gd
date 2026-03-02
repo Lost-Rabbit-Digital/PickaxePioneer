@@ -24,7 +24,7 @@ var custom_binds: Dictionary = {}
 # Actions exposed for rebinding
 const BINDABLE_ACTIONS: Array[String] = [
 	"move_left", "move_right", "jump", "mine", "sprint",
-	"interact", "sonar_ping", "toggle_inventory", "toggle_hat_menu",
+	"interact", "sonar_ping", "toggle_inventory", "toggle_companions_menu",
 ]
 
 const ACTION_DISPLAY_NAMES: Dictionary = {
@@ -36,7 +36,7 @@ const ACTION_DISPLAY_NAMES: Dictionary = {
 	"interact": "Interact",
 	"sonar_ping": "Sonar Ping",
 	"toggle_inventory": "Inventory",
-	"toggle_hat_menu": "Hat Menu",
+	"toggle_companions_menu": "Companions",
 }
 
 const FRAMERATE_OPTIONS: Array[int] = [0, 30, 60, 120, 144, 240]
