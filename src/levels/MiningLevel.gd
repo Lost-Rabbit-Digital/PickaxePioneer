@@ -1269,9 +1269,6 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 			if _shroom_charges[0] > 0 and tile in ORE_TILES:
 				minerals *= 2
 				_shroom_charges[0] -= 1
-			# Track ore counts for inventory (ore tiles only)
-			if tile in ORE_TILES:
-				shop_system.run_ore_counts[tile] = shop_system.run_ore_counts.get(tile, 0) + 1
 			# Fossil forgiveness check (§3.6) — before awarding base minerals
 			fossil_system.check(tile, FOSSIL_TYPES.get(tile, {}))
 			# Consecutive smelting bonus (§3.5) — awards extra currency internally

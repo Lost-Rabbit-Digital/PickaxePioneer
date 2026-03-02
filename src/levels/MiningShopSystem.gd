@@ -59,8 +59,7 @@ const VH: int = 720
 var player_node: Node = null
 var cat_system: CatSystem = null
 
-# Run-scope ore/bar data (owned here, shared with MiningLevel)
-var run_ore_counts: Dictionary = {}    # TileType int -> count mined this run
+# Run-scope bar data (owned here, shared with MiningLevel)
 var run_bar_counts: Dictionary = {}    # ore_group -> bars smelted this run
 
 # Visibility flags polled by MiningLevel._physics_process / _unhandled_input
@@ -140,18 +139,18 @@ func close_active_shop() -> void:
 func get_ore_group_count(ore_group: String) -> int:
 	var total := 0
 	for tile_type in SMELTERY_ORE_GROUP_TILES[ore_group]:
-		total += run_ore_counts.get(tile_type, 0)
+		total += GameManager.run_ore_chunk_counts.get(tile_type, 0)
 	return total
 
 
 func consume_ores_for_smelt(ore_group: String, count: int) -> void:
 	var remaining := count
 	for tile_type in SMELTERY_ORE_GROUP_TILES[ore_group]:
-		var have: int = run_ore_counts.get(tile_type, 0)
+		var have: int = GameManager.run_ore_chunk_counts.get(tile_type, 0)
 		if have <= 0:
 			continue
 		var take := mini(have, remaining)
-		run_ore_counts[tile_type] = have - take
+		GameManager.run_ore_chunk_counts[tile_type] = have - take
 		remaining -= take
 		if remaining <= 0:
 			break
