@@ -128,6 +128,26 @@ func _ready() -> void:
 	if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
 		_show_coop_guest_banner()
 
+	# Sync the fully-built star chart to the guest so both peers see identical
+	# planet names, positions, connections, and sprite frames.
+	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+		rpc_apply_planet_config.rpc_id(NetworkManager.guest_peer_id, SaveManager.get_planet_config())
+
+	queue_redraw()
+
+## Guest RPC: mirror the host's star chart so the guest sees the same planet
+## names, positions, connections, and sprite frames as the host.
+## Clears whatever layout the guest's _ready() generated and rebuilds from the
+## host's saved config.
+@rpc("authority", "call_remote", "reliable")
+func rpc_apply_planet_config(config: Dictionary) -> void:
+	# Drop all neighbour edges built by _ready() before re-applying from config.
+	for node in nodes:
+		node.neighbors.clear()
+	_restore_mines(config)
+	_restore_connections(config)
+	if config.has("node_positions"):
+		_restore_node_positions(config["node_positions"])
 	queue_redraw()
 
 func _show_coop_guest_banner() -> void:

@@ -202,6 +202,15 @@ func _on_guest_connected(peer_id: int) -> void:
 			carapace_level, legs_level, mandibles_level, mineral_sense_level,
 			carapace_gem_socketed, legs_gem_socketed, mandibles_gem_socketed, sense_gem_socketed,
 			warp_drive_built, cargo_bay_built, long_scanner_built, gem_refinery_built, trade_amplifier_built)
+		# Sync the star chart so the guest's overworld shows the same planet
+		# names, positions, and connections as the host's.  The RPC is received
+		# after the guest's Overworld._ready() runs, so it safely overrides any
+		# layout the guest randomised locally.
+		var config := SaveManager.get_planet_config()
+		if not config.is_empty():
+			var overworld := get_tree().current_scene as Overworld
+			if overworld:
+				overworld.rpc_apply_planet_config.rpc_id(peer_id, config)
 
 func pause_game() -> void:
 	change_state(GameState.PAUSED)
