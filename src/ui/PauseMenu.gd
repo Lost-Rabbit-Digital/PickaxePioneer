@@ -91,12 +91,26 @@ func _build_ui() -> void:
 	exit_btn.pressed.connect(_on_exit_pressed)
 	vbox.add_child(exit_btn)
 
+	var version_panel := PanelContainer.new()
+	var version_style := StyleBoxFlat.new()
+	version_style.bg_color = Color(0.05, 0.05, 0.05, 0.6)
+	version_style.corner_radius_top_left = 4
+	version_style.corner_radius_top_right = 4
+	version_style.corner_radius_bottom_right = 4
+	version_style.corner_radius_bottom_left = 4
+	version_style.content_margin_left = 8.0
+	version_style.content_margin_top = 3.0
+	version_style.content_margin_right = 8.0
+	version_style.content_margin_bottom = 3.0
+	version_panel.add_theme_stylebox_override("panel", version_style)
+	version_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_version_label = Label.new()
 	_version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
 	_version_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_version_label.add_theme_font_size_override("font_size", 12)
-	_version_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 0.6))
-	vbox.add_child(_version_label)
+	_version_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	version_panel.add_child(_version_label)
+	vbox.add_child(version_panel)
 
 func _add_section_header(parent: VBoxContainer, text: String) -> void:
 	var lbl := Label.new()
