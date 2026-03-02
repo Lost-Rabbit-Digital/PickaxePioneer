@@ -205,7 +205,7 @@ func upgrade_legs() -> void:
 func upgrade_mandibles() -> void:
 	mandibles_level += 1
 	save_game()
-	print("Space Pickaxe enhanced to level ", mandibles_level)
+	print("Cargo hold expanded to level ", mandibles_level)
 
 func upgrade_mineral_sense() -> void:
 	mineral_sense_level += 1
@@ -215,9 +215,9 @@ func upgrade_mineral_sense() -> void:
 func get_sonar_ping_radius() -> float:
 	return 4.0 + mineral_sense_level * 3.0 + (3.0 if sense_gem_socketed else 0.0)
 
-## Ore carrying capacity per run (boosted by Cargo Bay upgrade).
+## Ore carrying capacity per run (boosted by Cargo Bay upgrade and cargo hold upgrades).
 func get_ore_capacity() -> int:
-	return BASE_ORE_CAPACITY + (25 if cargo_bay_built else 0)
+	return BASE_ORE_CAPACITY + (25 if cargo_bay_built else 0) + (mandibles_level * 25) + (25 if mandibles_gem_socketed else 0)
 
 ## Caravan travel speed multiplier on the overworld (boosted by Warp Drive).
 func get_ship_speed_mult() -> float:
@@ -241,7 +241,7 @@ func get_max_speed() -> float:
 	return 300.0 + (legs_level * 30.0) + (15.0 if legs_gem_socketed else 0.0)
 
 func get_mandibles_power() -> int:
-	return 5 + (mandibles_level * 3) + (4 if mandibles_gem_socketed else 0)
+	return 5
 
 func consume_energy(amount: int) -> bool:
 	current_energy -= amount

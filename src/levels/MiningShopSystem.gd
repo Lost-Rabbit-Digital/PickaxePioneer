@@ -493,9 +493,9 @@ func show_upgrade_station() -> void:
 	_upgrade_btn_legs.disabled = GameManager.dollars < legs_cost
 
 	var mandibles_cost := 50 + 25 * GameManager.mandibles_level
-	var power := GameManager.get_mandibles_power()
-	_upgrade_btn_mandibles.text = "Enhance Pickaxe Lv%d — Mining Power: %d → %d  ($%d)" % [
-		GameManager.mandibles_level, power, power + 3, mandibles_cost]
+	var cap := GameManager.get_ore_capacity()
+	_upgrade_btn_mandibles.text = "Expand Cargo Hold Lv%d — Ore Capacity: %d → %d  ($%d)" % [
+		GameManager.mandibles_level, cap, cap + 25, mandibles_cost]
 	_upgrade_btn_mandibles.disabled = GameManager.dollars < mandibles_cost
 
 	_upgrade_layer.visible = true

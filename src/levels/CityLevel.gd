@@ -225,7 +225,7 @@ func _update_ui() -> void:
 	var hp    := GameManager.get_max_health()
 	var energy  := GameManager.get_max_energy()
 	var spd   := GameManager.get_max_speed()
-	var power := GameManager.get_mandibles_power()
+	var cap   := GameManager.get_ore_capacity()
 	var r     := GameManager.get_sonar_ping_radius()
 	var fc    := GameManager.get_sonar_ping_energy_cost()
 
@@ -233,8 +233,8 @@ func _update_ui() -> void:
 		GameManager.carapace_level, hp, hp + 1, _carapace_cost]
 	_btn_legs.text      = "Upgrade Jet Boots Lv%d  —  Energy %d → %d, Speed %.0f → %.0f  ($%d)" % [
 		GameManager.legs_level, energy, energy + 25, spd, spd + 30.0, _legs_cost]
-	_btn_mandibles.text = "Enhance Space Pickaxe Lv%d  —  Power %d → %d  ($%d)" % [
-		GameManager.mandibles_level, power, power + 3, _mandibles_cost]
+	_btn_mandibles.text = "Expand Cargo Hold Lv%d  —  Capacity %d → %d  ($%d)" % [
+		GameManager.mandibles_level, cap, cap + 25, _mandibles_cost]
 	_btn_sense.text     = "Tune Space Whiskers Lv%d  —  Radius %.0f → %.0f tiles, Energy %d → %d  ($%d)" % [
 		GameManager.mineral_sense_level, r, r + 3.0, fc, maxi(3, fc - 2), _sense_cost]
 
@@ -260,10 +260,10 @@ func _update_ui() -> void:
 		_btn_gem_legs.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
 
 	if GameManager.mandibles_gem_socketed:
-		_btn_gem_mandibles.text = "[SOCKETED]  Pickaxe Gem — +4 Mining Power"
+		_btn_gem_mandibles.text = "[SOCKETED]  Cargo Gem — +25 Ore Capacity"
 		_btn_gem_mandibles.disabled = true
 	else:
-		_btn_gem_mandibles.text = "Socket Pickaxe Gem — +4 Mining Power  (%d gems)" % GameManager.GEM_SOCKET_COST
+		_btn_gem_mandibles.text = "Socket Cargo Gem — +25 Ore Capacity  (%d gems)" % GameManager.GEM_SOCKET_COST
 		_btn_gem_mandibles.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
 
 	if GameManager.sense_gem_socketed:
@@ -311,7 +311,7 @@ func _on_mandibles_pressed() -> void:
 	GameManager.upgrade_mandibles()
 	_mandibles_cost += 25
 	GameManager.save_game()
-	_set_status("Space pickaxe enhanced!")
+	_set_status("Cargo hold expanded!")
 	_update_ui()
 
 
@@ -354,7 +354,7 @@ func _on_gem_mandibles_pressed() -> void:
 	GameManager.gem_count -= GameManager.GEM_SOCKET_COST
 	GameManager.mandibles_gem_socketed = true
 	GameManager.save_game()
-	_set_status("Pickaxe Gem socketed!")
+	_set_status("Cargo Gem socketed!")
 	_update_ui()
 
 
