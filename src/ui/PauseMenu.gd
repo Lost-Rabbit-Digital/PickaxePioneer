@@ -284,12 +284,14 @@ func show_menu() -> void:
 	_sync_settings_ui()
 	show()
 	get_tree().paused = true
+	GameManager.pause_game()
 
 func hide_menu() -> void:
 	_cancel_rebind()
 	SettingsManager.save_settings()
 	hide()
 	get_tree().paused = false
+	GameManager.change_state(GameManager.GameState.PLAYING)
 
 func _sync_settings_ui() -> void:
 	# Audio
