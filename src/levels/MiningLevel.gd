@@ -1080,7 +1080,7 @@ func _process(delta: float) -> void:
 			continue
 		if NetworkManager.is_multiplayer_session and not p_check.is_multiplayer_authority():
 			continue
-		var pgp := p_check.get_grid_pos()
+		var pgp: Vector2i = p_check.get_grid_pos()
 		p_check.on_ladder = (
 			pgp.x >= 0 and pgp.x < GRID_COLS and pgp.y >= 0 and pgp.y < GRID_ROWS
 			and grid[pgp.x][pgp.y] == TileType.LADDER
@@ -1377,7 +1377,7 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 		_mine_cell(col, row)
 		# Sync tile break to guest
 		if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
-			var bc := TILE_COLORS.get(tile, Color(0.7, 0.6, 0.4))
+			var bc: Color = TILE_COLORS.get(tile, Color(0.7, 0.6, 0.4))
 			rpc_tile_broken.rpc_id(NetworkManager.guest_peer_id, pos_key, bc.r, bc.g, bc.b)
 		# Boss tile tracking — delegated to BossSystem
 		if tile == TileType.BOSS_SEGMENT or tile == TileType.BOSS_CORE:
