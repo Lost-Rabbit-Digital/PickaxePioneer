@@ -19,12 +19,27 @@ var _pending_slot_index: int = -1
 var _delete_confirm_dialog: Control = null
 var _pending_delete_index: int = -1
 
-# Multiplayer lobby overlay (built in code)
+# Singleplayer overlay
+var _sp_overlay: Control = null
+var _sp_continue_btn: Button = null
+
+# Multiplayer overlay (multi-page)
 var _mp_overlay: Control = null
-var _mp_status_label: Label = null
-var _mp_start_container: Control = null  # Shown only when a guest is connected (host)
+var _mp_title_label: Label = null
+var _mp_page_menu: VBoxContainer = null
+var _mp_page_host_type: VBoxContainer = null
+var _mp_page_host_save: VBoxContainer = null
+var _mp_page_host_save_continue_btn: Button = null
+var _mp_page_lobby: VBoxContainer = null
+var _mp_page_join: VBoxContainer = null
+var _mp_lobby_status: Label = null
+var _mp_lobby_start_btn: Button = null
+var _mp_join_status: Label = null
 var _mp_ip_input: LineEdit = null
-var _mp_is_hosting: bool = false
+var _mp_port_input: LineEdit = null
+var _mp_host_method: String = ""
+var _mp_host_pending: bool = false
+var _mp_current_page: String = "menu"
 
 # Settings overlay (built in code)
 var _settings_overlay: Control = null
@@ -43,8 +58,8 @@ var _keybind_buttons: Dictionary = {}  # action_name -> Button
 var _listening_action: String = ""  # action currently being rebound
 
 func _ready() -> void:
-	$VBoxContainer/NewGameButton.pressed.connect(_on_new_game_pressed)
-	$VBoxContainer/ContinueButton.pressed.connect(_on_continue_pressed)
+	$VBoxContainer/SingleplayerButton.pressed.connect(_on_singleplayer_pressed)
+	$VBoxContainer/MultiplayerButton.pressed.connect(_on_multiplayer_pressed)
 	$VBoxContainer/SettingsButton.pressed.connect(_on_settings_pressed)
 	$VBoxContainer/WishlistButton.pressed.connect(_on_wishlist_pressed)
 	$VBoxContainer/QuitButton.pressed.connect(_on_quit_pressed)
@@ -53,23 +68,12 @@ func _ready() -> void:
 
 	version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
 
-	# Show/hide Continue based on whether any save exists
-	$VBoxContainer/ContinueButton.visible = SaveManager.has_any_save()
-
 	_build_settings_overlay()
 	_build_save_popup()
 	_build_confirm_dialog()
 	_build_delete_confirm_dialog()
+	_build_singleplayer_overlay()
 	_build_multiplayer_overlay()
-
-	# Inject Multiplayer button after SettingsButton (index 3)
-	var mp_btn := Button.new()
-	mp_btn.name = "MultiplayerButton"
-	mp_btn.text = "MULTIPLAYER"
-	mp_btn.add_theme_font_size_override("font_size", 32)
-	mp_btn.pressed.connect(_on_multiplayer_pressed)
-	$VBoxContainer.add_child(mp_btn)
-	$VBoxContainer.move_child(mp_btn, 3)
 
 	# If returning from a multiplayer session that ended (e.g. disconnected), clean up
 	if NetworkManager.is_multiplayer_session:
@@ -81,15 +85,13 @@ func _ready() -> void:
 # Menu buttons
 # ---------------------------------------------------------------------------
 
-func _on_new_game_pressed() -> void:
-	_popup_mode = "new_game"
-	_refresh_popup()
-	_save_popup.show()
+func _on_singleplayer_pressed() -> void:
+	_sp_continue_btn.visible = SaveManager.has_any_save()
+	_sp_overlay.show()
 
-func _on_continue_pressed() -> void:
-	_popup_mode = "continue"
-	_refresh_popup()
-	_save_popup.show()
+func _on_multiplayer_pressed() -> void:
+	_mp_show_page("menu")
+	_mp_overlay.show()
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()
@@ -115,6 +117,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif _save_popup != null and _save_popup.visible:
 			_on_popup_close()
 			get_viewport().set_input_as_handled()
+		elif _mp_overlay != null and _mp_overlay.visible:
+			_on_mp_back_pressed()
+			get_viewport().set_input_as_handled()
+		elif _sp_overlay != null and _sp_overlay.visible:
+			_on_sp_back_pressed()
+			get_viewport().set_input_as_handled()
 
 func _on_credits_pressed() -> void:
 	credits_panel.show()
@@ -122,18 +130,104 @@ func _on_credits_pressed() -> void:
 func _on_credits_close_pressed() -> void:
 	credits_panel.hide()
 
-func _on_multiplayer_pressed() -> void:
-	_mp_is_hosting = false
-	_mp_status_label.text = "Choose Host or Join below."
-	_mp_start_container.visible = false
-	_mp_overlay.show()
-
 # ---------------------------------------------------------------------------
-# Multiplayer lobby overlay — built in code
+# Singleplayer overlay — built in code
 # ---------------------------------------------------------------------------
 
-const MP_W := 540.0
-const MP_H := 420.0
+const SP_W := 360.0
+const SP_H := 300.0
+
+func _build_singleplayer_overlay() -> void:
+	_sp_overlay = Control.new()
+	_sp_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_sp_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_sp_overlay.hide()
+	add_child(_sp_overlay)
+
+	var dimmer := ColorRect.new()
+	dimmer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dimmer.color = Color(0, 0, 0, 0.78)
+	_sp_overlay.add_child(dimmer)
+
+	var px := (1280.0 - SP_W) / 2.0
+	var py := (720.0 - SP_H) / 2.0
+
+	var border := ColorRect.new()
+	border.position = Vector2(px - 2, py - 2)
+	border.size = Vector2(SP_W + 4, SP_H + 4)
+	border.color = Color(0.30, 0.55, 0.90, 0.85)
+	_sp_overlay.add_child(border)
+
+	var bg := ColorRect.new()
+	bg.position = Vector2(px, py)
+	bg.size = Vector2(SP_W, SP_H)
+	bg.color = Color(0.07, 0.06, 0.05, 0.97)
+	_sp_overlay.add_child(bg)
+
+	var title := Label.new()
+	title.text = "SINGLEPLAYER"
+	title.position = Vector2(px, py + 14)
+	title.size = Vector2(SP_W, 36)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 26)
+	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.3))
+	_sp_overlay.add_child(title)
+
+	var sep := ColorRect.new()
+	sep.position = Vector2(px + 20, py + 56)
+	sep.size = Vector2(SP_W - 40, 2)
+	sep.color = Color(0.30, 0.55, 0.90, 0.45)
+	_sp_overlay.add_child(sep)
+
+	var btn_vbox := VBoxContainer.new()
+	btn_vbox.position = Vector2(px + 40, py + 76)
+	btn_vbox.size = Vector2(SP_W - 80, 130)
+	btn_vbox.add_theme_constant_override("separation", 14)
+	_sp_overlay.add_child(btn_vbox)
+
+	_sp_continue_btn = Button.new()
+	_sp_continue_btn.text = "CONTINUE"
+	_sp_continue_btn.custom_minimum_size = Vector2(0, 44)
+	_sp_continue_btn.add_theme_font_size_override("font_size", 22)
+	_sp_continue_btn.pressed.connect(_on_sp_continue_pressed)
+	_sp_continue_btn.visible = SaveManager.has_any_save()
+	btn_vbox.add_child(_sp_continue_btn)
+
+	var new_btn := Button.new()
+	new_btn.text = "NEW GAME"
+	new_btn.custom_minimum_size = Vector2(0, 44)
+	new_btn.add_theme_font_size_override("font_size", 22)
+	new_btn.pressed.connect(_on_sp_new_game_pressed)
+	btn_vbox.add_child(new_btn)
+
+	var back_btn := Button.new()
+	back_btn.text = "BACK"
+	back_btn.position = Vector2(px + (SP_W - 130) / 2.0, py + SP_H - 50)
+	back_btn.size = Vector2(130, 36)
+	back_btn.add_theme_font_size_override("font_size", 18)
+	back_btn.pressed.connect(_on_sp_back_pressed)
+	_sp_overlay.add_child(back_btn)
+
+func _on_sp_new_game_pressed() -> void:
+	_popup_mode = "new_game"
+	_refresh_popup()
+	_save_popup.show()
+
+func _on_sp_continue_pressed() -> void:
+	_popup_mode = "continue"
+	_refresh_popup()
+	_save_popup.show()
+
+func _on_sp_back_pressed() -> void:
+	_sp_overlay.hide()
+
+# ---------------------------------------------------------------------------
+# Multiplayer overlay — multi-page, built in code
+# ---------------------------------------------------------------------------
+
+const MP_W := 480.0
+const MP_H := 400.0
 
 func _build_multiplayer_overlay() -> void:
 	_mp_overlay = Control.new()
@@ -162,15 +256,15 @@ func _build_multiplayer_overlay() -> void:
 	bg.color = Color(0.07, 0.06, 0.05, 0.97)
 	_mp_overlay.add_child(bg)
 
-	var title := Label.new()
-	title.text = "MULTIPLAYER — CO-OP MINING"
-	title.position = Vector2(px, py + 14)
-	title.size = Vector2(MP_W, 36)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 22)
-	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.3))
-	_mp_overlay.add_child(title)
+	# Title (changes per page)
+	_mp_title_label = Label.new()
+	_mp_title_label.position = Vector2(px, py + 14)
+	_mp_title_label.size = Vector2(MP_W, 36)
+	_mp_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_mp_title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_mp_title_label.add_theme_font_size_override("font_size", 22)
+	_mp_title_label.add_theme_color_override("font_color", Color(0.9, 0.7, 0.3))
+	_mp_overlay.add_child(_mp_title_label)
 
 	var sep := ColorRect.new()
 	sep.position = Vector2(px + 20, py + 56)
@@ -178,129 +272,155 @@ func _build_multiplayer_overlay() -> void:
 	sep.color = Color(0.30, 0.55, 0.90, 0.45)
 	_mp_overlay.add_child(sep)
 
-	# Two-column layout: HOST on left, JOIN on right
-	var col_w := (MP_W - 60.0) / 2.0
-	var col_y := py + 70.0
-	var left_x := px + 20.0
-	var right_x := px + 30.0 + col_w
+	# Content area shared by all pages
+	var content_x := px + 60
+	var content_y := py + 80
+	var content_w := MP_W - 120
+	var content_h := MP_H - 150
 
-	# ---- HOST column ----
-	var host_header := Label.new()
-	host_header.text = "HOST"
-	host_header.position = Vector2(left_x, col_y)
-	host_header.size = Vector2(col_w, 26)
-	host_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	host_header.add_theme_font_size_override("font_size", 18)
-	host_header.add_theme_color_override("font_color", Color(0.9, 0.7, 0.3))
-	_mp_overlay.add_child(host_header)
+	# --- Page: Menu (HOST / JOIN) ---
+	_mp_page_menu = VBoxContainer.new()
+	_mp_page_menu.position = Vector2(content_x, content_y)
+	_mp_page_menu.size = Vector2(content_w, content_h)
+	_mp_page_menu.add_theme_constant_override("separation", 16)
+	_mp_page_menu.alignment = BoxContainer.ALIGNMENT_CENTER
+	_mp_overlay.add_child(_mp_page_menu)
 
 	var host_btn := Button.new()
-	host_btn.text = "HOST GAME"
-	host_btn.position = Vector2(left_x, col_y + 34)
-	host_btn.size = Vector2(col_w, 38)
-	host_btn.add_theme_font_size_override("font_size", 16)
+	host_btn.text = "HOST"
+	host_btn.custom_minimum_size = Vector2(0, 48)
+	host_btn.add_theme_font_size_override("font_size", 24)
 	host_btn.pressed.connect(_on_mp_host_pressed)
-	_mp_overlay.add_child(host_btn)
+	_mp_page_menu.add_child(host_btn)
 
-	var port_note := Label.new()
-	port_note.text = "(LAN port %d)" % NetworkManager.DEFAULT_PORT
-	port_note.position = Vector2(left_x, col_y + 80)
-	port_note.size = Vector2(col_w, 22)
-	port_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	port_note.add_theme_font_size_override("font_size", 12)
-	port_note.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65))
-	_mp_overlay.add_child(port_note)
+	var join_btn := Button.new()
+	join_btn.text = "JOIN"
+	join_btn.custom_minimum_size = Vector2(0, 48)
+	join_btn.add_theme_font_size_override("font_size", 24)
+	join_btn.pressed.connect(_on_mp_join_page_pressed)
+	_mp_page_menu.add_child(join_btn)
 
-	# Divider between columns
-	var col_div := ColorRect.new()
-	col_div.position = Vector2(px + MP_W / 2.0 - 1, col_y)
-	col_div.size = Vector2(2, 130)
-	col_div.color = Color(0.30, 0.55, 0.90, 0.35)
-	_mp_overlay.add_child(col_div)
+	# --- Page: Host Type (LAN / STEAM) ---
+	_mp_page_host_type = VBoxContainer.new()
+	_mp_page_host_type.position = Vector2(content_x, content_y)
+	_mp_page_host_type.size = Vector2(content_w, content_h)
+	_mp_page_host_type.add_theme_constant_override("separation", 16)
+	_mp_page_host_type.alignment = BoxContainer.ALIGNMENT_CENTER
+	_mp_page_host_type.hide()
+	_mp_overlay.add_child(_mp_page_host_type)
 
-	# ---- JOIN column ----
-	var join_header := Label.new()
-	join_header.text = "JOIN"
-	join_header.position = Vector2(right_x, col_y)
-	join_header.size = Vector2(col_w, 26)
-	join_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	join_header.add_theme_font_size_override("font_size", 18)
-	join_header.add_theme_color_override("font_color", Color(0.9, 0.7, 0.3))
-	_mp_overlay.add_child(join_header)
+	var lan_btn := Button.new()
+	lan_btn.text = "LAN"
+	lan_btn.custom_minimum_size = Vector2(0, 48)
+	lan_btn.add_theme_font_size_override("font_size", 24)
+	lan_btn.pressed.connect(_on_mp_lan_pressed)
+	_mp_page_host_type.add_child(lan_btn)
+
+	var steam_btn := Button.new()
+	steam_btn.text = "STEAM"
+	steam_btn.custom_minimum_size = Vector2(0, 48)
+	steam_btn.add_theme_font_size_override("font_size", 24)
+	steam_btn.disabled = true
+	steam_btn.tooltip_text = "Coming Soon"
+	_mp_page_host_type.add_child(steam_btn)
+
+	# --- Page: Host Save (NEW GAME / CONTINUE) ---
+	_mp_page_host_save = VBoxContainer.new()
+	_mp_page_host_save.position = Vector2(content_x, content_y)
+	_mp_page_host_save.size = Vector2(content_w, content_h)
+	_mp_page_host_save.add_theme_constant_override("separation", 16)
+	_mp_page_host_save.alignment = BoxContainer.ALIGNMENT_CENTER
+	_mp_page_host_save.hide()
+	_mp_overlay.add_child(_mp_page_host_save)
+
+	_mp_page_host_save_continue_btn = Button.new()
+	_mp_page_host_save_continue_btn.text = "CONTINUE"
+	_mp_page_host_save_continue_btn.custom_minimum_size = Vector2(0, 48)
+	_mp_page_host_save_continue_btn.add_theme_font_size_override("font_size", 24)
+	_mp_page_host_save_continue_btn.pressed.connect(_on_mp_host_continue_pressed)
+	_mp_page_host_save.add_child(_mp_page_host_save_continue_btn)
+
+	var host_new_btn := Button.new()
+	host_new_btn.text = "NEW GAME"
+	host_new_btn.custom_minimum_size = Vector2(0, 48)
+	host_new_btn.add_theme_font_size_override("font_size", 24)
+	host_new_btn.pressed.connect(_on_mp_host_new_game_pressed)
+	_mp_page_host_save.add_child(host_new_btn)
+
+	# --- Page: Host Lobby (waiting for guest) ---
+	_mp_page_lobby = VBoxContainer.new()
+	_mp_page_lobby.position = Vector2(content_x, content_y)
+	_mp_page_lobby.size = Vector2(content_w, content_h)
+	_mp_page_lobby.add_theme_constant_override("separation", 16)
+	_mp_page_lobby.alignment = BoxContainer.ALIGNMENT_CENTER
+	_mp_page_lobby.hide()
+	_mp_overlay.add_child(_mp_page_lobby)
+
+	_mp_lobby_status = Label.new()
+	_mp_lobby_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_mp_lobby_status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_mp_lobby_status.add_theme_font_size_override("font_size", 16)
+	_mp_lobby_status.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
+	_mp_lobby_status.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_mp_lobby_status.custom_minimum_size = Vector2(0, 60)
+	_mp_page_lobby.add_child(_mp_lobby_status)
+
+	_mp_lobby_start_btn = Button.new()
+	_mp_lobby_start_btn.text = "START GAME"
+	_mp_lobby_start_btn.custom_minimum_size = Vector2(0, 48)
+	_mp_lobby_start_btn.add_theme_font_size_override("font_size", 22)
+	_mp_lobby_start_btn.pressed.connect(_on_mp_lobby_start_pressed)
+	_mp_lobby_start_btn.visible = false
+	_mp_page_lobby.add_child(_mp_lobby_start_btn)
+
+	# --- Page: Join (IP + port input) ---
+	_mp_page_join = VBoxContainer.new()
+	_mp_page_join.position = Vector2(content_x, content_y)
+	_mp_page_join.size = Vector2(content_w, content_h)
+	_mp_page_join.add_theme_constant_override("separation", 10)
+	_mp_page_join.alignment = BoxContainer.ALIGNMENT_CENTER
+	_mp_page_join.hide()
+	_mp_overlay.add_child(_mp_page_join)
 
 	var ip_label := Label.new()
-	ip_label.text = "Host IP:"
-	ip_label.position = Vector2(right_x, col_y + 34)
-	ip_label.size = Vector2(col_w, 22)
-	ip_label.add_theme_font_size_override("font_size", 14)
-	ip_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_mp_overlay.add_child(ip_label)
+	ip_label.text = "Host IP Address:"
+	ip_label.add_theme_font_size_override("font_size", 16)
+	_mp_page_join.add_child(ip_label)
 
 	_mp_ip_input = LineEdit.new()
 	_mp_ip_input.placeholder_text = "192.168.x.x"
-	_mp_ip_input.position = Vector2(right_x, col_y + 58)
-	_mp_ip_input.size = Vector2(col_w, 32)
-	_mp_ip_input.add_theme_font_size_override("font_size", 14)
-	_mp_overlay.add_child(_mp_ip_input)
+	_mp_ip_input.custom_minimum_size = Vector2(0, 36)
+	_mp_ip_input.add_theme_font_size_override("font_size", 16)
+	_mp_page_join.add_child(_mp_ip_input)
 
-	var join_btn := Button.new()
-	join_btn.text = "CONNECT"
-	join_btn.position = Vector2(right_x, col_y + 98)
-	join_btn.size = Vector2(col_w, 34)
-	join_btn.add_theme_font_size_override("font_size", 16)
-	join_btn.pressed.connect(_on_mp_join_pressed)
-	_mp_overlay.add_child(join_btn)
+	var port_label := Label.new()
+	port_label.text = "Port:"
+	port_label.add_theme_font_size_override("font_size", 16)
+	_mp_page_join.add_child(port_label)
 
-	# ---- Status label (full width) ----
-	_mp_status_label = Label.new()
-	_mp_status_label.text = "Choose Host or Join below."
-	_mp_status_label.position = Vector2(px + 20, py + 218)
-	_mp_status_label.size = Vector2(MP_W - 40, 52)
-	_mp_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_mp_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_mp_status_label.add_theme_font_size_override("font_size", 14)
-	_mp_status_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
-	_mp_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_mp_overlay.add_child(_mp_status_label)
+	_mp_port_input = LineEdit.new()
+	_mp_port_input.text = str(NetworkManager.DEFAULT_PORT)
+	_mp_port_input.custom_minimum_size = Vector2(0, 36)
+	_mp_port_input.add_theme_font_size_override("font_size", 16)
+	_mp_page_join.add_child(_mp_port_input)
 
-	# ---- Start Game section (host only, shown after guest connects) ----
-	_mp_start_container = Control.new()
-	_mp_start_container.position = Vector2(px + 20, py + 276)
-	_mp_start_container.size = Vector2(MP_W - 40, 60)
-	_mp_start_container.visible = false
-	_mp_overlay.add_child(_mp_start_container)
+	var connect_btn := Button.new()
+	connect_btn.text = "CONNECT"
+	connect_btn.custom_minimum_size = Vector2(0, 42)
+	connect_btn.add_theme_font_size_override("font_size", 20)
+	connect_btn.pressed.connect(_on_mp_connect_pressed)
+	_mp_page_join.add_child(connect_btn)
 
-	var guest_label := Label.new()
-	guest_label.text = "Player 2 connected! Select how to start:"
-	guest_label.position = Vector2(0, 0)
-	guest_label.size = Vector2(MP_W - 40, 24)
-	guest_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	guest_label.add_theme_font_size_override("font_size", 13)
-	guest_label.add_theme_color_override("font_color", Color(0.40, 1.0, 0.55))
-	_mp_start_container.add_child(guest_label)
+	_mp_join_status = Label.new()
+	_mp_join_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_mp_join_status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_mp_join_status.add_theme_font_size_override("font_size", 14)
+	_mp_join_status.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
+	_mp_join_status.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_mp_join_status.custom_minimum_size = Vector2(0, 40)
+	_mp_page_join.add_child(_mp_join_status)
 
-	var btn_row := HBoxContainer.new()
-	btn_row.position = Vector2(0, 28)
-	btn_row.size = Vector2(MP_W - 40, 34)
-	btn_row.add_theme_constant_override("separation", 12)
-	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	_mp_start_container.add_child(btn_row)
-
-	var new_btn := Button.new()
-	new_btn.text = "NEW GAME"
-	new_btn.custom_minimum_size = Vector2(140, 34)
-	new_btn.add_theme_font_size_override("font_size", 15)
-	new_btn.pressed.connect(_on_mp_new_game_pressed)
-	btn_row.add_child(new_btn)
-
-	var cont_btn := Button.new()
-	cont_btn.text = "CONTINUE"
-	cont_btn.custom_minimum_size = Vector2(140, 34)
-	cont_btn.add_theme_font_size_override("font_size", 15)
-	cont_btn.pressed.connect(_on_mp_continue_pressed)
-	btn_row.add_child(cont_btn)
-
-	# ---- Back button ----
+	# --- Back button (always visible, shared across pages) ---
 	var back_btn := Button.new()
 	back_btn.text = "BACK"
 	back_btn.position = Vector2(px + (MP_W - 130) / 2.0, py + MP_H - 50)
@@ -316,64 +436,115 @@ func _build_multiplayer_overlay() -> void:
 	NetworkManager.connected_to_host.connect(_on_nm_connected_to_host)
 	NetworkManager.connection_failed.connect(_on_nm_connection_failed)
 
+func _mp_show_page(page: String) -> void:
+	_mp_current_page = page
+	_mp_page_menu.visible = (page == "menu")
+	_mp_page_host_type.visible = (page == "host_type")
+	_mp_page_host_save.visible = (page == "host_save")
+	_mp_page_lobby.visible = (page == "lobby")
+	_mp_page_join.visible = (page == "join")
+	match page:
+		"menu":
+			_mp_title_label.text = "MULTIPLAYER"
+		"host_type":
+			_mp_title_label.text = "HOST — SELECT TYPE"
+		"host_save":
+			_mp_title_label.text = "HOST — SELECT SAVE"
+			_mp_page_host_save_continue_btn.visible = SaveManager.has_any_save()
+		"lobby":
+			_mp_title_label.text = "HOST — LOBBY"
+		"join":
+			_mp_title_label.text = "JOIN GAME"
+			_mp_join_status.text = ""
+
+# -- MP page handlers --
+
 func _on_mp_host_pressed() -> void:
-	if _mp_is_hosting:
-		return
-	var err := NetworkManager.start_host()
-	if err != OK:
-		_mp_status_label.text = "Failed to start host (port in use?)"
+	_mp_show_page("host_type")
 
-func _on_mp_join_pressed() -> void:
-	var ip := _mp_ip_input.text.strip_edges()
-	if ip.is_empty():
-		_mp_status_label.text = "Enter the host's IP address first."
-		return
-	_mp_status_label.text = "Connecting to %s..." % ip
-	var err := NetworkManager.join_host(ip)
-	if err != OK:
-		_mp_status_label.text = "Connection error — check IP and try again."
+func _on_mp_join_page_pressed() -> void:
+	_mp_show_page("join")
 
-func _on_mp_new_game_pressed() -> void:
+func _on_mp_lan_pressed() -> void:
+	_mp_host_method = "lan"
+	_mp_show_page("host_save")
+
+func _on_mp_host_new_game_pressed() -> void:
+	_mp_host_pending = true
 	_popup_mode = "new_game"
 	_refresh_popup()
 	_save_popup.show()
 
-func _on_mp_continue_pressed() -> void:
-	if not SaveManager.has_any_save():
-		_mp_status_label.text = "No save found. Start a New Game first."
-		return
+func _on_mp_host_continue_pressed() -> void:
+	_mp_host_pending = true
 	_popup_mode = "continue"
 	_refresh_popup()
 	_save_popup.show()
 
+func _on_mp_connect_pressed() -> void:
+	var ip := _mp_ip_input.text.strip_edges()
+	if ip.is_empty():
+		_mp_join_status.text = "Enter the host's IP address."
+		return
+	var port_text := _mp_port_input.text.strip_edges()
+	var port := int(port_text) if port_text.is_valid_int() else 0
+	if port <= 0 or port > 65535:
+		_mp_join_status.text = "Invalid port number."
+		return
+	_mp_join_status.text = "Connecting to %s:%d..." % [ip, port]
+	var err := NetworkManager.join_host(ip, port)
+	if err != OK:
+		_mp_join_status.text = "Connection error — check IP and try again."
+
+func _on_mp_lobby_start_pressed() -> void:
+	GameManager.start_game()
+
 func _on_mp_back_pressed() -> void:
-	if NetworkManager.is_multiplayer_session:
-		NetworkManager.disconnect_session()
-	_mp_is_hosting = false
-	_mp_status_label.text = "Choose Host or Join below."
-	_mp_start_container.visible = false
-	_mp_overlay.hide()
+	match _mp_current_page:
+		"menu":
+			if NetworkManager.is_multiplayer_session:
+				NetworkManager.disconnect_session()
+			_mp_overlay.hide()
+		"host_type":
+			_mp_show_page("menu")
+		"host_save":
+			_mp_show_page("host_type")
+		"lobby":
+			if NetworkManager.is_multiplayer_session:
+				NetworkManager.disconnect_session()
+			_mp_lobby_start_btn.visible = false
+			_mp_show_page("host_save")
+		"join":
+			if NetworkManager.is_multiplayer_session:
+				NetworkManager.disconnect_session()
+			_mp_show_page("menu")
+
+func _start_mp_hosting() -> void:
+	var port := NetworkManager.DEFAULT_PORT
+	var err := NetworkManager.start_host(port)
+	if err != OK:
+		_mp_lobby_status.text = "Failed to start host (port %d in use?)" % port
+	_mp_show_page("lobby")
 
 func _on_nm_host_started() -> void:
-	_mp_is_hosting = true
-	_mp_status_label.text = "Hosting on port %d\nWaiting for Player 2..." % NetworkManager.DEFAULT_PORT
+	_mp_lobby_status.text = "Hosting on port %d\nWaiting for Player 2..." % NetworkManager.DEFAULT_PORT
 
 func _on_nm_guest_connected(_peer_id: int) -> void:
-	_mp_status_label.text = ""
-	_mp_start_container.visible = true
+	_mp_lobby_status.text = "Player 2 connected!"
+	_mp_lobby_start_btn.visible = true
 	EventBus.multiplayer_guest_connected.emit(_peer_id)
 
 func _on_nm_guest_disconnected() -> void:
-	_mp_start_container.visible = false
-	_mp_status_label.text = "Player 2 disconnected. Waiting..."
+	_mp_lobby_start_btn.visible = false
+	_mp_lobby_status.text = "Player 2 disconnected. Waiting..."
 	EventBus.multiplayer_guest_disconnected.emit()
 
 func _on_nm_connected_to_host() -> void:
-	_mp_status_label.text = "Connected! Waiting for host to start the game..."
+	_mp_join_status.text = "Connected! Waiting for host to start the game..."
 	EventBus.multiplayer_connected_to_host.emit()
 
 func _on_nm_connection_failed() -> void:
-	_mp_status_label.text = "Connection failed. Check the IP and try again."
+	_mp_join_status.text = "Connection failed. Check the IP and try again."
 	EventBus.multiplayer_connection_failed.emit()
 
 # ---------------------------------------------------------------------------
@@ -950,6 +1121,10 @@ func _on_slot_selected(index: int) -> void:
 	else:
 		_save_popup.hide()
 		SaveManager.load_slot(index)
+	if _mp_host_pending:
+		_mp_host_pending = false
+		_start_mp_hosting()
+		return
 	GameManager.start_game()
 
 func _on_slot_delete(index: int) -> void:
@@ -958,6 +1133,7 @@ func _on_slot_delete(index: int) -> void:
 
 func _on_popup_close() -> void:
 	_save_popup.hide()
+	_mp_host_pending = false
 
 # ---------------------------------------------------------------------------
 # Confirmation Dialog — for overwriting existing saves
@@ -1058,7 +1234,11 @@ func _on_confirm_overwrite() -> void:
 	_save_popup.hide()
 	if _pending_slot_index >= 0:
 		SaveManager.new_game(_pending_slot_index)
-		GameManager.start_game()
+		if _mp_host_pending:
+			_mp_host_pending = false
+			_start_mp_hosting()
+		else:
+			GameManager.start_game()
 	_pending_slot_index = -1
 
 # ---------------------------------------------------------------------------
@@ -1144,5 +1324,8 @@ func _on_delete_confirm_proceed() -> void:
 	if _pending_delete_index >= 0:
 		SaveManager.delete_slot(_pending_delete_index)
 		_refresh_popup()
-		$VBoxContainer/ContinueButton.visible = SaveManager.has_any_save()
+		if _sp_continue_btn != null:
+			_sp_continue_btn.visible = SaveManager.has_any_save()
+		if _mp_page_host_save_continue_btn != null:
+			_mp_page_host_save_continue_btn.visible = SaveManager.has_any_save()
 	_pending_delete_index = -1
