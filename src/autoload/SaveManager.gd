@@ -38,14 +38,19 @@ func get_slot_summary(index: int) -> Dictionary:
 	var slot = get_slot(index)
 	if slot == null:
 		return {}
+	var mandibles_lvl: int = slot.get("mandibles_level", 0)
+	var cargo_bay: bool = slot.get("cargo_bay_built", false)
+	var mandibles_gem: bool = slot.get("mandibles_gem_socketed", false)
+	var ore_capacity: int = 200 + (25 if cargo_bay else 0) + (mandibles_lvl * 25) + (25 if mandibles_gem else 0)
 	return {
 		"minerals": slot.get("mineral_currency", 0),
+		"ore_capacity": ore_capacity,
 		"dollars": slot.get("dollars", 0),
 		"deepest_row": slot.get("deepest_row_reached", 0),
 		"last_node": slot.get("last_overworld_node_name", ""),
 		"carapace_level": slot.get("carapace_level", 0),
 		"legs_level": slot.get("legs_level", 0),
-		"mandibles_level": slot.get("mandibles_level", 0),
+		"mandibles_level": mandibles_lvl,
 		"mineral_sense_level": slot.get("mineral_sense_level", 0),
 		"playtime_seconds": slot.get("total_playtime_seconds", 0.0),
 	}
@@ -189,6 +194,7 @@ func _snapshot_game_manager() -> Dictionary:
 		"ladder_count": gm.ladder_count,
 		"equipped_leaf": gm.equipped_leaf,
 		"equipped_ice": gm.equipped_ice,
+		"cat_color": gm.cat_color.to_html(),
 	}
 	# Preserve existing planet config if present
 	if active_slot >= 0 and active_slot < MAX_SLOTS and _slots[active_slot] != null:
@@ -228,6 +234,11 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 	gm.ladder_count = data.get("ladder_count", 10)
 	gm.equipped_leaf = data.get("equipped_leaf", false)
 	gm.equipped_ice = data.get("equipped_ice", false)
+	var color_html: String = data.get("cat_color", "")
+	if color_html != "":
+		gm.cat_color = Color.from_string(color_html, Color.WHITE)
+	else:
+		gm.cat_color = Color.WHITE
 
 func _reset_game_manager() -> void:
 	var gm = GameManager
@@ -267,3 +278,4 @@ func _reset_game_manager() -> void:
 	gm.ladder_count = 10
 	gm.equipped_leaf = false
 	gm.equipped_ice = false
+	gm.cat_color = Color.WHITE

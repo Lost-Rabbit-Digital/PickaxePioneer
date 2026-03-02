@@ -17,8 +17,8 @@ extends Node
 const SHOP_REENERGY_FULL_COST: int = 10
 const SHOP_REENERGY_HALF_COST: int = 5
 const SHOP_REPAIR_COST: int = 15
-const SHOP_LADDER_PACK_COST: int = 20   # buys 5 ladders
-const SHOP_LADDER_PACK_COUNT: int = 5
+const SHOP_LADDER_PACK_COST: int = 20   # buys 10 ladders
+const SHOP_LADDER_PACK_COUNT: int = 10
 
 # Cat Tavern hire costs (in bars)
 const CAT_TAVERN_MINING_CAT_COPPER_BARS: int = 0
@@ -59,8 +59,7 @@ const VH: int = 720
 var player_node: Node = null
 var cat_system: CatSystem = null
 
-# Run-scope ore/bar data (owned here, shared with MiningLevel)
-var run_ore_counts: Dictionary = {}    # TileType int -> count mined this run
+# Run-scope bar data (owned here, shared with MiningLevel)
 var run_bar_counts: Dictionary = {}    # ore_group -> bars smelted this run
 
 # Visibility flags polled by MiningLevel._physics_process / _unhandled_input
@@ -140,18 +139,18 @@ func close_active_shop() -> void:
 func get_ore_group_count(ore_group: String) -> int:
 	var total := 0
 	for tile_type in SMELTERY_ORE_GROUP_TILES[ore_group]:
-		total += run_ore_counts.get(tile_type, 0)
+		total += GameManager.run_ore_chunk_counts.get(tile_type, 0)
 	return total
 
 
 func consume_ores_for_smelt(ore_group: String, count: int) -> void:
 	var remaining := count
 	for tile_type in SMELTERY_ORE_GROUP_TILES[ore_group]:
-		var have: int = run_ore_counts.get(tile_type, 0)
+		var have: int = GameManager.run_ore_chunk_counts.get(tile_type, 0)
 		if have <= 0:
 			continue
 		var take := mini(have, remaining)
-		run_ore_counts[tile_type] = have - take
+		GameManager.run_ore_chunk_counts[tile_type] = have - take
 		remaining -= take
 		if remaining <= 0:
 			break
@@ -354,13 +353,13 @@ func _build_energy_shop() -> void:
 
 
 func show_energy_shop() -> void:
-	_energy_minerals_label.text = "Dollars: $%d" % GameManager.dollars
+	_energy_minerals_label.text = "$%d" % GameManager.dollars
 	var max_e := GameManager.get_max_energy()
-	_energy_btn_full.text = "Full Recharge  (%d→%d energy)  — $%d" % [
+	_energy_btn_full.text = "Full Rest  (%d→%d energy)  — $%d" % [
 		GameManager.current_energy, max_e, SHOP_REENERGY_FULL_COST]
-	_energy_btn_half.text = "Recharge 50%%  (+%d energy)  — $%d" % [
+	_energy_btn_half.text = "Rest 50%%  (+%d energy)  — $%d" % [
 		max_e / 2, SHOP_REENERGY_HALF_COST]
-	_energy_btn_repair.text = "Spacesuit Repair  (+1 HP)  — $%d" % SHOP_REPAIR_COST
+	_energy_btn_repair.text = "+1 Health Bar  — $%d" % SHOP_REPAIR_COST
 	_energy_btn_full.disabled   = GameManager.dollars < SHOP_REENERGY_FULL_COST or GameManager.current_energy >= max_e
 	_energy_btn_half.disabled   = GameManager.dollars < SHOP_REENERGY_HALF_COST or GameManager.current_energy >= max_e
 	_energy_btn_repair.disabled = GameManager.dollars < SHOP_REPAIR_COST or (player_node != null and player_node.is_at_max_health())
@@ -493,9 +492,9 @@ func show_upgrade_station() -> void:
 	_upgrade_btn_legs.disabled = GameManager.dollars < legs_cost
 
 	var mandibles_cost := 50 + 25 * GameManager.mandibles_level
-	var power := GameManager.get_mandibles_power()
-	_upgrade_btn_mandibles.text = "Enhance Pickaxe Lv%d — Mining Power: %d → %d  ($%d)" % [
-		GameManager.mandibles_level, power, power + 3, mandibles_cost]
+	var cap := GameManager.get_ore_capacity()
+	_upgrade_btn_mandibles.text = "Expand Cargo Hold Lv%d — Ore Capacity: %d → %d  ($%d)" % [
+		GameManager.mandibles_level, cap, cap + 25, mandibles_cost]
 	_upgrade_btn_mandibles.disabled = GameManager.dollars < mandibles_cost
 
 	_upgrade_layer.visible = true

@@ -437,6 +437,7 @@ const WEB_TEXTURE: String = "res://assets/blocks/plants/spiderweb.png"
 
 var _inventory_screen: InventoryScreen = null
 var _hat_menu: HatMenu = null
+var _customization_menu: CustomizationMenu = null
 
 # Farm animal NPCs
 var _farm_npcs: Array = []
@@ -528,6 +529,7 @@ func _ready() -> void:
 
 	_setup_inventory_screen()
 	_setup_hat_menu()
+	_setup_customization_menu()
 	queue_redraw()
 
 	# Kick off the spaceship entry cinematic (hides player until ship deposits them)
@@ -939,7 +941,8 @@ func _emit_lava_embers(delta: float, min_col: int, max_col: int, min_row: int, m
 
 func any_ui_open() -> bool:
 	var hat_open := _hat_menu != null and _hat_menu.visible
-	return hat_open or (shop_system != null and (shop_system.any_shop_open() or trader_system.shop_visible))
+	var custom_open := _customization_menu != null and _customization_menu.visible
+	return hat_open or custom_open or (shop_system != null and (shop_system.any_shop_open() or trader_system.shop_visible))
 
 # ---------------------------------------------------------------------------
 # Process — energy drain, cursor highlight, flashes
@@ -1074,7 +1077,8 @@ func _check_exit_zone() -> void:
 	if player_col < GRID_COLS - EXIT_COLS:
 		has_left_spawn = true
 	if has_left_spawn and player_col >= GRID_COLS - EXIT_COLS and player_row < SURFACE_ROWS:
-		shop_system.show_hub()
+		_game_over = true
+		GameManager.complete_run()
 	# Reaching the bottom of the map also counts as a completed run
 	elif player_row >= GRID_ROWS - 1:
 		_game_over = true
@@ -1100,12 +1104,19 @@ func _unhandled_input(event: InputEvent) -> void:
 				_inventory_screen.open(GameManager.run_ore_chunk_counts, _shroom_charges[0],
 					_lucky_compass_active[0], _ancient_map_active[0])
 		return
-	if event.is_action_pressed("toggle_hat_menu"):
+	if event.is_action_pressed("toggle_companions_menu"):
 		if _hat_menu:
 			if _hat_menu.visible:
 				_hat_menu.close()
 			else:
 				_hat_menu.open()
+		return
+	if event.is_action_pressed("toggle_customization_menu"):
+		if _customization_menu:
+			if _customization_menu.visible:
+				_customization_menu.close()
+			else:
+				_customization_menu.open()
 		return
 	if event.is_action_pressed("ui_cancel"):
 		pause_menu.show_menu()
@@ -1268,9 +1279,6 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 			if _shroom_charges[0] > 0 and tile in ORE_TILES:
 				minerals *= 2
 				_shroom_charges[0] -= 1
-			# Track ore counts for inventory (ore tiles only)
-			if tile in ORE_TILES:
-				shop_system.run_ore_counts[tile] = shop_system.run_ore_counts.get(tile, 0) + 1
 			# Fossil forgiveness check (§3.6) — before awarding base minerals
 			fossil_system.check(tile, FOSSIL_TYPES.get(tile, {}))
 			# Consecutive smelting bonus (§3.5) — awards extra currency internally
@@ -1708,14 +1716,14 @@ func _check_zone_transition(depth_row: int) -> void:
 	if new_zone_idx != _current_zone_idx:
 		_current_zone_idx = new_zone_idx
 		if depth_row > 0:
-			_show_zone_banner(DEPTH_ZONE_NAMES[new_zone_idx], DEPTH_ZONE_COLORS[new_zone_idx])
+			_show_zone_banner(DEPTH_ZONE_NAMES[new_zone_idx], DEPTH_ZONE_COLORS[new_zone_idx], depth_row)
 			if new_zone_idx > 0 and not _zones_discovered[new_zone_idx]:
 				_zones_discovered[new_zone_idx] = true
 				const DISCOVERY_ENERGY := 20
 				GameManager.restore_energy(DISCOVERY_ENERGY)
 				EventBus.ore_mined_popup.emit(DISCOVERY_ENERGY, "Discovery!")
 
-func _show_zone_banner(zone_name: String, color: Color) -> void:
+func _show_zone_banner(zone_name: String, color: Color, depth_row: int = -1) -> void:
 	const COOLDOWN_MS: int = 5000
 	var now_ms := Time.get_ticks_msec()
 	if now_ms - _last_banner_time_ms < COOLDOWN_MS:
@@ -1723,24 +1731,35 @@ func _show_zone_banner(zone_name: String, color: Color) -> void:
 	_last_banner_time_ms = now_ms
 	const VW: int = 1280
 	const VH: int = 720
-	const BANNER_H: int = 52
+	var banner_h: int = 68 if depth_row >= 0 else 52
 	var layer := CanvasLayer.new()
 	layer.layer = 15
 	add_child(layer)
 	var banner := ColorRect.new()
-	banner.size = Vector2(VW, BANNER_H)
-	banner.position = Vector2(0, VH * 2 / 3 - BANNER_H / 2)
+	banner.size = Vector2(VW, banner_h)
+	banner.position = Vector2(0, VH * 2 / 3 - banner_h / 2)
 	banner.color = Color(0.0, 0.0, 0.0, 0.78)
 	layer.add_child(banner)
 	var label := Label.new()
 	label.text = zone_name.to_upper()
-	label.size = Vector2(VW, BANNER_H)
-	label.position = Vector2(0, VH * 2 / 3 - BANNER_H / 2)
+	var name_h: int = 42 if depth_row >= 0 else banner_h
+	label.size = Vector2(VW, name_h)
+	label.position = Vector2(0, VH * 2 / 3 - banner_h / 2)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 26)
 	label.modulate = color
 	layer.add_child(label)
+	if depth_row >= 0:
+		var depth_label := Label.new()
+		depth_label.text = "Depth: %d m" % (depth_row * 10)
+		depth_label.size = Vector2(VW, 26)
+		depth_label.position = Vector2(0, VH * 2 / 3 - banner_h / 2 + 42)
+		depth_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		depth_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		depth_label.add_theme_font_size_override("font_size", 14)
+		depth_label.modulate = Color(color.r, color.g, color.b, 0.75)
+		layer.add_child(depth_label)
 	var tween := create_tween()
 	tween.tween_interval(1.6)
 	tween.tween_property(layer, "modulate:a", 0.0, 0.7)
@@ -1885,6 +1904,11 @@ func _setup_hat_menu() -> void:
 	_hat_menu = HatMenu.new()
 	_hat_menu.player = player_node
 	add_child(_hat_menu)
+
+func _setup_customization_menu() -> void:
+	_customization_menu = CustomizationMenu.new()
+	_customization_menu.player = player_node
+	add_child(_customization_menu)
 
 # Shops (Surface Hub, Energy Dock, Upgrade Bay, Space Forge, Cat Tavern)
 # are now managed by MiningShopSystem — see src/levels/MiningShopSystem.gd

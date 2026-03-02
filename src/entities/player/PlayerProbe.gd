@@ -13,8 +13,8 @@ var move_speed: float = 280.0
 var jump_velocity: float = -420.0
 var gravity: float = 980.0
 
-# Ladder climbing speed (tiles-per-second feel)
-const LADDER_CLIMB_SPEED: float = 160.0
+# Ladder climbing speed — matches jump_velocity magnitude so up/down feel as fast as falling
+const LADDER_CLIMB_SPEED: float = 420.0
 
 # Mining
 var mine_range: float = 4.5  # Range in tiles
@@ -98,6 +98,7 @@ func _ready() -> void:
 	move_speed = GameManager.get_max_speed()
 	EventBus.player_health_changed.emit(health_component.current_health, health_component.max_health)
 	sprite.play(&"idle")
+	sprite.modulate = GameManager.cat_color
 	_init_followers()
 	_particle_layer = Node2D.new()
 	_particle_layer.z_index = 1

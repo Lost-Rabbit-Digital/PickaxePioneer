@@ -58,6 +58,9 @@ var selected_hotbar_slot: int = 0
 var equipped_leaf: bool = false
 var equipped_ice: bool = false
 
+# Cat customization — sprite tint color (default white = no tint)
+var cat_color: Color = Color.WHITE
+
 # Upgrade levels
 var carapace_level: int = 0
 var legs_level: int = 0
@@ -100,6 +103,13 @@ func _ready() -> void:
 	print("GameManager initialized")
 	# Legacy load_game() removed — SaveManager now handles slot-based persistence.
 	# On first boot, SaveManager._migrate_legacy_save() imports the old file.
+	get_tree().set_auto_accept_quit(false)
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		if SaveManager.active_slot >= 0:
+			SaveManager.save_active_slot()
+		get_tree().quit()
 
 func _process(delta: float) -> void:
 	if current_state == GameState.PLAYING:
@@ -205,7 +215,7 @@ func upgrade_legs() -> void:
 func upgrade_mandibles() -> void:
 	mandibles_level += 1
 	save_game()
-	print("Space Pickaxe enhanced to level ", mandibles_level)
+	print("Cargo hold expanded to level ", mandibles_level)
 
 func upgrade_mineral_sense() -> void:
 	mineral_sense_level += 1
@@ -215,9 +225,9 @@ func upgrade_mineral_sense() -> void:
 func get_sonar_ping_radius() -> float:
 	return 4.0 + mineral_sense_level * 3.0 + (3.0 if sense_gem_socketed else 0.0)
 
-## Ore carrying capacity per run (boosted by Cargo Bay upgrade).
+## Ore carrying capacity per run (boosted by Cargo Bay upgrade and cargo hold upgrades).
 func get_ore_capacity() -> int:
-	return BASE_ORE_CAPACITY + (25 if cargo_bay_built else 0)
+	return BASE_ORE_CAPACITY + (25 if cargo_bay_built else 0) + (mandibles_level * 25) + (25 if mandibles_gem_socketed else 0)
 
 ## Caravan travel speed multiplier on the overworld (boosted by Warp Drive).
 func get_ship_speed_mult() -> float:
@@ -241,7 +251,7 @@ func get_max_speed() -> float:
 	return 300.0 + (legs_level * 30.0) + (15.0 if legs_gem_socketed else 0.0)
 
 func get_mandibles_power() -> int:
-	return 5 + (mandibles_level * 3) + (4 if mandibles_gem_socketed else 0)
+	return 5
 
 func consume_energy(amount: int) -> bool:
 	current_energy -= amount
@@ -295,6 +305,7 @@ func save_game() -> void:
 		"ladder_count": ladder_count,
 		"equipped_leaf": equipped_leaf,
 		"equipped_ice": equipped_ice,
+		"cat_color": cat_color.to_html(),
 	}
 
 	SaveManager.save_active_slot()
@@ -347,6 +358,11 @@ func load_game() -> void:
 			ladder_count = data.get("ladder_count", 0)
 			equipped_leaf = data.get("equipped_leaf", false)
 			equipped_ice = data.get("equipped_ice", false)
+			var color_html: String = data.get("cat_color", "")
+			if color_html != "":
+				cat_color = Color.from_string(color_html, Color.WHITE)
+			else:
+				cat_color = Color.WHITE
 			print("Game loaded")
 		else:
 			print("Failed to parse save file")

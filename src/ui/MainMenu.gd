@@ -633,10 +633,15 @@ func _refresh_popup() -> void:
 			# In continue mode, can't select empty slots
 			btn.disabled = (_popup_mode == "continue")
 		else:
-			var lines := "  Slot %d" % (i + 1)
+			var is_active := SaveManager.active_slot == i
+			var lines: String
+			if is_active:
+				lines = "  ▶ CURRENT"
+			else:
+				lines = "  Slot %d" % (i + 1)
 			lines += "  |  $%d" % summary.get("dollars", 0)
-			lines += "  |  Minerals: %d" % summary.get("minerals", 0)
-			lines += "  |  Depth: %d" % summary.get("deepest_row", 0)
+			lines += "  |  Minerals: %d / %d" % [summary.get("minerals", 0), summary.get("ore_capacity", 200)]
+			lines += "  |  Depth: %dm" % summary.get("deepest_row", 0)
 			var lvl_sum: int = summary.get("carapace_level", 0) + summary.get("legs_level", 0) + summary.get("mandibles_level", 0) + summary.get("mineral_sense_level", 0)
 			lines += "\n  Upgrades: Lv%d total" % lvl_sum
 			var last_node: String = summary.get("last_node", "")

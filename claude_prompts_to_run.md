@@ -8,6 +8,17 @@ delete the "you reached the station" menu when you exit the mining level, just s
 
 
 
+Add a staircase in hotbar slot 3
+
+
+
+
+
+Add music player menu
+
+
+
+
 
 
 

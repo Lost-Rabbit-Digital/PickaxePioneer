@@ -69,7 +69,7 @@ func _build_ui() -> void:
 
 	# Close hint
 	var hint := Label.new()
-	hint.text = "[H] Close"
+	hint.text = "[C] Close"
 	hint.position = Vector2(px + PANEL_W - 100, py + 14)
 	hint.add_theme_font_size_override("font_size", 13)
 	hint.modulate = Color(0.55, 0.55, 0.65, 0.90)
@@ -214,7 +214,7 @@ func close() -> void:
 	get_tree().paused = false
 
 func _unhandled_input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("toggle_hat_menu"):
+	if visible and event.is_action_pressed("toggle_companions_menu"):
 		close()
 		get_viewport().set_input_as_handled()
 

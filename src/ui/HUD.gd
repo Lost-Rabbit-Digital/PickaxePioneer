@@ -25,13 +25,10 @@ var health_bar_highlights: Array[ColorRect] = []
 var _displayed_health: float = 10.0
 var _health_drain_tween: Tween
 
-var scrap_panel: ColorRect
+var info_panel: ColorRect
 var earnings_label: Label
-var _pickup_panel: ColorRect
 var depth_label: Label
-var depth_panel: ColorRect
 var dollars_label: Label
-var dollars_panel: ColorRect
 var _earnings_tween: Tween
 
 # Boss hint notification — bottom-centre, larger and persistent, with a queue
@@ -132,23 +129,14 @@ func _ready() -> void:
 	EventBus.depth_changed.connect(_on_depth_changed)
 	EventBus.dollars_changed.connect(_on_dollars_changed)
 
-	# Semi-transparent black background panel behind the minerals label
-	scrap_panel = ColorRect.new()
-	scrap_panel.color = Color(0.0, 0.0, 0.0, 0.55)
-	scrap_panel.position = Vector2(8, 8)
-	scrap_panel.size = Vector2(172, 34)
-	scrap_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	$Control.add_child(scrap_panel)
-	$Control.move_child(scrap_panel, 0)  # Draw behind everything else
-
-	# Background panel behind the item pickup popup
-	_pickup_panel = ColorRect.new()
-	_pickup_panel.color = Color(0.0, 0.0, 0.0, 0.55)
-	_pickup_panel.position = Vector2(8, 42)
-	_pickup_panel.size = Vector2(200, 30)
-	_pickup_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_pickup_panel.modulate.a = 0.0  # Starts invisible, fades in with earnings label
-	$Control.add_child(_pickup_panel)
+	# Single combined panel behind all upper-left info labels (Capacity, earnings, Depth, $)
+	info_panel = ColorRect.new()
+	info_panel.color = Color(0.0, 0.0, 0.0, 0.55)
+	info_panel.position = Vector2(4, 6)
+	info_panel.size = Vector2(210, 132)
+	info_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$Control.add_child(info_panel)
+	$Control.move_child(info_panel, 0)  # Draw behind everything else
 
 	# Earnings popup label — appears below the minerals panel when a tile is mined
 	earnings_label = Label.new()
@@ -158,14 +146,6 @@ func _ready() -> void:
 	earnings_label.add_theme_font_size_override("font_size", 14)
 	$Control.add_child(earnings_label)
 
-	# Background panel behind the depth meter label
-	depth_panel = ColorRect.new()
-	depth_panel.color = Color(0.0, 0.0, 0.0, 0.55)
-	depth_panel.position = Vector2(4, 68)
-	depth_panel.size = Vector2(164, 30)
-	depth_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	$Control.add_child(depth_panel)
-
 	# Depth indicator — shows how far into space the cat has traveled
 	depth_label = Label.new()
 	depth_label.position = Vector2(8, 72)
@@ -173,14 +153,6 @@ func _ready() -> void:
 	depth_label.text = "Orbit"
 	depth_label.modulate = Color(0.6, 0.85, 1.0, 1.0)  # Light blue tint
 	$Control.add_child(depth_label)
-
-	# Background panel behind the dollars label
-	dollars_panel = ColorRect.new()
-	dollars_panel.color = Color(0.0, 0.0, 0.0, 0.55)
-	dollars_panel.position = Vector2(8, 102)
-	dollars_panel.size = Vector2(148, 30)
-	dollars_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	$Control.add_child(dollars_panel)
 
 	# Dollars label — shows the player's persistent dollar balance
 	dollars_label = Label.new()
@@ -276,14 +248,12 @@ func _on_ore_mined_popup(amount: int, ore_name: String) -> void:
 	# amount == 0 means a pure notification (no mineral award) — omit the "+" prefix
 	earnings_label.text = "+%d %s" % [amount, ore_name] if amount > 0 else ore_name
 	earnings_label.modulate = Color(popup_color.r, popup_color.g, popup_color.b, 1.0)
-	_pickup_panel.modulate.a = 1.0  # Show panel immediately
 
 	if _earnings_tween:
 		_earnings_tween.kill()
 	_earnings_tween = create_tween()
 	_earnings_tween.tween_interval(1.5)
 	_earnings_tween.tween_property(earnings_label, "modulate:a", 0.0, 0.45)
-	_earnings_tween.parallel().tween_property(_pickup_panel, "modulate:a", 0.0, 0.45)
 
 func _rebuild_health_bars(count: int) -> void:
 	for bar in health_bars:

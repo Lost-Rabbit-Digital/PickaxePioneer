@@ -8,15 +8,16 @@ extends CanvasLayer
 #   3. Artifacts     — active run-buff items from the Wandering Trader
 
 # Ore display order (matches terrain depth: shallow → deep)
+# Textures and colors must match MiningLevel.TILE_TEXTURE_PATHS and TILE_COLORS exactly.
 const ORE_ORDER: Array = [
-	{"tile": 3,  "name": "Copper",      "tex": "res://assets/blocks/stone_generic_ore_nuggets.png",    "color": Color(0.80, 0.50, 0.20)},
-	{"tile": 4,  "name": "Deep Copper", "tex": "res://assets/blocks/stone_generic_ore_crystalline.png","color": Color(0.70, 0.40, 0.10)},
-	{"tile": 5,  "name": "Iron",        "tex": "res://assets/blocks/gabbro.png",                       "color": Color(0.65, 0.65, 0.72)},
-	{"tile": 6,  "name": "Deep Iron",   "tex": "res://assets/blocks/schist.png",                       "color": Color(0.55, 0.55, 0.65)},
-	{"tile": 7,  "name": "Gold",        "tex": "res://assets/blocks/sandstone.png",                    "color": Color(1.00, 0.85, 0.10)},
-	{"tile": 8,  "name": "Deep Gold",   "tex": "res://assets/blocks/granite.png",                      "color": Color(0.90, 0.75, 0.05)},
-	{"tile": 9,  "name": "Gem",         "tex": "res://assets/blocks/amethyst.png",                     "color": Color(0.15, 0.85, 0.75)},
-	{"tile": 10, "name": "Deep Gem",    "tex": "res://assets/blocks/obsidian.png",                     "color": Color(0.10, 0.75, 0.65)},
+	{"tile": 3,  "name": "Lunar Copper",      "tex": "res://assets/blocks/stone_ore_copper.png",             "color": Color(0.90, 0.60, 0.25)},
+	{"tile": 4,  "name": "Deep Lunar Copper", "tex": "res://assets/blocks/stone_ore_copper.png",             "color": Color(0.80, 0.50, 0.15)},
+	{"tile": 5,  "name": "Meteor Iron",       "tex": "res://assets/blocks/stone_ore_iron.png",               "color": Color(0.90, 0.45, 0.70)},
+	{"tile": 6,  "name": "Deep Meteor Iron",  "tex": "res://assets/blocks/stone_ore_iron.png",               "color": Color(0.75, 0.35, 0.60)},
+	{"tile": 7,  "name": "Star Gold",         "tex": "res://assets/blocks/stone_ore_gold.png",               "color": Color(0.85, 0.80, 1.00)},
+	{"tile": 8,  "name": "Deep Star Gold",    "tex": "res://assets/blocks/stone_ore_gold.png",               "color": Color(0.70, 0.65, 0.90)},
+	{"tile": 9,  "name": "Cosmic Gem",        "tex": "res://assets/blocks/stone_generic_ore_crystalline.png","color": Color(0.20, 0.90, 0.95)},
+	{"tile": 10, "name": "Deep Cosmic Gem",   "tex": "res://assets/blocks/stone_generic_ore_crystalline.png","color": Color(0.10, 0.80, 0.85)},
 ]
 
 # Artifact plant icons: one distinct plant per trader item key
@@ -254,7 +255,7 @@ func _draw_equipment(parent: Control, x: int, y: int, w: int) -> int:
 			"label": "Claws",
 			"color": Color(0.95, 0.65, 0.15),
 			"level": GameManager.mandibles_level,
-			"stat": "Power: %d" % GameManager.get_mandibles_power(),
+			"stat": "Capacity: %d" % GameManager.get_ore_capacity(),
 		},
 		{
 			"label": "Whiskers",
