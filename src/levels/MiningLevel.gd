@@ -1709,14 +1709,14 @@ func _check_zone_transition(depth_row: int) -> void:
 	if new_zone_idx != _current_zone_idx:
 		_current_zone_idx = new_zone_idx
 		if depth_row > 0:
-			_show_zone_banner(DEPTH_ZONE_NAMES[new_zone_idx], DEPTH_ZONE_COLORS[new_zone_idx])
+			_show_zone_banner(DEPTH_ZONE_NAMES[new_zone_idx], DEPTH_ZONE_COLORS[new_zone_idx], depth_row)
 			if new_zone_idx > 0 and not _zones_discovered[new_zone_idx]:
 				_zones_discovered[new_zone_idx] = true
 				const DISCOVERY_ENERGY := 20
 				GameManager.restore_energy(DISCOVERY_ENERGY)
 				EventBus.ore_mined_popup.emit(DISCOVERY_ENERGY, "Discovery!")
 
-func _show_zone_banner(zone_name: String, color: Color) -> void:
+func _show_zone_banner(zone_name: String, color: Color, depth_row: int = -1) -> void:
 	const COOLDOWN_MS: int = 5000
 	var now_ms := Time.get_ticks_msec()
 	if now_ms - _last_banner_time_ms < COOLDOWN_MS:
@@ -1724,24 +1724,35 @@ func _show_zone_banner(zone_name: String, color: Color) -> void:
 	_last_banner_time_ms = now_ms
 	const VW: int = 1280
 	const VH: int = 720
-	const BANNER_H: int = 52
+	var banner_h: int = 68 if depth_row >= 0 else 52
 	var layer := CanvasLayer.new()
 	layer.layer = 15
 	add_child(layer)
 	var banner := ColorRect.new()
-	banner.size = Vector2(VW, BANNER_H)
-	banner.position = Vector2(0, VH * 2 / 3 - BANNER_H / 2)
+	banner.size = Vector2(VW, banner_h)
+	banner.position = Vector2(0, VH * 2 / 3 - banner_h / 2)
 	banner.color = Color(0.0, 0.0, 0.0, 0.78)
 	layer.add_child(banner)
 	var label := Label.new()
 	label.text = zone_name.to_upper()
-	label.size = Vector2(VW, BANNER_H)
-	label.position = Vector2(0, VH * 2 / 3 - BANNER_H / 2)
+	var name_h: int = 42 if depth_row >= 0 else banner_h
+	label.size = Vector2(VW, name_h)
+	label.position = Vector2(0, VH * 2 / 3 - banner_h / 2)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 26)
 	label.modulate = color
 	layer.add_child(label)
+	if depth_row >= 0:
+		var depth_label := Label.new()
+		depth_label.text = "Depth: %d m" % (depth_row * 10)
+		depth_label.size = Vector2(VW, 26)
+		depth_label.position = Vector2(0, VH * 2 / 3 - banner_h / 2 + 42)
+		depth_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		depth_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		depth_label.add_theme_font_size_override("font_size", 14)
+		depth_label.modulate = Color(color.r, color.g, color.b, 0.75)
+		layer.add_child(depth_label)
 	var tween := create_tween()
 	tween.tween_interval(1.6)
 	tween.tween_property(layer, "modulate:a", 0.0, 0.7)
