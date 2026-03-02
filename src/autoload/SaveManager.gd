@@ -194,6 +194,7 @@ func _snapshot_game_manager() -> Dictionary:
 		"ladder_count": gm.ladder_count,
 		"equipped_leaf": gm.equipped_leaf,
 		"equipped_ice": gm.equipped_ice,
+		"cat_color": gm.cat_color.to_html(),
 	}
 	# Preserve existing planet config if present
 	if active_slot >= 0 and active_slot < MAX_SLOTS and _slots[active_slot] != null:
@@ -233,6 +234,11 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 	gm.ladder_count = data.get("ladder_count", 10)
 	gm.equipped_leaf = data.get("equipped_leaf", false)
 	gm.equipped_ice = data.get("equipped_ice", false)
+	var color_html: String = data.get("cat_color", "")
+	if color_html != "":
+		gm.cat_color = Color.from_string(color_html, Color.WHITE)
+	else:
+		gm.cat_color = Color.WHITE
 
 func _reset_game_manager() -> void:
 	var gm = GameManager
@@ -272,3 +278,4 @@ func _reset_game_manager() -> void:
 	gm.ladder_count = 10
 	gm.equipped_leaf = false
 	gm.equipped_ice = false
+	gm.cat_color = Color.WHITE

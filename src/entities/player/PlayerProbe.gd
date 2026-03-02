@@ -98,6 +98,7 @@ func _ready() -> void:
 	move_speed = GameManager.get_max_speed()
 	EventBus.player_health_changed.emit(health_component.current_health, health_component.max_health)
 	sprite.play(&"idle")
+	sprite.modulate = GameManager.cat_color
 	_init_followers()
 	_particle_layer = Node2D.new()
 	_particle_layer.z_index = 1

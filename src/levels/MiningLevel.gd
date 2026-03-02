@@ -437,6 +437,7 @@ const WEB_TEXTURE: String = "res://assets/blocks/plants/spiderweb.png"
 
 var _inventory_screen: InventoryScreen = null
 var _hat_menu: HatMenu = null
+var _customization_menu: CustomizationMenu = null
 
 # Farm animal NPCs
 var _farm_npcs: Array = []
@@ -528,6 +529,7 @@ func _ready() -> void:
 
 	_setup_inventory_screen()
 	_setup_hat_menu()
+	_setup_customization_menu()
 	queue_redraw()
 
 	# Kick off the spaceship entry cinematic (hides player until ship deposits them)
@@ -939,7 +941,8 @@ func _emit_lava_embers(delta: float, min_col: int, max_col: int, min_row: int, m
 
 func any_ui_open() -> bool:
 	var hat_open := _hat_menu != null and _hat_menu.visible
-	return hat_open or (shop_system != null and (shop_system.any_shop_open() or trader_system.shop_visible))
+	var custom_open := _customization_menu != null and _customization_menu.visible
+	return hat_open or custom_open or (shop_system != null and (shop_system.any_shop_open() or trader_system.shop_visible))
 
 # ---------------------------------------------------------------------------
 # Process — energy drain, cursor highlight, flashes
@@ -1107,6 +1110,13 @@ func _unhandled_input(event: InputEvent) -> void:
 				_hat_menu.close()
 			else:
 				_hat_menu.open()
+		return
+	if event.is_action_pressed("toggle_customization_menu"):
+		if _customization_menu:
+			if _customization_menu.visible:
+				_customization_menu.close()
+			else:
+				_customization_menu.open()
 		return
 	if event.is_action_pressed("ui_cancel"):
 		pause_menu.show_menu()
@@ -1894,6 +1904,11 @@ func _setup_hat_menu() -> void:
 	_hat_menu = HatMenu.new()
 	_hat_menu.player = player_node
 	add_child(_hat_menu)
+
+func _setup_customization_menu() -> void:
+	_customization_menu = CustomizationMenu.new()
+	_customization_menu.player = player_node
+	add_child(_customization_menu)
 
 # Shops (Surface Hub, Energy Dock, Upgrade Bay, Space Forge, Cat Tavern)
 # are now managed by MiningShopSystem — see src/levels/MiningShopSystem.gd
