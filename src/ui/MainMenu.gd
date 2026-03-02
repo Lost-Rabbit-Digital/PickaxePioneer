@@ -662,7 +662,10 @@ func _start_mp_hosting() -> void:
 	var err := NetworkManager.start_host(port)
 	if err != OK:
 		_mp_lobby_status.text = "Failed to start host (port %d in use?)" % port
-	_mp_show_page("lobby")
+		_mp_show_page("lobby")
+		return
+	_mp_overlay.hide()
+	GameManager.start_game()
 
 func _on_nm_host_started() -> void:
 	_mp_lobby_status.text = "Hosting on port %d\nWaiting for Player 2..." % NetworkManager.DEFAULT_PORT
