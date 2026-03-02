@@ -58,6 +58,9 @@ var selected_hotbar_slot: int = 0
 var equipped_leaf: bool = false
 var equipped_ice: bool = false
 
+# Cat customization — sprite tint color (default white = no tint)
+var cat_color: Color = Color.WHITE
+
 # Upgrade levels
 var carapace_level: int = 0
 var legs_level: int = 0
@@ -295,6 +298,7 @@ func save_game() -> void:
 		"ladder_count": ladder_count,
 		"equipped_leaf": equipped_leaf,
 		"equipped_ice": equipped_ice,
+		"cat_color": cat_color.to_html(),
 	}
 
 	SaveManager.save_active_slot()
@@ -347,6 +351,11 @@ func load_game() -> void:
 			ladder_count = data.get("ladder_count", 0)
 			equipped_leaf = data.get("equipped_leaf", false)
 			equipped_ice = data.get("equipped_ice", false)
+			var color_html: String = data.get("cat_color", "")
+			if color_html != "":
+				cat_color = Color.from_string(color_html, Color.WHITE)
+			else:
+				cat_color = Color.WHITE
 			print("Game loaded")
 		else:
 			print("Failed to parse save file")
