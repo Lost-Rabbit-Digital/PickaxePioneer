@@ -666,6 +666,7 @@ func _start_mp_hosting() -> void:
 
 func _on_nm_host_started() -> void:
 	_mp_lobby_status.text = "Hosting on port %d\nWaiting for Player 2..." % NetworkManager.DEFAULT_PORT
+	_mp_lobby_start_btn.visible = true
 
 func _on_nm_guest_connected(_peer_id: int) -> void:
 	_mp_lobby_status.text = "Player 2 connected!"
