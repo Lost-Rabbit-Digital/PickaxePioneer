@@ -293,24 +293,16 @@ func _place_ore_vein(spec: Dictionary) -> void:
 #   "webs"           : Array[Vector2i]  — cave positions for spider webs
 # ---------------------------------------------------------------------------
 
-const PLANT_CHANCE:              float = 0.35
 const CORAL_FLOOR_CHANCE:        float = 0.12
 const CORAL_CEILING_CHANCE:      float = 0.12
 const WEB_CHANCE:                float = 0.015
 const FOLIAGE_ABOVE_GRASS_CHANCE: float = 0.22
 
 func generate_decorations() -> Dictionary:
-	var plants:              Array[Vector2i] = []
 	var foliage_above_grass: Array[Vector2i] = []
 	var coral_floor:         Array[Vector2i] = []
 	var coral_ceiling:       Array[Vector2i] = []
 	var webs:                Array[Vector2i] = []
-
-	# Surface plants — one row of SURFACE_GRASS tiles
-	for col in range(_cols):
-		if _grid[col][_surface_rows] == T_SURFACE_GRASS:
-			if randf() < PLANT_CHANCE:
-				plants.append(Vector2i(col, _surface_rows))
 
 	# Foliage above grass — placed in the sky row immediately above the grass layer.
 	# Only spawns where the column above is open sky (T_SURFACE) to avoid overlap with
@@ -338,7 +330,6 @@ func generate_decorations() -> Dictionary:
 				webs.append(Vector2i(col, row))
 
 	return {
-		"plants":              plants,
 		"foliage_above_grass": foliage_above_grass,
 		"coral_floor":         coral_floor,
 		"coral_ceiling":       coral_ceiling,

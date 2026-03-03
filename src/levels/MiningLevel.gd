@@ -1369,11 +1369,6 @@ func _spawn_decorations(data: Dictionary) -> void:
 	_foliage_layer.clear()
 	_web_sprites.clear()
 
-	# Surface plants — sit in the SURFACE_GRASS row (z below player via layer order)
-	for pos: Vector2i in data.get("plants", []):
-		var atlas_coord: Vector2i = FOLIAGE_PLANT_ATLAS_COORDS[randi() % FOLIAGE_PLANT_ATLAS_COORDS.size()]
-		_foliage_layer.set_cell(pos, 0, atlas_coord)
-
 	# Foliage above grass — taller decorations in the sky row directly above the grass
 	for pos: Vector2i in data.get("foliage_above_grass", []):
 		var atlas_coord: Vector2i = FOLIAGE_PLANT_ATLAS_COORDS[randi() % FOLIAGE_PLANT_ATLAS_COORDS.size()]
