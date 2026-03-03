@@ -841,7 +841,8 @@ func _draw() -> void:
 		if grass_tex:
 			for tc in range(min_col, max_col + 1):
 				draw_texture_rect(grass_tex,
-					Rect2(float(tc * CELL_SIZE), row_y, float(CELL_SIZE), float(CELL_SIZE)), false)
+					Rect2(float(tc * CELL_SIZE), row_y, float(CELL_SIZE), float(CELL_SIZE)), false,
+					Color(0.5, 0.5, 0.5))
 		else:
 			draw_rect(Rect2(float(min_col * CELL_SIZE), row_y,
 				float((max_col - min_col + 1) * CELL_SIZE), float(CELL_SIZE)),
