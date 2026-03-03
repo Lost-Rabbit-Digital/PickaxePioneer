@@ -9,6 +9,7 @@ signal cancelled
 
 @onready var title_label: Label = $Control/Panel/MarginContainer/VBox/TitleLabel
 @onready var type_label: Label = $Control/Panel/MarginContainer/VBox/TypeLabel
+@onready var planet_info_label: Label = $Control/Panel/MarginContainer/VBox/PlanetInfoLabel
 @onready var description_label: Label = $Control/Panel/MarginContainer/VBox/DescriptionLabel
 @onready var hazards_label: Label = $Control/Panel/MarginContainer/VBox/HazardsLabel
 @onready var enter_button: Button = $Control/Panel/MarginContainer/VBox/ButtonsBox/EnterButton
@@ -33,24 +34,32 @@ func show_for_node(node: MapNode) -> void:
 			hazards_label.visible = false
 			hsep2.visible = true
 			enter_button.text = "Dock at Station"
+			planet_info_label.visible = false
 		MapNode.NodeType.MINE:
 			type_label.text = "[ Asteroid Mine ]"
 			type_label.modulate = Color(1.0, 0.8, 0.3)
 			hazards_label.visible = node.hazard_types.size() > 0
 			hsep2.visible = true
 			enter_button.text = "Launch"
+			var planet_info := node.get_planet_info()
+			planet_info_label.text = "Biome: %s  ·  Temp: %s  ·  Size: %s" % [
+				planet_info["biome"], planet_info["temperature"], planet_info["size"]
+			]
+			planet_info_label.visible = true
 		MapNode.NodeType.SETTLEMENT:
 			type_label.text = "[ Settlement ]"
 			type_label.modulate = Color(0.85, 0.60, 1.0)
 			hazards_label.visible = false
 			hsep2.visible = false
 			enter_button.text = "Visit Settlement"
+			planet_info_label.visible = false
 		_:
 			type_label.text = "[ Unknown ]"
 			type_label.modulate = Color(1.0, 1.0, 1.0)
 			hazards_label.visible = false
 			hsep2.visible = true
 			enter_button.text = "Explore"
+			planet_info_label.visible = false
 
 	if hazards_label.visible:
 		hazards_label.text = "Hazards: " + ", ".join(PackedStringArray(node.hazard_types))
