@@ -1374,6 +1374,11 @@ func _spawn_decorations(data: Dictionary) -> void:
 		var atlas_coord: Vector2i = FOLIAGE_PLANT_ATLAS_COORDS[randi() % FOLIAGE_PLANT_ATLAS_COORDS.size()]
 		_foliage_layer.set_cell(pos, 0, atlas_coord)
 
+	# Foliage above grass — taller decorations in the sky row directly above the grass
+	for pos: Vector2i in data.get("foliage_above_grass", []):
+		var atlas_coord: Vector2i = FOLIAGE_PLANT_ATLAS_COORDS[randi() % FOLIAGE_PLANT_ATLAS_COORDS.size()]
+		_foliage_layer.set_cell(pos, 0, atlas_coord)
+
 	# Cave floor coral — grows upward from the solid tile below
 	for pos: Vector2i in data.get("coral_floor", []):
 		var atlas_coord: Vector2i = FOLIAGE_CORAL_FLOOR_ATLAS_COORDS[randi() % FOLIAGE_CORAL_FLOOR_ATLAS_COORDS.size()]
