@@ -2,7 +2,8 @@ extends Node2D
 
 # Space Mining Level — a cat miner in SPACE!
 # Player is a CharacterBody2D that moves freely with gravity/jumping.
-# Terrain is a grid rendered via _draw() with collision provided by a TileMapLayer.
+# Terrain is a grid; tiles are rendered by MineAbleTileMapLayer/NonMineAbleTileMapLayer (z=0).
+# Overlays (cursor, sonar, boss, particles) are rendered by TerrainOverlay (z=1).
 # Mining is cursor-based: click to mine space rocks and asteroids within range.
 # Energy drains over time while in deep space (faster at distance).
 
@@ -438,6 +439,9 @@ const WEB_TEXTURE: String = "res://assets/blocks/plants/spiderweb.png"
 
 @onready var player_node := $PlayerProbe as PlayerProbe
 @onready var pause_menu = $PauseMenu
+@onready var _mineable_layer    := $TileMapLayers/MineAbleTileMapLayer as TileMapLayer
+@onready var _nonmineable_layer := $TileMapLayers/NonMineAbleTileMapLayer as TileMapLayer
+@onready var _terrain_overlay   := $TerrainOverlay as MiningLevelOverlay
 
 var _inventory_screen: InventoryScreen = null
 var _hat_menu: HatMenu = null
@@ -490,8 +494,10 @@ func _ready() -> void:
 	_build_shop_protection_zones()
 	_setup_collision_tilemap()
 	_sync_collision_tilemap()
+	_populate_visual_tilemaplayers()
 	_setup_map_barriers()
 	_spawn_decorations(_terrain_generator.generate_decorations())
+	_terrain_overlay.setup(self)
 
 	# Setup camera
 	camera = Camera2D.new()
@@ -545,7 +551,8 @@ func _ready() -> void:
 		func(c, r, solid): _set_tile_collision(c, r, solid),
 		func(text, color): _show_zone_banner(text, color),
 		func(intensity, duration): _shake_camera(intensity, duration),
-		func(pos): _tile_damage.erase(pos); _tile_hits.erase(pos); _tile_last_hit.erase(pos); _remove_breaking_overlay(pos)
+		func(pos): _tile_damage.erase(pos); _tile_hits.erase(pos); _tile_last_hit.erase(pos); _remove_breaking_overlay(pos),
+		func(c, r): _set_visual_cell(c, r)
 	)
 	_boss_renderer.setup(boss_system, grid, CELL_SIZE)
 
@@ -765,6 +772,51 @@ func _set_tile_collision(col: int, row: int, solid: bool) -> void:
 	else:
 		collision_tilemap.erase_cell(Vector2i(col, row))
 
+# ---------------------------------------------------------------------------
+# Visual TileMapLayer population and per-cell sync
+# ---------------------------------------------------------------------------
+
+## Tiles placed into NonMineAbleTileMapLayer — permanent structures.
+const _NONMINEABLE_VISUAL_TILES: Array = [
+	TileType.REENERGY_STATION,
+	TileType.UPGRADE_STATION,
+	TileType.SMELTERY_STATION,
+	TileType.EXIT_STATION,
+	TileType.CAT_TAVERN,
+]
+
+## Tiles not rendered via TileMapLayer (handled by BossRenderer or _draw() primitives).
+const _SKIP_VISUAL_TILES: Array = [
+	TileType.EMPTY,
+	TileType.SURFACE,
+	TileType.BOSS_SEGMENT,
+	TileType.BOSS_CORE,
+	TileType.LADDER,
+]
+
+## Populate both visual TileMapLayers from the current grid state.
+## Called once after terrain generation in _ready().
+func _populate_visual_tilemaplayers() -> void:
+	_mineable_layer.clear()
+	_nonmineable_layer.clear()
+	for col in range(GRID_COLS):
+		for row in range(GRID_ROWS):
+			_set_visual_cell(col, row)
+
+## Update the visual TileMapLayer cell at (col, row) to match grid[col][row].
+## Call this whenever grid[col][row] is written.
+func _set_visual_cell(col: int, row: int) -> void:
+	var gpos := Vector2i(col, row)
+	_mineable_layer.erase_cell(gpos)
+	_nonmineable_layer.erase_cell(gpos)
+	var tile: int = grid[col][row]
+	if tile in _SKIP_VISUAL_TILES:
+		return
+	if tile in _NONMINEABLE_VISUAL_TILES:
+		_nonmineable_layer.set_cell(gpos, tile, Vector2i(0, 0))
+	else:
+		_mineable_layer.set_cell(gpos, tile, Vector2i(0, 0))
+
 func _load_tile_textures() -> void:
 	for tile_type in TILE_TEXTURE_PATHS:
 		var path: String = TILE_TEXTURE_PATHS[tile_type]
@@ -788,6 +840,9 @@ func _update_camera() -> void:
 # ---------------------------------------------------------------------------
 
 func _draw() -> void:
+	# Draws only the background gradient and sky.
+	# Tile sprites are rendered by MineAbleTileMapLayer / NonMineAbleTileMapLayer (z=0).
+	# Overlays (cursor, sonar, boss, particles, etc.) are rendered by TerrainOverlay (z=1).
 	var cam_x: float
 	var cam_y: float
 	if camera:
@@ -850,167 +905,6 @@ func _draw() -> void:
 			draw_rect(Rect2(float(min_col * CELL_SIZE), row_y,
 				float((max_col - min_col + 1) * CELL_SIZE), float(CELL_SIZE)),
 				TILE_COLORS.get(TileType.SURFACE_GRASS, Color(0.10, 0.20, 0.35)))
-
-	# Tile sprites
-	for col in range(min_col, max_col + 1):
-		for row in range(min_row, max_row + 1):
-			var tile: int = grid[col][row]
-			if tile == TileType.EMPTY or tile == TileType.SURFACE:
-				continue
-
-			var tile_rect := Rect2(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-
-			if tile == TileType.EXIT_STATION:
-				var pulse: float = sin(_exit_pulse_time * 3.0) * 0.5 + 0.5
-				draw_rect(tile_rect, Color(0.10 + pulse * 0.10, 0.40 + pulse * 0.20, 0.10 + pulse * 0.10))
-				var border_alpha := 0.55 + pulse * 0.45
-				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
-					Color(border_alpha, border_alpha, border_alpha), false, 2.0)
-				if pulse > 0.6:
-					var glow_alpha: float = (pulse - 0.6) / 0.4 * 0.35
-					draw_rect(Rect2(col * CELL_SIZE - 3, row * CELL_SIZE - 3, CELL_SIZE + 6, CELL_SIZE + 6),
-						Color(0.20, 0.90, 0.20, glow_alpha), false, 3.0)
-				var exit_font := ThemeDB.fallback_font
-				draw_string(exit_font,
-					Vector2(col * CELL_SIZE, row * CELL_SIZE + CELL_SIZE / 2 + 5),
-					"EXIT",
-					HORIZONTAL_ALIGNMENT_CENTER, CELL_SIZE, 13,
-					Color(0.35 + pulse * 0.45, 1.0, 0.35 + pulse * 0.20))
-				continue
-
-			# Ladders — transparent overlay (two poles + rungs), skip normal texture
-			if tile == TileType.LADDER:
-				var lx := col * CELL_SIZE
-				var ly := row * CELL_SIZE
-				draw_rect(Rect2(lx + 10, ly + 2, 8, CELL_SIZE - 4), Color(0.80, 0.60, 0.15, 0.90))
-				draw_rect(Rect2(lx + CELL_SIZE - 18, ly + 2, 8, CELL_SIZE - 4), Color(0.80, 0.60, 0.15, 0.90))
-				for rung in 3:
-					draw_rect(Rect2(lx + 10, ly + 10 + rung * 18, CELL_SIZE - 20, 5),
-						Color(0.70, 0.50, 0.10, 0.90))
-				continue
-
-			var tex: Texture2D = tile_textures.get(tile)
-			if tex:
-				draw_texture_rect(tex, tile_rect, false)
-			else:
-				draw_rect(tile_rect, TILE_COLORS.get(tile, Color(0.5, 0.5, 0.5)))
-
-			if tile == TileType.REENERGY_STATION:
-				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
-					Color.WHITE, false, 2.0)
-
-			if tile == TileType.UPGRADE_STATION:
-				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
-					Color(0.40, 1.00, 0.60), false, 2.0)
-
-			if tile == TileType.SMELTERY_STATION:
-				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
-					Color(1.0, 0.55, 0.0), false, 2.0)
-
-			if tile == TileType.CAT_TAVERN:
-				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
-					Color(0.75, 0.35, 0.90), false, 2.0)
-				var cfont := ThemeDB.fallback_font
-				draw_string(cfont,
-					Vector2(col * CELL_SIZE + 4, row * CELL_SIZE + CELL_SIZE / 2 + 5),
-					"CAT", HORIZONTAL_ALIGNMENT_CENTER, CELL_SIZE - 8, 11, Color(0.90, 0.70, 1.00))
-
-			# Breaking overlay is handled by child AnimatedSprite2D instances
-
-	# Impact flashes
-	for pk in _flash_cells:
-		var fc: int = pk.x
-		var fr: int = pk.y
-		if fc >= min_col and fc <= max_col and fr >= min_row and fr <= max_row:
-			var frect := Rect2(fc * CELL_SIZE, fr * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-			draw_rect(frect, Color(1.0, 1.0, 1.0, _flash_cells[pk]))
-
-	# Cursor highlight — mining outline (slot 0) or ladder ghost (slot 1)
-	if GameManager.selected_hotbar_slot == 1:
-		# Ladder ghost preview: faint ladder shape tinted green (valid) or red (invalid)
-		if _ladder_ghost_pos.x >= 0 and _ladder_ghost_pos.y >= 0:
-			var lx := _ladder_ghost_pos.x * CELL_SIZE
-			var ly := _ladder_ghost_pos.y * CELL_SIZE
-			const GHOST_ALPHA := 0.45
-			var pole_c: Color
-			var rung_c: Color
-			var border_c: Color
-			if _ladder_ghost_valid:
-				pole_c   = Color(0.20, 0.90, 0.20, GHOST_ALPHA)
-				rung_c   = Color(0.15, 0.80, 0.15, GHOST_ALPHA)
-				border_c = Color(0.20, 0.90, 0.20, 0.65)
-			else:
-				pole_c   = Color(0.90, 0.15, 0.10, GHOST_ALPHA)
-				rung_c   = Color(0.80, 0.10, 0.08, GHOST_ALPHA)
-				border_c = Color(0.90, 0.15, 0.10, 0.65)
-			draw_rect(Rect2(lx + 10, ly + 2, 8, CELL_SIZE - 4), pole_c)
-			draw_rect(Rect2(lx + CELL_SIZE - 18, ly + 2, 8, CELL_SIZE - 4), pole_c)
-			for rung in 3:
-				draw_rect(Rect2(lx + 10, ly + 10 + rung * 18, CELL_SIZE - 20, 5), rung_c)
-			draw_rect(Rect2(lx, ly, CELL_SIZE, CELL_SIZE), border_c, false, 2.0)
-	else:
-		# Pickaxe mining highlight
-		if _cursor_grid_pos.x >= 0 and _cursor_grid_pos.y >= 0:
-			var highlight_rect := Rect2(_cursor_grid_pos.x * CELL_SIZE, _cursor_grid_pos.y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-			draw_rect(highlight_rect, Color(1.0, 1.0, 1.0, 0.2), false, 2.0)
-
-	# Trader nodes are drawn by TraderSystem._draw() (Node2D child)
-
-	# Boss overlays (creature shapes + warning vignettes) — delegated to BossRenderer
-	_boss_renderer.draw_to(self, min_col, max_col, min_row, max_row)
-
-
-	# Sonar ping overlay — expanding wave reveals ore tiles through rock (§3.2)
-	# State is read from sonar_system; draw calls remain in MiningLevel._draw()
-	if sonar_system.ping_active and sonar_system.ping_center.x >= 0:
-		var ping_alpha := 1.0 - sonar_system.ping_elapsed / SonarSystem.PING_DURATION
-		var max_radius := GameManager.get_sonar_ping_radius()
-		var cx := sonar_system.ping_center.x
-		var cy := sonar_system.ping_center.y
-		var scan_r := int(max_radius) + 2
-		# Glow each ore tile that the expanding wave has already swept over
-		for sc in range(maxi(min_col, cx - scan_r), mini(max_col + 1, cx + scan_r + 1)):
-			for sr in range(maxi(min_row, cy - scan_r), mini(max_row + 1, cy + scan_r + 1)):
-				var stile: int = grid[sc][sr]
-				if stile != TileType.ORE_COPPER and stile != TileType.ORE_COPPER_DEEP \
-				and stile != TileType.ORE_IRON and stile != TileType.ORE_IRON_DEEP \
-				and stile != TileType.ORE_GOLD and stile != TileType.ORE_GOLD_DEEP \
-				and stile != TileType.ORE_GEM and stile != TileType.ORE_GEM_DEEP \
-				and stile != TileType.ENERGY_NODE and stile != TileType.ENERGY_NODE_FULL:
-					continue
-				var dist := Vector2(sc - cx, sr - cy).length()
-				if dist > sonar_system.wave_radius:
-					continue
-				# Glow age: how far behind the wave front this tile is
-				var glow_age := sonar_system.wave_radius - dist
-				var glow_alpha := maxf(0.0, ping_alpha - glow_age * 0.12) * 0.80
-				if glow_alpha <= 0.02:
-					continue
-				# Color by ore tier (level 1: uniform green; level 2+: color-coded)
-				var glow_color := Color(0.20, 1.0, 0.40, glow_alpha)
-				if GameManager.mineral_sense_level >= 2:
-					if stile == TileType.ORE_GEM or stile == TileType.ORE_GEM_DEEP:
-						glow_color = Color(0.10, 0.90, 1.00, glow_alpha)
-					elif stile == TileType.ORE_GOLD or stile == TileType.ORE_GOLD_DEEP:
-						glow_color = Color(1.00, 0.85, 0.10, glow_alpha)
-					elif stile == TileType.ORE_IRON or stile == TileType.ORE_IRON_DEEP:
-						glow_color = Color(0.65, 0.65, 1.00, glow_alpha)
-					elif stile == TileType.ENERGY_NODE or stile == TileType.ENERGY_NODE_FULL:
-						glow_color = Color(0.30, 1.00, 0.30, glow_alpha)
-				draw_rect(Rect2(sc * CELL_SIZE, sr * CELL_SIZE, CELL_SIZE, CELL_SIZE), glow_color)
-		# Expanding wave ring arc
-		var wave_px := sonar_system.wave_radius * CELL_SIZE
-		var center_px := Vector2(cx * CELL_SIZE + CELL_SIZE * 0.5, cy * CELL_SIZE + CELL_SIZE * 0.5)
-		if wave_px > 0:
-			draw_arc(center_px, wave_px, 0.0, TAU, 48, Color(0.40, 1.0, 0.60, ping_alpha * 0.55), 2.0)
-
-	# Draw level particles (mining sparks, lava embers, ore bursts)
-	for p: Dictionary in _level_particles:
-		var sz: float = p["size"]
-		var alpha: float = p["life"] / p["max_life"]
-		var c: Color = p["color"]
-		c.a = alpha
-		draw_rect(Rect2(p["pos"].x - sz * 0.5, p["pos"].y - sz * 0.5, sz, sz), c)
 
 # Level particle system — mining sparks, ore bursts, lava embers, boss fx
 # ---------------------------------------------------------------------------
@@ -1085,6 +979,8 @@ func any_ui_open() -> bool:
 func _process(delta: float) -> void:
 	_exit_pulse_time += delta
 	queue_redraw()
+	if _terrain_overlay:
+		_terrain_overlay.queue_redraw()
 
 	# Fade impact flashes
 	if _flash_cells.size() > 0:
@@ -1662,6 +1558,8 @@ func _process_gravity(delta: float) -> void:
 		grid[col][row] = TileType.EMPTY
 		_set_tile_collision(col, row, false)
 		_set_tile_collision(col, below_row, true)
+		_set_visual_cell(col, row)
+		_set_visual_cell(col, below_row)
 
 		# Clear any partial-damage state that belonged to the old position.
 		_tile_damage.erase(pos)
@@ -1689,6 +1587,7 @@ func _process_gravity(delta: float) -> void:
 func _mine_cell(col: int, row: int) -> void:
 	grid[col][row] = TileType.EMPTY
 	_set_tile_collision(col, row, false)
+	_set_visual_cell(col, row)
 	# A newly-empty cell may leave a gravity tile unsupported above it.
 	_trigger_gravity_above(col, row)
 
@@ -1733,6 +1632,7 @@ func _explode_area(center_col: int, center_row: int) -> void:
 					GameManager.track_ore_mined(tile, minerals)
 				grid[nc][nr] = TileType.EMPTY
 				_set_tile_collision(nc, nr, false)
+				_set_visual_cell(nc, nr)
 				_remove_breaking_overlay(Vector2i(nc, nr))
 				# Explosion may leave gravity tiles unsupported above cleared cells.
 				_trigger_gravity_above(nc, nr)

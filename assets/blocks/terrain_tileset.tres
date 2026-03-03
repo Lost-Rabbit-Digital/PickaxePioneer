@@ -1,0 +1,164 @@
+[gd_resource type="TileSet" load_steps=40 format=3 uid="uid://bx3q7m2t5p8w6"]
+
+[ext_resource type="Texture2D" uid="uid://cojfi7h8n21y1" path="res://assets/blocks/dirt.png" id="tex_dirt"]
+[ext_resource type="Texture2D" uid="uid://biqk0lfmifyo4" path="res://assets/blocks/mud.png" id="tex_mud"]
+[ext_resource type="Texture2D" uid="uid://ceeyb4plg18mk" path="res://assets/blocks/stone_ore_copper.png" id="tex_ore_copper"]
+[ext_resource type="Texture2D" uid="uid://q28v2a4woynw" path="res://assets/blocks/stone_ore_iron.png" id="tex_ore_iron"]
+[ext_resource type="Texture2D" uid="uid://blu5tobagyep6" path="res://assets/blocks/stone_ore_gold.png" id="tex_ore_gold"]
+[ext_resource type="Texture2D" uid="uid://b1rvb5vw4eysh" path="res://assets/blocks/stone_generic_ore_crystalline.png" id="tex_ore_gem"]
+[ext_resource type="Texture2D" uid="uid://b2aebsgtwwlue" path="res://assets/blocks/stone_generic.png" id="tex_stone"]
+[ext_resource type="Texture2D" uid="uid://garklt5fwh14" path="res://assets/blocks/gravel.png" id="tex_gravel"]
+[ext_resource type="Texture2D" uid="uid://cwthxof5nbhhh" path="res://assets/blocks/eucalyptus_log_top.png" id="tex_explosive"]
+[ext_resource type="Texture2D" uid="uid://daijdc1xklvqv" path="res://assets/blocks/sand_ugly_3.png" id="tex_lava"]
+[ext_resource type="Texture2D" uid="uid://da77u6lsq3d2m" path="res://assets/blocks/limestone.png" id="tex_energy_node"]
+[ext_resource type="Texture2D" uid="uid://dv7n46e2buoyu" path="res://assets/blocks/marble.png" id="tex_energy_full"]
+[ext_resource type="Texture2D" uid="uid://bu6w8yfdi865y" path="res://assets/blocks/cobblestone_bricks.png" id="tex_station"]
+[ext_resource type="Texture2D" uid="uid://bqrxqmltrg14f" path="res://assets/blocks/grass_top.png" id="tex_grass_top"]
+[ext_resource type="Texture2D" uid="uid://c8tys51yynctv" path="res://assets/blocks/grass_side.png" id="tex_grass_side"]
+
+[sub_resource type="TileSetAtlasSource" id="Src_1"]
+texture = ExtResource("tex_dirt")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_2"]
+texture = ExtResource("tex_mud")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_3"]
+texture = ExtResource("tex_ore_copper")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_4"]
+texture = ExtResource("tex_ore_copper")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_5"]
+texture = ExtResource("tex_ore_iron")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_6"]
+texture = ExtResource("tex_ore_iron")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_7"]
+texture = ExtResource("tex_ore_gold")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_8"]
+texture = ExtResource("tex_ore_gold")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_9"]
+texture = ExtResource("tex_ore_gem")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_10"]
+texture = ExtResource("tex_ore_gem")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_11"]
+texture = ExtResource("tex_stone")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_12"]
+texture = ExtResource("tex_gravel")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_13"]
+texture = ExtResource("tex_explosive")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_14"]
+texture = ExtResource("tex_explosive")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_15"]
+texture = ExtResource("tex_lava")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_16"]
+texture = ExtResource("tex_lava")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_17"]
+texture = ExtResource("tex_energy_node")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_18"]
+texture = ExtResource("tex_energy_full")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_19"]
+texture = ExtResource("tex_station")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_21"]
+texture = ExtResource("tex_grass_side")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_22"]
+texture = ExtResource("tex_station")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_25"]
+texture = ExtResource("tex_station")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_26"]
+texture = ExtResource("tex_station")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="Src_28"]
+texture = ExtResource("tex_station")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+
+[resource]
+tile_size = Vector2i(64, 64)
+sources/1 = SubResource("Src_1")
+sources/2 = SubResource("Src_2")
+sources/3 = SubResource("Src_3")
+sources/4 = SubResource("Src_4")
+sources/5 = SubResource("Src_5")
+sources/6 = SubResource("Src_6")
+sources/7 = SubResource("Src_7")
+sources/8 = SubResource("Src_8")
+sources/9 = SubResource("Src_9")
+sources/10 = SubResource("Src_10")
+sources/11 = SubResource("Src_11")
+sources/12 = SubResource("Src_12")
+sources/13 = SubResource("Src_13")
+sources/14 = SubResource("Src_14")
+sources/15 = SubResource("Src_15")
+sources/16 = SubResource("Src_16")
+sources/17 = SubResource("Src_17")
+sources/18 = SubResource("Src_18")
+sources/19 = SubResource("Src_19")
+sources/21 = SubResource("Src_21")
+sources/22 = SubResource("Src_22")
+sources/25 = SubResource("Src_25")
+sources/26 = SubResource("Src_26")
+sources/28 = SubResource("Src_28")
