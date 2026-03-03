@@ -238,6 +238,12 @@ func _place_building_at(col: int, w: int, h: int, is_supply_dock: bool) -> void:
 # NPC spawning
 # ---------------------------------------------------------------------------
 
+const FARM_ANIMALS: Array = [
+	{"name": "Chicken", "path": "res://assets/creatures/chicken_spritesheet.png"},
+	{"name": "Pig",     "path": "res://assets/creatures/pig_spritesheet.png"},
+	{"name": "Sheep",   "path": "res://assets/creatures/sheep_spritesheet.png"},
+]
+
 func _spawn_npcs() -> void:
 	var num_npcs := randi_range(4, 12)
 	var npc_scene := load("res://src/entities/npcs/FarmAnimalNPC.tscn") as PackedScene
@@ -246,15 +252,14 @@ func _spawn_npcs() -> void:
 
 	for i in range(num_npcs):
 		var npc := npc_scene.instantiate() as FarmAnimalNPC
-		npc.animal_name = "Settlement Resident"
+		var animal_data: Dictionary = FARM_ANIMALS[randi() % FARM_ANIMALS.size()]
+		npc.animal_name = animal_data["name"]
 
-		# Use a building texture for the NPC sprite (same as buildings)
-		var tex_idx := randi() % _building_textures_loaded.size()
-		var tex: Texture2D = _building_textures_loaded[tex_idx]
+		var tex := load(animal_data["path"]) as Texture2D
 		var spr := npc.get_node("Sprite2D") as Sprite2D
 		if spr and tex:
 			spr.texture = tex
-			spr.hframes = 1  # Single-frame texture (block texture)
+			spr.hframes = 2
 			spr.frame = 0
 
 		npc.scale = Vector2(2.0, 2.0)

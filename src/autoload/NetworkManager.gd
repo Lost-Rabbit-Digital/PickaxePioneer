@@ -7,6 +7,7 @@ extends Node
 signal host_started
 signal guest_connected(peer_id: int)
 signal guest_disconnected
+signal host_disconnected   # Guest: emitted when the host drops the connection
 signal connected_to_host
 signal connection_failed
 
@@ -27,6 +28,7 @@ func start_host(port: int = DEFAULT_PORT) -> Error:
 	if err != OK:
 		push_error("NetworkManager: failed to create server on port %d (err %d)" % [port, err])
 		return err
+	peer.host.compress(ENetConnection.COMPRESS_RANGE_CODER)
 	multiplayer.multiplayer_peer = peer
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
@@ -44,9 +46,11 @@ func join_host(ip: String, port: int = DEFAULT_PORT) -> Error:
 	if err != OK:
 		push_error("NetworkManager: failed to connect to %s:%d (err %d)" % [ip, port, err])
 		return err
+	peer.host.compress(ENetConnection.COMPRESS_RANGE_CODER)
 	multiplayer.multiplayer_peer = peer
 	multiplayer.connected_to_server.connect(_on_connected_to_server, CONNECT_ONE_SHOT)
 	multiplayer.connection_failed.connect(_on_connection_failed, CONNECT_ONE_SHOT)
+	multiplayer.server_disconnected.connect(_on_server_disconnected, CONNECT_ONE_SHOT)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	is_multiplayer_session = true
 	is_host = false
@@ -71,6 +75,8 @@ func _reset_peer() -> void:
 		multiplayer.connected_to_server.disconnect(_on_connected_to_server)
 	if multiplayer.connection_failed.is_connected(_on_connection_failed):
 		multiplayer.connection_failed.disconnect(_on_connection_failed)
+	if multiplayer.server_disconnected.is_connected(_on_server_disconnected):
+		multiplayer.server_disconnected.disconnect(_on_server_disconnected)
 	if multiplayer.multiplayer_peer != null:
 		multiplayer.multiplayer_peer.close()
 		multiplayer.multiplayer_peer = null
@@ -96,6 +102,11 @@ func _on_connection_failed() -> void:
 	is_multiplayer_session = false
 	connection_failed.emit()
 
+func _on_server_disconnected() -> void:
+	print("NetworkManager: host disconnected")
+	is_multiplayer_session = false
+	host_disconnected.emit()
+
 ## Sends a chat message to the remote player and displays it locally.
 ## Call this from the ChatBox when the local player submits a message.
 func broadcast_chat_message(text: String) -> void:
@@ -107,6 +118,13 @@ func broadcast_chat_message(text: String) -> void:
 		_deliver_chat_message.rpc_id(1, sender_name, text)
 
 ## RPC target — called on the remote peer to display an incoming chat message.
+## Sender name is validated against the actual remote peer ID so a client cannot
+## spoof a different name (e.g. impersonate "Host" from the guest machine).
 @rpc("any_peer", "call_remote", "reliable")
 func _deliver_chat_message(sender_name: String, text: String) -> void:
+	var sender_id := multiplayer.get_remote_sender_id()
+	var expected_name := "Host" if sender_id == 1 else "Guest"
+	if sender_name != expected_name:
+		push_warning("NetworkManager: chat sender name mismatch from peer %d (got '%s')" % [sender_id, sender_name])
+		return
 	EventBus.chat_message_received.emit(sender_name, text)
