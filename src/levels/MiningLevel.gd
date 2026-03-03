@@ -78,6 +78,32 @@ const TILE_NAMES: Dictionary = {
 	TileType.CAT_TAVERN:      "Cat Tavern",
 }
 
+# Hardcoded particle burst colours per tile type.
+# These approximate each tile's visual appearance so debris matches the block.
+const TILE_PARTICLE_COLORS: Dictionary = {
+	TileType.SURFACE_GRASS:    Color(0.45, 0.72, 0.30),  # green surface dust
+	TileType.DIRT:             Color(0.76, 0.60, 0.42),  # sandy tan moon rock
+	TileType.DIRT_DARK:        Color(0.50, 0.35, 0.20),  # dark brown dense rock
+	TileType.STONE:            Color(0.58, 0.58, 0.62),  # cool grey asteroid
+	TileType.STONE_DARK:       Color(0.38, 0.38, 0.42),  # dark grey asteroid
+	TileType.ORE_COPPER:       Color(0.78, 0.44, 0.20),  # copper orange
+	TileType.ORE_COPPER_DEEP:  Color(0.65, 0.32, 0.12),  # deeper copper
+	TileType.ORE_IRON:         Color(0.65, 0.68, 0.75),  # steel grey-blue
+	TileType.ORE_IRON_DEEP:    Color(0.45, 0.48, 0.58),  # darker iron
+	TileType.ORE_GOLD:         Color(1.00, 0.80, 0.10),  # bright gold
+	TileType.ORE_GOLD_DEEP:    Color(0.85, 0.60, 0.05),  # deep gold
+	TileType.ORE_GEM:          Color(0.20, 0.80, 0.90),  # cyan crystal
+	TileType.ORE_GEM_DEEP:     Color(0.15, 0.55, 0.85),  # deep gem blue
+	TileType.ENERGY_NODE:      Color(0.20, 0.60, 1.00),  # electric blue
+	TileType.ENERGY_NODE_FULL: Color(0.30, 0.90, 1.00),  # bright cyan
+	TileType.EXPLOSIVE:        Color(1.00, 0.55, 0.05),  # danger orange
+	TileType.EXPLOSIVE_ARMED:  Color(1.00, 0.55, 0.05),  # danger orange
+	TileType.LAVA:             Color(1.00, 0.35, 0.05),  # molten red-orange
+	TileType.LAVA_FLOW:        Color(1.00, 0.35, 0.05),  # molten red-orange
+	TileType.BOSS_SEGMENT:     Color(0.55, 0.10, 0.70),  # dark purple
+	TileType.BOSS_CORE:        Color(0.90, 0.05, 0.90),  # bright magenta
+}
+
 const MINEABLE_TILES: Array = [
 	TileType.SURFACE_GRASS,
 	TileType.DIRT, TileType.DIRT_DARK,
@@ -863,7 +889,7 @@ func _spawn_mining_particles(world_pos: Vector2, color: Color, count: int, speed
 		var angle := randf() * TAU
 		var speed := randf_range(speed_min, speed_max)
 		_level_particles.append({
-			"pos": world_pos + Vector2(randf_range(-8.0, 8.0), randf_range(-8.0, 8.0)),
+			"pos": world_pos + Vector2(randf_range(-30.0, 30.0), randf_range(-30.0, 30.0)),
 			"vel": Vector2(cos(angle) * speed, sin(angle) * speed - speed * 0.3),
 			"life": randf_range(0.18, 0.55),
 			"max_life": 0.55,
@@ -1301,7 +1327,8 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 		_mine_cell(col, row)
 		# Sync tile break to guest
 		if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
-			rpc_tile_broken.rpc_id(NetworkManager.guest_peer_id, pos_key, 0.7, 0.6, 0.4)
+			var rpc_burst := TILE_PARTICLE_COLORS.get(tile, Color(0.7, 0.6, 0.4)) as Color
+			rpc_tile_broken.rpc_id(NetworkManager.guest_peer_id, pos_key, rpc_burst.r, rpc_burst.g, rpc_burst.b)
 		# Boss tile tracking — delegated to BossSystem
 		if tile == TileType.BOSS_SEGMENT or tile == TileType.BOSS_CORE:
 			boss_system.on_tile_mined(col, row, tile)
@@ -1338,7 +1365,7 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 			_check_streak_milestone()
 		# Particle burst on tile destruction
 		var tile_world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
-		var burst_color: Color = Color(0.7, 0.6, 0.4)
+		var burst_color: Color = TILE_PARTICLE_COLORS.get(tile, Color(0.7, 0.6, 0.4))
 		var burst_count := 14 if tile in ORE_TILES else 8
 		if tile == TileType.BOSS_SEGMENT or tile == TileType.BOSS_CORE:
 			burst_count = 20
@@ -1352,7 +1379,7 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 		_update_breaking_overlay(pos_key, damage_ratio)
 		# Small impact sparks on partial hits
 		var hit_world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
-		_spawn_mining_particles(hit_world_pos, Color(0.8, 0.7, 0.5), 4, 30.0, 90.0)
+		_spawn_mining_particles(hit_world_pos, TILE_PARTICLE_COLORS.get(tile, Color(0.8, 0.7, 0.5)), 4, 30.0, 90.0)
 		SoundManager.play_impact_sound()
 		_shake_camera(1.5, 0.07)
 		# Sync partial damage to guest so their breaking overlay matches
