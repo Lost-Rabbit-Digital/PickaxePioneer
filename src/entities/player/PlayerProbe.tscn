@@ -477,10 +477,28 @@ animation = &"idle"
 texture_filter = 1
 scale = Vector2(4, 4)
 sprite_frames = SubResource("SpriteFrames_8ebmi")
-animation = &"jump"
-frame = 6
-frame_progress = 0.29225284
+animation = &"sleep"
+frame_progress = 0.18468519
 offset = Vector2(0, -8)
+
+[node name="SleepLabel" type="RichTextLabel" parent="AnimatedSprite2D"]
+visible = false
+offset_left = -0.5
+offset_top = -44.25
+offset_right = 21.75
+offset_bottom = 4.25
+mouse_filter = 2
+theme_override_font_sizes/normal_font_size = 8
+bbcode_enabled = true
+text = "[wave amp=25.0 freq=1.0 connected=1]
+		Z 
+	Z 
+Z[/wave]"
+scroll_active = false
+autowrap_mode = 0
+shortcut_keys_enabled = false
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("2_health")

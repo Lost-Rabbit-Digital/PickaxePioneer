@@ -43,6 +43,7 @@ const FALL_DAMAGE_THRESHOLD: int = 12 * CELL_SIZE  # 3 tiles in pixels (192px)
 @onready var interact_prompt: Label = $PromptLayer/InteractPrompt
 @onready var _ice_follower: AnimatedSprite2D = $ElementalFollowers/IceElemental
 @onready var _leaf_follower: AnimatedSprite2D = $ElementalFollowers/LeafElemental
+@onready var sleep_label: RichTextLabel = $AnimatedSprite2D/SleepLabel
 
 # Facing direction
 var _facing_left: bool = true
@@ -244,6 +245,7 @@ func _physics_process(delta: float) -> void:
 func _update_animation(delta: float) -> void:
 	var anim: StringName
 
+	sleep_label.visible = false
 	if _mining and is_on_floor():
 		anim = &"paw"
 		_idle_timer = 0.0
@@ -260,6 +262,7 @@ func _update_animation(delta: float) -> void:
 		# Player is idle - track idle time
 		_idle_timer += delta
 		if _idle_timer >= IDLE_TO_SLEEP_TIME:
+			sleep_label.visible = true
 			anim = &"sleep"
 		else:
 			anim = &"idle"
