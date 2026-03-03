@@ -25,7 +25,7 @@ var custom_binds: Dictionary = {}
 const BINDABLE_ACTIONS: Array[String] = [
 	"move_left", "move_right", "jump", "mine", "sprint",
 	"interact", "sonar_ping", "toggle_inventory", "toggle_companions_menu",
-	"toggle_customization_menu",
+	"toggle_customization_menu", "music_prev", "music_next", "music_toggle",
 ]
 
 const ACTION_DISPLAY_NAMES: Dictionary = {
@@ -39,6 +39,9 @@ const ACTION_DISPLAY_NAMES: Dictionary = {
 	"toggle_inventory": "Inventory",
 	"toggle_companions_menu": "Companions",
 	"toggle_customization_menu": "Customization",
+	"music_prev": "Music Prev",
+	"music_next": "Music Next",
+	"music_toggle": "Music Play/Pause",
 }
 
 const FRAMERATE_OPTIONS: Array[int] = [0, 30, 60, 120, 144, 240]
