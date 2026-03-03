@@ -475,7 +475,8 @@ func _ready() -> void:
 		grid, GRID_COLS, GRID_ROWS, SURFACE_ROWS, EXIT_COLS,
 		DEPTH_ZONE_ROWS,
 		GameManager.allowed_ore_types,
-		GameManager.allowed_hazard_types)
+		GameManager.allowed_hazard_types,
+		GameManager.terrain_seed)
 	_build_shop_protection_zones()
 	_setup_collision_tilemap()
 	_sync_collision_tilemap()

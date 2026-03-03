@@ -4,6 +4,10 @@ extends RefCounted
 # ---------------------------------------------------------------------------
 # Tile-type integer constants — must stay in sync with MiningLevel.TileType.
 # ---------------------------------------------------------------------------
+# Dedicated RNG — seeded once per generate() call so the same seed always
+# produces the same terrain on any machine (critical for multiplayer sync).
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
+
 const T_EMPTY            = 0
 const T_DIRT             = 1
 const T_DIRT_DARK        = 2
@@ -42,7 +46,8 @@ const VEIN_MEANDER_CHANCE: float = 0.35
 ## rooms, and connecting tunnels.  `grid` must already be an empty Array —
 ## this function will resize it to [cols][rows].
 ##
-## `depth_zone_rows` = MiningLevel.DEPTH_ZONE_ROWS (used for vein zone bounds)
+## `seed_value`       = deterministic seed; identical seeds produce identical terrain.
+## `depth_zone_rows`  = MiningLevel.DEPTH_ZONE_ROWS (used for vein zone bounds)
 func generate(
 		grid: Array,
 		cols: int,
@@ -51,7 +56,9 @@ func generate(
 		exit_cols: int,
 		depth_zone_rows: Array,
 		allowed_ore_types: Array,
-		allowed_hazard_types: Array) -> void:
+		allowed_hazard_types: Array,
+		seed_value: int = 0) -> void:
+	_rng.seed = seed_value
 	_cols = cols
 	_rows = rows
 	_surface_rows = surface_rows
@@ -115,7 +122,7 @@ func _generate_grid() -> void:
 		_grid[col][_surface_rows + 2] = T_DIRT
 
 func _random_tile(_col: int, row: int) -> int:
-	var r := randf()
+	var r := _rng.randf()
 	var depth := float(row - _surface_rows) / float(_rows - _surface_rows)
 
 	var explosive_ok := _allowed_hazard.is_empty() or _allowed_hazard.has("Explosives")
@@ -135,7 +142,7 @@ func _random_tile(_col: int, row: int) -> int:
 	elif r < total_hazard + 0.03:                 return T_ENERGY_NODE_FULL
 
 	var stone_chance := 0.10 + depth * 0.50
-	var r2 := randf()
+	var r2 := _rng.randf()
 	if   r2 < stone_chance * 0.6:   return T_STONE_DARK
 	elif r2 < stone_chance:          return T_STONE
 	elif r2 < stone_chance + 0.10:   return T_DIRT_DARK
@@ -146,14 +153,14 @@ func _random_tile(_col: int, row: int) -> int:
 # ---------------------------------------------------------------------------
 
 func _generate_cave_rooms() -> void:
-	var num_rooms := randi_range(12, 18)
+	var num_rooms := _rng.randi_range(12, 18)
 	for _i in range(num_rooms):
-		var room_col  := randi_range(5, _cols - 8)
-		var room_row  := randi_range(_surface_rows + 6, _rows - 8)
+		var room_col  := _rng.randi_range(5, _cols - 8)
+		var room_row  := _rng.randi_range(_surface_rows + 6, _rows - 8)
 		# 25% chance of a large chamber
-		var is_large  := randf() < 0.25
-		var half_w    := randi_range(5, 11) if is_large else randi_range(3, 7)
-		var half_h    := randi_range(3, 6)  if is_large else randi_range(2, 4)
+		var is_large  := _rng.randf() < 0.25
+		var half_w    := _rng.randi_range(5, 11) if is_large else _rng.randi_range(3, 7)
+		var half_h    := _rng.randi_range(3, 6)  if is_large else _rng.randi_range(2, 4)
 
 		# Carve the interior
 		for dc in range(-half_w, half_w + 1):
@@ -174,7 +181,7 @@ func _generate_cave_rooms() -> void:
 					var nc := room_col + dc
 					var nr := room_row + dr
 					if nc >= 1 and nc < _cols - 1 and nr >= _surface_rows + 1 and nr < _rows - 1:
-						if randf() < 0.20:
+						if _rng.randf() < 0.20:
 							var ore_tile := _depth_scaled_ore(depth)
 							if ore_tile != T_EMPTY:
 								_grid[nc][nr] = ore_tile
@@ -189,12 +196,12 @@ func _carve_tunnels() -> void:
 	const TLEN_MAX := 58
 	var dirs: Array[Vector2i] = [Vector2i(1,0), Vector2i(-1,0), Vector2i(0,1), Vector2i(0,-1)]
 	for _i in range(TCOUNT):
-		var cx      := randi_range(3, _cols - 4)
-		var cy      := randi_range(_surface_rows + 4, _rows - 5)
-		var length  := randi_range(TLEN_MIN, TLEN_MAX)
+		var cx      := _rng.randi_range(3, _cols - 4)
+		var cy      := _rng.randi_range(_surface_rows + 4, _rows - 5)
+		var length  := _rng.randi_range(TLEN_MIN, TLEN_MAX)
 		# 35% of tunnels are wide (2-tile) corridors
-		var is_wide := randf() < 0.35
-		var dir: Vector2i = dirs[randi() % dirs.size()]
+		var is_wide := _rng.randf() < 0.35
+		var dir: Vector2i = dirs[_rng.randi() % dirs.size()]
 		for _step in range(length):
 			if cx >= 1 and cx < _cols - 1 and cy >= _surface_rows + 1 and cy < _rows - 1:
 				_grid[cx][cy] = T_EMPTY
@@ -205,15 +212,15 @@ func _carve_tunnels() -> void:
 					var wy := cy + perp.y
 					if wx >= 1 and wx < _cols - 1 and wy >= _surface_rows + 1 and wy < _rows - 1:
 						_grid[wx][wy] = T_EMPTY
-				elif randf() < 0.28:
+				elif _rng.randf() < 0.28:
 					# Narrow tunnels: occasional side nub in either perpendicular direction
-					var side := perp if randf() < 0.5 else Vector2i(-perp.x, -perp.y)
+					var side := perp if _rng.randf() < 0.5 else Vector2i(-perp.x, -perp.y)
 					var sx := cx + side.x
 					var sy := cy + side.y
 					if sx >= 1 and sx < _cols - 1 and sy >= _surface_rows + 1 and sy < _rows - 1:
 						_grid[sx][sy] = T_EMPTY
-			if randf() < 0.30:
-				dir = dirs[randi() % dirs.size()]
+			if _rng.randf() < 0.30:
+				dir = dirs[_rng.randi() % dirs.size()]
 			cx = clampi(cx + dir.x, 1, _cols - 2)
 			cy = clampi(cy + dir.y, _surface_rows + 1, _rows - 2)
 
@@ -229,13 +236,13 @@ func _generate_tile_patches() -> void:
 	# --- Stone masses ---
 	# Replace scattered dirt tiles with stone in elliptical blobs, biased
 	# toward darker stone at greater depth.
-	var num_stone := randi_range(10, 16)
+	var num_stone := _rng.randi_range(10, 16)
 	for _i in range(num_stone):
-		var pc    := randi_range(3, _cols - 4)
-		var pr    := randi_range(_surface_rows + 8, _rows - 6)
+		var pc    := _rng.randi_range(3, _cols - 4)
+		var pr    := _rng.randi_range(_surface_rows + 8, _rows - 6)
 		var depth := float(pr - _surface_rows) / float(_rows - _surface_rows)
-		var half_w := randi_range(3, 9)
-		var half_h := randi_range(2, 5)
+		var half_w := _rng.randi_range(3, 9)
+		var half_h := _rng.randi_range(2, 5)
 		var tile   := T_STONE_DARK if depth > 0.45 else T_STONE
 		for dc in range(-half_w, half_w + 1):
 			for dr in range(-half_h, half_h + 1):
@@ -251,12 +258,12 @@ func _generate_tile_patches() -> void:
 	# --- Dark-dirt transition bands ---
 	# Irregular blobs of dark dirt create transition zones between shallow
 	# and deep regions, breaking up the uniform dirt layer.
-	var num_dark := randi_range(8, 14)
+	var num_dark := _rng.randi_range(8, 14)
 	for _i in range(num_dark):
-		var pc    := randi_range(3, _cols - 4)
-		var pr    := randi_range(_surface_rows + 3, _rows - 12)
-		var half_w := randi_range(4, 12)
-		var half_h := randi_range(2, 5)
+		var pc    := _rng.randi_range(3, _cols - 4)
+		var pr    := _rng.randi_range(_surface_rows + 3, _rows - 12)
+		var half_w := _rng.randi_range(4, 12)
+		var half_h := _rng.randi_range(2, 5)
 		for dc in range(-half_w, half_w + 1):
 			for dr in range(-half_h, half_h + 1):
 				var ell := float(dc * dc) / float(half_w * half_w) \
@@ -273,11 +280,11 @@ func _generate_tile_patches() -> void:
 	# or unstable mineral pockets rather than random individual tiles.
 	var explosive_ok := _allowed_hazard.is_empty() or _allowed_hazard.has("Explosives")
 	if explosive_ok:
-		var num_clusters := randi_range(5, 9)
+		var num_clusters := _rng.randi_range(5, 9)
 		for _i in range(num_clusters):
-			var pc     := randi_range(3, _cols - 4)
-			var pr     := randi_range(_surface_rows + 10, _rows - 6)
-			var radius := randi_range(2, 4)
+			var pc     := _rng.randi_range(3, _cols - 4)
+			var pr     := _rng.randi_range(_surface_rows + 10, _rows - 6)
+			var radius := _rng.randi_range(2, 4)
 			for dc in range(-radius, radius + 1):
 				for dr in range(-radius, radius + 1):
 					if dc * dc + dr * dr <= radius * radius:
@@ -285,8 +292,8 @@ func _generate_tile_patches() -> void:
 						var nr := pr + dr
 						if nc >= 1 and nc < _cols - 1 and nr >= _surface_rows + 2 and nr < _rows - 1:
 							if _grid[nc][nr] in [T_DIRT, T_DIRT_DARK, T_STONE, T_STONE_DARK]:
-								if randf() < 0.55:
-									_grid[nc][nr] = T_EXPLOSIVE if randf() < 0.65 else T_EXPLOSIVE_ARMED
+								if _rng.randf() < 0.55:
+									_grid[nc][nr] = T_EXPLOSIVE if _rng.randf() < 0.65 else T_EXPLOSIVE_ARMED
 
 # ---------------------------------------------------------------------------
 # Lava lakes — bowl-shaped (semi-ellipse, open top) lava pools
@@ -301,13 +308,13 @@ func _generate_lava_lakes() -> void:
 	if not lava_ok:
 		return
 
-	var num_lakes := randi_range(5, 9)
+	var num_lakes := _rng.randi_range(5, 9)
 	for _i in range(num_lakes):
-		var center_col := randi_range(8, _cols - 9)
+		var center_col := _rng.randi_range(8, _cols - 9)
 		# Keep lakes away from the very top and bottom of the mine
-		var center_row := randi_range(_surface_rows + 18, _rows - 14)
-		var half_w     := randi_range(2, 6)
-		var half_h     := randi_range(2, 6)
+		var center_row := _rng.randi_range(_surface_rows + 18, _rows - 14)
+		var half_w     := _rng.randi_range(2, 6)
+		var half_h     := _rng.randi_range(2, 6)
 
 		# dr = 0 is the flat surface (top) of the lake; dr > 0 descends into the bowl.
 		# This produces the "circle on the bottom" semi-circle shape.
@@ -365,23 +372,23 @@ func _generate_ore_veins() -> void:
 	for spec in specs:
 		if not _allowed_ore.is_empty() and not _allowed_ore.has(spec["key"]):
 			continue
-		var count := randi_range(spec["count"][0], spec["count"][1])
+		var count := _rng.randi_range(spec["count"][0], spec["count"][1])
 		for _i in range(count):
 			_place_ore_vein(spec)
 
 func _place_ore_vein(spec: Dictionary) -> void:
 	var zone_start: int = spec["zone"][0]
 	var zone_end:   int = spec["zone"][1]
-	var length:     int = randi_range(spec["length"][0], spec["length"][1])
-	var width:      int = randi_range(spec["width"][0],  spec["width"][1])
+	var length:     int = _rng.randi_range(spec["length"][0], spec["length"][1])
+	var width:      int = _rng.randi_range(spec["width"][0],  spec["width"][1])
 
 	var max_start  := maxi(zone_start, zone_end - length)
-	var start_row  := randi_range(zone_start, max_start)
-	var center_col := randi_range(3, _cols - 4)
+	var start_row  := _rng.randi_range(zone_start, max_start)
+	var center_col := _rng.randi_range(3, _cols - 4)
 
 	var cap_len: int = 0
 	if spec["cap"] != -1:
-		cap_len = randi_range(spec["cap_len"][0], spec["cap_len"][1])
+		cap_len = _rng.randi_range(spec["cap_len"][0], spec["cap_len"][1])
 		cap_len = mini(cap_len, length - 4)
 
 	for i in range(length):
@@ -396,8 +403,8 @@ func _place_ore_vein(spec: Dictionary) -> void:
 			var primary_t := float(i - cap_len) / float(maxi(1, length - cap_len))
 			ore_tile = spec["ore_deep"] if primary_t > 0.5 else spec["ore"]
 
-		if randf() < VEIN_MEANDER_CHANCE:
-			center_col += randi_range(-1, 1)
+		if _rng.randf() < VEIN_MEANDER_CHANCE:
+			center_col += _rng.randi_range(-1, 1)
 			center_col = clampi(center_col, 2, _cols - 3)
 
 		for w in range(width):
@@ -435,7 +442,7 @@ func generate_decorations() -> Dictionary:
 	if above_row >= 0:
 		for col in range(_cols):
 			if _grid[col][_surface_rows] == T_SURFACE_GRASS and _grid[col][above_row] == T_SURFACE:
-				if randf() < FOLIAGE_ABOVE_GRASS_CHANCE:
+				if _rng.randf() < FOLIAGE_ABOVE_GRASS_CHANCE:
 					foliage_above_grass.append(Vector2i(col, above_row))
 
 	# Underground decorations — scan all empty cells below the surface
@@ -446,11 +453,11 @@ func generate_decorations() -> Dictionary:
 			var has_solid_below:  bool = _is_decoration_solid(_grid[col][row + 1])
 			var has_solid_above:  bool = _is_decoration_solid(_grid[col][row - 1])
 
-			if has_solid_below and randf() < CORAL_FLOOR_CHANCE:
+			if has_solid_below and _rng.randf() < CORAL_FLOOR_CHANCE:
 				coral_floor.append(Vector2i(col, row))
-			elif has_solid_above and randf() < CORAL_CEILING_CHANCE:
+			elif has_solid_above and _rng.randf() < CORAL_CEILING_CHANCE:
 				coral_ceiling.append(Vector2i(col, row))
-			elif randf() < WEB_CHANCE:
+			elif _rng.randf() < WEB_CHANCE:
 				webs.append(Vector2i(col, row))
 
 	return {
@@ -483,4 +490,4 @@ func _depth_scaled_ore(depth: float) -> int:
 		if _allowed_ore.is_empty() or _allowed_ore.has("Copper"): tiers.append(T_ORE_COPPER)
 	if tiers.is_empty():
 		return T_EMPTY
-	return tiers[randi() % tiers.size()]
+	return tiers[_rng.randi() % tiers.size()]
