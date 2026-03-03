@@ -2275,7 +2275,7 @@ func rpc_request_explode(grid_pos: Vector2i) -> void:
 	var row := grid_pos.y
 	if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
 		return
-	var tile := grid[col][row]
+	var tile: int = grid[col][row]
 	if tile != TileType.EXPLOSIVE and tile != TileType.EXPLOSIVE_ARMED:
 		return  # Already cleared by the time the request arrived
 	_mine_cell(col, row)
