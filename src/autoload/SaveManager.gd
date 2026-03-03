@@ -171,6 +171,7 @@ func _snapshot_game_manager() -> Dictionary:
 		"legs_level": gm.legs_level,
 		"mandibles_level": gm.mandibles_level,
 		"mineral_sense_level": gm.mineral_sense_level,
+		"claws_level": gm.claws_level,
 		"settlement_energy_bonus": gm.settlement_energy_bonus,
 		"settlement_forager_bonus": gm.settlement_forager_bonus,
 		"settlement_shroom_charges": gm.settlement_shroom_charges,
@@ -211,6 +212,7 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 	gm.legs_level = data.get("legs_level", 0)
 	gm.mandibles_level = data.get("mandibles_level", 0)
 	gm.mineral_sense_level = data.get("mineral_sense_level", 0)
+	gm.claws_level = data.get("claws_level", 0)
 	gm.settlement_energy_bonus = data.get("settlement_energy_bonus", 0)
 	gm.settlement_forager_bonus = data.get("settlement_forager_bonus", 0)
 	gm.settlement_shroom_charges = data.get("settlement_shroom_charges", 0)
@@ -260,6 +262,7 @@ func _reset_game_manager() -> void:
 	gm.legs_level = 0
 	gm.mandibles_level = 0
 	gm.mineral_sense_level = 0
+	gm.claws_level = 0
 	gm.gem_count = 0
 	gm.carapace_gem_socketed = false
 	gm.legs_gem_socketed = false
