@@ -34,6 +34,10 @@ var allowed_ore_types: Array = []
 # Empty array means all hazards can spawn (default behaviour).
 var allowed_hazard_types: Array = []
 
+# Animal type for the current mine — host picks randomly and syncs to guest so
+# both players see identical animals on the planet surface.
+var planet_animal_type: String = ""
+
 # Sky colour for the mining level — sampled from the average pixel colour of the
 # selected mine node's planet sprite (set in Overworld._on_modal_confirmed).
 # MiningLevel._draw() uses it to tint the sky strip and underground gradient.
@@ -195,7 +199,8 @@ func _on_guest_connected(peer_id: int) -> void:
 			warp_drive_built, cargo_bay_built, long_scanner_built, gem_refinery_built, trade_amplifier_built,
 			current_scene_path, current_energy,
 			sky_color.r, sky_color.g, sky_color.b,
-			allowed_ore_types, allowed_hazard_types)
+			allowed_ore_types, allowed_hazard_types,
+			planet_animal_type)
 	else:
 		# Host is on the overworld (or a settlement) — send guest to overworld.
 		rpc_start_game_as_guest.rpc_id(peer_id,
@@ -272,12 +277,17 @@ func load_mining_level(scene_path: String = "") -> void:
 	EventBus.minerals_changed.emit(0)
 	EventBus.energy_changed.emit(current_energy, get_max_energy())
 	var path := scene_path if scene_path != "" else "res://src/levels/MiningLevel.tscn"
+	# Host picks the animal type for this run so it can be synced to the guest.
+	if NetworkManager.is_multiplayer_session and NetworkManager.is_host:
+		var _types := ["Chicken", "Sheep", "Pig"]
+		planet_animal_type = _types[randi() % _types.size()]
 	# In multiplayer, tell guest to load the same mine with the same starting state
 	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
 		rpc_load_mine_as_guest.rpc_id(NetworkManager.guest_peer_id, path,
 			current_energy, sky_color.r, sky_color.g, sky_color.b,
 			allowed_ore_types, allowed_hazard_types,
-			settlement_shroom_charges, settlement_mandible_bonus)
+			settlement_shroom_charges, settlement_mandible_bonus,
+			planet_animal_type)
 	await _transition_to_scene(path)
 
 ## Guest RPC: mirror the host's mine-entry state then load the same level.
@@ -285,7 +295,8 @@ func load_mining_level(scene_path: String = "") -> void:
 func rpc_load_mine_as_guest(path: String, start_energy: int,
 		sky_r: float, sky_g: float, sky_b: float,
 		ore_types: Array, hazard_types: Array,
-		shroom_charges: int, mandible_bonus: int) -> void:
+		shroom_charges: int, mandible_bonus: int,
+		animal_type: String) -> void:
 	run_mineral_currency = 0
 	run_ore_counts.clear()
 	run_ore_earnings.clear()
@@ -297,6 +308,7 @@ func rpc_load_mine_as_guest(path: String, start_energy: int,
 	allowed_hazard_types = hazard_types.duplicate()
 	settlement_shroom_charges = shroom_charges
 	settlement_mandible_bonus = mandible_bonus
+	planet_animal_type = animal_type
 	EventBus.minerals_changed.emit(0)
 	EventBus.energy_changed.emit(current_energy, get_max_energy())
 	await _transition_to_scene(path)
@@ -309,7 +321,8 @@ func rpc_drop_in_to_mine_as_guest(carapace_lvl: int, legs_lvl: int, mandibles_lv
 		sense_gem: bool, warp: bool, cargo: bool, scanner: bool, refinery: bool, amplifier: bool,
 		mine_path: String, start_energy: int,
 		sky_r: float, sky_g: float, sky_b: float,
-		ore_types: Array, hazard_types: Array) -> void:
+		ore_types: Array, hazard_types: Array,
+		animal_type: String) -> void:
 	carapace_level = carapace_lvl
 	legs_level = legs_lvl
 	mandibles_level = mandibles_lvl
@@ -333,6 +346,7 @@ func rpc_drop_in_to_mine_as_guest(carapace_lvl: int, legs_lvl: int, mandibles_lv
 	sky_color = Color(sky_r, sky_g, sky_b)
 	allowed_ore_types = ore_types.duplicate()
 	allowed_hazard_types = hazard_types.duplicate()
+	planet_animal_type = animal_type
 	EventBus.minerals_changed.emit(0)
 	EventBus.energy_changed.emit(current_energy, get_max_energy())
 	change_state(GameState.PLAYING)

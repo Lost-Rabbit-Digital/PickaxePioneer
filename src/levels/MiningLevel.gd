@@ -2031,8 +2031,19 @@ func _setup_farm_animals() -> void:
 		{"name": "Sheep",   "texture_path": "res://assets/creatures/sheep_spritesheet.png"},
 		{"name": "Pig",     "texture_path": "res://assets/creatures/pig_spritesheet.png"},
 	]
-	# Pick one animal type for this entire planet
-	var chosen: Dictionary = all_animal_types[randi() % all_animal_types.size()]
+	# In multiplayer the host picks the animal type in GameManager.load_mining_level()
+	# and syncs it to the guest via RPC before the scene loads.  Both peers then use
+	# GameManager.planet_animal_type so they see the same animals on the planet surface.
+	# In single-player the type is chosen randomly here as before.
+	var chosen: Dictionary
+	if NetworkManager.is_multiplayer_session and GameManager.planet_animal_type != "":
+		chosen = all_animal_types[0]  # fallback
+		for t in all_animal_types:
+			if t["name"] == GameManager.planet_animal_type:
+				chosen = t
+				break
+	else:
+		chosen = all_animal_types[randi() % all_animal_types.size()]
 	var tex := load(chosen["texture_path"]) as Texture2D
 	# Randomise count between 2 and 5 NPCs
 	var count := randi_range(2, 5)
