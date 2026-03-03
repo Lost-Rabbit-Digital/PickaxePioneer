@@ -392,6 +392,7 @@ func upgrade_legs() -> void:
 func upgrade_mandibles() -> void:
 	mandibles_level += 1
 	save_game()
+	EventBus.minerals_changed.emit(run_mineral_currency)
 	print("Cargo hold expanded to level ", mandibles_level)
 
 func upgrade_mineral_sense() -> void:
