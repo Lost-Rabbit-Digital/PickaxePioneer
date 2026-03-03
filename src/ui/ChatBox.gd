@@ -9,92 +9,39 @@ extends CanvasLayer
 ## Messages are broadcast via NetworkManager.broadcast_chat_message() which
 ## uses an RPC to deliver them to the remote peer, then each peer displays
 ## them locally by listening to EventBus.chat_message_received.
+##
+## Edit the layout visually in src/ui/ChatBox.tscn — changes propagate to
+## every scene automatically.
 
 const MAX_MESSAGES: int = 20
-const PANEL_W: int = 310
-const LINE_H: int = 18
 const VISIBLE_LINES: int = 6
-const MSG_AREA_H: int = VISIBLE_LINES * LINE_H   # 108 px
-const INPUT_H: int = 28
-const PANEL_H: int = MSG_AREA_H + INPUT_H + 12   # 12 px for inner padding
-
-# Viewport dimensions assumed to match the game's fixed 1280×720 resolution.
-const VP_H: int = 720
 
 var _messages: Array[String] = []
 var _msg_labels: Array[Label] = []
-var _panel: ColorRect
-var _msg_container: VBoxContainer
-var _input_bg: ColorRect
-var _input_field: LineEdit
-var _hint_label: Label
 var _chat_open: bool = false
 
+@onready var _panel: ColorRect = $Control/Panel
+@onready var _msg_container: VBoxContainer = $Control/MsgContainer
+@onready var _input_bg: ColorRect = $Control/InputBg
+@onready var _input_field: LineEdit = $Control/InputField
+@onready var _hint_label: Label = $Control/HintLabel
+
 func _ready() -> void:
-	layer = 15  # Above HUD (1), below pause menu (20)
 	EventBus.chat_message_received.connect(_on_chat_message_received)
-	_build_ui()
 
-func _build_ui() -> void:
-	var panel_y: int = VP_H - PANEL_H - 4
+	# Collect the fixed Label nodes from the scene in order.
+	for child in _msg_container.get_children():
+		if child is Label:
+			_msg_labels.append(child as Label)
 
-	# Semi-transparent background panel
-	_panel = ColorRect.new()
-	_panel.color = Color(0.0, 0.0, 0.0, 0.55)
-	_panel.position = Vector2(4, panel_y)
-	_panel.size = Vector2(PANEL_W, PANEL_H)
-	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_panel)
-
-	# Message log — VISIBLE_LINES fixed Label nodes updated in-place
-	_msg_container = VBoxContainer.new()
-	_msg_container.position = Vector2(8, panel_y + 4)
-	_msg_container.custom_minimum_size = Vector2(PANEL_W - 12, MSG_AREA_H)
-	_msg_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_msg_container.add_theme_constant_override("separation", 0)
-	add_child(_msg_container)
-
-	for i in range(VISIBLE_LINES):
-		var lbl := Label.new()
-		lbl.custom_minimum_size = Vector2(PANEL_W - 12, LINE_H)
-		lbl.add_theme_font_size_override("font_size", 12)
-		lbl.modulate = Color(1.0, 1.0, 1.0, 0.92)
-		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		lbl.clip_text = true
-		_msg_container.add_child(lbl)
-		_msg_labels.append(lbl)
-
-	# Input row background
-	var input_y: int = panel_y + MSG_AREA_H + 8
-	_input_bg = ColorRect.new()
-	_input_bg.color = Color(0.05, 0.05, 0.10, 0.80)
-	_input_bg.position = Vector2(4, input_y)
-	_input_bg.size = Vector2(PANEL_W, INPUT_H)
-	_input_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_input_bg)
-
-	_input_field = LineEdit.new()
-	_input_field.position = Vector2(6, input_y + 2)
-	_input_field.custom_minimum_size = Vector2(PANEL_W - 4, INPUT_H - 4)
-	_input_field.placeholder_text = "Say something... (Enter to send, Esc to cancel)"
-	_input_field.add_theme_font_size_override("font_size", 12)
-	_input_field.text_submitted.connect(_on_message_submitted)
-	add_child(_input_field)
-
-	# Key hint — shown when panel is visible but input is closed. Reads the first
-	# key event bound to toggle_chat so the label stays accurate after rebinds.
-	_hint_label = Label.new()
+	# Update hint text to match the current key binding.
 	var chat_events := InputMap.action_get_events("toggle_chat")
 	var chat_key := "T"
 	if chat_events.size() > 0 and chat_events[0] is InputEventKey:
 		chat_key = OS.get_keycode_string((chat_events[0] as InputEventKey).keycode)
 	_hint_label.text = "%s — chat" % chat_key
-	_hint_label.position = Vector2(8, input_y + 6)
-	_hint_label.add_theme_font_size_override("font_size", 11)
-	_hint_label.modulate = Color(0.7, 0.7, 0.7, 0.70)
-	_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_hint_label)
 
+	_input_field.text_submitted.connect(_on_message_submitted)
 	_set_chat_open(false)
 
 func _unhandled_input(event: InputEvent) -> void:
