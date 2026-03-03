@@ -322,8 +322,10 @@ var _tile_hits: Dictionary = {}
 var _tile_last_hit: Dictionary = {}  # Maps Vector2i -> seconds since last hit; resets damage on timeout
 var _flash_cells: Dictionary = {}
 var _breaking_overlays: Dictionary = {}  # Maps Vector2i -> AnimatedSprite2D instance
+var _healing_tiles: Dictionary = {}    # Maps Vector2i -> [start_frame: int, elapsed: float]
 
-const MINE_RESET_TIMEOUT: float = 3.0  # Seconds of inactivity before partial tile damage resets
+const MINE_RESET_TIMEOUT: float = 3.0   # Seconds of inactivity before partial tile damage resets
+const HEAL_FRAME_DURATION: float = 0.12 # Seconds each frame is shown during reverse heal animation
 
 # Gravity-tile fall queue: Vector2i(col, row) -> float seconds_until_next_step
 var _gravity_pending: Dictionary = {}
@@ -949,6 +951,21 @@ func _process(delta: float) -> void:
 			_tile_damage.erase(pos_key)
 			_tile_hits.erase(pos_key)
 			_tile_last_hit.erase(pos_key)
+			_begin_heal_animation(pos_key)
+
+	# Advance reverse heal animations for tiles whose damage timed out
+	if _healing_tiles.size() > 0:
+		var to_remove_healing: Array = []
+		for pos_key in _healing_tiles:
+			var data: Array = _healing_tiles[pos_key]
+			data[1] += delta
+			var current_frame: int = data[0] - int(data[1] / HEAL_FRAME_DURATION)
+			if current_frame < 0:
+				to_remove_healing.append(pos_key)
+			elif _breaking_overlays.has(pos_key):
+				_breaking_overlays[pos_key].frame = current_frame
+		for pos_key in to_remove_healing:
+			_healing_tiles.erase(pos_key)
 			_remove_breaking_overlay(pos_key)
 
 	# Update level particles
@@ -1184,6 +1201,7 @@ func _spawn_pickaxe_effect(from: Vector2, to: Vector2) -> void:
 # ---------------------------------------------------------------------------
 
 func _update_breaking_overlay(pos_key: Vector2i, damage_ratio: float) -> void:
+	_healing_tiles.erase(pos_key)  # Cancel any in-progress heal animation on re-hit
 	var frame_index := clampi(int(damage_ratio * 3.0), 0, 2)
 	var overlay: AnimatedSprite2D
 	if _breaking_overlays.has(pos_key):
@@ -1200,10 +1218,17 @@ func _update_breaking_overlay(pos_key: Vector2i, damage_ratio: float) -> void:
 	overlay.frame = frame_index
 
 func _remove_breaking_overlay(pos_key: Vector2i) -> void:
+	_healing_tiles.erase(pos_key)
 	if _breaking_overlays.has(pos_key):
 		var overlay: AnimatedSprite2D = _breaking_overlays[pos_key]
 		overlay.queue_free()
 		_breaking_overlays.erase(pos_key)
+
+func _begin_heal_animation(pos_key: Vector2i) -> void:
+	if not _breaking_overlays.has(pos_key):
+		return
+	var start_frame: int = _breaking_overlays[pos_key].frame
+	_healing_tiles[pos_key] = [start_frame, 0.0]
 
 # ---------------------------------------------------------------------------
 # Mining API — called by PlayerProbe
