@@ -27,6 +27,16 @@ signal node_clicked(node: MapNode)
 const SPRITE_BASE_SIZE: float = 64.0
 const LABEL_HEIGHT: float = 23.0  # offset_bottom - offset_top (55 - 32)
 
+# Base scales before size multiplier is applied
+const BASE_SCALE_MINE: float = 2.5
+const BASE_SCALE_OTHER: float = 1.0
+
+# Scale multiplier per planet size category
+const SIZE_SCALE: Dictionary = {"Small": 0.70, "Medium": 1.0, "Large": 1.40}
+
+# Resolved base scale for this node — set in _update_visuals, used by highlight()
+var _base_scale: float = 1.0
+
 # Biome, temperature, and size data keyed by sprite frame index.
 # Sizes: Small <= 13,000 km | Medium 13,001–47,999 km | Large >= 48,000 km
 const PLANET_DATA: Array[Dictionary] = [
@@ -59,17 +69,25 @@ func _update_visuals() -> void:
 	var frame_count := sprite.sprite_frames.get_frame_count("default")
 	sprite.frame = randi() % frame_count
 
+	# Resolve size multiplier now that the frame (and thus planet size) is known
+	var planet_size: String = get_planet_info().get("size", "Medium")
+	var size_factor: float = SIZE_SCALE.get(planet_size, 1.0)
+
 	match node_type:
 		NodeType.MINE:
-			sprite.scale = Vector2(2.5, 2.5)
+			_base_scale = BASE_SCALE_MINE * size_factor
 			sprite.modulate = Color(1.0, 0.75, 0.20)  # warm gold tint for mines
 		NodeType.STATION:
+			_base_scale = BASE_SCALE_OTHER * size_factor
 			sprite.modulate = Color.CYAN
 		NodeType.SETTLEMENT:
+			_base_scale = BASE_SCALE_OTHER * size_factor
 			sprite.modulate = Color(0.85, 0.60, 1.0)  # soft purple for settlements
 		NodeType.EMPTY:
+			_base_scale = BASE_SCALE_OTHER * size_factor
 			sprite.modulate = Color.WHITE
 
+	sprite.scale = Vector2(_base_scale, _base_scale)
 	_update_label_position()
 
 var neighbors: Array[MapNode] = []
@@ -84,13 +102,9 @@ func _update_label_position() -> void:
 	label.offset_bottom = label_offset_bottom
 
 func highlight(active: bool) -> void:
-	if active:
-		sprite.scale = Vector2(3.0, 3.0) if node_type == NodeType.MINE else Vector2(1.2, 1.2)
-		label.modulate = Color.YELLOW
-	else:
-		sprite.scale = Vector2(2.5, 2.5) if node_type == NodeType.MINE else Vector2(1.0, 1.0)
-		label.modulate = Color.WHITE
-
+	var highlight_scale: float = _base_scale * 1.2 if active else _base_scale
+	sprite.scale = Vector2(highlight_scale, highlight_scale)
+	label.modulate = Color.YELLOW if active else Color.WHITE
 	_update_label_position()
 
 func get_average_pixel_color() -> Color:
