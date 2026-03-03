@@ -64,7 +64,8 @@ func _process(delta: float) -> void:
 	_anim_timer += delta
 	if _anim_timer >= ANIM_SPEED:
 		_anim_timer -= ANIM_SPEED
-		spr.frame = (spr.frame + 1) % 2
+		if spr.hframes > 1:
+			spr.frame = (spr.frame + 1) % spr.hframes
 
 ## Returns a cat-themed reaction line for this animal type.
 func get_pet_message() -> String:
