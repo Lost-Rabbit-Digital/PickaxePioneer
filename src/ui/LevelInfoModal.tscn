@@ -23,7 +23,7 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -290.0
-offset_top = -300.0
+offset_top = -340.0
 offset_right = -10.0
 offset_bottom = -10.0
 grow_horizontal = 0
@@ -54,6 +54,13 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "[ Mine ]"
 modulate = Color(1.0, 0.8, 0.3, 1.0)
+horizontal_alignment = 1
+
+[node name="PlanetInfoLabel" type="Label" parent="Control/Panel/MarginContainer/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Biome: —  ·  Temp: —  ·  Size: —"
+modulate = Color(0.75, 0.9, 1.0, 1.0)
 horizontal_alignment = 1
 
 [node name="HSep1" type="HSeparator" parent="Control/Panel/MarginContainer/VBox"]

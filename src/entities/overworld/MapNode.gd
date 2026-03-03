@@ -27,6 +27,28 @@ signal node_clicked(node: MapNode)
 const SPRITE_BASE_SIZE: float = 64.0
 const LABEL_HEIGHT: float = 23.0  # offset_bottom - offset_top (55 - 32)
 
+# Biome, temperature, and size data keyed by sprite frame index.
+# Sizes: Small <= 13,000 km | Medium 13,001–47,999 km | Large >= 48,000 km
+const PLANET_DATA: Array[Dictionary] = [
+	{"biome": "Ice",    "temperature": "Cold",   "size": "Medium"},  # 0
+	{"biome": "Desert", "temperature": "Hot",    "size": "Small"},   # 1
+	{"biome": "Forest", "temperature": "Medium", "size": "Large"},   # 2
+	{"biome": "Forest", "temperature": "Medium", "size": "Medium"},  # 3
+	{"biome": "Desert", "temperature": "Hot",    "size": "Medium"},  # 4
+	{"biome": "Rock",   "temperature": "Hot",    "size": "Large"},   # 5
+	{"biome": "Ice",    "temperature": "Cold",   "size": "Small"},   # 6
+	{"biome": "Jungle", "temperature": "Hot",    "size": "Large"},   # 7
+	{"biome": "Rock",   "temperature": "Hot",    "size": "Medium"},  # 8
+	{"biome": "Forest", "temperature": "Medium", "size": "Small"},   # 9
+	{"biome": "Rock",   "temperature": "Hot",    "size": "Large"},   # 10
+	{"biome": "Ice",    "temperature": "Cold",   "size": "Medium"},  # 11
+]
+
+func get_planet_info() -> Dictionary:
+	if sprite and sprite.frame >= 0 and sprite.frame < PLANET_DATA.size():
+		return PLANET_DATA[sprite.frame]
+	return {"biome": "Unknown", "temperature": "Unknown", "size": "Unknown"}
+
 func _ready() -> void:
 	input_event.connect(_on_input_event)
 	_update_visuals()
