@@ -62,6 +62,8 @@ func generate(
 	_grid = grid
 
 	_generate_grid()
+	_generate_tile_patches()
+	_generate_lava_lakes()
 	_generate_ore_veins()
 	_generate_cave_rooms()
 	_carve_tunnels()
@@ -120,8 +122,9 @@ func _random_tile(_col: int, row: int) -> int:
 	var lava_ok      := _allowed_hazard.is_empty() or _allowed_hazard.has("Lava")
 
 	var base_hazard    := 0.08 + depth * 0.20
-	var explosive_bias := base_hazard * 0.6 if explosive_ok else 0.0
-	var lava_bias      := base_hazard * 0.4 if lava_ok      else 0.0
+	var explosive_bias := base_hazard * 0.45 if explosive_ok else 0.0
+	# Lava reduced here — _generate_lava_lakes() handles grouped lava pools
+	var lava_bias      := base_hazard * 0.10 if lava_ok      else 0.0
 	var total_hazard   := explosive_bias + lava_bias
 
 	if   r < explosive_bias * (2.0 / 3.0):       return T_EXPLOSIVE
@@ -143,12 +146,14 @@ func _random_tile(_col: int, row: int) -> int:
 # ---------------------------------------------------------------------------
 
 func _generate_cave_rooms() -> void:
-	var num_rooms := randi_range(6, 10)
+	var num_rooms := randi_range(12, 18)
 	for _i in range(num_rooms):
-		var room_col := randi_range(5, _cols - 8)
-		var room_row := randi_range(_surface_rows + 6, _rows - 8)
-		var half_w   := randi_range(3, 7)
-		var half_h   := randi_range(2, 4)
+		var room_col  := randi_range(5, _cols - 8)
+		var room_row  := randi_range(_surface_rows + 6, _rows - 8)
+		# 25% chance of a large chamber
+		var is_large  := randf() < 0.25
+		var half_w    := randi_range(5, 11) if is_large else randi_range(3, 7)
+		var half_h    := randi_range(3, 6)  if is_large else randi_range(2, 4)
 
 		# Carve the interior
 		for dc in range(-half_w, half_w + 1):
@@ -179,28 +184,147 @@ func _generate_cave_rooms() -> void:
 # ---------------------------------------------------------------------------
 
 func _carve_tunnels() -> void:
-	const TCOUNT   := 14
+	const TCOUNT   := 22
 	const TLEN_MIN := 10
-	const TLEN_MAX := 38
+	const TLEN_MAX := 58
 	var dirs: Array[Vector2i] = [Vector2i(1,0), Vector2i(-1,0), Vector2i(0,1), Vector2i(0,-1)]
 	for _i in range(TCOUNT):
-		var cx  := randi_range(3, _cols - 4)
-		var cy  := randi_range(_surface_rows + 4, _rows - 5)
-		var length := randi_range(TLEN_MIN, TLEN_MAX)
+		var cx      := randi_range(3, _cols - 4)
+		var cy      := randi_range(_surface_rows + 4, _rows - 5)
+		var length  := randi_range(TLEN_MIN, TLEN_MAX)
+		# 35% of tunnels are wide (2-tile) corridors
+		var is_wide := randf() < 0.35
 		var dir: Vector2i = dirs[randi() % dirs.size()]
 		for _step in range(length):
 			if cx >= 1 and cx < _cols - 1 and cy >= _surface_rows + 1 and cy < _rows - 1:
 				_grid[cx][cy] = T_EMPTY
-				if randf() < 0.20:
-					var perp := Vector2i(-dir.y, dir.x)
-					var sx := cx + perp.x
-					var sy := cy + perp.y
+				var perp := Vector2i(-dir.y, dir.x)
+				if is_wide:
+					# Always carve the parallel tile for wide tunnels
+					var wx := cx + perp.x
+					var wy := cy + perp.y
+					if wx >= 1 and wx < _cols - 1 and wy >= _surface_rows + 1 and wy < _rows - 1:
+						_grid[wx][wy] = T_EMPTY
+				elif randf() < 0.28:
+					# Narrow tunnels: occasional side nub in either perpendicular direction
+					var side := perp if randf() < 0.5 else Vector2i(-perp.x, -perp.y)
+					var sx := cx + side.x
+					var sy := cy + side.y
 					if sx >= 1 and sx < _cols - 1 and sy >= _surface_rows + 1 and sy < _rows - 1:
 						_grid[sx][sy] = T_EMPTY
 			if randf() < 0.30:
 				dir = dirs[randi() % dirs.size()]
 			cx = clampi(cx + dir.x, 1, _cols - 2)
 			cy = clampi(cy + dir.y, _surface_rows + 1, _rows - 2)
+
+# ---------------------------------------------------------------------------
+# Tile groupings — clustered patches of similar terrain
+# ---------------------------------------------------------------------------
+
+## After the baseline grid is filled, seed elliptical blobs that collect
+## similar tile types together: stone masses, dark-dirt transition bands,
+## and dense explosive clusters.  This makes the underground feel layered
+## and geologically coherent rather than uniformly random.
+func _generate_tile_patches() -> void:
+	# --- Stone masses ---
+	# Replace scattered dirt tiles with stone in elliptical blobs, biased
+	# toward darker stone at greater depth.
+	var num_stone := randi_range(10, 16)
+	for _i in range(num_stone):
+		var pc    := randi_range(3, _cols - 4)
+		var pr    := randi_range(_surface_rows + 8, _rows - 6)
+		var depth := float(pr - _surface_rows) / float(_rows - _surface_rows)
+		var half_w := randi_range(3, 9)
+		var half_h := randi_range(2, 5)
+		var tile   := T_STONE_DARK if depth > 0.45 else T_STONE
+		for dc in range(-half_w, half_w + 1):
+			for dr in range(-half_h, half_h + 1):
+				var ell := float(dc * dc) / float(half_w * half_w) \
+						 + float(dr * dr) / float(half_h * half_h)
+				if ell <= 1.0:
+					var nc := pc + dc
+					var nr := pr + dr
+					if nc >= 1 and nc < _cols - 1 and nr >= _surface_rows + 2 and nr < _rows - 1:
+						if _grid[nc][nr] in [T_DIRT, T_DIRT_DARK]:
+							_grid[nc][nr] = tile
+
+	# --- Dark-dirt transition bands ---
+	# Irregular blobs of dark dirt create transition zones between shallow
+	# and deep regions, breaking up the uniform dirt layer.
+	var num_dark := randi_range(8, 14)
+	for _i in range(num_dark):
+		var pc    := randi_range(3, _cols - 4)
+		var pr    := randi_range(_surface_rows + 3, _rows - 12)
+		var half_w := randi_range(4, 12)
+		var half_h := randi_range(2, 5)
+		for dc in range(-half_w, half_w + 1):
+			for dr in range(-half_h, half_h + 1):
+				var ell := float(dc * dc) / float(half_w * half_w) \
+						 + float(dr * dr) / float(half_h * half_h)
+				if ell <= 1.0:
+					var nc := pc + dc
+					var nr := pr + dr
+					if nc >= 1 and nc < _cols - 1 and nr >= _surface_rows + 2 and nr < _rows - 1:
+						if _grid[nc][nr] == T_DIRT:
+							_grid[nc][nr] = T_DIRT_DARK
+
+	# --- Explosive clusters ---
+	# Dense pockets of explosives feel like old mining charges left behind
+	# or unstable mineral pockets rather than random individual tiles.
+	var explosive_ok := _allowed_hazard.is_empty() or _allowed_hazard.has("Explosives")
+	if explosive_ok:
+		var num_clusters := randi_range(5, 9)
+		for _i in range(num_clusters):
+			var pc     := randi_range(3, _cols - 4)
+			var pr     := randi_range(_surface_rows + 10, _rows - 6)
+			var radius := randi_range(2, 4)
+			for dc in range(-radius, radius + 1):
+				for dr in range(-radius, radius + 1):
+					if dc * dc + dr * dr <= radius * radius:
+						var nc := pc + dc
+						var nr := pr + dr
+						if nc >= 1 and nc < _cols - 1 and nr >= _surface_rows + 2 and nr < _rows - 1:
+							if _grid[nc][nr] in [T_DIRT, T_DIRT_DARK, T_STONE, T_STONE_DARK]:
+								if randf() < 0.55:
+									_grid[nc][nr] = T_EXPLOSIVE if randf() < 0.65 else T_EXPLOSIVE_ARMED
+
+# ---------------------------------------------------------------------------
+# Lava lakes — bowl-shaped (semi-ellipse, open top) lava pools
+# ---------------------------------------------------------------------------
+
+## Generates lava pools shaped like a lake or bowl: flat open top, curved
+## bottom.  The semi-ellipse extends *downward* from the centre row so the
+## rounded side faces down — like a container of lava resting in the rock.
+## The outer shell uses T_LAVA_FLOW and the dense interior uses T_LAVA.
+func _generate_lava_lakes() -> void:
+	var lava_ok := _allowed_hazard.is_empty() or _allowed_hazard.has("Lava")
+	if not lava_ok:
+		return
+
+	var num_lakes := randi_range(5, 9)
+	for _i in range(num_lakes):
+		var center_col := randi_range(8, _cols - 9)
+		# Keep lakes away from the very top and bottom of the mine
+		var center_row := randi_range(_surface_rows + 18, _rows - 14)
+		var half_w     := randi_range(4, 10)
+		var half_h     := randi_range(3, 7)
+
+		# dr = 0 is the flat surface (top) of the lake; dr > 0 descends into the bowl.
+		# This produces the "circle on the bottom" semi-circle shape.
+		for dc in range(-half_w, half_w + 1):
+			for dr in range(0, half_h + 1):
+				var ell := float(dc * dc) / float(half_w * half_w) \
+						 + float(dr * dr) / float(half_h * half_h)
+				if ell <= 1.0:
+					var nc := center_col + dc
+					var nr := center_row + dr
+					if nc >= 1 and nc < _cols - 1 and nr >= _surface_rows + 2 and nr < _rows - 1:
+						# Outer shell → lava flow; inner core → lava
+						var iw  := maxi(1, half_w - 1)
+						var ih  := maxi(1, half_h - 1)
+						var inner_ell := float(dc * dc) / float(iw * iw) \
+									  + float(dr * dr) / float(ih * ih)
+						_grid[nc][nr] = T_LAVA if inner_ell <= 1.0 else T_LAVA_FLOW
 
 # ---------------------------------------------------------------------------
 # Hydrothermal ore vein generation
