@@ -18,122 +18,122 @@
 
 [sub_resource type="TileSetAtlasSource" id="Src_1"]
 texture = ExtResource("tex_dirt")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_2"]
 texture = ExtResource("tex_mud")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_3"]
 texture = ExtResource("tex_ore_copper")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_4"]
 texture = ExtResource("tex_ore_copper")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_5"]
 texture = ExtResource("tex_ore_iron")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_6"]
 texture = ExtResource("tex_ore_iron")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_7"]
 texture = ExtResource("tex_ore_gold")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_8"]
 texture = ExtResource("tex_ore_gold")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_9"]
 texture = ExtResource("tex_ore_gem")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_10"]
 texture = ExtResource("tex_ore_gem")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_11"]
 texture = ExtResource("tex_stone")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_12"]
 texture = ExtResource("tex_gravel")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_13"]
 texture = ExtResource("tex_explosive")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_14"]
 texture = ExtResource("tex_explosive")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_15"]
 texture = ExtResource("tex_lava")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_16"]
 texture = ExtResource("tex_lava")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_17"]
 texture = ExtResource("tex_energy_node")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_18"]
 texture = ExtResource("tex_energy_full")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_19"]
 texture = ExtResource("tex_station")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_21"]
 texture = ExtResource("tex_grass_side")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_22"]
 texture = ExtResource("tex_station")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_25"]
 texture = ExtResource("tex_station")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_26"]
 texture = ExtResource("tex_station")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="Src_28"]
 texture = ExtResource("tex_station")
-texture_region_size = Vector2i(64, 64)
+texture_region_size = Vector2i(16, 16)
 0:0/0 = 0
 
 [resource]
