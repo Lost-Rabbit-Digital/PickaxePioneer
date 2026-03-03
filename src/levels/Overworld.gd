@@ -88,16 +88,6 @@ func _ready() -> void:
 	add_child(_modal)
 	_modal.confirmed.connect(_on_modal_confirmed)
 
-	# Define connections - create a connected network
-	_connect_nodes(city_node, mine_node_1)
-	_connect_nodes(city_node, mine_node_2)
-	_connect_nodes(mine_node_1, settlement_node_3)
-	_connect_nodes(mine_node_2, settlement_node_4)
-	_connect_nodes(settlement_node_3, settlement_node_4)
-
-	# Collect all nodes
-	nodes = [city_node, mine_node_1, mine_node_2, settlement_node_3, settlement_node_4]
-
 	# Arrange nodes - restore saved positions or randomize fresh
 	if saved_config.has("node_positions"):
 		_restore_node_positions(saved_config["node_positions"])
@@ -263,31 +253,17 @@ func _restore_node_positions(positions: Dictionary) -> void:
 				node.sprite.frame = pos_data["sprite_frame"]
 
 func _get_cycle_order() -> Array[MapNode]:
-	# Return visible nodes in the intended cycle order so edges stay on the
-	# perimeter and never cross through the centre.
-	var full_order: Array[MapNode] = [
+	# Return visible nodes in ring order so the circular layout places each node
+	# next to its two ring neighbours — edges follow the perimeter without
+	# crossing through the centre.
+	# Ring: city → mine1 → settlement3 → settlement4 → mine2 → city
+	var ring_order: Array[MapNode] = [
 		city_node, mine_node_1, settlement_node_3, settlement_node_4, mine_node_2
 	]
 	var result: Array[MapNode] = []
-	var visited: Array[MapNode] = []
-	var queue: Array[MapNode] = [city_node]
-
-	while queue.size() > 0:
-		var node: MapNode = queue.pop_front()
-		if visited.has(node):
-			continue
-		visited.append(node)
+	for node in ring_order:
 		if node.visible:
 			result.append(node)
-		for neighbor in node.neighbors:
-			if not visited.has(neighbor):
-				queue.append(neighbor)
-
-	# Safety: include any visible nodes not reachable from city
-	for node in nodes:
-		if node.visible and not result.has(node):
-			result.append(node)
-
 	return result
 
 func _apply_mine_metadata(node: MapNode, name: String) -> void:
@@ -297,29 +273,24 @@ func _apply_mine_metadata(node: MapNode, name: String) -> void:
 	node.hazard_types = meta.get("hazards", [])
 
 func _generate_connections() -> void:
-	# Build a random spanning tree so the map has no loops and settlements are
-	# always dead ends (exactly one connection each).
+	# Build a ring/cycle so every node has at least two connections — no dead-ends.
+	# Nodes are wired in the same order used by _get_cycle_order() so the
+	# dashed lines follow the perimeter of the circle without crossing.
 	#
-	# Layout rules:
-	#   - city_node is always the root hub.
-	#   - mine_node_1 always connects to city.
-	#   - mine_node_2 (when visible) connects to city OR mine_node_1 (50/50).
-	#   - Each settlement connects to a randomly chosen visible mine as a leaf.
-
-	_connect_nodes(city_node, mine_node_1)
+	# 2 mines: city ↔ mine1 ↔ settlement3 ↔ settlement4 ↔ mine2 ↔ city
+	# 1 mine:  city ↔ mine1 ↔ settlement3 ↔ settlement4 ↔ city
 
 	if mine_node_2.visible:
-		var mine2_parent: MapNode = city_node if randf() < 0.5 else mine_node_1
-		_connect_nodes(mine2_parent, mine_node_2)
-
-	var available_mines: Array[MapNode] = [mine_node_1]
-	if mine_node_2.visible:
-		available_mines.append(mine_node_2)
-
-	# Assign each settlement to a random mine — never back to each other
-	for settlement in [settlement_node_3, settlement_node_4]:
-		var target: MapNode = available_mines[randi() % available_mines.size()]
-		_connect_nodes(target, settlement)
+		_connect_nodes(city_node, mine_node_1)
+		_connect_nodes(mine_node_1, settlement_node_3)
+		_connect_nodes(settlement_node_3, settlement_node_4)
+		_connect_nodes(settlement_node_4, mine_node_2)
+		_connect_nodes(mine_node_2, city_node)
+	else:
+		_connect_nodes(city_node, mine_node_1)
+		_connect_nodes(mine_node_1, settlement_node_3)
+		_connect_nodes(settlement_node_3, settlement_node_4)
+		_connect_nodes(settlement_node_4, city_node)
 
 	_save_planet_config()
 
@@ -349,10 +320,15 @@ func _connect_nodes(node_a: MapNode, node_b: MapNode) -> void:
 		node_b.neighbors.append(node_a)
 
 func _draw() -> void:
-	# Draw dotted lines
+	# Draw dotted lines between visible nodes only — hidden nodes (e.g. mine_node_2
+	# when the Long-Range Scanner is inactive) must not produce orphan lines.
 	var visited_pairs = []
 	for node in nodes:
+		if not node.visible:
+			continue
 		for neighbor in node.neighbors:
+			if not neighbor.visible:
+				continue
 			var pair = [node, neighbor]
 			pair.sort_custom(func(a, b): return a.name < b.name)
 			if not visited_pairs.has(pair):
