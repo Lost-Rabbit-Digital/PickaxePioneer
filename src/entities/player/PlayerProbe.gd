@@ -423,7 +423,7 @@ func _apply_fall_damage() -> void:
 			health_component.damage(damage)
 			var cam := get_viewport().get_camera_2d()
 			if cam is CameraShake:
-				cam.add_trauma(0.5)
+				cam.add_trauma(0.85)
 		_is_falling = false
 
 func _update_followers() -> void:
