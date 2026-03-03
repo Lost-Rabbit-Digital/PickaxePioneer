@@ -1285,12 +1285,16 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 		GameManager.restore_energy(10)
 		EventBus.ore_mined_popup.emit(10, "Energy")
 		SoundManager.play_drill_sound()
+		if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+			rpc_tile_broken.rpc_id(NetworkManager.guest_peer_id, Vector2i(col, row), 0.7, 0.9, 1.0)
 		return
 
 	# Explosives — detonate
 	if tile == TileType.EXPLOSIVE or tile == TileType.EXPLOSIVE_ARMED:
 		_mine_cell(col, row)
 		_explode_area(col, row)
+		if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+			rpc_explode_area.rpc_id(NetworkManager.guest_peer_id, Vector2i(col, row))
 		return
 
 	# Reenergy station / Exit station / Upgrade station / Smeltery / Tavern / Ladder — not mineable
@@ -1401,8 +1405,15 @@ func check_player_hazard(col: int, row: int, source_player: PlayerProbe = null) 
 		_shake_camera(5.0, 0.25)
 		_hazard_cooldown = HAZARD_COOLDOWN_TIME
 	elif tile == TileType.EXPLOSIVE or tile == TileType.EXPLOSIVE_ARMED:
-		_mine_cell(col, row)
-		_explode_area(col, row)
+		if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
+			# Guest: send request to host — do not modify tile state locally.
+			# Host will run the explosion and broadcast rpc_explode_area back.
+			rpc_request_explode.rpc_id(1, Vector2i(col, row))
+		else:
+			_mine_cell(col, row)
+			_explode_area(col, row)
+			if NetworkManager.is_multiplayer_session and NetworkManager.guest_peer_id > 0:
+				rpc_explode_area.rpc_id(NetworkManager.guest_peer_id, Vector2i(col, row))
 		_hazard_cooldown = HAZARD_COOLDOWN_TIME
 
 	# Spider web — slow this specific player on contact, then destroy the web
@@ -1594,6 +1605,12 @@ func _explode_area(center_col: int, center_row: int) -> void:
 		var player_row := int(player_node.global_position.y / CELL_SIZE)
 		if abs(player_col - center_col) <= r and abs(player_row - center_row) <= r:
 			_damage_player(1)
+	# In multiplayer check if the guest is also caught in the blast radius
+	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0 and guest_player_node:
+		var gcol := int(guest_player_node.global_position.x / CELL_SIZE)
+		var grow := int(guest_player_node.global_position.y / CELL_SIZE)
+		if abs(gcol - center_col) <= r and abs(grow - center_row) <= r:
+			rpc_damage_guest.rpc_id(NetworkManager.guest_peer_id, 1)
 
 func _damage_player(amount: float) -> void:
 	if player_node and player_node.has_method("take_damage"):
@@ -1610,6 +1627,11 @@ func _on_player_died() -> void:
 		if local_p:
 			local_p.visible = false
 		_show_zone_banner("YOU DIED — SPECTATING", Color(1.0, 0.25, 0.25), -1)
+		# Notify the remote peer so they hide this player's sprite too
+		if NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+			rpc_ghost_mode.rpc_id(NetworkManager.guest_peer_id, true)
+		elif not NetworkManager.is_host:
+			rpc_ghost_mode.rpc_id(1, false)
 		return
 	_game_over = true
 	_show_game_over_overlay("LOST IN SPACE", "Run stardust has been lost...")
@@ -2069,6 +2091,8 @@ func _try_place_ladder_at(gp: Vector2i) -> void:
 	EventBus.ladder_count_changed.emit(GameManager.ladder_count)
 	EventBus.ore_mined_popup.emit(0, "Ladder placed!  (%d remaining)" % GameManager.ladder_count)
 	queue_redraw()
+	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+		rpc_ladder_placed.rpc_id(NetworkManager.guest_peer_id, gp)
 
 # ---------------------------------------------------------------------------
 # Ladder removal — right-click a placed ladder while holding the ladder slot
@@ -2096,6 +2120,8 @@ func _try_remove_ladder_at(gp: Vector2i) -> void:
 	EventBus.ladder_count_changed.emit(GameManager.ladder_count)
 	EventBus.ore_mined_popup.emit(0, "Ladder retrieved!  (%d in stock)" % GameManager.ladder_count)
 	queue_redraw()
+	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+		rpc_ladder_removed.rpc_id(NetworkManager.guest_peer_id, gp)
 
 # ---------------------------------------------------------------------------
 # Multiplayer RPCs
@@ -2191,3 +2217,85 @@ func rpc_consume_energy_from_guest(amount: int) -> void:
 	if not NetworkManager.is_host:
 		return
 	GameManager.consume_energy(amount)
+
+## Host → Guest: a ladder was placed — update grid so guest can climb it.
+@rpc("authority", "call_remote", "reliable")
+func rpc_ladder_placed(grid_pos: Vector2i) -> void:
+	if grid_pos.x < 0 or grid_pos.x >= GRID_COLS or grid_pos.y < 0 or grid_pos.y >= GRID_ROWS:
+		return
+	grid[grid_pos.x][grid_pos.y] = TileType.LADDER
+	_set_visual_cell(grid_pos.x, grid_pos.y)
+	queue_redraw()
+
+## Host → Guest: a ladder was retrieved — clear it from the guest's grid.
+@rpc("authority", "call_remote", "reliable")
+func rpc_ladder_removed(grid_pos: Vector2i) -> void:
+	if grid_pos.x < 0 or grid_pos.x >= GRID_COLS or grid_pos.y < 0 or grid_pos.y >= GRID_ROWS:
+		return
+	grid[grid_pos.x][grid_pos.y] = TileType.EMPTY
+	_set_tile_collision(grid_pos.x, grid_pos.y, false)
+	_set_visual_cell(grid_pos.x, grid_pos.y)
+	queue_redraw()
+
+## Host → Guest: an explosive detonated — clear the blast area and apply local damage.
+## Called after the host runs _explode_area so the guest's grid matches.
+@rpc("authority", "call_remote", "reliable")
+func rpc_explode_area(center: Vector2i) -> void:
+	var r := 1
+	for dc: int in range(-r, r + 1):
+		for dr: int in range(-r, r + 1):
+			var nc := center.x + dc
+			var nr := center.y + dr
+			if nc >= 0 and nc < GRID_COLS and nr >= 0 and nr < GRID_ROWS:
+				if grid[nc][nr] != TileType.EMPTY:
+					_mine_cell(nc, nr)
+					var cell_world := Vector2(nc * CELL_SIZE + CELL_SIZE * 0.5, nr * CELL_SIZE + CELL_SIZE * 0.5)
+					_spawn_mining_particles(cell_world, Color(1.0, 0.55, 0.05), 4, 80.0, 280.0)
+					_spawn_mining_particles(cell_world, Color(1.0, 0.90, 0.20, 0.8), 2, 50.0, 180.0)
+	SoundManager.play_explosion_sound()
+	_shake_camera(12.0, 0.55)
+	# Damage the local (guest) player if caught in the blast radius
+	var local_p := _get_local_player()
+	if local_p:
+		var pcol := int(local_p.global_position.x / CELL_SIZE)
+		var prow := int(local_p.global_position.y / CELL_SIZE)
+		if abs(pcol - center.x) <= r and abs(prow - center.y) <= r:
+			local_p.take_damage(1)
+			SoundManager.play_damage_sound()
+			_shake_camera(5.0, 0.25)
+
+## Guest → Host: request an explosion triggered by the guest's player contact with an explosive.
+## Host validates the tile, runs the detonation, then broadcasts rpc_explode_area.
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_request_explode(grid_pos: Vector2i) -> void:
+	if not NetworkManager.is_host:
+		return
+	var col := grid_pos.x
+	var row := grid_pos.y
+	if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
+		return
+	var tile := grid[col][row]
+	if tile != TileType.EXPLOSIVE and tile != TileType.EXPLOSIVE_ARMED:
+		return  # Already cleared by the time the request arrived
+	_mine_cell(col, row)
+	_explode_area(col, row)
+	if NetworkManager.guest_peer_id > 0:
+		rpc_explode_area.rpc_id(NetworkManager.guest_peer_id, grid_pos)
+
+## Bidirectional: notify the remote peer that a player entered ghost mode after dying.
+## is_host_player: true when the host's player died, false when the guest's player died.
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_ghost_mode(is_host_player: bool) -> void:
+	var sender := multiplayer.get_remote_sender_id()
+	# Validate: only the owning peer should announce their own player's death
+	if is_host_player and sender != 1:
+		return
+	if not is_host_player and sender == 1:
+		return
+	if is_host_player:
+		if player_node:
+			player_node.visible = false
+	else:
+		if guest_player_node:
+			guest_player_node.visible = false
+	_show_zone_banner("PARTNER DIED — SPECTATING", Color(1.0, 0.25, 0.25), -1)
