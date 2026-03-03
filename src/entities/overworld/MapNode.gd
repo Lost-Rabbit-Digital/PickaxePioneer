@@ -20,7 +20,7 @@ enum NodeType {
 
 signal node_clicked(node: MapNode)
 
-@onready var sprite: AnimatedSprite2D = $Sprite2D
+@onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var label: Label = $Label
 
 # Base sprite dimensions (64x64 at scale 1.0)
