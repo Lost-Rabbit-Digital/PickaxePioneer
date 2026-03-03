@@ -181,13 +181,18 @@ func _physics_process(delta: float) -> void:
 	var direction := Input.get_axis("move_left", "move_right")
 	velocity.x = direction * effective_speed
 
-	# Sprint energy drain (only while actually moving and underground)
+	# Sprint energy drain (only while actually moving and underground).
+	# Guests route the cost through the host via RPC so it is deducted from the
+	# authoritative shared pool rather than their local (overwritten) copy.
 	if _sprinting and abs(direction) > 0.1 and get_depth_row() > 0:
 		_sprint_energy_accum += SPRINT_ENERGY_RATE * delta
 		if _sprint_energy_accum >= 1.0:
 			var to_consume := int(_sprint_energy_accum)
 			_sprint_energy_accum -= to_consume
-			GameManager.consume_energy(to_consume)
+			if NetworkManager.is_multiplayer_session and not NetworkManager.is_host and mining_level:
+				mining_level.rpc_consume_energy_from_guest.rpc_id(1, to_consume)
+			else:
+				GameManager.consume_energy(to_consume)
 	else:
 		_sprint_energy_accum = 0.0
 

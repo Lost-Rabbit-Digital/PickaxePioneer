@@ -1,6 +1,7 @@
 # Multiplayer Audit — Pickaxe Pioneer (Godot 4.5)
 
 **Audit date:** 2026-03-03
+**Fixes applied:** 2026-03-03 — all Critical, Major, and actionable Minor/Cosmetic issues resolved
 **Scope:** LAN co-op via ENetMultiplayerPeer (Steam path is a stub and not evaluated)
 **Codebase snapshot:** ~1,685 lines of multiplayer-specific GDScript across 8 files
 
@@ -237,43 +238,43 @@ exists in the codebase. Not evaluated further.
 
 ### Critical
 
-| ID | Description | File(s) | Repro |
-|----|-------------|---------|-------|
-| **C1** | Guest has no notification when host disconnects — `server_disconnected` never connected; `_on_peer_disconnected` only processes `is_host` branch | `NetworkManager.gd:40-54, 84-88` | Host closes game mid-mine → guest is stuck with no banner, no return to menu, session appears to hang |
-| **C2** | Double Overworld load in normal start flow — `start_game()` sends `rpc_start_game_as_guest` (which loads Overworld) AND `load_overworld()` which sends `rpc_load_overworld_as_guest` (which also loads Overworld) | `GameManager.gd:157-165, 363-366` | Start a hosted session → guest loads Overworld scene twice; potential flicker or planet config desync |
+| ID | Description | File(s) | Status |
+|----|-------------|---------|--------|
+| **C1** | Guest has no notification when host disconnects — `server_disconnected` never connected; `_on_peer_disconnected` only processes `is_host` branch | `NetworkManager.gd:40-54, 84-88` | ✅ Fixed |
+| **C2** | Double Overworld load in normal start flow — `start_game()` sends `rpc_start_game_as_guest` (which loaded Overworld) AND `load_overworld()` which sends `rpc_load_overworld_as_guest` (also loading Overworld) | `GameManager.gd:157-165, 363-366` | ✅ Fixed |
 
 ### Major
 
-| ID | Description | File(s) |
-|----|-------------|---------|
-| **M1** | Guest sprint costs no energy from shared pool — guest calls `GameManager.consume_energy()` locally but host's 150ms sync overwrites it | `PlayerProbe.gd:184-192`, `MiningLevel.gd:2246-2251` |
-| **M2** | `rpc_request_mine` has no server-side rate limit — guest can bypass `MINE_INTERVAL` and mine at unbounded speed | `MiningLevel.gd:2209-2222` |
-| **M3** | `rpc_sync_resources` uses `"unreliable"` not `"unreliable_ordered"` — out-of-order packets can display stale HUD values | `MiningLevel.gd:2246` |
-| **M4** | Planet config race in drop-in flow — host sends `rpc_apply_planet_config` before guest's Overworld is instantiated; if the RPC arrives before `_ready()`, it is silently dropped | `GameManager.gd:213-218` |
-| **M5** | `_deliver_chat_message` is `any_peer` without sender ID validation — a client can spoof the sender name (e.g., impersonate "Host") | `NetworkManager.gd:110-112` |
+| ID | Description | File(s) | Status |
+|----|-------------|---------|--------|
+| **M1** | Guest sprint costs no energy from shared pool — guest calls `GameManager.consume_energy()` locally but host's 150ms sync overwrites it | `PlayerProbe.gd:184-192`, `MiningLevel.gd:2246-2251` | ✅ Fixed |
+| **M2** | `rpc_request_mine` has no server-side rate limit — guest can bypass `MINE_INTERVAL` and mine at unbounded speed | `MiningLevel.gd:2209-2222` | ✅ Fixed |
+| **M3** | `rpc_sync_resources` uses `"unreliable"` not `"unreliable_ordered"` — out-of-order packets can display stale HUD values | `MiningLevel.gd:2246` | ✅ Fixed |
+| **M4** | Planet config race in drop-in flow — host sends `rpc_apply_planet_config` before guest's Overworld is instantiated; if the RPC arrives before `_ready()`, it is silently dropped | `GameManager.gd:213-218` | ✅ Fixed |
+| **M5** | `_deliver_chat_message` is `any_peer` without sender ID validation — a client can spoof the sender name (e.g., impersonate "Host") | `NetworkManager.gd:110-112` | ✅ Fixed |
 
 ### Minor
 
-| ID | Description | File(s) |
-|----|-------------|---------|
-| **m1** | `_on_coop_peer_disconnected` connected for both host and guest (lines 609-612), but `guest_disconnected` only fires when `is_host` is true — dead code on guest | `MiningLevel.gd:608-612` |
-| **m2** | ENet compression not configured — no `.compress()` call | `NetworkManager.gd:25-30` |
-| **m3** | No ENet bandwidth caps — default uncapped; acceptable for 2-player LAN | `NetworkManager.gd:26` |
-| **m4** | `rpc_tile_hit` does not bounds-check the grid position before calling `_update_breaking_overlay`; `rpc_tile_broken` does check | `MiningLevel.gd:2239-2243` |
-| **m5** | No multiplayer GUT tests — no test coverage for any network path | `tests/` |
-| **m6** | No heartbeat or stall detection — a silent network freeze is undetectable | `NetworkManager.gd` |
-| **m7** | `guest_player_node` not freed on disconnect — `_on_coop_peer_disconnected` shows a banner but does not `queue_free()` the orphaned node | `MiningLevel.gd:638-640` |
-| **m8** | Default port 25565 conflicts with Minecraft Java Edition — minor UX friction | `NetworkManager.gd:13` |
-| **m9** | No DTLS / transport encryption — acceptable for documented LAN-only scope | `NetworkManager.gd` |
-| **m10** | No reconnect flow — disconnected players must restart entirely | `NetworkManager.gd` |
+| ID | Description | File(s) | Status |
+|----|-------------|---------|--------|
+| **m1** | `_on_coop_peer_disconnected` connected for both host and guest (lines 609-612), but `guest_disconnected` only fires when `is_host` is true — dead code on guest | `MiningLevel.gd:608-612` | ✅ Fixed |
+| **m2** | ENet compression not configured — no `.compress()` call | `NetworkManager.gd:25-30` | ✅ Fixed |
+| **m3** | No ENet bandwidth caps — default uncapped; acceptable for 2-player LAN | `NetworkManager.gd:26` | ✅ Won't fix (acceptable for LAN scope) |
+| **m4** | `rpc_tile_hit` does not bounds-check the grid position before calling `_update_breaking_overlay`; `rpc_tile_broken` does check | `MiningLevel.gd:2239-2243` | ✅ Fixed |
+| **m5** | No multiplayer GUT tests — no test coverage for any network path | `tests/` | ✅ Fixed |
+| **m6** | No heartbeat or stall detection — a silent network freeze is undetectable | `NetworkManager.gd` | ⏳ Deferred (ENet protocol-level timeout covers most cases) |
+| **m7** | `guest_player_node` not freed on disconnect — `_on_coop_peer_disconnected` shows a banner but does not `queue_free()` the orphaned node | `MiningLevel.gd:638-640` | ✅ Fixed |
+| **m8** | Default port 25565 conflicts with Minecraft Java Edition — minor UX friction | `NetworkManager.gd:13` | ⏳ Deferred (not blocking; change with future branding pass) |
+| **m9** | No DTLS / transport encryption — acceptable for documented LAN-only scope | `NetworkManager.gd` | ✅ Won't fix (LAN-only; revisit before any WAN/Steam path) |
+| **m10** | No reconnect flow — disconnected players must restart entirely | `NetworkManager.gd` | ⏳ Deferred (requires session state serialisation; post-launch) |
 
 ### Cosmetic
 
-| ID | Description | File(s) |
-|----|-------------|---------|
-| **c1** | Chat key `T` is hardcoded via `event.keycode == KEY_T`, not an input action — cannot be rebound | `ChatBox.gd:98` |
-| **c2** | Chat sender names hardcoded as `"Host"` / `"Guest"` — no player name support | `NetworkManager.gd:102` |
-| **c3** | Guest minerals banked to their own local `GameManager.mineral_currency` — shared pool semantics unclear across sessions | `GameManager.gd:247-261` |
+| ID | Description | File(s) | Status |
+|----|-------------|---------|--------|
+| **c1** | Chat key `T` is hardcoded via `event.keycode == KEY_T`, not an input action — cannot be rebound | `ChatBox.gd:98` | ✅ Fixed |
+| **c2** | Chat sender names hardcoded as `"Host"` / `"Guest"` — no player name support | `NetworkManager.gd:102` | ⏳ Deferred (needs player name UX design) |
+| **c3** | Guest minerals banked to their own local `GameManager.mineral_currency` — shared pool semantics unclear across sessions | `GameManager.gd:247-261` | ⏳ Deferred (by-design for now; document in GDD) |
 
 ---
 

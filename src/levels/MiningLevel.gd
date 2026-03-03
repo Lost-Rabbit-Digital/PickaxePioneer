@@ -461,6 +461,10 @@ var guest_player_node: PlayerProbe = null
 # How often (seconds) the host broadcasts shared resource state to the guest
 const RESOURCE_SYNC_INTERVAL: float = 0.15
 var _resource_sync_timer: float = 0.0
+# Server-side rate limiting for guest mine requests — slightly looser than the
+# client's MINE_INTERVAL (0.12 s) to absorb network jitter without being exploitable.
+const GUEST_MINE_MIN_INTERVAL: float = 0.10
+var _guest_mine_last_time: float = 0.0
 # Column the guest spawns at (slightly right of host spawn)
 const GUEST_SPAWN_COL: int = 5
 
@@ -605,11 +609,12 @@ func _setup_multiplayer_players() -> void:
 	if not NetworkManager.is_host:
 		_show_kit_bonus_banner()
 
-	# Connect NetworkManager disconnect signal so we can show a warning mid-mine
+	# Connect the appropriate disconnect signal so we can show a warning mid-mine.
+	# Hosts listen for the guest leaving; guests listen for the host dropping.
 	if NetworkManager.is_host:
 		NetworkManager.guest_disconnected.connect(_on_coop_peer_disconnected)
 	else:
-		NetworkManager.guest_disconnected.connect(_on_coop_peer_disconnected)
+		NetworkManager.host_disconnected.connect(_on_coop_peer_disconnected)
 
 ## Returns the PlayerProbe that is locally authoritative (driven by this machine's input).
 func _get_local_player() -> PlayerProbe:
@@ -637,6 +642,9 @@ func _show_kit_bonus_banner() -> void:
 
 func _on_coop_peer_disconnected() -> void:
 	_show_zone_banner("PARTNER DISCONNECTED", Color(1.0, 0.4, 0.2), -1)
+	if guest_player_node:
+		guest_player_node.queue_free()
+		guest_player_node = null
 
 ## Called when a guest connects after the host's MiningLevel is already running.
 ## Sets up the second player node now that we have a valid guest peer ID.
@@ -2205,11 +2213,17 @@ func _try_remove_ladder_at(gp: Vector2i) -> void:
 # ---------------------------------------------------------------------------
 
 ## Guest → Host: request a tile mine at grid_pos.
-## Host validates range using the synced guest position, then executes try_mine_at.
+## Host validates range using the synced guest position and enforces a minimum
+## interval to prevent the guest from bypassing the client-side MINE_INTERVAL.
 @rpc("any_peer", "call_remote", "reliable")
 func rpc_request_mine(grid_pos: Vector2i) -> void:
 	if not NetworkManager.is_host:
 		return
+	# Rate limit: reject requests that arrive faster than GUEST_MINE_MIN_INTERVAL
+	var now := Time.get_ticks_msec() / 1000.0
+	if now - _guest_mine_last_time < GUEST_MINE_MIN_INTERVAL:
+		return
+	_guest_mine_last_time = now
 	# Validate that the guest's current (synced) position is within range
 	if guest_player_node:
 		var player_tile := Vector2i(
@@ -2238,12 +2252,16 @@ func rpc_tile_broken(grid_pos: Vector2i, burst_r: float, burst_g: float, burst_b
 ## Host → Guest: partial hit on a tile — sync the breaking overlay.
 @rpc("authority", "call_remote", "reliable")
 func rpc_tile_hit(grid_pos: Vector2i, damage_ratio: float) -> void:
+	if grid_pos.x < 0 or grid_pos.x >= GRID_COLS or grid_pos.y < 0 or grid_pos.y >= GRID_ROWS:
+		return
 	_update_breaking_overlay(grid_pos, damage_ratio)
 	_flash_cells[grid_pos] = 1.0
 	SoundManager.play_impact_sound()
 
 ## Host → Guest: sync shared run resources so the guest HUD stays accurate.
-@rpc("authority", "call_remote", "unreliable")
+## unreliable_ordered ensures later packets supersede earlier ones; stale data
+## is discarded rather than overwriting a more recent update.
+@rpc("authority", "call_remote", "unreliable_ordered")
 func rpc_sync_resources(minerals: int, energy: int) -> void:
 	GameManager.run_mineral_currency = minerals
 	GameManager.current_energy = energy
@@ -2275,3 +2293,12 @@ func rpc_damage_guest(amount: float) -> void:
 		local_p.take_damage(amount)
 		SoundManager.play_damage_sound()
 		_shake_camera(5.0, 0.25)
+
+## Guest → Host: consume energy from the shared pool on behalf of the guest.
+## Used for sprint energy drain so the cost is deducted from the authoritative
+## pool rather than the guest's local (overwritten) copy.
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_consume_energy_from_guest(amount: int) -> void:
+	if not NetworkManager.is_host:
+		return
+	GameManager.consume_energy(amount)

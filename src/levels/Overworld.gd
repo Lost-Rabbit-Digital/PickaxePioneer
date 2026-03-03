@@ -124,12 +124,17 @@ func _ready() -> void:
 	caravan.set_map_node(current_node)
 	current_node.highlight(true)
 
-	# In co-op, show a banner reminding the guest they can only watch
+	# In co-op, show a banner reminding the guest they can only watch, then
+	# request the host's star chart.  Pulling from _ready() guarantees the
+	# Overworld node exists when the response arrives, eliminating the race
+	# condition that occurred when the host pushed the config immediately after
+	# sending rpc_start_game_as_guest (before the guest's scene was instantiated).
 	if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
 		_show_coop_guest_banner()
+		rpc_request_planet_config.rpc_id(1)
 
-	# Sync the fully-built star chart to the guest so both peers see identical
-	# planet names, positions, connections, and sprite frames.
+	# Host also pushes the chart when its own Overworld is ready and a guest is
+	# already connected (normal lobby-start flow where both peers load together).
 	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
 		rpc_apply_planet_config.rpc_id(NetworkManager.guest_peer_id, SaveManager.get_planet_config())
 
@@ -139,7 +144,16 @@ func _ready() -> void:
 
 	queue_redraw()
 
-## Guest RPC: mirror the host's star chart so the guest sees the same planet
+## Guest → Host: request the current star chart config.  Called from the guest's
+## _ready() once the Overworld scene is fully instantiated, ensuring the config
+## RPC is never received before the node exists.
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_request_planet_config() -> void:
+	if not NetworkManager.is_host:
+		return
+	rpc_apply_planet_config.rpc_id(NetworkManager.guest_peer_id, SaveManager.get_planet_config())
+
+## Host → Guest: mirror the host's star chart so the guest sees the same planet
 ## names, positions, connections, and sprite frames as the host.
 ## Clears whatever layout the guest's _ready() generated and rebuilds from the
 ## host's saved config.
