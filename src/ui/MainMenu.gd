@@ -1128,8 +1128,17 @@ func _on_delete_confirm_proceed() -> void:
 	_delete_confirm_dialog.hide()
 	if _pending_delete_index >= 0:
 		SaveManager.delete_slot(_pending_delete_index)
-		_refresh_popup()
+		var has_saves := SaveManager.has_any_save()
+		if not has_saves and _popup_mode == "continue":
+			# No saves remain — close the popup and return to the parent screen
+			_save_popup.hide()
+			_mp_host_pending = false
+		else:
+			_refresh_popup()
+		_continue_btn.visible = has_saves
 		if _sp_continue_btn != null:
-			_sp_continue_btn.visible = SaveManager.has_any_save()
-		_host_save_continue_btn.visible = SaveManager.has_any_save()
+			_sp_continue_btn.visible = has_saves
+		_host_save_continue_btn.visible = has_saves
+		if _mp_page_host_save_continue_btn != null:
+			_mp_page_host_save_continue_btn.visible = has_saves
 	_pending_delete_index = -1
