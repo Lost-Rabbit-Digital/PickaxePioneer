@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://f2a0m5s8y6c5"]
+[gd_scene load_steps=8 format=3 uid="uid://f2a0m5s8y6c5"]
 
 [ext_resource type="PackedScene" uid="uid://c8x7k2q5y302" path="res://src/entities/player/PlayerProbe.tscn" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://hud1234568aa" path="res://src/ui/HUD.tscn" id="2_hud"]
@@ -6,7 +6,6 @@
 [ext_resource type="TileSet" uid="uid://cjvmyl06h70j7" path="res://assets/blocks/blocks_tileset.tres" id="5_10hqt"]
 [ext_resource type="PackedScene" uid="uid://dom6mgmv6ffss" path="res://src/ui/PauseMenu.tscn" id="5_pause"]
 [ext_resource type="TileSet" uid="uid://i0vyrxve27ot" path="res://assets/blocks/plants/foliage_tileset.tres" id="6_vcf27"]
-[ext_resource type="TileSet" uid="uid://bx3q7m2t5p8w6" path="res://assets/blocks/terrain_tileset.tres" id="7_terrain"]
 [ext_resource type="Script" uid="uid://dnru7wrcvq718" path="res://src/levels/MiningLevelOverlay.gd" id="8_overlay"]
 
 [node name="MiningLevel" type="Node2D"]
@@ -35,12 +34,12 @@ collision_enabled = false
 navigation_enabled = false
 
 [node name="MineAbleTileMapLayer" type="TileMapLayer" parent="TileMapLayers"]
-tile_set = ExtResource("7_terrain")
+tile_set = ExtResource("5_10hqt")
 collision_enabled = false
 navigation_enabled = false
 
 [node name="NonMineAbleTileMapLayer" type="TileMapLayer" parent="TileMapLayers"]
-tile_set = ExtResource("7_terrain")
+tile_set = ExtResource("5_10hqt")
 collision_enabled = false
 navigation_enabled = false
 
