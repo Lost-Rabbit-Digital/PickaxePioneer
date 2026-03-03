@@ -545,6 +545,11 @@ func _ready() -> void:
 	_setup_inventory_screen()
 	_setup_hat_menu()
 	_setup_customization_menu()
+
+	if NetworkManager.is_multiplayer_session:
+		var chatbox := ChatBox.new()
+		add_child(chatbox)
+
 	queue_redraw()
 
 	# Co-op: spawn second player and assign authorities.
