@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bpdqbxe318ijj"
-path="res://.godot/imported/!TILEMAP.png-10907a67e54d5f7338714a03388b0376.ctex"
+uid="uid://bia0723kcrpjj"
+path="res://.godot/imported/foliage_atlas.png-518b25895e51218fb475ce64bbc64b95.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/blocks/!TILEMAP.png"
-dest_files=["res://.godot/imported/!TILEMAP.png-10907a67e54d5f7338714a03388b0376.ctex"]
+source_file="res://assets/blocks/plants/foliage_atlas.png"
+dest_files=["res://.godot/imported/foliage_atlas.png-518b25895e51218fb475ce64bbc64b95.ctex"]
 
 [params]
 
