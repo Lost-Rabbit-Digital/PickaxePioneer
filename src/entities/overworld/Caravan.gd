@@ -10,7 +10,7 @@ extends Node2D
 @export var orbit_speed: float = 0.15
 @export var orbit_scale: float = 0.5
 
-@onready var sprite: Sprite2D = $Sprite2D
+@onready var sprite: Sprite2D = $AnimatedSprite2D
 
 var speed: float:
 	get: return base_speed * GameManager.get_ship_speed_mult()
