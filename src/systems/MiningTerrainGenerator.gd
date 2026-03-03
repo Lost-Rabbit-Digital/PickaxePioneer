@@ -293,22 +293,26 @@ func _place_ore_vein(spec: Dictionary) -> void:
 #   "webs"           : Array[Vector2i]  — cave positions for spider webs
 # ---------------------------------------------------------------------------
 
-const PLANT_CHANCE:          float = 0.35
-const CORAL_FLOOR_CHANCE:    float = 0.12
-const CORAL_CEILING_CHANCE:  float = 0.12
-const WEB_CHANCE:            float = 0.015
+const CORAL_FLOOR_CHANCE:        float = 0.12
+const CORAL_CEILING_CHANCE:      float = 0.12
+const WEB_CHANCE:                float = 0.015
+const FOLIAGE_ABOVE_GRASS_CHANCE: float = 0.22
 
 func generate_decorations() -> Dictionary:
-	var plants:         Array[Vector2i] = []
-	var coral_floor:    Array[Vector2i] = []
-	var coral_ceiling:  Array[Vector2i] = []
-	var webs:           Array[Vector2i] = []
+	var foliage_above_grass: Array[Vector2i] = []
+	var coral_floor:         Array[Vector2i] = []
+	var coral_ceiling:       Array[Vector2i] = []
+	var webs:                Array[Vector2i] = []
 
-	# Surface plants — one row of SURFACE_GRASS tiles
-	for col in range(_cols):
-		if _grid[col][_surface_rows] == T_SURFACE_GRASS:
-			if randf() < PLANT_CHANCE:
-				plants.append(Vector2i(col, _surface_rows))
+	# Foliage above grass — placed in the sky row immediately above the grass layer.
+	# Only spawns where the column above is open sky (T_SURFACE) to avoid overlap with
+	# station tiles whose footprint extends into the surface rows.
+	var above_row: int = _surface_rows - 1
+	if above_row >= 0:
+		for col in range(_cols):
+			if _grid[col][_surface_rows] == T_SURFACE_GRASS and _grid[col][above_row] == T_SURFACE:
+				if randf() < FOLIAGE_ABOVE_GRASS_CHANCE:
+					foliage_above_grass.append(Vector2i(col, above_row))
 
 	# Underground decorations — scan all empty cells below the surface
 	for col in range(1, _cols - 1):
@@ -326,10 +330,10 @@ func generate_decorations() -> Dictionary:
 				webs.append(Vector2i(col, row))
 
 	return {
-		"plants":        plants,
-		"coral_floor":   coral_floor,
-		"coral_ceiling": coral_ceiling,
-		"webs":          webs,
+		"foliage_above_grass": foliage_above_grass,
+		"coral_floor":         coral_floor,
+		"coral_ceiling":       coral_ceiling,
+		"webs":                webs,
 	}
 
 func _is_decoration_solid(tile: int) -> bool:

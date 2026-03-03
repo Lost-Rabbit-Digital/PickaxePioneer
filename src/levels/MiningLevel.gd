@@ -376,23 +376,22 @@ var _shop_protected_cells: Dictionary = {}  # Vector2i -> true
 var _web_sprites: Dictionary = {}  # Vector2i(col, row) -> true  (web cells for hazard detection)
 
 # Atlas coordinates in foliage_tileset.tres (foliage_atlas.png, 64 px tiles, 10-wide grid).
-const FOLIAGE_PLANT_ATLAS_COORDS: Array[Vector2i] = [
-	Vector2i(2, 1), Vector2i(3, 1), Vector2i(8, 1), Vector2i(9, 1),
-	Vector2i(0, 2), Vector2i(1, 2), Vector2i(3, 2), Vector2i(8, 2), Vector2i(9, 2),
-	Vector2i(0, 3), Vector2i(1, 3), Vector2i(3, 3), Vector2i(4, 3),
-	Vector2i(5, 3), Vector2i(6, 3), Vector2i(5, 5), Vector2i(7, 5),
+const FOLIAGE_SURFACE_PLANT_ATLAS_COORDS: Array[Vector2i] = [
+	Vector2i(0, 0), Vector2i(2, 0), Vector2i(3, 0),
+	Vector2i(2, 1), Vector2i(3, 1), Vector2i(4, 1), Vector2i(5, 1), Vector2i(6, 1), Vector2i(7, 1), Vector2i(8, 1), Vector2i(9, 1),
+	Vector2i(0, 2), Vector2i(1, 2), Vector2i(2, 2), Vector2i(3, 2), Vector2i(4, 2), Vector2i(6, 2), Vector2i(8, 2), Vector2i(9, 2),
+	Vector2i(2, 3), Vector2i(3, 3), Vector2i(4, 3), Vector2i(5, 3), Vector2i(6, 3), Vector2i(7, 3), Vector2i(8, 3), Vector2i(9, 3),
+	Vector2i(0, 4), Vector2i(1, 4), Vector2i(2, 4), Vector2i(3, 4), Vector2i(4, 4), Vector2i(5, 4), Vector2i(6, 4),
+	Vector2i(9, 6),
 ]
-const FOLIAGE_CORAL_FLOOR_ATLAS_COORDS: Array[Vector2i] = [
-	Vector2i(0, 0), Vector2i(1, 0), Vector2i(3, 0), Vector2i(4, 0),
-	Vector2i(5, 0), Vector2i(6, 0), Vector2i(8, 0), Vector2i(9, 0),
+const FOLIAGE_CAVE_PLANT_ATLAS_COORDS: Array[Vector2i] = [
+	Vector2i(1, 0), Vector2i(4, 0), Vector2i(5, 0), Vector2i(6, 0), Vector2i(7, 0), Vector2i(8, 0), Vector2i(9, 0),
 	Vector2i(0, 1), Vector2i(1, 1),
+	Vector2i(7, 2),
+	Vector2i(0, 3), Vector2i(1, 3),
+	Vector2i(7, 4),
 ]
-const FOLIAGE_CORAL_CEILING_ATLAS_COORDS: Array[Vector2i] = [
-	Vector2i(2, 0), Vector2i(7, 0),
-	Vector2i(5, 1), Vector2i(6, 1), Vector2i(7, 1),
-	Vector2i(5, 2), Vector2i(7, 2),
-	Vector2i(7, 3), Vector2i(8, 3),
-]
+const FOLIAGE_STALACTITE_ATLAS_COORD: Vector2i = Vector2i(5, 7)
 const FOLIAGE_WEB_ATLAS_COORD: Vector2i = Vector2i(7, 4)
 
 @onready var player_node := $PlayerProbe as PlayerProbe
@@ -1369,20 +1368,19 @@ func _spawn_decorations(data: Dictionary) -> void:
 	_foliage_layer.clear()
 	_web_sprites.clear()
 
-	# Surface plants — sit in the SURFACE_GRASS row (z below player via layer order)
-	for pos: Vector2i in data.get("plants", []):
-		var atlas_coord: Vector2i = FOLIAGE_PLANT_ATLAS_COORDS[randi() % FOLIAGE_PLANT_ATLAS_COORDS.size()]
+	# Surface plants — placed in the sky row directly above the grass
+	for pos: Vector2i in data.get("foliage_above_grass", []):
+		var atlas_coord: Vector2i = FOLIAGE_SURFACE_PLANT_ATLAS_COORDS[randi() % FOLIAGE_SURFACE_PLANT_ATLAS_COORDS.size()]
 		_foliage_layer.set_cell(pos, 0, atlas_coord)
 
-	# Cave floor coral — grows upward from the solid tile below
+	# Cave plants — grow upward from a solid floor tile
 	for pos: Vector2i in data.get("coral_floor", []):
-		var atlas_coord: Vector2i = FOLIAGE_CORAL_FLOOR_ATLAS_COORDS[randi() % FOLIAGE_CORAL_FLOOR_ATLAS_COORDS.size()]
+		var atlas_coord: Vector2i = FOLIAGE_CAVE_PLANT_ATLAS_COORDS[randi() % FOLIAGE_CAVE_PLANT_ATLAS_COORDS.size()]
 		_foliage_layer.set_cell(pos, 0, atlas_coord)
 
-	# Cave ceiling coral — hangs from the solid tile above
+	# Stalactites — hang from a solid ceiling tile
 	for pos: Vector2i in data.get("coral_ceiling", []):
-		var atlas_coord: Vector2i = FOLIAGE_CORAL_CEILING_ATLAS_COORDS[randi() % FOLIAGE_CORAL_CEILING_ATLAS_COORDS.size()]
-		_foliage_layer.set_cell(pos, 0, atlas_coord)
+		_foliage_layer.set_cell(pos, 0, FOLIAGE_STALACTITE_ATLAS_COORD)
 
 	# Spider webs — registered in _web_sprites for hazard detection
 	for pos: Vector2i in data.get("webs", []):
