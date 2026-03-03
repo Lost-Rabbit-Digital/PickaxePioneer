@@ -90,37 +90,6 @@ const MINEABLE_TILES: Array = [
 	TileType.LAVA, TileType.LAVA_FLOW,
 ]
 
-const TILE_COLORS: Dictionary = {
-	TileType.DIRT:           Color(0.30, 0.30, 0.38),
-	TileType.DIRT_DARK:      Color(0.22, 0.22, 0.30),
-	TileType.ORE_COPPER:     Color(0.90, 0.60, 0.25),
-	TileType.ORE_COPPER_DEEP: Color(0.80, 0.50, 0.15),
-	TileType.ORE_IRON:       Color(0.90, 0.45, 0.70),
-	TileType.ORE_IRON_DEEP:  Color(0.75, 0.35, 0.60),
-	TileType.ORE_GOLD:       Color(0.85, 0.80, 1.00),
-	TileType.ORE_GOLD_DEEP:  Color(0.70, 0.65, 0.90),
-	TileType.ORE_GEM:        Color(0.20, 0.90, 0.95),
-	TileType.ORE_GEM_DEEP:   Color(0.10, 0.80, 0.85),
-	TileType.STONE:          Color(0.35, 0.25, 0.55),
-	TileType.STONE_DARK:     Color(0.25, 0.18, 0.45),
-	TileType.EXPLOSIVE:      Color(0.90, 0.10, 0.10),
-	TileType.EXPLOSIVE_ARMED: Color(1.00, 0.00, 0.00),
-	TileType.LAVA:           Color(1.00, 0.65, 0.00),
-	TileType.LAVA_FLOW:      Color(1.00, 0.50, 0.00),
-	TileType.ENERGY_NODE:      Color(0.20, 0.80, 0.90),
-	TileType.ENERGY_NODE_FULL: Color(0.10, 1.00, 0.95),
-	TileType.REENERGY_STATION: Color(0.40, 0.50, 0.60),
-	TileType.SURFACE:        Color(0.15, 0.15, 0.25),
-	TileType.SURFACE_GRASS:  Color(0.10, 0.20, 0.35),
-	TileType.EXIT_STATION:   Color(0.15, 0.55, 0.70),
-	TileType.BOSS_SEGMENT:   Color(0.70, 0.15, 0.50),
-	TileType.BOSS_CORE:      Color(0.90, 0.10, 0.40),
-	TileType.UPGRADE_STATION:  Color(0.40, 0.50, 0.60),
-	TileType.SMELTERY_STATION: Color(0.40, 0.50, 0.60),
-	TileType.LADDER:           Color(0.80, 0.60, 0.15),
-	TileType.CAT_TAVERN:       Color(0.40, 0.50, 0.60),
-}
-
 # Atlas coordinates in blocks_tileset.tres (blocks_atlas.png, 64 px tiles, alphabetical layout).
 # TileType.SURFACE, EXIT_STATION, BOSS_SEGMENT, BOSS_CORE, LADDER are drawn by _draw().
 const TILE_ATLAS_COORDS: Dictionary = {
@@ -403,43 +372,34 @@ const HAZARD_COOLDOWN_TIME: float = 1.0
 const SHOP_PROTECTION_RADIUS: int = 3
 var _shop_protected_cells: Dictionary = {}  # Vector2i -> true
 
-# Terrain decorations — visual sprites spawned after terrain generation
-var _web_sprites: Dictionary = {}  # Vector2i(col, row) -> Sprite2D
+# Terrain decorations — foliage cells placed via FoliageTileMapLayer after terrain generation
+var _web_sprites: Dictionary = {}  # Vector2i(col, row) -> true  (web cells for hazard detection)
 
-const PLANT_TEXTURES: Array[String] = [
-	"res://assets/blocks/plants/grass.png",
-	"res://assets/blocks/plants/grass2.png",
-	"res://assets/blocks/plants/grass3.png",
-	"res://assets/blocks/plants/dandelion.png",
-	"res://assets/blocks/plants/thistle.png",
-	"res://assets/blocks/plants/fern.png",
-	"res://assets/blocks/plants/fern2.png",
-	"res://assets/blocks/plants/mushroom_brown.png",
-	"res://assets/blocks/plants/mushroom_red.png",
-	"res://assets/blocks/plants/oxeye_daisy.png",
-	"res://assets/blocks/plants/lily.png",
-	"res://assets/blocks/plants/aster.png",
-	"res://assets/blocks/plants/horsetail.png",
-	"res://assets/blocks/plants/cattail.png",
+# Atlas coordinates in foliage_tileset.tres (foliage_atlas.png, 64 px tiles, 10-wide grid).
+const FOLIAGE_PLANT_ATLAS_COORDS: Array[Vector2i] = [
+	Vector2i(2, 1), Vector2i(3, 1), Vector2i(8, 1), Vector2i(9, 1),
+	Vector2i(0, 2), Vector2i(1, 2), Vector2i(3, 2), Vector2i(8, 2), Vector2i(9, 2),
+	Vector2i(0, 3), Vector2i(1, 3), Vector2i(3, 3), Vector2i(4, 3),
+	Vector2i(5, 3), Vector2i(6, 3), Vector2i(5, 5), Vector2i(7, 5),
 ]
-
-const CORAL_TEXTURES: Array[String] = [
-	"res://assets/blocks/plants/coral_brain.png",
-	"res://assets/blocks/plants/coral_cauliflower.png",
-	"res://assets/blocks/plants/coral_pore.png",
-	"res://assets/blocks/plants/coral_star.png",
-	"res://assets/blocks/plants/coral_brain_bleached.png",
-	"res://assets/blocks/plants/coral_cauliflower_bleached.png",
-	"res://assets/blocks/plants/coral_pore_bleached.png",
-	"res://assets/blocks/plants/coral_star_bleached.png",
+const FOLIAGE_CORAL_FLOOR_ATLAS_COORDS: Array[Vector2i] = [
+	Vector2i(0, 0), Vector2i(1, 0), Vector2i(3, 0), Vector2i(4, 0),
+	Vector2i(5, 0), Vector2i(6, 0), Vector2i(8, 0), Vector2i(9, 0),
+	Vector2i(0, 1), Vector2i(1, 1),
 ]
-
-const WEB_TEXTURE: String = "res://assets/blocks/plants/spiderweb.png"
+const FOLIAGE_CORAL_CEILING_ATLAS_COORDS: Array[Vector2i] = [
+	Vector2i(2, 0), Vector2i(7, 0),
+	Vector2i(5, 1), Vector2i(6, 1), Vector2i(7, 1),
+	Vector2i(5, 2), Vector2i(7, 2),
+	Vector2i(7, 3), Vector2i(8, 3),
+]
+const FOLIAGE_WEB_ATLAS_COORD: Vector2i = Vector2i(7, 4)
 
 @onready var player_node := $PlayerProbe as PlayerProbe
 @onready var pause_menu = $PauseMenu
 @onready var _mineable_layer    := $TileMapLayers/MineAbleTileMapLayer as TileMapLayer
 @onready var _nonmineable_layer := $TileMapLayers/NonMineAbleTileMapLayer as TileMapLayer
+@onready var _foliage_layer     := $TileMapLayers/FoliageTileMapLayer as TileMapLayer
 @onready var _terrain_overlay   := $TerrainOverlay as MiningLevelOverlay
 
 var _inventory_screen: InventoryScreen = null
@@ -891,7 +851,7 @@ func _draw() -> void:
 		var row_y: float = float(SURFACE_ROWS * CELL_SIZE)
 		draw_rect(Rect2(float(min_col * CELL_SIZE), row_y,
 			float((max_col - min_col + 1) * CELL_SIZE), float(CELL_SIZE)),
-			TILE_COLORS.get(TileType.SURFACE_GRASS, Color(0.10, 0.20, 0.35)))
+			Color(0.10, 0.20, 0.35))
 
 # Level particle system — mining sparks, ore bursts, lava embers, boss fx
 # ---------------------------------------------------------------------------
@@ -1317,8 +1277,7 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 		_mine_cell(col, row)
 		# Sync tile break to guest
 		if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
-			var bc: Color = TILE_COLORS.get(tile, Color(0.7, 0.6, 0.4))
-			rpc_tile_broken.rpc_id(NetworkManager.guest_peer_id, pos_key, bc.r, bc.g, bc.b)
+			rpc_tile_broken.rpc_id(NetworkManager.guest_peer_id, pos_key, 0.7, 0.6, 0.4)
 		# Boss tile tracking — delegated to BossSystem
 		if tile == TileType.BOSS_SEGMENT or tile == TileType.BOSS_CORE:
 			boss_system.on_tile_mined(col, row, tile)
@@ -1355,7 +1314,7 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 			_check_streak_milestone()
 		# Particle burst on tile destruction
 		var tile_world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
-		var burst_color: Color = TILE_COLORS.get(tile, Color(0.7, 0.6, 0.4))
+		var burst_color: Color = Color(0.7, 0.6, 0.4)
 		var burst_count := 14 if tile in ORE_TILES else 8
 		if tile == TileType.BOSS_SEGMENT or tile == TileType.BOSS_CORE:
 			burst_count = 20
@@ -1369,7 +1328,7 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 		_update_breaking_overlay(pos_key, damage_ratio)
 		# Small impact sparks on partial hits
 		var hit_world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
-		_spawn_mining_particles(hit_world_pos, TILE_COLORS.get(tile, Color(0.8, 0.7, 0.5)), 4, 30.0, 90.0)
+		_spawn_mining_particles(hit_world_pos, Color(0.8, 0.7, 0.5), 4, 30.0, 90.0)
 		SoundManager.play_impact_sound()
 		_shake_camera(1.5, 0.07)
 		# Sync partial damage to guest so their breaking overlay matches
@@ -1398,9 +1357,8 @@ func check_player_hazard(col: int, row: int, source_player: PlayerProbe = null) 
 	# Spider web — slow this specific player on contact, then destroy the web
 	var web_key := Vector2i(col, row)
 	if _web_sprites.has(web_key):
-		var web_sprite: Sprite2D = _web_sprites[web_key]
 		_web_sprites.erase(web_key)
-		web_sprite.queue_free()
+		_foliage_layer.erase_cell(web_key)
 		target_player.apply_web_slow()
 
 # ---------------------------------------------------------------------------
@@ -1408,76 +1366,28 @@ func check_player_hazard(col: int, row: int, source_player: PlayerProbe = null) 
 # ---------------------------------------------------------------------------
 
 func _spawn_decorations(data: Dictionary) -> void:
-	var plant_textures: Array = PLANT_TEXTURES.map(func(p): return load(p) as Texture2D)
-	var coral_textures: Array = CORAL_TEXTURES.map(func(p): return load(p) as Texture2D)
-	var web_texture: Texture2D = load(WEB_TEXTURE) as Texture2D
+	_foliage_layer.clear()
+	_web_sprites.clear()
 
-	# Surface plants — sit at the top of the SURFACE_GRASS tiles (z below player)
+	# Surface plants — sit in the SURFACE_GRASS row (z below player via layer order)
 	for pos: Vector2i in data.get("plants", []):
-		var tex: Texture2D = plant_textures[randi() % plant_textures.size()]
-		if not tex:
-			continue
-		var sprite := Sprite2D.new()
-		sprite.texture = tex
-		sprite.texture_filter = TEXTURE_FILTER_NEAREST
-		sprite.position = Vector2(
-			pos.x * CELL_SIZE + CELL_SIZE * 0.5,
-			pos.y * CELL_SIZE + CELL_SIZE * 0.25
-		)
-		sprite.z_index = -1
-		add_child(sprite)
+		var atlas_coord: Vector2i = FOLIAGE_PLANT_ATLAS_COORDS[randi() % FOLIAGE_PLANT_ATLAS_COORDS.size()]
+		_foliage_layer.set_cell(pos, 0, atlas_coord)
 
 	# Cave floor coral — grows upward from the solid tile below
 	for pos: Vector2i in data.get("coral_floor", []):
-		var tex: Texture2D = coral_textures[randi() % coral_textures.size()]
-		if not tex:
-			continue
-		var sprite := Sprite2D.new()
-		sprite.texture = tex
-		sprite.texture_filter = TEXTURE_FILTER_NEAREST
-		sprite.position = Vector2(
-			pos.x * CELL_SIZE + CELL_SIZE * 0.5,
-			pos.y * CELL_SIZE + CELL_SIZE * 0.75
-		)
-		sprite.z_index = -1
-		add_child(sprite)
+		var atlas_coord: Vector2i = FOLIAGE_CORAL_FLOOR_ATLAS_COORDS[randi() % FOLIAGE_CORAL_FLOOR_ATLAS_COORDS.size()]
+		_foliage_layer.set_cell(pos, 0, atlas_coord)
 
-	# Cave ceiling coral — flipped, hanging from solid tile above
+	# Cave ceiling coral — hangs from the solid tile above
 	for pos: Vector2i in data.get("coral_ceiling", []):
-		var tex: Texture2D = coral_textures[randi() % coral_textures.size()]
-		if not tex:
-			continue
-		var sprite := Sprite2D.new()
-		sprite.texture = tex
-		sprite.texture_filter = TEXTURE_FILTER_NEAREST
-		sprite.flip_v = true
-		sprite.position = Vector2(
-			pos.x * CELL_SIZE + CELL_SIZE * 0.5,
-			pos.y * CELL_SIZE + CELL_SIZE * 0.25
-		)
-		sprite.z_index = -1
-		add_child(sprite)
+		var atlas_coord: Vector2i = FOLIAGE_CORAL_CEILING_ATLAS_COORDS[randi() % FOLIAGE_CORAL_CEILING_ATLAS_COORDS.size()]
+		_foliage_layer.set_cell(pos, 0, atlas_coord)
 
 	# Spider webs — registered in _web_sprites for hazard detection
-	var web_scale := Vector2(
-		CELL_SIZE / web_texture.get_width(),
-		CELL_SIZE / web_texture.get_height()
-	) if web_texture else Vector2.ONE
 	for pos: Vector2i in data.get("webs", []):
-		if not web_texture:
-			break
-		var sprite := Sprite2D.new()
-		sprite.texture = web_texture
-		sprite.texture_filter = TEXTURE_FILTER_NEAREST
-		sprite.modulate = Color(1.0, 1.0, 1.0, 0.85)
-		sprite.scale = web_scale
-		sprite.position = Vector2(
-			pos.x * CELL_SIZE + CELL_SIZE * 0.5,
-			pos.y * CELL_SIZE + CELL_SIZE * 0.5
-		)
-		sprite.z_index = 0
-		add_child(sprite)
-		_web_sprites[pos] = sprite
+		_foliage_layer.set_cell(pos, 0, FOLIAGE_WEB_ATLAS_COORD)
+		_web_sprites[pos] = true
 
 # ---------------------------------------------------------------------------
 # Helpers
