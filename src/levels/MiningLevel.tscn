@@ -38,6 +38,7 @@ collision_enabled = false
 navigation_enabled = false
 
 [node name="FoliageTileMapLayer" type="TileMapLayer" parent="TileMapLayers"]
+tile_map_data = PackedByteArray("AAAQAAAAAAABAAMAAAAHAAAAAAABAAMAAAAXAAAAAAABAAMAAAADAAAAAAADAAIAAAASAAAAAAADAAIAAAA=")
 tile_set = ExtResource("6_vcf27")
 collision_enabled = false
 navigation_enabled = false
