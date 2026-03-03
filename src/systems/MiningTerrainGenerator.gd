@@ -306,8 +306,8 @@ func _generate_lava_lakes() -> void:
 		var center_col := randi_range(8, _cols - 9)
 		# Keep lakes away from the very top and bottom of the mine
 		var center_row := randi_range(_surface_rows + 18, _rows - 14)
-		var half_w     := randi_range(4, 10)
-		var half_h     := randi_range(3, 7)
+		var half_w     := randi_range(2, 6)
+		var half_h     := randi_range(2, 6)
 
 		# dr = 0 is the flat surface (top) of the lake; dr > 0 descends into the bowl.
 		# This produces the "circle on the bottom" semi-circle shape.

@@ -478,7 +478,7 @@ texture_filter = 1
 scale = Vector2(4, 4)
 sprite_frames = SubResource("SpriteFrames_8ebmi")
 animation = &"sleep"
-frame_progress = 0.18468519
+frame_progress = 0.59797114
 offset = Vector2(0, -8)
 
 [node name="SleepLabel" type="RichTextLabel" parent="AnimatedSprite2D"]
