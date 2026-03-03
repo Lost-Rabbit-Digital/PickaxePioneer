@@ -825,6 +825,20 @@ func _draw() -> void:
 			draw_rect(Rect2(float(bg_left), maxf(sw_top, float(dirt_top)),
 				float(bg_width), minf(sw_bot, float(dirt_bottom)) - maxf(sw_top, float(dirt_top))), gc)
 
+	# First mineable row — paint its background with the SURFACE_GRASS tile so that
+	# excavated cells show a matching backdrop, giving the row a sense of depth.
+	if min_row <= SURFACE_ROWS and max_row >= SURFACE_ROWS:
+		var row_y: float = float(SURFACE_ROWS * CELL_SIZE)
+		var grass_tex: Texture2D = tile_textures.get(TileType.SURFACE_GRASS)
+		if grass_tex:
+			for tc in range(min_col, max_col + 1):
+				draw_texture_rect(grass_tex,
+					Rect2(float(tc * CELL_SIZE), row_y, float(CELL_SIZE), float(CELL_SIZE)), false)
+		else:
+			draw_rect(Rect2(float(min_col * CELL_SIZE), row_y,
+				float((max_col - min_col + 1) * CELL_SIZE), float(CELL_SIZE)),
+				TILE_COLORS.get(TileType.SURFACE_GRASS, Color(0.10, 0.20, 0.35)))
+
 	# Tile sprites
 	for col in range(min_col, max_col + 1):
 		for row in range(min_row, max_row + 1):
