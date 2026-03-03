@@ -140,8 +140,8 @@ func _draw() -> void:
 	# -------------------------------------------------------------------------
 	if GameManager.selected_hotbar_slot == 1:
 		if level._ladder_ghost_pos.x >= 0 and level._ladder_ghost_pos.y >= 0:
-			var lx := level._ladder_ghost_pos.x * CELL_SIZE
-			var ly := level._ladder_ghost_pos.y * CELL_SIZE
+			var lx: int = level._ladder_ghost_pos.x * CELL_SIZE
+			var ly: int = level._ladder_ghost_pos.y * CELL_SIZE
 			const GHOST_ALPHA := 0.45
 			var pole_c: Color
 			var rung_c: Color
@@ -176,10 +176,10 @@ func _draw() -> void:
 	# Sonar ping overlay — expanding wave reveals ore tiles through rock
 	# -------------------------------------------------------------------------
 	if level.sonar_system.ping_active and level.sonar_system.ping_center.x >= 0:
-		var ping_alpha := 1.0 - level.sonar_system.ping_elapsed / SonarSystem.PING_DURATION
+		var ping_alpha: float = 1.0 - level.sonar_system.ping_elapsed / SonarSystem.PING_DURATION
 		var max_radius := GameManager.get_sonar_ping_radius()
-		var cx := level.sonar_system.ping_center.x
-		var cy := level.sonar_system.ping_center.y
+		var cx: int = level.sonar_system.ping_center.x
+		var cy: int = level.sonar_system.ping_center.y
 		var scan_r := int(max_radius) + 2
 		for sc in range(maxi(min_col, cx - scan_r), mini(max_col + 1, cx + scan_r + 1)):
 			for sr in range(maxi(min_row, cy - scan_r), mini(max_row + 1, cy + scan_r + 1)):
@@ -193,7 +193,7 @@ func _draw() -> void:
 				var dist := Vector2(sc - cx, sr - cy).length()
 				if dist > level.sonar_system.wave_radius:
 					continue
-				var glow_age := level.sonar_system.wave_radius - dist
+				var glow_age: float = level.sonar_system.wave_radius - dist
 				var glow_alpha := maxf(0.0, ping_alpha - glow_age * 0.12) * 0.80
 				if glow_alpha <= 0.02:
 					continue
@@ -208,7 +208,7 @@ func _draw() -> void:
 					elif stile == _T_ENERGY_NODE or stile == _T_ENERGY_NODE_FULL:
 						glow_color = Color(0.30, 1.00, 0.30, glow_alpha)
 				draw_rect(Rect2(sc * CELL_SIZE, sr * CELL_SIZE, CELL_SIZE, CELL_SIZE), glow_color)
-		var wave_px := level.sonar_system.wave_radius * CELL_SIZE
+		var wave_px: float = level.sonar_system.wave_radius * CELL_SIZE
 		var center_px := Vector2(cx * CELL_SIZE + CELL_SIZE * 0.5, cy * CELL_SIZE + CELL_SIZE * 0.5)
 		if wave_px > 0:
 			draw_arc(center_px, wave_px, 0.0, TAU, 48, Color(0.40, 1.0, 0.60, ping_alpha * 0.55), 2.0)
