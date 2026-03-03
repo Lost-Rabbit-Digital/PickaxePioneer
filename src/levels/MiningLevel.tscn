@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=4 uid="uid://f2a0m5s8y6c5"]
+[gd_scene load_steps=8 format=3 uid="uid://f2a0m5s8y6c5"]
 
 [ext_resource type="PackedScene" uid="uid://c8x7k2q5y302" path="res://src/entities/player/PlayerProbe.tscn" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://hud1234568aa" path="res://src/ui/HUD.tscn" id="2_hud"]
@@ -25,20 +25,17 @@ navigation_enabled = false
 
 [node name="BackgroundTileMapLayer" type="TileMapLayer" parent="TileMapLayers"]
 modulate = Color(0.34407577, 0.34407577, 0.34407565, 1)
-tile_map_data = PackedByteArray("AAALAAAAAAAGAAAAAAAKAP//AAAGAAAAAAALAP//AAAGAAAAAAARAAAAAAACAAIAAAASAP//AAACAAIAAAASAAAAAAACAAIAAAATAAAAAAACAAIAAAADAAAAAAACAAIAAAACAAAAAAACAAIAAAAEAAAAAAACAAIAAAADAP//AAACAAIAAAA=")
 tile_set = ExtResource("5_10hqt")
 collision_enabled = false
 navigation_enabled = false
 
 [node name="ForegroundTileMapLayer" type="TileMapLayer" parent="TileMapLayers"]
 z_index = 1
-tile_map_data = PackedByteArray("AAAKAP//AAAIAAIAAAALAP//AAAIAAIAAAA=")
 tile_set = ExtResource("5_10hqt")
 collision_enabled = false
 navigation_enabled = false
 
 [node name="FoliageTileMapLayer" type="TileMapLayer" parent="TileMapLayers"]
-tile_map_data = PackedByteArray("AAAQAAAAAAABAAMAAAAHAAAAAAABAAMAAAAXAAAAAAABAAMAAAADAAAAAAADAAIAAAASAAAAAAADAAIAAAA=")
 tile_set = ExtResource("6_vcf27")
 collision_enabled = false
 navigation_enabled = false
@@ -49,7 +46,6 @@ collision_enabled = false
 navigation_enabled = false
 
 [node name="BuildingsTileMapLayer" type="TileMapLayer" parent="TileMapLayers"]
-tile_map_data = PackedByteArray("AAAJAAAAAAAIAAAAAAAJAP//AAAIAAAAAAAJAP7/AAAIAAAAAAAKAP7/AAAIAAAAAAALAP7/AAAIAAAAAAAMAP7/AAAIAAAAAAANAP7/AAAIAAAAAAANAP//AAAIAAAAAAANAAAAAAAIAAAAAAAKAAAAAAAIAAAAAAAMAP//AAAIAAAAAAAMAAAAAAAIAAAAAAALAAAAAAAIAAAAAAA=")
 tile_set = ExtResource("5_10hqt")
 collision_enabled = false
 navigation_enabled = false
