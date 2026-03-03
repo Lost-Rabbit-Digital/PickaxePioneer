@@ -76,15 +76,10 @@ position = Vector2(200, 360)
 
 [node name="VersionLabel" type="Label" parent="."]
 layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
 offset_left = 8.0
-offset_top = -30.0
+offset_top = 8.0
 offset_right = 108.0
-offset_bottom = -8.0
-grow_horizontal = 2
-grow_vertical = 0
+offset_bottom = 34.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 14
 theme_override_styles/normal = SubResource("StyleBoxFlat_version")
