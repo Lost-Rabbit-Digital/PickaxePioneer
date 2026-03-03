@@ -121,31 +121,32 @@ const TILE_COLORS: Dictionary = {
 	TileType.CAT_TAVERN:       Color(0.40, 0.50, 0.60),
 }
 
-const TILE_TEXTURE_PATHS: Dictionary = {
-	TileType.DIRT:            "res://assets/blocks/dirt.png",
-	TileType.DIRT_DARK:       "res://assets/blocks/mud.png",
-	TileType.STONE:           "res://assets/blocks/stone_generic.png",
-	TileType.STONE_DARK:      "res://assets/blocks/gravel.png",
-	TileType.ORE_COPPER:      "res://assets/blocks/stone_ore_copper.png",
-	TileType.ORE_COPPER_DEEP: "res://assets/blocks/stone_ore_copper.png",
-	TileType.ORE_IRON:        "res://assets/blocks/stone_ore_iron.png",
-	TileType.ORE_IRON_DEEP:   "res://assets/blocks/stone_ore_iron.png",
-	TileType.ORE_GOLD:        "res://assets/blocks/stone_ore_gold.png",
-	TileType.ORE_GOLD_DEEP:   "res://assets/blocks/stone_ore_gold.png",
-	TileType.ORE_GEM:         "res://assets/blocks/stone_generic_ore_crystalline.png",
-	TileType.ORE_GEM_DEEP:    "res://assets/blocks/stone_generic_ore_crystalline.png",
-	TileType.EXPLOSIVE:       "res://assets/blocks/eucalyptus_log_top.png",
-	TileType.EXPLOSIVE_ARMED: "res://assets/blocks/eucalyptus_log_top.png",
-	TileType.LAVA:            "res://assets/blocks/sand_ugly_3.png",
-	TileType.LAVA_FLOW:       "res://assets/blocks/sand_ugly_3.png",
-	TileType.ENERGY_NODE:       "res://assets/blocks/limestone.png",
-	TileType.ENERGY_NODE_FULL:  "res://assets/blocks/marble.png",
-	TileType.REENERGY_STATION:  "res://assets/blocks/cobblestone_bricks.png",
-	TileType.SURFACE:         "res://assets/blocks/grass_top.png",
-	TileType.SURFACE_GRASS:   "res://assets/blocks/grass_side.png",
-	TileType.UPGRADE_STATION:  "res://assets/blocks/cobblestone_bricks.png",
-	TileType.SMELTERY_STATION: "res://assets/blocks/cobblestone_bricks.png",
-	TileType.CAT_TAVERN:       "res://assets/blocks/cobblestone_bricks.png",
+# Atlas coordinates in blocks_tileset.tres (blocks_atlas.png, 64 px tiles, alphabetical layout).
+# TileType.SURFACE, EXIT_STATION, BOSS_SEGMENT, BOSS_CORE, LADDER are drawn by _draw().
+const TILE_ATLAS_COORDS: Dictionary = {
+	TileType.DIRT:             Vector2i(1, 2),   # dirt.png
+	TileType.DIRT_DARK:        Vector2i(9, 4),   # mud.png
+	TileType.STONE:            Vector2i(7, 7),   # stone_generic.png
+	TileType.STONE_DARK:       Vector2i(4, 3),   # gravel.png
+	TileType.ORE_COPPER:       Vector2i(0, 8),   # stone_ore_copper.png
+	TileType.ORE_COPPER_DEEP:  Vector2i(0, 8),
+	TileType.ORE_IRON:         Vector2i(2, 8),   # stone_ore_iron.png
+	TileType.ORE_IRON_DEEP:    Vector2i(2, 8),
+	TileType.ORE_GOLD:         Vector2i(1, 8),   # stone_ore_gold.png
+	TileType.ORE_GOLD_DEEP:    Vector2i(1, 8),
+	TileType.ORE_GEM:          Vector2i(8, 7),   # stone_generic_ore_crystalline.png
+	TileType.ORE_GEM_DEEP:     Vector2i(8, 7),
+	TileType.EXPLOSIVE:        Vector2i(4, 2),   # eucalyptus_log_top.png
+	TileType.EXPLOSIVE_ARMED:  Vector2i(4, 2),
+	TileType.LAVA:             Vector2i(5, 6),   # sand_ugly_3.png
+	TileType.LAVA_FLOW:        Vector2i(5, 6),
+	TileType.ENERGY_NODE:      Vector2i(9, 3),   # limestone.png
+	TileType.ENERGY_NODE_FULL: Vector2i(5, 4),   # marble.png
+	TileType.REENERGY_STATION: Vector2i(8, 0),   # cobblestone_bricks.png
+	TileType.SURFACE_GRASS:    Vector2i(1, 3),   # grass_side.png
+	TileType.UPGRADE_STATION:  Vector2i(8, 0),
+	TileType.SMELTERY_STATION: Vector2i(8, 0),
+	TileType.CAT_TAVERN:       Vector2i(8, 0),
 }
 
 const TILE_HP: Dictionary = {
@@ -323,7 +324,9 @@ const BOSS_DRAIN_MULT: float = 1.5   # energy drain multiplier while boss is ali
 var grid: Array = []
 var has_left_spawn: bool = false
 
-var tile_textures: Dictionary = {}
+# TileMapLayer nodes (added as children of TilemapLayers in the scene)
+var _mineable_layer: TileMapLayer = null
+var _nonmineable_layer: TileMapLayer = null
 
 # Camera
 var camera: Camera2D
@@ -485,7 +488,9 @@ func _ready() -> void:
 
 	texture_filter = TEXTURE_FILTER_NEAREST
 
-	_load_tile_textures()
+	_mineable_layer    = $TilemapLayers/MineAbleTileMapLayer
+	_nonmineable_layer = $TilemapLayers/NonMineAbleTileMapLayer
+
 	_terrain_generator.generate(
 		grid, GRID_COLS, GRID_ROWS, SURFACE_ROWS, EXIT_COLS,
 		DEPTH_ZONE_ROWS,
@@ -812,10 +817,13 @@ func _set_visual_cell(col: int, row: int) -> void:
 	var tile: int = grid[col][row]
 	if tile in _SKIP_VISUAL_TILES:
 		return
+	var atlas_coord: Variant = TILE_ATLAS_COORDS.get(tile)
+	if atlas_coord == null:
+		return
 	if tile in _NONMINEABLE_VISUAL_TILES:
-		_nonmineable_layer.set_cell(gpos, tile, Vector2i(0, 0))
+		_nonmineable_layer.set_cell(gpos, 0, atlas_coord)
 	else:
-		_mineable_layer.set_cell(gpos, tile, Vector2i(0, 0))
+		_mineable_layer.set_cell(gpos, 0, atlas_coord)
 
 func _load_tile_textures() -> void:
 	for tile_type in TILE_TEXTURE_PATHS:
@@ -2116,6 +2124,7 @@ func _try_place_ladder_at(gp: Vector2i) -> void:
 		EventBus.ore_mined_popup.emit(0, "Can only place ladders in open space.")
 		return
 	grid[gp.x][gp.y] = TileType.LADDER
+	_set_visual_cell(gp.x, gp.y)
 	GameManager.ladder_count -= 1
 	GameManager.save_game()
 	EventBus.ladder_count_changed.emit(GameManager.ladder_count)
@@ -2142,6 +2151,7 @@ func _try_remove_ladder_at(gp: Vector2i) -> void:
 		EventBus.ore_mined_popup.emit(0, "Too far — move closer to retrieve that ladder.")
 		return
 	grid[gp.x][gp.y] = TileType.EMPTY
+	_set_visual_cell(gp.x, gp.y)
 	GameManager.ladder_count += 1
 	GameManager.save_game()
 	EventBus.ladder_count_changed.emit(GameManager.ladder_count)
