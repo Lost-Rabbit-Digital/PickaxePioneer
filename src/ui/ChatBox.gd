@@ -81,9 +81,14 @@ func _build_ui() -> void:
 	_input_field.text_submitted.connect(_on_message_submitted)
 	add_child(_input_field)
 
-	# "T to chat" hint — shown when panel is visible but input is closed
+	# Key hint — shown when panel is visible but input is closed. Reads the first
+	# key event bound to toggle_chat so the label stays accurate after rebinds.
 	_hint_label = Label.new()
-	_hint_label.text = "T — chat"
+	var chat_events := InputMap.action_get_events("toggle_chat")
+	var chat_key := "T"
+	if chat_events.size() > 0 and chat_events[0] is InputEventKey:
+		chat_key = OS.get_keycode_string((chat_events[0] as InputEventKey).keycode)
+	_hint_label.text = "%s — chat" % chat_key
 	_hint_label.position = Vector2(8, input_y + 6)
 	_hint_label.add_theme_font_size_override("font_size", 11)
 	_hint_label.modulate = Color(0.7, 0.7, 0.7, 0.70)
@@ -95,7 +100,7 @@ func _build_ui() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
-	if event.keycode == KEY_T and not _chat_open:
+	if event.is_action("toggle_chat") and not _chat_open:
 		_set_chat_open(true)
 		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_ESCAPE and _chat_open:

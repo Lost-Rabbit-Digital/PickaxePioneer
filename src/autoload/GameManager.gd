@@ -164,7 +164,10 @@ func start_game() -> void:
 			warp_drive_built, cargo_bay_built, long_scanner_built, gem_refinery_built, trade_amplifier_built)
 	load_overworld()
 
-## Called on guest by host to apply kit/upgrade state and start the game.
+## Called on guest by host to apply kit/upgrade state before the game starts.
+## Scene loading is handled separately by rpc_load_overworld_as_guest, which is
+## sent immediately after this RPC via load_overworld().  Keeping state sync and
+## scene loading in separate RPCs prevents the guest from loading Overworld twice.
 @rpc("authority", "call_remote", "reliable")
 func rpc_start_game_as_guest(carapace_lvl: int, legs_lvl: int, mandibles_lvl: int,
 		mineral_sense_lvl: int, carapace_gem: bool, legs_gem: bool, mandibles_gem: bool,
@@ -184,7 +187,7 @@ func rpc_start_game_as_guest(carapace_lvl: int, legs_lvl: int, mandibles_lvl: in
 	trade_amplifier_built = amplifier
 	EventBus.multiplayer_guest_kit_updated.emit()
 	change_state(GameState.PLAYING)
-	await _transition_to_scene("res://src/levels/Overworld.tscn")
+	# Scene transition handled by the following rpc_load_overworld_as_guest call
 
 ## Drop-in: called when a guest connects while the host is already in-game.
 ## Sends the guest the host's kit and routes them to the host's current location.
