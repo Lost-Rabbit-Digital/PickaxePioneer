@@ -73,6 +73,7 @@ var carapace_level: int = 0
 var legs_level: int = 0
 var mandibles_level: int = 0
 var mineral_sense_level: int = 0
+var claws_level: int = 0
 
 # Gem socketing system — gems collected as items, socketed for passive bonuses
 var gem_count: int = 0                       # unspent gems in the colony's stockpile
@@ -400,6 +401,11 @@ func upgrade_mineral_sense() -> void:
 	save_game()
 	print("Space Whiskers tuned to level ", mineral_sense_level)
 
+func upgrade_claws() -> void:
+	claws_level += 1
+	save_game()
+	print("Claws sharpened to level ", claws_level)
+
 func get_sonar_ping_radius() -> float:
 	return 4.0 + mineral_sense_level * 3.0 + (3.0 if sense_gem_socketed else 0.0)
 
@@ -429,7 +435,7 @@ func get_max_speed() -> float:
 	return 300.0 + (legs_level * 30.0) + (15.0 if legs_gem_socketed else 0.0)
 
 func get_mandibles_power() -> int:
-	return 5
+	return 5 + claws_level * 3
 
 func consume_energy(amount: int) -> bool:
 	current_energy -= amount
@@ -462,6 +468,7 @@ func save_game() -> void:
 		"legs_level": legs_level,
 		"mandibles_level": mandibles_level,
 		"mineral_sense_level": mineral_sense_level,
+		"claws_level": claws_level,
 		"settlement_energy_bonus": settlement_energy_bonus,
 		"settlement_forager_bonus": settlement_forager_bonus,
 		"settlement_shroom_charges": settlement_shroom_charges,
@@ -515,6 +522,7 @@ func load_game() -> void:
 			legs_level = data.get("legs_level", 0)
 			mandibles_level = data.get("mandibles_level", 0)
 			mineral_sense_level = data.get("mineral_sense_level", 0)
+			claws_level = data.get("claws_level", 0)
 			settlement_energy_bonus = data.get("settlement_energy_bonus", 0)
 			settlement_forager_bonus = data.get("settlement_forager_bonus", 0)
 			settlement_shroom_charges = data.get("settlement_shroom_charges", 0)
