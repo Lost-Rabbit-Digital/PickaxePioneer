@@ -573,6 +573,7 @@ func _setup_multiplayer_players() -> void:
 		GUEST_SPAWN_COL * CELL_SIZE + CELL_SIZE * 0.5,
 		2 * CELL_SIZE + CELL_SIZE * 0.5
 	)
+	second.name = &"GuestPlayerProbe"
 	second.mining_level = self
 	add_child(second)
 	guest_player_node = second
@@ -2200,7 +2201,7 @@ func rpc_request_mine(grid_pos: Vector2i) -> void:
 			floori(guest_player_node.global_position.y / CELL_SIZE)
 		)
 		var dist := Vector2(grid_pos - player_tile).length()
-		if dist > player_node.mine_range:
+		if dist > guest_player_node.mine_range:
 			return
 	try_mine_at(grid_pos)
 
