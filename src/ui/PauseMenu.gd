@@ -99,13 +99,15 @@ func _unhandled_input(event: InputEvent) -> void:
 func show_menu() -> void:
 	_settings_panel.sync_settings_ui()
 	show()
-	get_tree().paused = true
-	GameManager.pause_game()
+	if not NetworkManager.is_multiplayer_session:
+		get_tree().paused = true
+		GameManager.pause_game()
 
 func hide_menu() -> void:
 	_settings_panel.close_settings()
 	hide()
-	get_tree().paused = false
+	if not NetworkManager.is_multiplayer_session:
+		get_tree().paused = false
 	GameManager.change_state(GameManager.GameState.PLAYING)
 
 # ---------------------------------------------------------------------------
@@ -117,7 +119,8 @@ func _on_resume_pressed() -> void:
 
 func _on_exit_pressed() -> void:
 	_settings_panel.close_settings()
-	get_tree().paused = false
+	if not NetworkManager.is_multiplayer_session:
+		get_tree().paused = false
 	GameManager.change_state(GameManager.GameState.MENU)
 	get_tree().change_scene_to_file("res://src/ui/MainMenu.tscn")
 
