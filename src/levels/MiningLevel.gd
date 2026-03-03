@@ -324,10 +324,6 @@ const BOSS_DRAIN_MULT: float = 1.5   # energy drain multiplier while boss is ali
 var grid: Array = []
 var has_left_spawn: bool = false
 
-# TileMapLayer nodes (added as children of TilemapLayers in the scene)
-var _mineable_layer: TileMapLayer = null
-var _nonmineable_layer: TileMapLayer = null
-
 # Camera
 var camera: Camera2D
 
