@@ -38,23 +38,23 @@ var mine_names = [
 
 # Difficulty, primary ore, and hazard info keyed by mine name.
 # Ore names must match the game's actual tile types: Copper, Iron, Gold, Gem.
-# Hazard names: "Explosives" (space mines), "Lava" (plasma tiles).
+# Hazard names: "Explosives" (space mines), "Lava" (plasma tiles), "Bosses" (depth milestones).
 var mine_metadata: Dictionary = {
-	"Iron Asteroid":   {"difficulty": 1, "ores": ["Iron", "Copper"],  "hazards": ["Explosives"]},
-	"Golden Nebula":   {"difficulty": 3, "ores": ["Gold", "Iron"],    "hazards": ["Explosives", "Lava"]},
-	"Copper Moon":     {"difficulty": 1, "ores": ["Copper"],          "hazards": []},
-	"Silver Comet":    {"difficulty": 2, "ores": ["Iron", "Copper"],  "hazards": ["Explosives"]},
-	"Carbon Asteroid": {"difficulty": 1, "ores": ["Copper", "Iron"],  "hazards": ["Explosives"]},
-	"Diamond Cluster": {"difficulty": 3, "ores": ["Gem", "Gold"],     "hazards": ["Explosives", "Lava"]},
-	"Platinum Belt":   {"difficulty": 3, "ores": ["Gold", "Gem"],     "hazards": ["Explosives", "Lava"]},
-	"Emerald Nebula":  {"difficulty": 2, "ores": ["Gem", "Iron"],     "hazards": ["Lava"]},
-	"Ruby Sector":     {"difficulty": 2, "ores": ["Gem", "Copper"],   "hazards": ["Lava"]},
-	"Sapphire Void":   {"difficulty": 2, "ores": ["Gem", "Iron"],     "hazards": ["Explosives"]},
-	"Tin Moon":        {"difficulty": 1, "ores": ["Copper"],          "hazards": []},
-	"Lead Asteroid":   {"difficulty": 1, "ores": ["Iron", "Copper"],  "hazards": []},
-	"Uranium Nebula":  {"difficulty": 3, "ores": ["Gem", "Gold"],     "hazards": ["Explosives", "Lava"]},
-	"Crystal Cavern":  {"difficulty": 2, "ores": ["Gem", "Iron"],     "hazards": ["Explosives"]},
-	"Obsidian Rift":   {"difficulty": 3, "ores": ["Iron", "Gem"],     "hazards": ["Explosives", "Lava"]},
+	"Iron Asteroid":   {"difficulty": 1, "ores": ["Iron", "Copper"],  "hazards": ["Explosives", "Bosses"]},
+	"Golden Nebula":   {"difficulty": 3, "ores": ["Gold", "Iron"],    "hazards": ["Explosives", "Lava", "Bosses"]},
+	"Copper Moon":     {"difficulty": 1, "ores": ["Copper"],          "hazards": ["Bosses"]},
+	"Silver Comet":    {"difficulty": 2, "ores": ["Iron", "Copper"],  "hazards": ["Explosives", "Bosses"]},
+	"Carbon Asteroid": {"difficulty": 1, "ores": ["Copper", "Iron"],  "hazards": ["Explosives", "Bosses"]},
+	"Diamond Cluster": {"difficulty": 3, "ores": ["Gem", "Gold"],     "hazards": ["Explosives", "Lava", "Bosses"]},
+	"Platinum Belt":   {"difficulty": 3, "ores": ["Gold", "Gem"],     "hazards": ["Explosives", "Lava", "Bosses"]},
+	"Emerald Nebula":  {"difficulty": 2, "ores": ["Gem", "Iron"],     "hazards": ["Lava", "Bosses"]},
+	"Ruby Sector":     {"difficulty": 2, "ores": ["Gem", "Copper"],   "hazards": ["Lava", "Bosses"]},
+	"Sapphire Void":   {"difficulty": 2, "ores": ["Gem", "Iron"],     "hazards": ["Explosives", "Bosses"]},
+	"Tin Moon":        {"difficulty": 1, "ores": ["Copper"],          "hazards": ["Bosses"]},
+	"Lead Asteroid":   {"difficulty": 1, "ores": ["Iron", "Copper"],  "hazards": ["Bosses"]},
+	"Uranium Nebula":  {"difficulty": 3, "ores": ["Gem", "Gold"],     "hazards": ["Explosives", "Lava", "Bosses"]},
+	"Crystal Cavern":  {"difficulty": 2, "ores": ["Gem", "Iron"],     "hazards": ["Explosives", "Bosses"]},
+	"Obsidian Rift":   {"difficulty": 3, "ores": ["Iron", "Gem"],     "hazards": ["Explosives", "Lava", "Bosses"]},
 }
 
 func _ready() -> void:
