@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://c8x7k2q5y302" path="res://src/entities/player/PlayerProbe.tscn" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://hud1234568aa" path="res://src/ui/HUD.tscn" id="2_hud"]
-[ext_resource type="Script" uid="uid://b0t8di2uqwurs" path="res://src/levels/MiningLevel.gd" id="4_script"]
+[ext_resource type="Script" uid="uid://wsqtp4005vts" path="res://src/levels/MiningLevel.gd" id="4_script"]
 [ext_resource type="PackedScene" uid="uid://dom6mgmv6ffss" path="res://src/ui/PauseMenu.tscn" id="5_pause"]
 
 [node name="MiningLevel" type="Node2D"]
