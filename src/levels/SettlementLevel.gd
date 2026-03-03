@@ -130,8 +130,7 @@ func _ready() -> void:
 	_hud.set_hotbar_visible(false)
 
 	if NetworkManager.is_multiplayer_session:
-		var chatbox := ChatBox.new()
-		add_child(chatbox)
+		add_child(preload("res://src/ui/ChatBox.tscn").instantiate())
 
 	queue_redraw()
 

@@ -129,8 +129,7 @@ func _ready() -> void:
 		rpc_apply_planet_config.rpc_id(NetworkManager.guest_peer_id, SaveManager.get_planet_config())
 
 	if NetworkManager.is_multiplayer_session:
-		var chatbox := ChatBox.new()
-		add_child(chatbox)
+		add_child(preload("res://src/ui/ChatBox.tscn").instantiate())
 
 	queue_redraw()
 
