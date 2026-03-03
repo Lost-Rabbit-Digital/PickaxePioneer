@@ -199,12 +199,13 @@ func test_rpc_drop_in_applies_kit_and_energy() -> void:
 		"res://src/levels/MiningLevel.tscn", 75,
 		0.4, 0.6, 0.9,
 		["Iron"], ["Explosives"],
-		"Chicken"
+		"Chicken", 99999
 	)
 	assert_eq(_gm.legs_level, 2, "Paws level applied in drop-in")
 	assert_eq(_gm.current_energy, 75, "Starting energy applied in drop-in")
 	assert_eq(_gm.planet_animal_type, "Chicken", "Animal type synced in drop-in")
 	assert_eq(_gm.allowed_ore_types, ["Iron"], "Ore type filter applied in drop-in")
+	assert_eq(_gm.terrain_seed, 99999, "Terrain seed applied in drop-in")
 
 func test_rpc_mine_load_applies_sky_color() -> void:
 	_setup_gm()
@@ -212,11 +213,21 @@ func test_rpc_mine_load_applies_sky_color() -> void:
 	_gm.rpc_load_mine_as_guest(
 		"res://src/levels/MiningLevel.tscn", 100,
 		0.2, 0.5, 0.8,
-		[], [], 0, 0, "Sheep"
+		[], [], 0, 0, "Sheep", 12345
 	)
 	assert_almost_eq(_gm.sky_color.r, 0.2, 0.001, "Sky R component applied")
 	assert_almost_eq(_gm.sky_color.g, 0.5, 0.001, "Sky G component applied")
 	assert_almost_eq(_gm.sky_color.b, 0.8, 0.001, "Sky B component applied")
+
+func test_rpc_mine_load_applies_terrain_seed() -> void:
+	_setup_gm()
+	_gm.terrain_seed = 0
+	_gm.rpc_load_mine_as_guest(
+		"res://src/levels/MiningLevel.tscn", 100,
+		0.2, 0.5, 0.8,
+		[], [], 0, 0, "Sheep", 42
+	)
+	assert_eq(_gm.terrain_seed, 42, "Terrain seed should be stored from rpc_load_mine_as_guest")
 
 # ---------------------------------------------------------------------------
 # MiningLevel rate-limit tests
@@ -261,7 +272,7 @@ func test_mine_rate_limit_accepts_first_request() -> void:
 #  [ ] Normal session start (lobby) → guest loads Overworld ONCE (check Remote
 #      Scene Tree in the editor — no duplicate Overworld nodes).
 #  [ ] Drop-in join while host is on Overworld → guest sees correct star chart.
-#  [ ] Drop-in join while host is mid-mine → guest enters same mine correctly.
+#  [ ] Drop-in join while host is mid-mine → guest enters same mine correctly (terrain identical).
 #  [ ] Guest sprint while host energy is low → energy drains on both HUDs.
 #  [ ] Guest spam-mines single tile → tile health advances at normal speed only.
 #  [ ] Chat: guest sends message → "Guest" label shown on host; host sends → "Host" shown.
