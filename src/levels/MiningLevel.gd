@@ -484,9 +484,6 @@ func _ready() -> void:
 
 	texture_filter = TEXTURE_FILTER_NEAREST
 
-	_mineable_layer    = $TilemapLayers/MineAbleTileMapLayer
-	_nonmineable_layer = $TilemapLayers/NonMineAbleTileMapLayer
-
 	_terrain_generator.generate(
 		grid, GRID_COLS, GRID_ROWS, SURFACE_ROWS, EXIT_COLS,
 		DEPTH_ZONE_ROWS,
