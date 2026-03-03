@@ -11,5 +11,9 @@ script = ExtResource("4_script")
 [node name="PlayerProbe" parent="." instance=ExtResource("1_player")]
 
 [node name="HUD" parent="." instance=ExtResource("2_hud")]
+visible = false
 
 [node name="PauseMenu" parent="." instance=ExtResource("5_pause")]
+visible = false
+
+[node name="TileMapLayer" type="TileMapLayer" parent="."]
