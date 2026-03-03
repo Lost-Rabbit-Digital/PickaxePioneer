@@ -288,6 +288,7 @@ func load_mining_level(scene_path: String = "") -> void:
 			allowed_ore_types, allowed_hazard_types,
 			settlement_shroom_charges, settlement_mandible_bonus,
 			planet_animal_type)
+	change_state(GameState.PLAYING)
 	await _transition_to_scene(path)
 
 ## Guest RPC: mirror the host's mine-entry state then load the same level.
@@ -354,15 +355,18 @@ func rpc_drop_in_to_mine_as_guest(carapace_lvl: int, legs_lvl: int, mandibles_lv
 
 func load_settlement_level(scene_path: String) -> void:
 	# Visit a settlement without resetting run state — player keeps banked minerals
+	change_state(GameState.PLAYING)
 	await _transition_to_scene(scene_path)
 
 func load_overworld() -> void:
+	change_state(GameState.PLAYING)
 	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
 		rpc_load_overworld_as_guest.rpc_id(NetworkManager.guest_peer_id)
 	await _transition_to_scene("res://src/levels/Overworld.tscn")
 
 @rpc("authority", "call_remote", "reliable")
 func rpc_load_overworld_as_guest() -> void:
+	change_state(GameState.PLAYING)
 	await _transition_to_scene("res://src/levels/Overworld.tscn")
 
 func _transition_to_scene(scene_path: String) -> void:
