@@ -7,7 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://dom6mgmv6ffss" path="res://src/ui/PauseMenu.tscn" id="5_pause"]
 [ext_resource type="TileSet" uid="uid://i0vyrxve27ot" path="res://assets/blocks/plants/foliage_tileset.tres" id="6_vcf27"]
 [ext_resource type="TileSet" uid="uid://bx3q7m2t5p8w6" path="res://assets/blocks/terrain_tileset.tres" id="7_terrain"]
-[ext_resource type="Script" uid="uid://cx4p8n3q6r1y5" path="res://src/levels/MiningLevelOverlay.gd" id="8_overlay"]
+[ext_resource type="Script" uid="uid://dnru7wrcvq718" path="res://src/levels/MiningLevelOverlay.gd" id="8_overlay"]
 
 [node name="MiningLevel" type="Node2D"]
 script = ExtResource("4_script")
