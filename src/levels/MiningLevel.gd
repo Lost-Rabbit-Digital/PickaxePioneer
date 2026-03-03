@@ -350,8 +350,11 @@ var _game_over: bool = false
 # Per-tile damage/hit tracking for multi-hit mining
 var _tile_damage: Dictionary = {}
 var _tile_hits: Dictionary = {}
+var _tile_last_hit: Dictionary = {}  # Maps Vector2i -> seconds since last hit; resets damage on timeout
 var _flash_cells: Dictionary = {}
 var _breaking_overlays: Dictionary = {}  # Maps Vector2i -> AnimatedSprite2D instance
+
+const MINE_RESET_TIMEOUT: float = 3.0  # Seconds of inactivity before partial tile damage resets
 
 # Gravity-tile fall queue: Vector2i(col, row) -> float seconds_until_next_step
 var _gravity_pending: Dictionary = {}
@@ -542,7 +545,7 @@ func _ready() -> void:
 		func(c, r, solid): _set_tile_collision(c, r, solid),
 		func(text, color): _show_zone_banner(text, color),
 		func(intensity, duration): _shake_camera(intensity, duration),
-		func(pos): _tile_damage.erase(pos); _tile_hits.erase(pos); _remove_breaking_overlay(pos)
+		func(pos): _tile_damage.erase(pos); _tile_hits.erase(pos); _tile_last_hit.erase(pos); _remove_breaking_overlay(pos)
 	)
 	_boss_renderer.setup(boss_system, grid, CELL_SIZE)
 
@@ -1093,6 +1096,19 @@ func _process(delta: float) -> void:
 		for k in to_remove:
 			_flash_cells.erase(k)
 
+	# Reset partial tile damage after MINE_RESET_TIMEOUT seconds without a hit
+	if _tile_last_hit.size() > 0:
+		var to_reset: Array = []
+		for pos_key in _tile_last_hit:
+			_tile_last_hit[pos_key] += delta
+			if _tile_last_hit[pos_key] >= MINE_RESET_TIMEOUT:
+				to_reset.append(pos_key)
+		for pos_key in to_reset:
+			_tile_damage.erase(pos_key)
+			_tile_hits.erase(pos_key)
+			_tile_last_hit.erase(pos_key)
+			_remove_breaking_overlay(pos_key)
+
 	# Update level particles
 	_update_level_particles(delta)
   
@@ -1413,6 +1429,7 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 	if new_damage >= tile_hp:
 		_tile_damage.erase(pos_key)
 		_tile_hits.erase(pos_key)
+		_tile_last_hit.erase(pos_key)
 		_remove_breaking_overlay(pos_key)
 		_mine_cell(col, row)
 		# Sync tile break to guest
@@ -1464,6 +1481,7 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 	else:
 		_tile_damage[pos_key] = new_damage
 		_tile_hits[pos_key] = hits_so_far + 1
+		_tile_last_hit[pos_key] = 0.0
 		var damage_ratio := float(new_damage) / float(tile_hp)
 		_update_breaking_overlay(pos_key, damage_ratio)
 		# Small impact sparks on partial hits
@@ -1648,6 +1666,7 @@ func _process_gravity(delta: float) -> void:
 		# Clear any partial-damage state that belonged to the old position.
 		_tile_damage.erase(pos)
 		_tile_hits.erase(pos)
+		_tile_last_hit.erase(pos)
 		_remove_breaking_overlay(pos)
 
 		# Also clear damage on the destination (a tile falling onto an already-
@@ -1655,6 +1674,7 @@ func _process_gravity(delta: float) -> void:
 		var new_pos := Vector2i(col, below_row)
 		_tile_damage.erase(new_pos)
 		_tile_hits.erase(new_pos)
+		_tile_last_hit.erase(new_pos)
 		_remove_breaking_overlay(new_pos)
 
 		queue_redraw()
