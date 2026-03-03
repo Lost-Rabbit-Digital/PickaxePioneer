@@ -1558,6 +1558,10 @@ func _spawn_decorations(data: Dictionary) -> void:
 		add_child(sprite)
 
 	# Spider webs — registered in _web_sprites for hazard detection
+	var web_scale := Vector2(
+		CELL_SIZE / web_texture.get_width(),
+		CELL_SIZE / web_texture.get_height()
+	) if web_texture else Vector2.ONE
 	for pos: Vector2i in data.get("webs", []):
 		if not web_texture:
 			break
@@ -1565,6 +1569,7 @@ func _spawn_decorations(data: Dictionary) -> void:
 		sprite.texture = web_texture
 		sprite.texture_filter = TEXTURE_FILTER_NEAREST
 		sprite.modulate = Color(1.0, 1.0, 1.0, 0.85)
+		sprite.scale = web_scale
 		sprite.position = Vector2(
 			pos.x * CELL_SIZE + CELL_SIZE * 0.5,
 			pos.y * CELL_SIZE + CELL_SIZE * 0.5
