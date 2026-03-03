@@ -95,3 +95,18 @@ func _on_connection_failed() -> void:
 	print("NetworkManager: connection failed")
 	is_multiplayer_session = false
 	connection_failed.emit()
+
+## Sends a chat message to the remote player and displays it locally.
+## Call this from the ChatBox when the local player submits a message.
+func broadcast_chat_message(text: String) -> void:
+	var sender_name := "Host" if is_host else "Guest"
+	EventBus.chat_message_received.emit(sender_name, text)
+	if is_host and guest_peer_id > 0:
+		_deliver_chat_message.rpc_id(guest_peer_id, sender_name, text)
+	elif not is_host:
+		_deliver_chat_message.rpc_id(1, sender_name, text)
+
+## RPC target — called on the remote peer to display an incoming chat message.
+@rpc("any_peer", "call_remote", "reliable")
+func _deliver_chat_message(sender_name: String, text: String) -> void:
+	EventBus.chat_message_received.emit(sender_name, text)

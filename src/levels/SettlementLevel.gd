@@ -128,6 +128,11 @@ func _ready() -> void:
 	_spawn_npcs()
 	_setup_supply_dock_shop()
 	_hud.set_hotbar_visible(false)
+
+	if NetworkManager.is_multiplayer_session:
+		var chatbox := ChatBox.new()
+		add_child(chatbox)
+
 	queue_redraw()
 
 # ---------------------------------------------------------------------------

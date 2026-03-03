@@ -133,6 +133,10 @@ func _ready() -> void:
 	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
 		rpc_apply_planet_config.rpc_id(NetworkManager.guest_peer_id, SaveManager.get_planet_config())
 
+	if NetworkManager.is_multiplayer_session:
+		var chatbox := ChatBox.new()
+		add_child(chatbox)
+
 	queue_redraw()
 
 ## Guest RPC: mirror the host's star chart so the guest sees the same planet
