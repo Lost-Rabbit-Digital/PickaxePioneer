@@ -30,7 +30,9 @@ func draw_to(
 		min_col: int, max_col: int,
 		min_row: int, max_row: int) -> void:
 
-	if not _boss or not _boss.boss_active or _boss.boss_tile_positions.is_empty():
+	if not _boss or not _boss.boss_active:
+		return
+	if _boss.boss_tile_positions.is_empty() and _boss.rat_segments.is_empty():
 		return
 
 	var boss_pulse := sin(_boss.boss_pulse_time * 4.5) * 0.5 + 0.5
@@ -177,24 +179,35 @@ func _draw_boss_creatures(
 func _draw_rat(canvas: Node2D, min_col: int, max_col: int, min_row: int, max_row: int,
 		t: float, pulse: float,
 		core_fill: Color, core_border: Color, seg_fill: Color, seg_border: Color) -> void:
-	for bp in _boss.boss_tile_positions:
-		if not _in_viewport(bp, min_col, max_col, min_row, max_row):
-			continue
-		var btile: int = _grid[bp.x][bp.y]
-		if btile != BOSS_SEGMENT and btile != BOSS_CORE:
-			continue
-		var cx := float(bp.x * _cell_size + _cell_size / 2)
-		var cy := float(bp.y * _cell_size + _cell_size / 2) + sin(t * 3.5 + float(bp.x) * 0.6) * 6.0
+	# Draw from free-floating rat_segments (not grid tiles)
+	var vp_left  := float(min_col * _cell_size - _cell_size)
+	var vp_right := float((max_col + 2) * _cell_size)
+	var vp_top   := float(min_row * _cell_size - _cell_size)
+	var vp_bot   := float((max_row + 2) * _cell_size)
 
-		if btile == BOSS_CORE:
-			var hw := 26.0
+	for seg in _boss.rat_segments:
+		var sp: Vector2 = seg.pos
+		if sp.x < vp_left or sp.x > vp_right or sp.y < vp_top or sp.y > vp_bot:
+			continue
+
+		var cx := sp.x
+		var cy := sp.y + sin(t * 3.5 + cx * 0.01) * 6.0
+
+		# HP-based damage tint — segments get redder as they take damage
+		var hp_ratio := float(seg.hp) / float(seg.max_hp)
+		var damage_tint := 1.0 - hp_ratio  # 0 = full HP, 1 = almost dead
+
+		if seg.is_core:
+			var hw := 26.0 + pulse * 3.0
 			var hh := 22.0 + pulse * 4.0
 			var pts := PackedVector2Array()
 			for i in 12:
 				var a := float(i) / 12.0 * TAU
 				pts.append(Vector2(cx + cos(a) * hw, cy + sin(a) * hh))
-			canvas.draw_polygon(pts, PackedColorArray([core_fill]))
+			var cf := Color(core_fill.r + damage_tint * 0.3, core_fill.g, core_fill.b, core_fill.a)
+			canvas.draw_polygon(pts, PackedColorArray([cf]))
 			canvas.draw_polyline(pts + PackedVector2Array([pts[0]]), core_border, 2.5)
+			# Ears
 			var ec := Color(core_border.r, core_border.g, core_border.b, 0.90)
 			canvas.draw_polygon(PackedVector2Array([
 				Vector2(cx - 18, cy - 20), Vector2(cx - 10, cy - 34), Vector2(cx - 4, cy - 20)
@@ -202,21 +215,24 @@ func _draw_rat(canvas: Node2D, min_col: int, max_col: int, min_row: int, max_row
 			canvas.draw_polygon(PackedVector2Array([
 				Vector2(cx + 4, cy - 20), Vector2(cx + 10, cy - 34), Vector2(cx + 18, cy - 20)
 			]), PackedColorArray([ec]))
+			# Eyes
 			var eye_bright := Color(1.0, 0.85, 0.0, 0.7 + pulse * 0.3)
 			canvas.draw_circle(Vector2(cx - 9, cy - 5), 5.0 + pulse * 2.0, eye_bright)
 			canvas.draw_circle(Vector2(cx + 9, cy - 5), 5.0 + pulse * 2.0, eye_bright)
+			# Whiskers
 			var wc := Color(1.0, 0.9, 0.6, 0.55)
 			for side in [-1.0, 1.0]:
 				canvas.draw_line(Vector2(cx + side * 8, cy + 4), Vector2(cx + side * 28, cy + 1), wc, 1.5)
 				canvas.draw_line(Vector2(cx + side * 8, cy + 8), Vector2(cx + side * 28, cy + 8), wc, 1.5)
 		else:
 			var sw := 20.0 + pulse * 3.0
-			var sh := 16.0 + sin(t * 2.8 + float(bp.x)) * 4.0
+			var sh := 16.0 + sin(t * 2.8 + seg.angle) * 4.0
 			var spts := PackedVector2Array()
 			for i in 8:
 				var a := float(i) / 8.0 * TAU
 				spts.append(Vector2(cx + cos(a) * sw, cy + sin(a) * sh))
-			canvas.draw_polygon(spts, PackedColorArray([seg_fill]))
+			var sf := Color(seg_fill.r + damage_tint * 0.4, seg_fill.g * (1.0 - damage_tint * 0.3), seg_fill.b, seg_fill.a)
+			canvas.draw_polygon(spts, PackedColorArray([sf]))
 			canvas.draw_polyline(spts + PackedVector2Array([spts[0]]), seg_border, 1.5)
 
 # ---------------------------------------------------------------------------
