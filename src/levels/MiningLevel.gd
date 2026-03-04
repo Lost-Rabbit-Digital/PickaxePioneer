@@ -2157,6 +2157,7 @@ func rpc_tile_broken(grid_pos: Vector2i, burst_r: float, burst_g: float, burst_b
 	var row := grid_pos.y
 	if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
 		return
+	_remove_breaking_overlay(grid_pos)
 	_mine_cell(col, row)
 	var burst_color := Color(burst_r, burst_g, burst_b)
 	var world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
