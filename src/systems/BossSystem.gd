@@ -140,6 +140,7 @@ var _set_collision: Callable   # func(col: int, row: int, solid: bool)
 var _show_banner: Callable     # func(text: String, color: Color)
 var _shake_camera: Callable    # func(intensity: float, duration: float)
 var _erase_tile_state: Callable # func(pos: Vector2i)  — erases _tile_damage + _tile_hits
+var _update_visual: Callable   # func(col: int, row: int) — syncs TileMapLayer visual
 
 
 ## Inject dependencies.  Call once in MiningLevel._ready() before any other use.
@@ -151,7 +152,8 @@ func setup(
 		set_collision_fn: Callable,
 		show_banner_fn: Callable,
 		shake_camera_fn: Callable,
-		erase_tile_state_fn: Callable) -> void:
+		erase_tile_state_fn: Callable,
+		update_visual_fn: Callable = Callable()) -> void:
 	_grid = grid
 	_grid_cols = grid_cols
 	_grid_rows = grid_rows
@@ -160,6 +162,14 @@ func setup(
 	_show_banner = show_banner_fn
 	_shake_camera = shake_camera_fn
 	_erase_tile_state = erase_tile_state_fn
+	_update_visual = update_visual_fn
+
+
+## Write a tile value to the grid and notify the visual TileMapLayer.
+func _set_grid(col: int, row: int, tile: int) -> void:
+	_grid[col][row] = tile
+	if _update_visual.is_valid():
+		_update_visual.call(col, row)
 
 
 # ---------------------------------------------------------------------------
@@ -296,14 +306,14 @@ func _spawn_giant_rat_king(player_col: int) -> void:
 	for dc in range(-half, half + 1):
 		var col: int = clampi(player_col + dc, 2, _grid_cols - 3)
 		var tile_type := _TILE_BOSS_CORE if dc == 0 else _TILE_BOSS_SEGMENT
-		_grid[col][boss_row] = tile_type
+		_set_grid(col, boss_row, tile_type)
 		_set_collision.call(col, boss_row, true)
 		positions.append(Vector2i(col, boss_row))
 
 	for dc in range(-half + 2, half - 1):
 		var col: int = clampi(player_col + dc, 2, _grid_cols - 3)
 		if _grid[col][boss_row + 1] != _TILE_SURFACE and _grid[col][boss_row + 1] != _TILE_EXIT_STATION:
-			_grid[col][boss_row + 1] = _TILE_BOSS_SEGMENT
+			_set_grid(col, boss_row + 1, _TILE_BOSS_SEGMENT)
 			_set_collision.call(col, boss_row + 1, true)
 			positions.append(Vector2i(col, boss_row + 1))
 
@@ -332,7 +342,7 @@ func _spawn_cave_spider_matriarch(player_col: int) -> void:
 		var col: int = clampi(player_col + offset.x, 2, _grid_cols - 3)
 		var row: int = clampi(boss_row + offset.y, _surface_rows + 1, _grid_rows - 2)
 		var tile_type := _TILE_BOSS_CORE if offset == Vector2i(0, 0) else _TILE_BOSS_SEGMENT
-		_grid[col][row] = tile_type
+		_set_grid(col, row, tile_type)
 		_set_collision.call(col, row, true)
 		positions.append(Vector2i(col, row))
 
@@ -365,7 +375,7 @@ func _spawn_blind_mole(player_col: int) -> void:
 		var col: int = clampi(player_col + offset.x, 2, _grid_cols - 3)
 		var row: int = clampi(boss_row + offset.y, _surface_rows + 1, _grid_rows - 2)
 		var tile_type := _TILE_BOSS_CORE if offset == Vector2i(0, 0) else _TILE_BOSS_SEGMENT
-		_grid[col][row] = tile_type
+		_set_grid(col, row, tile_type)
 		_set_collision.call(col, row, true)
 		positions.append(Vector2i(col, row))
 
@@ -396,7 +406,7 @@ func _spawn_stone_golem(player_col: int) -> void:
 		var col: int = clampi(player_col + offset.x, 2, _grid_cols - 3)
 		var row: int = clampi(boss_row + offset.y, _surface_rows + 1, _grid_rows - 2)
 		var tile_type := _TILE_BOSS_CORE if offset == Vector2i(0, 0) else _TILE_BOSS_SEGMENT
-		_grid[col][row] = tile_type
+		_set_grid(col, row, tile_type)
 		_set_collision.call(col, row, true)
 		positions.append(Vector2i(col, row))
 
@@ -450,7 +460,7 @@ func _seed_golem_ores(center_col: int, center_row: int, boss_positions: Array[Ve
 		var placed := 0
 		while placed < 4 and idx < candidates.size():
 			var pos: Vector2i = candidates[idx]
-			_grid[pos.x][pos.y] = ore_tile
+			_set_grid(pos.x, pos.y, ore_tile)
 			idx += 1
 			placed += 1
 
@@ -470,7 +480,7 @@ func _spawn_ancient_one(player_col: int) -> void:
 	for offset in outer_offsets:
 		var col: int = clampi(player_col + offset.x, 2, _grid_cols - 3)
 		var row: int = clampi(boss_row + offset.y, _surface_rows + 1, _grid_rows - 2)
-		_grid[col][row] = _TILE_BOSS_SEGMENT
+		_set_grid(col, row, _TILE_BOSS_SEGMENT)
 		_set_collision.call(col, row, true)
 		positions.append(Vector2i(col, row))
 		outer_pos.append(Vector2i(col, row))
@@ -484,14 +494,14 @@ func _spawn_ancient_one(player_col: int) -> void:
 	for offset in inner_offsets:
 		var col: int = clampi(player_col + offset.x, 2, _grid_cols - 3)
 		var row: int = clampi(boss_row + offset.y, _surface_rows + 1, _grid_rows - 2)
-		_grid[col][row] = _TILE_BOSS_SEGMENT
+		_set_grid(col, row, _TILE_BOSS_SEGMENT)
 		_set_collision.call(col, row, true)
 		positions.append(Vector2i(col, row))
 
 	# Core — centre tile (phase 3)
 	var core_col: int = clampi(player_col, 2, _grid_cols - 3)
 	var core_row: int = clampi(boss_row, _surface_rows + 1, _grid_rows - 2)
-	_grid[core_col][core_row] = _TILE_BOSS_CORE
+	_set_grid(core_col, core_row, _TILE_BOSS_CORE)
 	_set_collision.call(core_col, core_row, true)
 	positions.append(Vector2i(core_col, core_row))
 
@@ -603,7 +613,7 @@ func _execute_mole_tremor() -> void:
 				continue
 			if randf() < MOLE_TREMOR_FILL_CHANCE:
 				var new_tile := _TILE_DIRT_DARK if tr > _surface_rows + 8 else _TILE_DIRT
-				_grid[tc][tr] = new_tile
+				_set_grid(tc, tr, new_tile)
 				_set_collision.call(tc, tr, true)
 				_erase_tile_state.call(Vector2i(tc, tr))
 				collapsed += 1
@@ -657,7 +667,7 @@ func _execute_rat_charge() -> void:
 			continue
 		if randf() < RAT_CHARGE_FILL_CHANCE:
 			var new_tile := _TILE_DIRT_DARK if row > _surface_rows + 8 else _TILE_DIRT
-			_grid[col][row] = new_tile
+			_set_grid(col, row, new_tile)
 			_set_collision.call(col, row, true)
 			_erase_tile_state.call(Vector2i(col, row))
 			filled += 1
@@ -711,7 +721,7 @@ func _execute_spider_web() -> void:
 				continue
 			if randf() < SPIDER_WEB_FILL_CHANCE:
 				var new_tile := _TILE_DIRT_DARK if tr > _surface_rows + 8 else _TILE_DIRT
-				_grid[tc][tr] = new_tile
+				_set_grid(tc, tr, new_tile)
 				_set_collision.call(tc, tr, true)
 				_erase_tile_state.call(Vector2i(tc, tr))
 				webbed += 1
@@ -772,7 +782,7 @@ func _execute_ancient_void_pulse() -> void:
 			if dist > float(r):
 				continue
 			if randf() < ANCIENT_VOID_FILL_CHANCE:
-				_grid[tc][tr] = _TILE_DIRT_DARK
+				_set_grid(tc, tr, _TILE_DIRT_DARK)
 				_set_collision.call(tc, tr, true)
 				_erase_tile_state.call(Vector2i(tc, tr))
 				sealed += 1

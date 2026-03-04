@@ -1,9 +1,12 @@
-[gd_scene load_steps=5 format=3 uid="uid://f2a0m5s8y6c5"]
+[gd_scene load_steps=8 format=3 uid="uid://c3tgnqlhrooet"]
 
 [ext_resource type="PackedScene" uid="uid://c8x7k2q5y302" path="res://src/entities/player/PlayerProbe.tscn" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://hud1234568aa" path="res://src/ui/HUD.tscn" id="2_hud"]
 [ext_resource type="Script" uid="uid://wsqtp4005vts" path="res://src/levels/MiningLevel.gd" id="4_script"]
+[ext_resource type="TileSet" uid="uid://cjvmyl06h70j7" path="res://assets/blocks/blocks_tileset.tres" id="5_10hqt"]
 [ext_resource type="PackedScene" uid="uid://dom6mgmv6ffss" path="res://src/ui/PauseMenu.tscn" id="5_pause"]
+[ext_resource type="TileSet" uid="uid://i0vyrxve27ot" path="res://assets/blocks/plants/foliage_tileset.tres" id="6_vcf27"]
+[ext_resource type="Script" uid="uid://cx4p8n3q6r1y5" path="res://src/levels/MiningLevelOverlay.gd" id="8_overlay"]
 
 [node name="MiningLevel" type="Node2D"]
 script = ExtResource("4_script")
@@ -13,3 +16,43 @@ script = ExtResource("4_script")
 [node name="HUD" parent="." instance=ExtResource("2_hud")]
 
 [node name="PauseMenu" parent="." instance=ExtResource("5_pause")]
+
+[node name="TileMapLayers" type="TileMapLayer" parent="."]
+collision_enabled = false
+navigation_enabled = false
+
+[node name="BackgroundTileMapLayer" type="TileMapLayer" parent="TileMapLayers"]
+modulate = Color(0.34407577, 0.34407577, 0.34407565, 1)
+tile_set = ExtResource("5_10hqt")
+collision_enabled = false
+navigation_enabled = false
+
+[node name="ForegroundTileMapLayer" type="TileMapLayer" parent="TileMapLayers"]
+z_index = 1
+tile_set = ExtResource("5_10hqt")
+collision_enabled = false
+navigation_enabled = false
+
+[node name="FoliageTileMapLayer" type="TileMapLayer" parent="TileMapLayers"]
+tile_set = ExtResource("6_vcf27")
+collision_enabled = false
+navigation_enabled = false
+
+[node name="MineAbleTileMapLayer" type="TileMapLayer" parent="TileMapLayers"]
+tile_set = ExtResource("5_10hqt")
+collision_enabled = false
+navigation_enabled = false
+
+[node name="BuildingsTileMapLayer" type="TileMapLayer" parent="TileMapLayers"]
+tile_set = ExtResource("5_10hqt")
+collision_enabled = false
+navigation_enabled = false
+
+[node name="NonMineAbleTileMapLayer" type="TileMapLayer" parent="TileMapLayers"]
+tile_set = ExtResource("5_10hqt")
+collision_enabled = false
+navigation_enabled = false
+
+[node name="TerrainOverlay" type="Node2D" parent="."]
+z_index = 1
+script = ExtResource("8_overlay")

@@ -101,7 +101,7 @@ radius = 32.0
 [node name="MapNode" type="Area2D"]
 script = ExtResource("1_node")
 
-[node name="Sprite2D" type="AnimatedSprite2D" parent="."]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_c6w87")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]

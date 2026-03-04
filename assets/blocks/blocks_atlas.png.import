@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bpdqbxe318ijj"
-path="res://.godot/imported/!TILEMAP.png-10907a67e54d5f7338714a03388b0376.ctex"
+uid="uid://yes75cfpro16"
+path="res://.godot/imported/blocks_atlas.png-010d2de80af87fca00671438e29bee20.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/blocks/!TILEMAP.png"
-dest_files=["res://.godot/imported/!TILEMAP.png-10907a67e54d5f7338714a03388b0376.ctex"]
+source_file="res://assets/blocks/blocks_atlas.png"
+dest_files=["res://.godot/imported/blocks_atlas.png-010d2de80af87fca00671438e29bee20.ctex"]
 
 [params]
 

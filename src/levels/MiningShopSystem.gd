@@ -82,6 +82,7 @@ var _upgrade_minerals_label: Label
 var _upgrade_btn_carapace: Button
 var _upgrade_btn_legs: Button
 var _upgrade_btn_mandibles: Button
+var _upgrade_btn_claws: Button
 
 var _smeltery_layer: CanvasLayer
 var _smeltery_minerals_label: Label
@@ -282,7 +283,7 @@ func _shop_buy_ladders() -> void:
 
 func _build_upgrade_station() -> void:
 	const PANEL_W: int = 500
-	const PANEL_H: int = 360
+	const PANEL_H: int = 400
 	const PX: int = (VW - PANEL_W) / 2
 	const PY: int = (VH - PANEL_H) / 2
 
@@ -325,15 +326,17 @@ func _build_upgrade_station() -> void:
 	const BTN_W: int = PANEL_W - 50
 	const BTN_H: int = 52
 
-	_upgrade_btn_carapace  = _make_btn(BTN_X, PY + 94, BTN_W, BTN_H, "", _upgrade_buy_carapace)
-	_upgrade_btn_legs      = _make_btn(BTN_X, PY + 156, BTN_W, BTN_H, "", _upgrade_buy_legs)
-	_upgrade_btn_mandibles = _make_btn(BTN_X, PY + 218, BTN_W, BTN_H, "", _upgrade_buy_mandibles)
+	_upgrade_btn_carapace  = _make_btn(BTN_X, PY + 80, BTN_W, BTN_H, "", _upgrade_buy_carapace)
+	_upgrade_btn_legs      = _make_btn(BTN_X, PY + 140, BTN_W, BTN_H, "", _upgrade_buy_legs)
+	_upgrade_btn_mandibles = _make_btn(BTN_X, PY + 200, BTN_W, BTN_H, "", _upgrade_buy_mandibles)
+	_upgrade_btn_claws     = _make_btn(BTN_X, PY + 260, BTN_W, BTN_H, "", _upgrade_buy_claws)
 	_upgrade_layer.add_child(_upgrade_btn_carapace)
 	_upgrade_layer.add_child(_upgrade_btn_legs)
 	_upgrade_layer.add_child(_upgrade_btn_mandibles)
+	_upgrade_layer.add_child(_upgrade_btn_claws)
 
 	_upgrade_layer.add_child(
-		_make_btn(BTN_X + (BTN_W - 180) / 2, PY + 294, 180, 40, "Close", hide_upgrade_station))
+		_make_btn(BTN_X + (BTN_W - 180) / 2, PY + 344, 180, 40, "Close", hide_upgrade_station))
 
 
 func show_upgrade_station() -> void:
@@ -356,6 +359,12 @@ func show_upgrade_station() -> void:
 	_upgrade_btn_mandibles.text = "Expand Cargo Hold Lv%d — Ore Capacity: %d → %d  ($%d)" % [
 		GameManager.mandibles_level, cap, cap + 25, mandibles_cost]
 	_upgrade_btn_mandibles.disabled = GameManager.dollars < mandibles_cost
+
+	var claws_cost := 50 + 25 * GameManager.claws_level
+	var power := GameManager.get_mandibles_power()
+	_upgrade_btn_claws.text = "Sharpen Claws Lv%d — Mining Power: %d → %d  ($%d)" % [
+		GameManager.claws_level, power, power + 3, claws_cost]
+	_upgrade_btn_claws.disabled = GameManager.dollars < claws_cost
 
 	_upgrade_layer.visible = true
 	upgrade_station_visible = true
@@ -397,6 +406,16 @@ func _upgrade_buy_mandibles() -> void:
 		GameManager.dollars -= cost
 		EventBus.dollars_changed.emit(GameManager.dollars)
 		GameManager.upgrade_mandibles()
+		SoundManager.play_drill_sound()
+		show_upgrade_station()
+
+
+func _upgrade_buy_claws() -> void:
+	var cost := 50 + 25 * GameManager.claws_level
+	if GameManager.dollars >= cost:
+		GameManager.dollars -= cost
+		EventBus.dollars_changed.emit(GameManager.dollars)
+		GameManager.upgrade_claws()
 		SoundManager.play_drill_sound()
 		show_upgrade_station()
 

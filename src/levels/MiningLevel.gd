@@ -2,7 +2,8 @@ extends Node2D
 
 # Space Mining Level — a cat miner in SPACE!
 # Player is a CharacterBody2D that moves freely with gravity/jumping.
-# Terrain is a grid rendered via _draw() with collision provided by a TileMapLayer.
+# Terrain is a grid; tiles are rendered by MineAbleTileMapLayer/NonMineAbleTileMapLayer (z=0).
+# Overlays (cursor, sonar, boss, particles) are rendered by TerrainOverlay (z=1).
 # Mining is cursor-based: click to mine space rocks and asteroids within range.
 # Energy drains over time while in deep space (faster at distance).
 
@@ -77,6 +78,32 @@ const TILE_NAMES: Dictionary = {
 	TileType.CAT_TAVERN:      "Cat Tavern",
 }
 
+# Hardcoded particle burst colours per tile type.
+# These approximate each tile's visual appearance so debris matches the block.
+const TILE_PARTICLE_COLORS: Dictionary = {
+	TileType.SURFACE_GRASS:    Color(0.45, 0.72, 0.30),  # green surface dust
+	TileType.DIRT:             Color(0.76, 0.60, 0.42),  # sandy tan moon rock
+	TileType.DIRT_DARK:        Color(0.50, 0.35, 0.20),  # dark brown dense rock
+	TileType.STONE:            Color(0.58, 0.58, 0.62),  # cool grey asteroid
+	TileType.STONE_DARK:       Color(0.38, 0.38, 0.42),  # dark grey asteroid
+	TileType.ORE_COPPER:       Color(0.78, 0.44, 0.20),  # copper orange
+	TileType.ORE_COPPER_DEEP:  Color(0.65, 0.32, 0.12),  # deeper copper
+	TileType.ORE_IRON:         Color(0.65, 0.68, 0.75),  # steel grey-blue
+	TileType.ORE_IRON_DEEP:    Color(0.45, 0.48, 0.58),  # darker iron
+	TileType.ORE_GOLD:         Color(1.00, 0.80, 0.10),  # bright gold
+	TileType.ORE_GOLD_DEEP:    Color(0.85, 0.60, 0.05),  # deep gold
+	TileType.ORE_GEM:          Color(0.20, 0.80, 0.90),  # cyan crystal
+	TileType.ORE_GEM_DEEP:     Color(0.15, 0.55, 0.85),  # deep gem blue
+	TileType.ENERGY_NODE:      Color(0.20, 0.60, 1.00),  # electric blue
+	TileType.ENERGY_NODE_FULL: Color(0.30, 0.90, 1.00),  # bright cyan
+	TileType.EXPLOSIVE:        Color(1.00, 0.55, 0.05),  # danger orange
+	TileType.EXPLOSIVE_ARMED:  Color(1.00, 0.55, 0.05),  # danger orange
+	TileType.LAVA:             Color(1.00, 0.35, 0.05),  # molten red-orange
+	TileType.LAVA_FLOW:        Color(1.00, 0.35, 0.05),  # molten red-orange
+	TileType.BOSS_SEGMENT:     Color(0.55, 0.10, 0.70),  # dark purple
+	TileType.BOSS_CORE:        Color(0.90, 0.05, 0.90),  # bright magenta
+}
+
 const MINEABLE_TILES: Array = [
 	TileType.SURFACE_GRASS,
 	TileType.DIRT, TileType.DIRT_DARK,
@@ -89,62 +116,32 @@ const MINEABLE_TILES: Array = [
 	TileType.LAVA, TileType.LAVA_FLOW,
 ]
 
-const TILE_COLORS: Dictionary = {
-	TileType.DIRT:           Color(0.30, 0.30, 0.38),
-	TileType.DIRT_DARK:      Color(0.22, 0.22, 0.30),
-	TileType.ORE_COPPER:     Color(0.90, 0.60, 0.25),
-	TileType.ORE_COPPER_DEEP: Color(0.80, 0.50, 0.15),
-	TileType.ORE_IRON:       Color(0.90, 0.45, 0.70),
-	TileType.ORE_IRON_DEEP:  Color(0.75, 0.35, 0.60),
-	TileType.ORE_GOLD:       Color(0.85, 0.80, 1.00),
-	TileType.ORE_GOLD_DEEP:  Color(0.70, 0.65, 0.90),
-	TileType.ORE_GEM:        Color(0.20, 0.90, 0.95),
-	TileType.ORE_GEM_DEEP:   Color(0.10, 0.80, 0.85),
-	TileType.STONE:          Color(0.35, 0.25, 0.55),
-	TileType.STONE_DARK:     Color(0.25, 0.18, 0.45),
-	TileType.EXPLOSIVE:      Color(0.90, 0.10, 0.10),
-	TileType.EXPLOSIVE_ARMED: Color(1.00, 0.00, 0.00),
-	TileType.LAVA:           Color(1.00, 0.65, 0.00),
-	TileType.LAVA_FLOW:      Color(1.00, 0.50, 0.00),
-	TileType.ENERGY_NODE:      Color(0.20, 0.80, 0.90),
-	TileType.ENERGY_NODE_FULL: Color(0.10, 1.00, 0.95),
-	TileType.REENERGY_STATION: Color(0.40, 0.50, 0.60),
-	TileType.SURFACE:        Color(0.15, 0.15, 0.25),
-	TileType.SURFACE_GRASS:  Color(0.10, 0.20, 0.35),
-	TileType.EXIT_STATION:   Color(0.15, 0.55, 0.70),
-	TileType.BOSS_SEGMENT:   Color(0.70, 0.15, 0.50),
-	TileType.BOSS_CORE:      Color(0.90, 0.10, 0.40),
-	TileType.UPGRADE_STATION:  Color(0.40, 0.50, 0.60),
-	TileType.SMELTERY_STATION: Color(0.40, 0.50, 0.60),
-	TileType.LADDER:           Color(0.80, 0.60, 0.15),
-	TileType.CAT_TAVERN:       Color(0.40, 0.50, 0.60),
-}
-
-const TILE_TEXTURE_PATHS: Dictionary = {
-	TileType.DIRT:            "res://assets/blocks/dirt.png",
-	TileType.DIRT_DARK:       "res://assets/blocks/mud.png",
-	TileType.STONE:           "res://assets/blocks/stone_generic.png",
-	TileType.STONE_DARK:      "res://assets/blocks/gravel.png",
-	TileType.ORE_COPPER:      "res://assets/blocks/stone_ore_copper.png",
-	TileType.ORE_COPPER_DEEP: "res://assets/blocks/stone_ore_copper.png",
-	TileType.ORE_IRON:        "res://assets/blocks/stone_ore_iron.png",
-	TileType.ORE_IRON_DEEP:   "res://assets/blocks/stone_ore_iron.png",
-	TileType.ORE_GOLD:        "res://assets/blocks/stone_ore_gold.png",
-	TileType.ORE_GOLD_DEEP:   "res://assets/blocks/stone_ore_gold.png",
-	TileType.ORE_GEM:         "res://assets/blocks/stone_generic_ore_crystalline.png",
-	TileType.ORE_GEM_DEEP:    "res://assets/blocks/stone_generic_ore_crystalline.png",
-	TileType.EXPLOSIVE:       "res://assets/blocks/eucalyptus_log_top.png",
-	TileType.EXPLOSIVE_ARMED: "res://assets/blocks/eucalyptus_log_top.png",
-	TileType.LAVA:            "res://assets/blocks/sand_ugly_3.png",
-	TileType.LAVA_FLOW:       "res://assets/blocks/sand_ugly_3.png",
-	TileType.ENERGY_NODE:       "res://assets/blocks/limestone.png",
-	TileType.ENERGY_NODE_FULL:  "res://assets/blocks/marble.png",
-	TileType.REENERGY_STATION:  "res://assets/blocks/cobblestone_bricks.png",
-	TileType.SURFACE:         "res://assets/blocks/grass_top.png",
-	TileType.SURFACE_GRASS:   "res://assets/blocks/grass_side.png",
-	TileType.UPGRADE_STATION:  "res://assets/blocks/cobblestone_bricks.png",
-	TileType.SMELTERY_STATION: "res://assets/blocks/cobblestone_bricks.png",
-	TileType.CAT_TAVERN:       "res://assets/blocks/cobblestone_bricks.png",
+# Atlas coordinates in blocks_tileset.tres (blocks_atlas.png, 64 px tiles, alphabetical layout).
+# TileType.SURFACE, EXIT_STATION, BOSS_SEGMENT, BOSS_CORE, LADDER are drawn by _draw().
+const TILE_ATLAS_COORDS: Dictionary = {
+	TileType.DIRT:             Vector2i(1, 2),   # dirt.png
+	TileType.DIRT_DARK:        Vector2i(9, 4),   # mud.png
+	TileType.STONE:            Vector2i(7, 7),   # stone_generic.png
+	TileType.STONE_DARK:       Vector2i(4, 3),   # gravel.png
+	TileType.ORE_COPPER:       Vector2i(0, 8),   # stone_ore_copper.png
+	TileType.ORE_COPPER_DEEP:  Vector2i(0, 8),
+	TileType.ORE_IRON:         Vector2i(2, 8),   # stone_ore_iron.png
+	TileType.ORE_IRON_DEEP:    Vector2i(2, 8),
+	TileType.ORE_GOLD:         Vector2i(1, 8),   # stone_ore_gold.png
+	TileType.ORE_GOLD_DEEP:    Vector2i(1, 8),
+	TileType.ORE_GEM:          Vector2i(8, 7),   # stone_generic_ore_crystalline.png
+	TileType.ORE_GEM_DEEP:     Vector2i(8, 7),
+	TileType.EXPLOSIVE:        Vector2i(4, 2),   # eucalyptus_log_top.png
+	TileType.EXPLOSIVE_ARMED:  Vector2i(4, 2),
+	TileType.LAVA:             Vector2i(5, 6),   # sand_ugly_3.png
+	TileType.LAVA_FLOW:        Vector2i(5, 6),
+	TileType.ENERGY_NODE:      Vector2i(9, 3),   # limestone.png
+	TileType.ENERGY_NODE_FULL: Vector2i(5, 4),   # marble.png
+	TileType.REENERGY_STATION: Vector2i(8, 0),   # cobblestone_bricks.png
+	TileType.SURFACE_GRASS:    Vector2i(1, 3),   # grass_side.png
+	TileType.UPGRADE_STATION:  Vector2i(8, 0),
+	TileType.SMELTERY_STATION: Vector2i(8, 0),
+	TileType.CAT_TAVERN:       Vector2i(8, 0),
 }
 
 const TILE_HP: Dictionary = {
@@ -322,8 +319,6 @@ const BOSS_DRAIN_MULT: float = 1.5   # energy drain multiplier while boss is ali
 var grid: Array = []
 var has_left_spawn: bool = false
 
-var tile_textures: Dictionary = {}
-
 # Camera
 var camera: Camera2D
 
@@ -350,11 +345,18 @@ var _game_over: bool = false
 # Per-tile damage/hit tracking for multi-hit mining
 var _tile_damage: Dictionary = {}
 var _tile_hits: Dictionary = {}
+var _tile_last_hit: Dictionary = {}  # Maps Vector2i -> seconds since last hit; resets damage on timeout
 var _flash_cells: Dictionary = {}
 var _breaking_overlays: Dictionary = {}  # Maps Vector2i -> AnimatedSprite2D instance
+var _healing_tiles: Dictionary = {}    # Maps Vector2i -> [start_frame: int, elapsed: float]
+
+const MINE_RESET_TIMEOUT: float = 3.0   # Seconds of inactivity before partial tile damage resets
+const HEAL_FRAME_DURATION: float = 0.12 # Seconds each frame is shown during reverse heal animation
 
 # Gravity-tile fall queue: Vector2i(col, row) -> float seconds_until_next_step
 var _gravity_pending: Dictionary = {}
+# Falling stalactites: Vector2i foliage pos -> float seconds_until_next_step
+var _falling_stalactites: Dictionary = {}
 var _mine_streak: int = 0
 var _zones_discovered: Array[bool] = [false, false, false, false, false]
 var _last_banner_time_ms: int = -5000
@@ -400,41 +402,33 @@ const HAZARD_COOLDOWN_TIME: float = 1.0
 const SHOP_PROTECTION_RADIUS: int = 3
 var _shop_protected_cells: Dictionary = {}  # Vector2i -> true
 
-# Terrain decorations — visual sprites spawned after terrain generation
-var _web_sprites: Dictionary = {}  # Vector2i(col, row) -> Sprite2D
+# Terrain decorations — foliage cells placed via FoliageTileMapLayer after terrain generation
+var _web_sprites: Dictionary = {}  # Vector2i(col, row) -> true  (web cells for hazard detection)
 
-const PLANT_TEXTURES: Array[String] = [
-	"res://assets/blocks/plants/grass.png",
-	"res://assets/blocks/plants/grass2.png",
-	"res://assets/blocks/plants/grass3.png",
-	"res://assets/blocks/plants/dandelion.png",
-	"res://assets/blocks/plants/thistle.png",
-	"res://assets/blocks/plants/fern.png",
-	"res://assets/blocks/plants/fern2.png",
-	"res://assets/blocks/plants/mushroom_brown.png",
-	"res://assets/blocks/plants/mushroom_red.png",
-	"res://assets/blocks/plants/oxeye_daisy.png",
-	"res://assets/blocks/plants/lily.png",
-	"res://assets/blocks/plants/aster.png",
-	"res://assets/blocks/plants/horsetail.png",
-	"res://assets/blocks/plants/cattail.png",
+# Atlas coordinates in foliage_tileset.tres (foliage_atlas.png, 64 px tiles, 10-wide grid).
+const FOLIAGE_SURFACE_PLANT_ATLAS_COORDS: Array[Vector2i] = [
+	Vector2i(0, 0), Vector2i(2, 0), Vector2i(3, 0),
+	Vector2i(2, 1), Vector2i(3, 1), Vector2i(4, 1), Vector2i(5, 1), Vector2i(6, 1), Vector2i(7, 1), Vector2i(8, 1), Vector2i(9, 1),
+	Vector2i(0, 2), Vector2i(1, 2), Vector2i(2, 2), Vector2i(3, 2), Vector2i(4, 2), Vector2i(6, 2), Vector2i(8, 2), Vector2i(9, 2),
+	Vector2i(2, 3), Vector2i(3, 3), Vector2i(4, 3), Vector2i(5, 3), Vector2i(6, 3), Vector2i(7, 3), Vector2i(8, 3), Vector2i(9, 3),
+	Vector2i(0, 4), Vector2i(1, 4), Vector2i(2, 4), Vector2i(3, 4), Vector2i(4, 4), Vector2i(5, 4), Vector2i(6, 4),
+	Vector2i(9, 6),
 ]
-
-const CORAL_TEXTURES: Array[String] = [
-	"res://assets/blocks/plants/coral_brain.png",
-	"res://assets/blocks/plants/coral_cauliflower.png",
-	"res://assets/blocks/plants/coral_pore.png",
-	"res://assets/blocks/plants/coral_star.png",
-	"res://assets/blocks/plants/coral_brain_bleached.png",
-	"res://assets/blocks/plants/coral_cauliflower_bleached.png",
-	"res://assets/blocks/plants/coral_pore_bleached.png",
-	"res://assets/blocks/plants/coral_star_bleached.png",
+const FOLIAGE_CAVE_PLANT_ATLAS_COORDS: Array[Vector2i] = [
+	Vector2i(1, 0), Vector2i(4, 0), Vector2i(5, 0), Vector2i(6, 0), Vector2i(7, 0), Vector2i(8, 0), Vector2i(9, 0),
+	Vector2i(0, 1), Vector2i(1, 1),
+	Vector2i(7, 2),
+	Vector2i(0, 3), Vector2i(1, 3),
 ]
-
-const WEB_TEXTURE: String = "res://assets/blocks/plants/spiderweb.png"
+const FOLIAGE_STALACTITE_ATLAS_COORD: Vector2i = Vector2i(5, 2)
+const FOLIAGE_WEB_ATLAS_COORD: Vector2i = Vector2i(7, 4)
 
 @onready var player_node := $PlayerProbe as PlayerProbe
 @onready var pause_menu = $PauseMenu
+@onready var _mineable_layer    := $TileMapLayers/MineAbleTileMapLayer as TileMapLayer
+@onready var _nonmineable_layer := $TileMapLayers/NonMineAbleTileMapLayer as TileMapLayer
+@onready var _foliage_layer     := $TileMapLayers/FoliageTileMapLayer as TileMapLayer
+@onready var _terrain_overlay   := $TerrainOverlay as MiningLevelOverlay
 
 var _inventory_screen: InventoryScreen = null
 var _hat_menu: HatMenu = null
@@ -478,17 +472,19 @@ func _ready() -> void:
 
 	texture_filter = TEXTURE_FILTER_NEAREST
 
-	_load_tile_textures()
 	_terrain_generator.generate(
 		grid, GRID_COLS, GRID_ROWS, SURFACE_ROWS, EXIT_COLS,
 		DEPTH_ZONE_ROWS,
 		GameManager.allowed_ore_types,
-		GameManager.allowed_hazard_types)
+		GameManager.allowed_hazard_types,
+		GameManager.terrain_seed)
 	_build_shop_protection_zones()
 	_setup_collision_tilemap()
 	_sync_collision_tilemap()
+	_populate_visual_tilemaplayers()
 	_setup_map_barriers()
 	_spawn_decorations(_terrain_generator.generate_decorations())
+	_terrain_overlay.setup(self)
 
 	# Setup camera
 	camera = Camera2D.new()
@@ -542,7 +538,8 @@ func _ready() -> void:
 		func(c, r, solid): _set_tile_collision(c, r, solid),
 		func(text, color): _show_zone_banner(text, color),
 		func(intensity, duration): _shake_camera(intensity, duration),
-		func(pos): _tile_damage.erase(pos); _tile_hits.erase(pos); _remove_breaking_overlay(pos)
+		func(pos): _tile_damage.erase(pos); _tile_hits.erase(pos); _tile_last_hit.erase(pos); _remove_breaking_overlay(pos),
+		func(c, r): _set_visual_cell(c, r)
 	)
 	_boss_renderer.setup(boss_system, grid, CELL_SIZE)
 
@@ -551,8 +548,7 @@ func _ready() -> void:
 	_setup_customization_menu()
 
 	if NetworkManager.is_multiplayer_session:
-		var chatbox := ChatBox.new()
-		add_child(chatbox)
+		add_child(preload("res://src/ui/ChatBox.tscn").instantiate())
 
 	queue_redraw()
 
@@ -604,6 +600,8 @@ func _setup_multiplayer_players() -> void:
 	else:
 		player_node.sprite.modulate = Color(1.0, 0.65, 0.25)  # host looks orange to guest
 		second.sprite.modulate = GameManager.cat_color          # guest is their own colour
+		# Inform the host of our current ladder count so it can validate future placement requests.
+		rpc_announce_guest_ladder_count.rpc_id(1, GameManager.ladder_count)
 
 	# Show the host's kit bonuses to the guest as an entry banner
 	if not NetworkManager.is_host:
@@ -762,12 +760,53 @@ func _set_tile_collision(col: int, row: int, solid: bool) -> void:
 	else:
 		collision_tilemap.erase_cell(Vector2i(col, row))
 
-func _load_tile_textures() -> void:
-	for tile_type in TILE_TEXTURE_PATHS:
-		var path: String = TILE_TEXTURE_PATHS[tile_type]
-		var tex := load(path) as Texture2D
-		if tex:
-			tile_textures[tile_type] = tex
+# ---------------------------------------------------------------------------
+# Visual TileMapLayer population and per-cell sync
+# ---------------------------------------------------------------------------
+
+## Tiles placed into NonMineAbleTileMapLayer — permanent structures.
+const _NONMINEABLE_VISUAL_TILES: Array = [
+	TileType.REENERGY_STATION,
+	TileType.UPGRADE_STATION,
+	TileType.SMELTERY_STATION,
+	TileType.EXIT_STATION,
+	TileType.CAT_TAVERN,
+]
+
+## Tiles not rendered via TileMapLayer (handled by BossRenderer or _draw() primitives).
+const _SKIP_VISUAL_TILES: Array = [
+	TileType.EMPTY,
+	TileType.SURFACE,
+	TileType.BOSS_SEGMENT,
+	TileType.BOSS_CORE,
+	TileType.LADDER,
+]
+
+## Populate both visual TileMapLayers from the current grid state.
+## Called once after terrain generation in _ready().
+func _populate_visual_tilemaplayers() -> void:
+	_mineable_layer.clear()
+	_nonmineable_layer.clear()
+	for col in range(GRID_COLS):
+		for row in range(GRID_ROWS):
+			_set_visual_cell(col, row)
+
+## Update the visual TileMapLayer cell at (col, row) to match grid[col][row].
+## Call this whenever grid[col][row] is written.
+func _set_visual_cell(col: int, row: int) -> void:
+	var gpos := Vector2i(col, row)
+	_mineable_layer.erase_cell(gpos)
+	_nonmineable_layer.erase_cell(gpos)
+	var tile: int = grid[col][row]
+	if tile in _SKIP_VISUAL_TILES:
+		return
+	var atlas_coord: Variant = TILE_ATLAS_COORDS.get(tile)
+	if atlas_coord == null:
+		return
+	if tile in _NONMINEABLE_VISUAL_TILES:
+		_nonmineable_layer.set_cell(gpos, 0, atlas_coord)
+	else:
+		_mineable_layer.set_cell(gpos, 0, atlas_coord)
 
 # ---------------------------------------------------------------------------
 # Camera follow (tracks player CharacterBody2D)
@@ -785,6 +824,9 @@ func _update_camera() -> void:
 # ---------------------------------------------------------------------------
 
 func _draw() -> void:
+	# Draws only the background gradient and sky.
+	# Tile sprites are rendered by MineAbleTileMapLayer / NonMineAbleTileMapLayer (z=0).
+	# Overlays (cursor, sonar, boss, particles, etc.) are rendered by TerrainOverlay (z=1).
 	var cam_x: float
 	var cam_y: float
 	if camera:
@@ -833,180 +875,13 @@ func _draw() -> void:
 			draw_rect(Rect2(float(bg_left), maxf(sw_top, float(dirt_top)),
 				float(bg_width), minf(sw_bot, float(dirt_bottom)) - maxf(sw_top, float(dirt_top))), gc)
 
-	# First mineable row — paint its background with the SURFACE_GRASS tile so that
+	# First mineable row — paint its background with the SURFACE_GRASS colour so that
 	# excavated cells show a matching backdrop, giving the row a sense of depth.
 	if min_row <= SURFACE_ROWS and max_row >= SURFACE_ROWS:
 		var row_y: float = float(SURFACE_ROWS * CELL_SIZE)
-		var grass_tex: Texture2D = tile_textures.get(TileType.SURFACE_GRASS)
-		if grass_tex:
-			for tc in range(min_col, max_col + 1):
-				draw_texture_rect(grass_tex,
-					Rect2(float(tc * CELL_SIZE), row_y, float(CELL_SIZE), float(CELL_SIZE)), false)
-		else:
-			draw_rect(Rect2(float(min_col * CELL_SIZE), row_y,
-				float((max_col - min_col + 1) * CELL_SIZE), float(CELL_SIZE)),
-				TILE_COLORS.get(TileType.SURFACE_GRASS, Color(0.10, 0.20, 0.35)))
-
-	# Tile sprites
-	for col in range(min_col, max_col + 1):
-		for row in range(min_row, max_row + 1):
-			var tile: int = grid[col][row]
-			if tile == TileType.EMPTY or tile == TileType.SURFACE:
-				continue
-
-			var tile_rect := Rect2(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-
-			if tile == TileType.EXIT_STATION:
-				var pulse: float = sin(_exit_pulse_time * 3.0) * 0.5 + 0.5
-				draw_rect(tile_rect, Color(0.10 + pulse * 0.10, 0.40 + pulse * 0.20, 0.10 + pulse * 0.10))
-				var border_alpha := 0.55 + pulse * 0.45
-				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
-					Color(border_alpha, border_alpha, border_alpha), false, 2.0)
-				if pulse > 0.6:
-					var glow_alpha: float = (pulse - 0.6) / 0.4 * 0.35
-					draw_rect(Rect2(col * CELL_SIZE - 3, row * CELL_SIZE - 3, CELL_SIZE + 6, CELL_SIZE + 6),
-						Color(0.20, 0.90, 0.20, glow_alpha), false, 3.0)
-				var exit_font := ThemeDB.fallback_font
-				draw_string(exit_font,
-					Vector2(col * CELL_SIZE, row * CELL_SIZE + CELL_SIZE / 2 + 5),
-					"EXIT",
-					HORIZONTAL_ALIGNMENT_CENTER, CELL_SIZE, 13,
-					Color(0.35 + pulse * 0.45, 1.0, 0.35 + pulse * 0.20))
-				continue
-
-			# Ladders — transparent overlay (two poles + rungs), skip normal texture
-			if tile == TileType.LADDER:
-				var lx := col * CELL_SIZE
-				var ly := row * CELL_SIZE
-				draw_rect(Rect2(lx + 10, ly + 2, 8, CELL_SIZE - 4), Color(0.80, 0.60, 0.15, 0.90))
-				draw_rect(Rect2(lx + CELL_SIZE - 18, ly + 2, 8, CELL_SIZE - 4), Color(0.80, 0.60, 0.15, 0.90))
-				for rung in 3:
-					draw_rect(Rect2(lx + 10, ly + 10 + rung * 18, CELL_SIZE - 20, 5),
-						Color(0.70, 0.50, 0.10, 0.90))
-				continue
-
-			var tex: Texture2D = tile_textures.get(tile)
-			if tex:
-				draw_texture_rect(tex, tile_rect, false)
-			else:
-				draw_rect(tile_rect, TILE_COLORS.get(tile, Color(0.5, 0.5, 0.5)))
-
-			if tile == TileType.REENERGY_STATION:
-				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
-					Color.WHITE, false, 2.0)
-
-			if tile == TileType.UPGRADE_STATION:
-				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
-					Color(0.40, 1.00, 0.60), false, 2.0)
-
-			if tile == TileType.SMELTERY_STATION:
-				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
-					Color(1.0, 0.55, 0.0), false, 2.0)
-
-			if tile == TileType.CAT_TAVERN:
-				draw_rect(Rect2(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4),
-					Color(0.75, 0.35, 0.90), false, 2.0)
-				var cfont := ThemeDB.fallback_font
-				draw_string(cfont,
-					Vector2(col * CELL_SIZE + 4, row * CELL_SIZE + CELL_SIZE / 2 + 5),
-					"CAT", HORIZONTAL_ALIGNMENT_CENTER, CELL_SIZE - 8, 11, Color(0.90, 0.70, 1.00))
-
-			# Breaking overlay is handled by child AnimatedSprite2D instances
-
-	# Impact flashes
-	for pk in _flash_cells:
-		var fc: int = pk.x
-		var fr: int = pk.y
-		if fc >= min_col and fc <= max_col and fr >= min_row and fr <= max_row:
-			var frect := Rect2(fc * CELL_SIZE, fr * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-			draw_rect(frect, Color(1.0, 1.0, 1.0, _flash_cells[pk]))
-
-	# Cursor highlight — mining outline (slot 0) or ladder ghost (slot 1)
-	if GameManager.selected_hotbar_slot == 1:
-		# Ladder ghost preview: faint ladder shape tinted green (valid) or red (invalid)
-		if _ladder_ghost_pos.x >= 0 and _ladder_ghost_pos.y >= 0:
-			var lx := _ladder_ghost_pos.x * CELL_SIZE
-			var ly := _ladder_ghost_pos.y * CELL_SIZE
-			const GHOST_ALPHA := 0.45
-			var pole_c: Color
-			var rung_c: Color
-			var border_c: Color
-			if _ladder_ghost_valid:
-				pole_c   = Color(0.20, 0.90, 0.20, GHOST_ALPHA)
-				rung_c   = Color(0.15, 0.80, 0.15, GHOST_ALPHA)
-				border_c = Color(0.20, 0.90, 0.20, 0.65)
-			else:
-				pole_c   = Color(0.90, 0.15, 0.10, GHOST_ALPHA)
-				rung_c   = Color(0.80, 0.10, 0.08, GHOST_ALPHA)
-				border_c = Color(0.90, 0.15, 0.10, 0.65)
-			draw_rect(Rect2(lx + 10, ly + 2, 8, CELL_SIZE - 4), pole_c)
-			draw_rect(Rect2(lx + CELL_SIZE - 18, ly + 2, 8, CELL_SIZE - 4), pole_c)
-			for rung in 3:
-				draw_rect(Rect2(lx + 10, ly + 10 + rung * 18, CELL_SIZE - 20, 5), rung_c)
-			draw_rect(Rect2(lx, ly, CELL_SIZE, CELL_SIZE), border_c, false, 2.0)
-	else:
-		# Pickaxe mining highlight
-		if _cursor_grid_pos.x >= 0 and _cursor_grid_pos.y >= 0:
-			var highlight_rect := Rect2(_cursor_grid_pos.x * CELL_SIZE, _cursor_grid_pos.y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-			draw_rect(highlight_rect, Color(1.0, 1.0, 1.0, 0.2), false, 2.0)
-
-	# Trader nodes are drawn by TraderSystem._draw() (Node2D child)
-
-	# Boss overlays (creature shapes + warning vignettes) — delegated to BossRenderer
-	_boss_renderer.draw_to(self, min_col, max_col, min_row, max_row)
-
-
-	# Sonar ping overlay — expanding wave reveals ore tiles through rock (§3.2)
-	# State is read from sonar_system; draw calls remain in MiningLevel._draw()
-	if sonar_system.ping_active and sonar_system.ping_center.x >= 0:
-		var ping_alpha := 1.0 - sonar_system.ping_elapsed / SonarSystem.PING_DURATION
-		var max_radius := GameManager.get_sonar_ping_radius()
-		var cx := sonar_system.ping_center.x
-		var cy := sonar_system.ping_center.y
-		var scan_r := int(max_radius) + 2
-		# Glow each ore tile that the expanding wave has already swept over
-		for sc in range(maxi(min_col, cx - scan_r), mini(max_col + 1, cx + scan_r + 1)):
-			for sr in range(maxi(min_row, cy - scan_r), mini(max_row + 1, cy + scan_r + 1)):
-				var stile: int = grid[sc][sr]
-				if stile != TileType.ORE_COPPER and stile != TileType.ORE_COPPER_DEEP \
-				and stile != TileType.ORE_IRON and stile != TileType.ORE_IRON_DEEP \
-				and stile != TileType.ORE_GOLD and stile != TileType.ORE_GOLD_DEEP \
-				and stile != TileType.ORE_GEM and stile != TileType.ORE_GEM_DEEP \
-				and stile != TileType.ENERGY_NODE and stile != TileType.ENERGY_NODE_FULL:
-					continue
-				var dist := Vector2(sc - cx, sr - cy).length()
-				if dist > sonar_system.wave_radius:
-					continue
-				# Glow age: how far behind the wave front this tile is
-				var glow_age := sonar_system.wave_radius - dist
-				var glow_alpha := maxf(0.0, ping_alpha - glow_age * 0.12) * 0.80
-				if glow_alpha <= 0.02:
-					continue
-				# Color by ore tier (level 1: uniform green; level 2+: color-coded)
-				var glow_color := Color(0.20, 1.0, 0.40, glow_alpha)
-				if GameManager.mineral_sense_level >= 2:
-					if stile == TileType.ORE_GEM or stile == TileType.ORE_GEM_DEEP:
-						glow_color = Color(0.10, 0.90, 1.00, glow_alpha)
-					elif stile == TileType.ORE_GOLD or stile == TileType.ORE_GOLD_DEEP:
-						glow_color = Color(1.00, 0.85, 0.10, glow_alpha)
-					elif stile == TileType.ORE_IRON or stile == TileType.ORE_IRON_DEEP:
-						glow_color = Color(0.65, 0.65, 1.00, glow_alpha)
-					elif stile == TileType.ENERGY_NODE or stile == TileType.ENERGY_NODE_FULL:
-						glow_color = Color(0.30, 1.00, 0.30, glow_alpha)
-				draw_rect(Rect2(sc * CELL_SIZE, sr * CELL_SIZE, CELL_SIZE, CELL_SIZE), glow_color)
-		# Expanding wave ring arc
-		var wave_px := sonar_system.wave_radius * CELL_SIZE
-		var center_px := Vector2(cx * CELL_SIZE + CELL_SIZE * 0.5, cy * CELL_SIZE + CELL_SIZE * 0.5)
-		if wave_px > 0:
-			draw_arc(center_px, wave_px, 0.0, TAU, 48, Color(0.40, 1.0, 0.60, ping_alpha * 0.55), 2.0)
-
-	# Draw level particles (mining sparks, lava embers, ore bursts)
-	for p: Dictionary in _level_particles:
-		var sz: float = p["size"]
-		var alpha: float = p["life"] / p["max_life"]
-		var c: Color = p["color"]
-		c.a = alpha
-		draw_rect(Rect2(p["pos"].x - sz * 0.5, p["pos"].y - sz * 0.5, sz, sz), c)
+		draw_rect(Rect2(float(min_col * CELL_SIZE), row_y,
+			float((max_col - min_col + 1) * CELL_SIZE), float(CELL_SIZE)),
+			Color(0.10, 0.20, 0.35))
 
 # Level particle system — mining sparks, ore bursts, lava embers, boss fx
 # ---------------------------------------------------------------------------
@@ -1017,7 +892,7 @@ func _spawn_mining_particles(world_pos: Vector2, color: Color, count: int, speed
 		var angle := randf() * TAU
 		var speed := randf_range(speed_min, speed_max)
 		_level_particles.append({
-			"pos": world_pos + Vector2(randf_range(-8.0, 8.0), randf_range(-8.0, 8.0)),
+			"pos": world_pos + Vector2(randf_range(-30.0, 30.0), randf_range(-30.0, 30.0)),
 			"vel": Vector2(cos(angle) * speed, sin(angle) * speed - speed * 0.3),
 			"life": randf_range(0.18, 0.55),
 			"max_life": 0.55,
@@ -1081,6 +956,8 @@ func any_ui_open() -> bool:
 func _process(delta: float) -> void:
 	_exit_pulse_time += delta
 	queue_redraw()
+	if _terrain_overlay:
+		_terrain_overlay.queue_redraw()
 
 	# Fade impact flashes
 	if _flash_cells.size() > 0:
@@ -1092,11 +969,41 @@ func _process(delta: float) -> void:
 		for k in to_remove:
 			_flash_cells.erase(k)
 
+	# Reset partial tile damage after MINE_RESET_TIMEOUT seconds without a hit
+	if _tile_last_hit.size() > 0:
+		var to_reset: Array = []
+		for pos_key in _tile_last_hit:
+			_tile_last_hit[pos_key] += delta
+			if _tile_last_hit[pos_key] >= MINE_RESET_TIMEOUT:
+				to_reset.append(pos_key)
+		for pos_key in to_reset:
+			_tile_damage.erase(pos_key)
+			_tile_hits.erase(pos_key)
+			_tile_last_hit.erase(pos_key)
+			_begin_heal_animation(pos_key)
+
+	# Advance reverse heal animations for tiles whose damage timed out
+	if _healing_tiles.size() > 0:
+		var to_remove_healing: Array = []
+		for pos_key in _healing_tiles:
+			var data: Array = _healing_tiles[pos_key]
+			data[1] += delta
+			var current_frame: int = data[0] - int(data[1] / HEAL_FRAME_DURATION)
+			if current_frame < 0:
+				to_remove_healing.append(pos_key)
+			elif _breaking_overlays.has(pos_key):
+				_breaking_overlays[pos_key].frame = current_frame
+		for pos_key in to_remove_healing:
+			_healing_tiles.erase(pos_key)
+			_remove_breaking_overlay(pos_key)
+
 	# Update level particles
 	_update_level_particles(delta)
   
 	# Gravity tile falling (gravel etc. drop when unsupported)
 	_process_gravity(delta)
+	# Stalactites fall when their ceiling tile is mined
+	_process_stalactites(delta)
 
 	# Continuous ladder placement — keep placing while left mouse is held and cursor moves
 	if GameManager.selected_hotbar_slot == 1 \
@@ -1185,7 +1092,8 @@ func _process(delta: float) -> void:
 				_energy_drain_accum = 0.0
 
 func _update_cursor_highlight() -> void:
-	if not player_node:
+	var local_player := _get_local_player()
+	if not local_player:
 		_cursor_grid_pos = Vector2i(-1, -1)
 		_ladder_ghost_pos = Vector2i(-1, -1)
 		_ladder_ghost_valid = false
@@ -1193,9 +1101,9 @@ func _update_cursor_highlight() -> void:
 	var mouse_world := get_global_mouse_position()
 	var gp := Vector2i(floori(mouse_world.x / CELL_SIZE), floori(mouse_world.y / CELL_SIZE))
 	if gp.x >= 0 and gp.x < GRID_COLS and gp.y >= 0 and gp.y < GRID_ROWS:
-		var player_tile := player_node.get_grid_pos()
+		var player_tile := local_player.get_grid_pos()
 		var dist := Vector2(gp - player_tile).length()
-		if dist <= player_node.mine_range:
+		if dist <= local_player.mine_range:
 			_cursor_grid_pos = gp
 		else:
 			_cursor_grid_pos = Vector2i(-1, -1)
@@ -1325,6 +1233,7 @@ func _spawn_pickaxe_effect(from: Vector2, to: Vector2) -> void:
 # ---------------------------------------------------------------------------
 
 func _update_breaking_overlay(pos_key: Vector2i, damage_ratio: float) -> void:
+	_healing_tiles.erase(pos_key)  # Cancel any in-progress heal animation on re-hit
 	var frame_index := clampi(int(damage_ratio * 3.0), 0, 2)
 	var overlay: AnimatedSprite2D
 	if _breaking_overlays.has(pos_key):
@@ -1341,16 +1250,23 @@ func _update_breaking_overlay(pos_key: Vector2i, damage_ratio: float) -> void:
 	overlay.frame = frame_index
 
 func _remove_breaking_overlay(pos_key: Vector2i) -> void:
+	_healing_tiles.erase(pos_key)
 	if _breaking_overlays.has(pos_key):
 		var overlay: AnimatedSprite2D = _breaking_overlays[pos_key]
 		overlay.queue_free()
 		_breaking_overlays.erase(pos_key)
 
+func _begin_heal_animation(pos_key: Vector2i) -> void:
+	if not _breaking_overlays.has(pos_key):
+		return
+	var start_frame: int = _breaking_overlays[pos_key].frame
+	_healing_tiles[pos_key] = [start_frame, 0.0]
+
 # ---------------------------------------------------------------------------
 # Mining API — called by PlayerProbe
 # ---------------------------------------------------------------------------
 
-func try_mine_at(grid_pos: Vector2i) -> void:
+func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 	var col := grid_pos.x
 	var row := grid_pos.y
 	if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
@@ -1364,10 +1280,15 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 	if _shop_protected_cells.has(Vector2i(col, row)):
 		return
 
-	# Pickaxe throw effect — flies from player to clicked tile
-	if player_node:
+	# Pickaxe throw effect — flies from the mining player to the clicked tile.
+	# miner_node overrides player_node so the guest's effect originates from the
+	# guest avatar; the effect is also broadcast to the other peer so both see it.
+	var miner: PlayerProbe = miner_node if miner_node else player_node
+	if miner:
 		var target_world := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
-		_spawn_pickaxe_effect(player_node.global_position, target_world)
+		_spawn_pickaxe_effect(miner.global_position, target_world)
+		if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+			rpc_pickaxe_effect.rpc_id(NetworkManager.guest_peer_id, miner.global_position.x, miner.global_position.y, target_world.x, target_world.y)
 
 	# Energy nodes — collect immediately
 	if tile == TileType.ENERGY_NODE or tile == TileType.ENERGY_NODE_FULL:
@@ -1375,12 +1296,16 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 		GameManager.restore_energy(10)
 		EventBus.ore_mined_popup.emit(10, "Energy")
 		SoundManager.play_drill_sound()
+		if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+			rpc_tile_broken.rpc_id(NetworkManager.guest_peer_id, Vector2i(col, row), 0.7, 0.9, 1.0)
 		return
 
 	# Explosives — detonate
 	if tile == TileType.EXPLOSIVE or tile == TileType.EXPLOSIVE_ARMED:
 		_mine_cell(col, row)
 		_explode_area(col, row)
+		if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+			rpc_explode_area.rpc_id(NetworkManager.guest_peer_id, Vector2i(col, row))
 		return
 
 	# Reenergy station / Exit station / Upgrade station / Smeltery / Tavern / Ladder — not mineable
@@ -1412,12 +1337,13 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 	if new_damage >= tile_hp:
 		_tile_damage.erase(pos_key)
 		_tile_hits.erase(pos_key)
+		_tile_last_hit.erase(pos_key)
 		_remove_breaking_overlay(pos_key)
 		_mine_cell(col, row)
 		# Sync tile break to guest
 		if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
-			var bc: Color = TILE_COLORS.get(tile, Color(0.7, 0.6, 0.4))
-			rpc_tile_broken.rpc_id(NetworkManager.guest_peer_id, pos_key, bc.r, bc.g, bc.b)
+			var rpc_burst := TILE_PARTICLE_COLORS.get(tile, Color(0.7, 0.6, 0.4)) as Color
+			rpc_tile_broken.rpc_id(NetworkManager.guest_peer_id, pos_key, rpc_burst.r, rpc_burst.g, rpc_burst.b)
 		# Boss tile tracking — delegated to BossSystem
 		if tile == TileType.BOSS_SEGMENT or tile == TileType.BOSS_CORE:
 			boss_system.on_tile_mined(col, row, tile)
@@ -1454,7 +1380,7 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 			_check_streak_milestone()
 		# Particle burst on tile destruction
 		var tile_world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
-		var burst_color: Color = TILE_COLORS.get(tile, Color(0.7, 0.6, 0.4))
+		var burst_color: Color = TILE_PARTICLE_COLORS.get(tile, Color(0.7, 0.6, 0.4))
 		var burst_count := 14 if tile in ORE_TILES else 8
 		if tile == TileType.BOSS_SEGMENT or tile == TileType.BOSS_CORE:
 			burst_count = 20
@@ -1463,11 +1389,12 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 	else:
 		_tile_damage[pos_key] = new_damage
 		_tile_hits[pos_key] = hits_so_far + 1
+		_tile_last_hit[pos_key] = 0.0
 		var damage_ratio := float(new_damage) / float(tile_hp)
 		_update_breaking_overlay(pos_key, damage_ratio)
 		# Small impact sparks on partial hits
 		var hit_world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
-		_spawn_mining_particles(hit_world_pos, TILE_COLORS.get(tile, Color(0.8, 0.7, 0.5)), 4, 30.0, 90.0)
+		_spawn_mining_particles(hit_world_pos, TILE_PARTICLE_COLORS.get(tile, Color(0.8, 0.7, 0.5)), 4, 30.0, 90.0)
 		SoundManager.play_impact_sound()
 		_shake_camera(1.5, 0.07)
 		# Sync partial damage to guest so their breaking overlay matches
@@ -1489,16 +1416,22 @@ func check_player_hazard(col: int, row: int, source_player: PlayerProbe = null) 
 		_shake_camera(5.0, 0.25)
 		_hazard_cooldown = HAZARD_COOLDOWN_TIME
 	elif tile == TileType.EXPLOSIVE or tile == TileType.EXPLOSIVE_ARMED:
-		_mine_cell(col, row)
-		_explode_area(col, row)
+		if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
+			# Guest: send request to host — do not modify tile state locally.
+			# Host will run the explosion and broadcast rpc_explode_area back.
+			rpc_request_explode.rpc_id(1, Vector2i(col, row))
+		else:
+			_mine_cell(col, row)
+			_explode_area(col, row)
+			if NetworkManager.is_multiplayer_session and NetworkManager.guest_peer_id > 0:
+				rpc_explode_area.rpc_id(NetworkManager.guest_peer_id, Vector2i(col, row))
 		_hazard_cooldown = HAZARD_COOLDOWN_TIME
 
 	# Spider web — slow this specific player on contact, then destroy the web
 	var web_key := Vector2i(col, row)
 	if _web_sprites.has(web_key):
-		var web_sprite: Sprite2D = _web_sprites[web_key]
 		_web_sprites.erase(web_key)
-		web_sprite.queue_free()
+		_foliage_layer.erase_cell(web_key)
 		target_player.apply_web_slow()
 
 # ---------------------------------------------------------------------------
@@ -1506,71 +1439,27 @@ func check_player_hazard(col: int, row: int, source_player: PlayerProbe = null) 
 # ---------------------------------------------------------------------------
 
 func _spawn_decorations(data: Dictionary) -> void:
-	var plant_textures: Array = PLANT_TEXTURES.map(func(p): return load(p) as Texture2D)
-	var coral_textures: Array = CORAL_TEXTURES.map(func(p): return load(p) as Texture2D)
-	var web_texture: Texture2D = load(WEB_TEXTURE) as Texture2D
+	_foliage_layer.clear()
+	_web_sprites.clear()
 
-	# Surface plants — sit at the top of the SURFACE_GRASS tiles (z below player)
-	for pos: Vector2i in data.get("plants", []):
-		var tex: Texture2D = plant_textures[randi() % plant_textures.size()]
-		if not tex:
-			continue
-		var sprite := Sprite2D.new()
-		sprite.texture = tex
-		sprite.texture_filter = TEXTURE_FILTER_NEAREST
-		sprite.position = Vector2(
-			pos.x * CELL_SIZE + CELL_SIZE * 0.5,
-			pos.y * CELL_SIZE + CELL_SIZE * 0.25
-		)
-		sprite.z_index = -1
-		add_child(sprite)
+	# Surface plants — placed in the sky row directly above the grass
+	for pos: Vector2i in data.get("foliage_above_grass", []):
+		var atlas_coord: Vector2i = FOLIAGE_SURFACE_PLANT_ATLAS_COORDS[randi() % FOLIAGE_SURFACE_PLANT_ATLAS_COORDS.size()]
+		_foliage_layer.set_cell(pos, 0, atlas_coord)
 
-	# Cave floor coral — grows upward from the solid tile below
+	# Cave plants — grow upward from a solid floor tile
 	for pos: Vector2i in data.get("coral_floor", []):
-		var tex: Texture2D = coral_textures[randi() % coral_textures.size()]
-		if not tex:
-			continue
-		var sprite := Sprite2D.new()
-		sprite.texture = tex
-		sprite.texture_filter = TEXTURE_FILTER_NEAREST
-		sprite.position = Vector2(
-			pos.x * CELL_SIZE + CELL_SIZE * 0.5,
-			pos.y * CELL_SIZE + CELL_SIZE * 0.75
-		)
-		sprite.z_index = -1
-		add_child(sprite)
+		var atlas_coord: Vector2i = FOLIAGE_CAVE_PLANT_ATLAS_COORDS[randi() % FOLIAGE_CAVE_PLANT_ATLAS_COORDS.size()]
+		_foliage_layer.set_cell(pos, 0, atlas_coord)
 
-	# Cave ceiling coral — flipped, hanging from solid tile above
+	# Stalactites — hang from a solid ceiling tile
 	for pos: Vector2i in data.get("coral_ceiling", []):
-		var tex: Texture2D = coral_textures[randi() % coral_textures.size()]
-		if not tex:
-			continue
-		var sprite := Sprite2D.new()
-		sprite.texture = tex
-		sprite.texture_filter = TEXTURE_FILTER_NEAREST
-		sprite.flip_v = true
-		sprite.position = Vector2(
-			pos.x * CELL_SIZE + CELL_SIZE * 0.5,
-			pos.y * CELL_SIZE + CELL_SIZE * 0.25
-		)
-		sprite.z_index = -1
-		add_child(sprite)
+		_foliage_layer.set_cell(pos, 0, FOLIAGE_STALACTITE_ATLAS_COORD)
 
 	# Spider webs — registered in _web_sprites for hazard detection
 	for pos: Vector2i in data.get("webs", []):
-		if not web_texture:
-			break
-		var sprite := Sprite2D.new()
-		sprite.texture = web_texture
-		sprite.texture_filter = TEXTURE_FILTER_NEAREST
-		sprite.modulate = Color(1.0, 1.0, 1.0, 0.85)
-		sprite.position = Vector2(
-			pos.x * CELL_SIZE + CELL_SIZE * 0.5,
-			pos.y * CELL_SIZE + CELL_SIZE * 0.5
-		)
-		sprite.z_index = 0
-		add_child(sprite)
-		_web_sprites[pos] = sprite
+		_foliage_layer.set_cell(pos, 0, FOLIAGE_WEB_ATLAS_COORD)
+		_web_sprites[pos] = true
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -1638,10 +1527,13 @@ func _process_gravity(delta: float) -> void:
 		grid[col][row] = TileType.EMPTY
 		_set_tile_collision(col, row, false)
 		_set_tile_collision(col, below_row, true)
+		_set_visual_cell(col, row)
+		_set_visual_cell(col, below_row)
 
 		# Clear any partial-damage state that belonged to the old position.
 		_tile_damage.erase(pos)
 		_tile_hits.erase(pos)
+		_tile_last_hit.erase(pos)
 		_remove_breaking_overlay(pos)
 
 		# Also clear damage on the destination (a tile falling onto an already-
@@ -1649,6 +1541,7 @@ func _process_gravity(delta: float) -> void:
 		var new_pos := Vector2i(col, below_row)
 		_tile_damage.erase(new_pos)
 		_tile_hits.erase(new_pos)
+		_tile_last_hit.erase(new_pos)
 		_remove_breaking_overlay(new_pos)
 
 		queue_redraw()
@@ -1660,11 +1553,68 @@ func _process_gravity(delta: float) -> void:
 		# unsupported — trigger a gravity check for it too.
 		_trigger_gravity_above(col, row)
 
+# Advance all pending falling stalactites by delta, dropping them one foliage row per step.
+func _process_stalactites(delta: float) -> void:
+	if _falling_stalactites.is_empty():
+		return
+
+	var keys: Array = _falling_stalactites.keys()
+	for pos in keys:
+		_falling_stalactites[pos] -= delta
+		if _falling_stalactites[pos] > 0.0:
+			continue
+
+		_falling_stalactites.erase(pos)
+
+		var col: int = pos.x
+		var row: int = pos.y
+
+		# Verify it is still a stalactite at this foliage position.
+		if _foliage_layer.get_cell_atlas_coords(pos) != FOLIAGE_STALACTITE_ATLAS_COORD:
+			continue
+
+		# Remove from current foliage position.
+		_foliage_layer.erase_cell(pos)
+
+		var below_row := row + 1
+		if below_row >= GRID_ROWS:
+			continue  # Fell off the bottom of the map — it's gone.
+
+		# If the cell below is empty in the main grid, keep falling.
+		if grid[col][below_row] == TileType.EMPTY:
+			var new_pos := Vector2i(col, below_row)
+			_foliage_layer.set_cell(new_pos, 0, FOLIAGE_STALACTITE_ATLAS_COORD)
+			_falling_stalactites[new_pos] = GRAVITY_FALL_DELAY
+		# else: stalactite hit solid ground — it shatters and disappears.
+
 func _mine_cell(col: int, row: int) -> void:
 	grid[col][row] = TileType.EMPTY
 	_set_tile_collision(col, row, false)
+	_set_visual_cell(col, row)
 	# A newly-empty cell may leave a gravity tile unsupported above it.
 	_trigger_gravity_above(col, row)
+	# Remove any cave plant that was resting on this tile (plant sits one row above).
+	_remove_cave_plant_above(col, row)
+	# Trigger any stalactite hanging below this tile to fall (stalactite hangs one row below).
+	_trigger_stalactite_below(col, row)
+
+# Cave plants grow upward from a solid floor; erase one if its support tile is removed.
+func _remove_cave_plant_above(col: int, row: int) -> void:
+	var above := Vector2i(col, row - 1)
+	if above.y < 0:
+		return
+	var atlas: Vector2i = _foliage_layer.get_cell_atlas_coords(above)
+	if atlas in FOLIAGE_CAVE_PLANT_ATLAS_COORDS:
+		_foliage_layer.erase_cell(above)
+
+# Stalactites hang below a solid ceiling; begin falling when their ceiling tile is mined.
+func _trigger_stalactite_below(col: int, row: int) -> void:
+	var below := Vector2i(col, row + 1)
+	if below.y >= GRID_ROWS:
+		return
+	var atlas: Vector2i = _foliage_layer.get_cell_atlas_coords(below)
+	if atlas == FOLIAGE_STALACTITE_ATLAS_COORD and not _falling_stalactites.has(below):
+		_falling_stalactites[below] = GRAVITY_FALL_DELAY
 
 # Spawns physical ore chunks that scatter from the mined tile position.
 # In multiplayer, minerals are awarded immediately (no physical chunks to sync across peers).
@@ -1707,20 +1657,29 @@ func _explode_area(center_col: int, center_row: int) -> void:
 					GameManager.track_ore_mined(tile, minerals)
 				grid[nc][nr] = TileType.EMPTY
 				_set_tile_collision(nc, nr, false)
+				_set_visual_cell(nc, nr)
 				_remove_breaking_overlay(Vector2i(nc, nr))
 				# Explosion may leave gravity tiles unsupported above cleared cells.
 				_trigger_gravity_above(nc, nr)
+				_remove_cave_plant_above(nc, nr)
+				_trigger_stalactite_below(nc, nr)
 				# Particle burst at each cell so the explosion fills the full 3x3 area
 				var cell_world := Vector2(nc * CELL_SIZE + CELL_SIZE * 0.5, nr * CELL_SIZE + CELL_SIZE * 0.5)
 				_spawn_mining_particles(cell_world, Color(1.0, 0.55, 0.05), 4, 80.0, 280.0)
 				_spawn_mining_particles(cell_world, Color(1.0, 0.90, 0.20, 0.8), 2, 50.0, 180.0)
 	SoundManager.play_explosion_sound()
-	_shake_camera(6.0, 0.35)
+	_shake_camera(12.0, 0.55)
 	if player_node:
 		var player_col := int(player_node.global_position.x / CELL_SIZE)
 		var player_row := int(player_node.global_position.y / CELL_SIZE)
 		if abs(player_col - center_col) <= r and abs(player_row - center_row) <= r:
 			_damage_player(1)
+	# In multiplayer check if the guest is also caught in the blast radius
+	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0 and guest_player_node:
+		var gcol := int(guest_player_node.global_position.x / CELL_SIZE)
+		var grow := int(guest_player_node.global_position.y / CELL_SIZE)
+		if abs(gcol - center_col) <= r and abs(grow - center_row) <= r:
+			rpc_damage_guest.rpc_id(NetworkManager.guest_peer_id, 1)
 
 func _damage_player(amount: float) -> void:
 	if player_node and player_node.has_method("take_damage"):
@@ -1737,6 +1696,11 @@ func _on_player_died() -> void:
 		if local_p:
 			local_p.visible = false
 		_show_zone_banner("YOU DIED — SPECTATING", Color(1.0, 0.25, 0.25), -1)
+		# Notify the remote peer so they hide this player's sprite too
+		if NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+			rpc_ghost_mode.rpc_id(NetworkManager.guest_peer_id, true)
+		elif not NetworkManager.is_host:
+			rpc_ghost_mode.rpc_id(1, false)
 		return
 	_game_over = true
 	_show_game_over_overlay("LOST IN SPACE", "Run stardust has been lost...")
@@ -2173,6 +2137,11 @@ func _try_place_ladder_at(gp: Vector2i) -> void:
 	if GameManager.selected_hotbar_slot != 1:
 		EventBus.ore_mined_popup.emit(0, "Select the ladder (slot 2) to place ladders.")
 		return
+	# Guest in multiplayer: send request to host for authoritative placement
+	if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
+		_guest_request_place_ladder(gp)
+		return
+	# Host / single-player path
 	if not player_node:
 		return
 	if GameManager.ladder_count <= 0:
@@ -2190,11 +2159,35 @@ func _try_place_ladder_at(gp: Vector2i) -> void:
 		EventBus.ore_mined_popup.emit(0, "Can only place ladders in open space.")
 		return
 	grid[gp.x][gp.y] = TileType.LADDER
+	_set_visual_cell(gp.x, gp.y)
 	GameManager.ladder_count -= 1
 	GameManager.save_game()
 	EventBus.ladder_count_changed.emit(GameManager.ladder_count)
 	EventBus.ore_mined_popup.emit(0, "Ladder placed!  (%d remaining)" % GameManager.ladder_count)
 	queue_redraw()
+	if NetworkManager.is_multiplayer_session and NetworkManager.guest_peer_id > 0:
+		rpc_ladder_placed.rpc_id(NetworkManager.guest_peer_id, gp)
+
+## Guest-side helper: validates inputs locally for fast feedback then forwards the
+## placement request to the host, which is authoritative over the shared grid.
+func _guest_request_place_ladder(gp: Vector2i) -> void:
+	var local_player := _get_local_player()
+	if not local_player:
+		return
+	if GameManager.ladder_count <= 0:
+		EventBus.ore_mined_popup.emit(0, "No ladders! Buy packs at the Recharging Station.")
+		return
+	if gp.x < 0 or gp.x >= GRID_COLS or gp.y < 0 or gp.y >= GRID_ROWS:
+		EventBus.ore_mined_popup.emit(0, "Aim the cursor at an empty tile to place a ladder.")
+		return
+	var player_tile := local_player.get_grid_pos()
+	if Vector2(gp - player_tile).length() > local_player.mine_range:
+		EventBus.ore_mined_popup.emit(0, "Too far — move closer to place a ladder there.")
+		return
+	if grid[gp.x][gp.y] != TileType.EMPTY:
+		EventBus.ore_mined_popup.emit(0, "Can only place ladders in open space.")
+		return
+	rpc_request_place_ladder.rpc_id(1, gp)
 
 # ---------------------------------------------------------------------------
 # Ladder removal — right-click a placed ladder while holding the ladder slot
@@ -2203,6 +2196,11 @@ func _try_place_ladder_at(gp: Vector2i) -> void:
 func _try_remove_ladder_at(gp: Vector2i) -> void:
 	if GameManager.selected_hotbar_slot != 1:
 		return
+	# Guest in multiplayer: send request to host for authoritative removal
+	if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
+		_guest_request_remove_ladder(gp)
+		return
+	# Host / single-player path
 	if not player_node:
 		return
 	if gp.x < 0 or gp.x >= GRID_COLS or gp.y < 0 or gp.y >= GRID_ROWS:
@@ -2216,11 +2214,31 @@ func _try_remove_ladder_at(gp: Vector2i) -> void:
 		EventBus.ore_mined_popup.emit(0, "Too far — move closer to retrieve that ladder.")
 		return
 	grid[gp.x][gp.y] = TileType.EMPTY
+	_set_visual_cell(gp.x, gp.y)
 	GameManager.ladder_count += 1
 	GameManager.save_game()
 	EventBus.ladder_count_changed.emit(GameManager.ladder_count)
 	EventBus.ore_mined_popup.emit(0, "Ladder retrieved!  (%d in stock)" % GameManager.ladder_count)
 	queue_redraw()
+	if NetworkManager.is_multiplayer_session and NetworkManager.guest_peer_id > 0:
+		rpc_ladder_removed.rpc_id(NetworkManager.guest_peer_id, gp)
+
+## Guest-side helper: validates inputs locally for fast feedback then forwards the
+## removal request to the host, which is authoritative over the shared grid.
+func _guest_request_remove_ladder(gp: Vector2i) -> void:
+	var local_player := _get_local_player()
+	if not local_player:
+		return
+	if gp.x < 0 or gp.x >= GRID_COLS or gp.y < 0 or gp.y >= GRID_ROWS:
+		return
+	if grid[gp.x][gp.y] != TileType.LADDER:
+		EventBus.ore_mined_popup.emit(0, "Right-click a placed ladder to retrieve it.")
+		return
+	var player_tile := local_player.get_grid_pos()
+	if Vector2(gp - player_tile).length() > local_player.mine_range:
+		EventBus.ore_mined_popup.emit(0, "Too far — move closer to retrieve that ladder.")
+		return
+	rpc_request_remove_ladder.rpc_id(1, gp)
 
 # ---------------------------------------------------------------------------
 # Multiplayer RPCs
@@ -2247,7 +2265,8 @@ func rpc_request_mine(grid_pos: Vector2i) -> void:
 		var dist := Vector2(grid_pos - player_tile).length()
 		if dist > guest_player_node.mine_range:
 			return
-	try_mine_at(grid_pos)
+	# Pass guest_player_node so the pickaxe effect originates from the guest avatar
+	try_mine_at(grid_pos, guest_player_node)
 
 ## Host → Guest: a tile was fully destroyed — update grid and play break visuals.
 @rpc("authority", "call_remote", "reliable")
@@ -2256,6 +2275,7 @@ func rpc_tile_broken(grid_pos: Vector2i, burst_r: float, burst_g: float, burst_b
 	var row := grid_pos.y
 	if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
 		return
+	_remove_breaking_overlay(grid_pos)
 	_mine_cell(col, row)
 	var burst_color := Color(burst_r, burst_g, burst_b)
 	var world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
@@ -2271,6 +2291,14 @@ func rpc_tile_hit(grid_pos: Vector2i, damage_ratio: float) -> void:
 	_update_breaking_overlay(grid_pos, damage_ratio)
 	_flash_cells[grid_pos] = 1.0
 	SoundManager.play_impact_sound()
+
+## Host → Guest: spawn the pickaxe throw visual on the guest's screen.
+## Sent for both host-initiated and guest-initiated mines so both players see
+## the effect originating from the correct avatar. Uses unreliable delivery
+## since a missed cosmetic packet is acceptable.
+@rpc("authority", "call_remote", "unreliable")
+func rpc_pickaxe_effect(from_x: float, from_y: float, to_x: float, to_y: float) -> void:
+	_spawn_pickaxe_effect(Vector2(from_x, from_y), Vector2(to_x, to_y))
 
 ## Host → Guest: sync shared run resources so the guest HUD stays accurate.
 ## unreliable_ordered ensures later packets supersede earlier ones; stale data
@@ -2316,3 +2344,156 @@ func rpc_consume_energy_from_guest(amount: int) -> void:
 	if not NetworkManager.is_host:
 		return
 	GameManager.consume_energy(amount)
+
+## Host → Guest: a ladder was placed — update grid so guest can climb it.
+@rpc("authority", "call_remote", "reliable")
+func rpc_ladder_placed(grid_pos: Vector2i) -> void:
+	if grid_pos.x < 0 or grid_pos.x >= GRID_COLS or grid_pos.y < 0 or grid_pos.y >= GRID_ROWS:
+		return
+	grid[grid_pos.x][grid_pos.y] = TileType.LADDER
+	_set_visual_cell(grid_pos.x, grid_pos.y)
+	queue_redraw()
+
+## Host → Guest: a ladder was retrieved — clear it from the guest's grid.
+@rpc("authority", "call_remote", "reliable")
+func rpc_ladder_removed(grid_pos: Vector2i) -> void:
+	if grid_pos.x < 0 or grid_pos.x >= GRID_COLS or grid_pos.y < 0 or grid_pos.y >= GRID_ROWS:
+		return
+	grid[grid_pos.x][grid_pos.y] = TileType.EMPTY
+	_set_tile_collision(grid_pos.x, grid_pos.y, false)
+	_set_visual_cell(grid_pos.x, grid_pos.y)
+	queue_redraw()
+
+## Guest → Host: request placing a ladder at grid_pos.
+## Host validates range from the synced guest position, inventory, and tile state.
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_request_place_ladder(grid_pos: Vector2i) -> void:
+	if not NetworkManager.is_host:
+		return
+	if not guest_player_node:
+		return
+	if grid_pos.x < 0 or grid_pos.x >= GRID_COLS or grid_pos.y < 0 or grid_pos.y >= GRID_ROWS:
+		return
+	var guest_tile := Vector2i(
+		floori(guest_player_node.global_position.x / CELL_SIZE),
+		floori(guest_player_node.global_position.y / CELL_SIZE)
+	)
+	if Vector2(grid_pos - guest_tile).length() > guest_player_node.mine_range:
+		return
+	if GameManager.guest_ladder_count <= 0:
+		return
+	if grid[grid_pos.x][grid_pos.y] != TileType.EMPTY:
+		return
+	grid[grid_pos.x][grid_pos.y] = TileType.LADDER
+	_set_visual_cell(grid_pos.x, grid_pos.y)
+	GameManager.guest_ladder_count -= 1
+	queue_redraw()
+	rpc_ladder_placed.rpc_id(NetworkManager.guest_peer_id, grid_pos)
+	rpc_sync_guest_ladder_count.rpc_id(NetworkManager.guest_peer_id, GameManager.guest_ladder_count)
+
+## Guest → Host: request retrieving a ladder at grid_pos.
+## Host validates range, tile, then returns the ladder to the guest's inventory.
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_request_remove_ladder(grid_pos: Vector2i) -> void:
+	if not NetworkManager.is_host:
+		return
+	if not guest_player_node:
+		return
+	if grid_pos.x < 0 or grid_pos.x >= GRID_COLS or grid_pos.y < 0 or grid_pos.y >= GRID_ROWS:
+		return
+	if grid[grid_pos.x][grid_pos.y] != TileType.LADDER:
+		return
+	var guest_tile := Vector2i(
+		floori(guest_player_node.global_position.x / CELL_SIZE),
+		floori(guest_player_node.global_position.y / CELL_SIZE)
+	)
+	if Vector2(grid_pos - guest_tile).length() > guest_player_node.mine_range:
+		return
+	grid[grid_pos.x][grid_pos.y] = TileType.EMPTY
+	_set_tile_collision(grid_pos.x, grid_pos.y, false)
+	_set_visual_cell(grid_pos.x, grid_pos.y)
+	GameManager.guest_ladder_count += 1
+	queue_redraw()
+	rpc_ladder_removed.rpc_id(NetworkManager.guest_peer_id, grid_pos)
+	rpc_sync_guest_ladder_count.rpc_id(NetworkManager.guest_peer_id, GameManager.guest_ladder_count)
+
+## Host → Guest: the guest's confirmed ladder count after a placement or retrieval.
+## Updates the guest's local ladder_count and saves so it persists between sessions.
+@rpc("authority", "call_remote", "reliable")
+func rpc_sync_guest_ladder_count(count: int) -> void:
+	GameManager.ladder_count = count
+	GameManager.save_game()
+	EventBus.ladder_count_changed.emit(count)
+
+## Guest → Host: announce the guest's current ladder count on join so the host can
+## seed guest_ladder_count for future placement validation.
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_announce_guest_ladder_count(count: int) -> void:
+	if not NetworkManager.is_host:
+		return
+	if multiplayer.get_remote_sender_id() != NetworkManager.guest_peer_id:
+		return
+	GameManager.guest_ladder_count = count
+
+## Host → Guest: an explosive detonated — clear the blast area and apply local damage.
+## Called after the host runs _explode_area so the guest's grid matches.
+@rpc("authority", "call_remote", "reliable")
+func rpc_explode_area(center: Vector2i) -> void:
+	var r := 1
+	for dc: int in range(-r, r + 1):
+		for dr: int in range(-r, r + 1):
+			var nc := center.x + dc
+			var nr := center.y + dr
+			if nc >= 0 and nc < GRID_COLS and nr >= 0 and nr < GRID_ROWS:
+				if grid[nc][nr] != TileType.EMPTY:
+					_mine_cell(nc, nr)
+					var cell_world := Vector2(nc * CELL_SIZE + CELL_SIZE * 0.5, nr * CELL_SIZE + CELL_SIZE * 0.5)
+					_spawn_mining_particles(cell_world, Color(1.0, 0.55, 0.05), 4, 80.0, 280.0)
+					_spawn_mining_particles(cell_world, Color(1.0, 0.90, 0.20, 0.8), 2, 50.0, 180.0)
+	SoundManager.play_explosion_sound()
+	_shake_camera(12.0, 0.55)
+	# Damage the local (guest) player if caught in the blast radius
+	var local_p := _get_local_player()
+	if local_p:
+		var pcol := int(local_p.global_position.x / CELL_SIZE)
+		var prow := int(local_p.global_position.y / CELL_SIZE)
+		if abs(pcol - center.x) <= r and abs(prow - center.y) <= r:
+			local_p.take_damage(1)
+			SoundManager.play_damage_sound()
+			_shake_camera(5.0, 0.25)
+
+## Guest → Host: request an explosion triggered by the guest's player contact with an explosive.
+## Host validates the tile, runs the detonation, then broadcasts rpc_explode_area.
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_request_explode(grid_pos: Vector2i) -> void:
+	if not NetworkManager.is_host:
+		return
+	var col := grid_pos.x
+	var row := grid_pos.y
+	if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
+		return
+	var tile: int = grid[col][row]
+	if tile != TileType.EXPLOSIVE and tile != TileType.EXPLOSIVE_ARMED:
+		return  # Already cleared by the time the request arrived
+	_mine_cell(col, row)
+	_explode_area(col, row)
+	if NetworkManager.guest_peer_id > 0:
+		rpc_explode_area.rpc_id(NetworkManager.guest_peer_id, grid_pos)
+
+## Bidirectional: notify the remote peer that a player entered ghost mode after dying.
+## is_host_player: true when the host's player died, false when the guest's player died.
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_ghost_mode(is_host_player: bool) -> void:
+	var sender := multiplayer.get_remote_sender_id()
+	# Validate: only the owning peer should announce their own player's death
+	if is_host_player and sender != 1:
+		return
+	if not is_host_player and sender == 1:
+		return
+	if is_host_player:
+		if player_node:
+			player_node.visible = false
+	else:
+		if guest_player_node:
+			guest_player_node.visible = false
+	_show_zone_banner("PARTNER DIED — SPECTATING", Color(1.0, 0.25, 0.25), -1)

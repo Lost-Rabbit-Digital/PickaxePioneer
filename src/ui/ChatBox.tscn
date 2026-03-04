@@ -1,0 +1,67 @@
+[gd_scene load_steps=2 format=3 uid="uid://chatbox001"]
+
+[ext_resource type="Script" uid="uid://c2jv5uta11u2n" path="res://src/ui/ChatBox.gd" id="1_script"]
+
+[node name="ChatBox" type="CanvasLayer"]
+layer = 15
+script = ExtResource("1_script")
+
+[node name="Control" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Panel" type="ColorRect" parent="Control"]
+layout_mode = 0
+offset_left = 4.0
+offset_top = 568.0
+offset_right = 314.0
+offset_bottom = 716.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0.55)
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Control"]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 572.0
+offset_right = 306.0
+offset_bottom = 680.0
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 3
+
+[node name="MsgContainer" type="VBoxContainer" parent="Control/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="InputBg" type="ColorRect" parent="Control"]
+layout_mode = 0
+offset_left = 4.0
+offset_top = 684.0
+offset_right = 314.0
+offset_bottom = 712.0
+mouse_filter = 2
+color = Color(0.05, 0.05, 0.1, 0.8)
+
+[node name="InputField" type="LineEdit" parent="Control"]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 686.0
+offset_right = 312.0
+offset_bottom = 710.0
+theme_override_font_sizes/font_size = 12
+placeholder_text = "Say something... (Enter to send, Esc to cancel)"
+
+[node name="HintLabel" type="Label" parent="Control"]
+modulate = Color(0.7, 0.7, 0.7, 0.7)
+layout_mode = 0
+offset_left = 8.0
+offset_top = 690.0
+offset_right = 308.0
+offset_bottom = 710.0
+theme_override_font_sizes/font_size = 11
