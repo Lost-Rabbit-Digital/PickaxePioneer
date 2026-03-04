@@ -1263,7 +1263,7 @@ func _begin_heal_animation(pos_key: Vector2i) -> void:
 # Mining API — called by PlayerProbe
 # ---------------------------------------------------------------------------
 
-func try_mine_at(grid_pos: Vector2i) -> void:
+func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 	var col := grid_pos.x
 	var row := grid_pos.y
 	if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
@@ -1277,10 +1277,15 @@ func try_mine_at(grid_pos: Vector2i) -> void:
 	if _shop_protected_cells.has(Vector2i(col, row)):
 		return
 
-	# Pickaxe throw effect — flies from player to clicked tile
-	if player_node:
+	# Pickaxe throw effect — flies from the mining player to the clicked tile.
+	# miner_node overrides player_node so the guest's effect originates from the
+	# guest avatar; the effect is also broadcast to the other peer so both see it.
+	var miner: PlayerProbe = miner_node if miner_node else player_node
+	if miner:
 		var target_world := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
-		_spawn_pickaxe_effect(player_node.global_position, target_world)
+		_spawn_pickaxe_effect(miner.global_position, target_world)
+		if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+			rpc_pickaxe_effect.rpc_id(NetworkManager.guest_peer_id, miner.global_position.x, miner.global_position.y, target_world.x, target_world.y)
 
 	# Energy nodes — collect immediately
 	if tile == TileType.ENERGY_NODE or tile == TileType.ENERGY_NODE_FULL:
@@ -2209,7 +2214,8 @@ func rpc_request_mine(grid_pos: Vector2i) -> void:
 		var dist := Vector2(grid_pos - player_tile).length()
 		if dist > guest_player_node.mine_range:
 			return
-	try_mine_at(grid_pos)
+	# Pass guest_player_node so the pickaxe effect originates from the guest avatar
+	try_mine_at(grid_pos, guest_player_node)
 
 ## Host → Guest: a tile was fully destroyed — update grid and play break visuals.
 @rpc("authority", "call_remote", "reliable")
@@ -2234,6 +2240,14 @@ func rpc_tile_hit(grid_pos: Vector2i, damage_ratio: float) -> void:
 	_update_breaking_overlay(grid_pos, damage_ratio)
 	_flash_cells[grid_pos] = 1.0
 	SoundManager.play_impact_sound()
+
+## Host → Guest: spawn the pickaxe throw visual on the guest's screen.
+## Sent for both host-initiated and guest-initiated mines so both players see
+## the effect originating from the correct avatar. Uses unreliable delivery
+## since a missed cosmetic packet is acceptable.
+@rpc("authority", "call_remote", "unreliable")
+func rpc_pickaxe_effect(from_x: float, from_y: float, to_x: float, to_y: float) -> void:
+	_spawn_pickaxe_effect(Vector2(from_x, from_y), Vector2(to_x, to_y))
 
 ## Host → Guest: sync shared run resources so the guest HUD stays accurate.
 ## unreliable_ordered ensures later packets supersede earlier ones; stale data
