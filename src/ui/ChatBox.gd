@@ -86,27 +86,31 @@ func _on_message_submitted(text: String) -> void:
 		NetworkManager.broadcast_chat_message(trimmed)
 	_set_chat_open(false)
 
-func _on_chat_message_received(sender_name: String, message: String) -> void:
+func _on_chat_message_received(sender_name: String, message: String, sender_color: Color) -> void:
 	var clean := _text_filter.filter(message)
-	var msg := "[%s] %s" % [sender_name, clean]
-	_history.append(msg)
+	var color_hex := sender_color.to_html(false)
+	var bbcode := "[color=#%s][%s][/color] %s" % [color_hex, sender_name, clean]
+	_history.append(bbcode)
 	if _history.size() > MAX_MESSAGES:
 		_history = _history.slice(_history.size() - MAX_MESSAGES)
 		var oldest := _msg_container.get_child(0)
 		if oldest:
 			oldest.queue_free()
-	_add_label(msg)
+	_add_label(bbcode)
 	if _at_bottom:
 		await get_tree().process_frame
 		_scroll_to_bottom()
 
-func _add_label(text: String) -> void:
-	var lbl := Label.new()
-	lbl.text = text
+func _add_label(bbcode: String) -> void:
+	var lbl := RichTextLabel.new()
+	lbl.bbcode_enabled = true
+	lbl.text = bbcode
+	lbl.fit_content = true
+	lbl.scroll_active = false
 	lbl.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
 	lbl.size_flags_horizontal = Control.SIZE_FILL
 	lbl.modulate = Color(1.0, 1.0, 1.0, 0.92)
-	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.add_theme_font_size_override("normal_font_size", 12)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_msg_container.add_child(lbl)
 
