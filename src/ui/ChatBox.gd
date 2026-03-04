@@ -16,9 +16,15 @@ extends CanvasLayer
 const MAX_MESSAGES: int = 20
 const VISIBLE_LINES: int = 6
 
+## Path to the plain-text word list used for chat filtering.
+## One word per line; lines starting with # are treated as comments.
+## Set to "" to disable filtering.
+@export var filter_file: String = "res://assets/chat_filter.txt"
+
 var _messages: Array[String] = []
 var _msg_labels: Array[Label] = []
 var _chat_open: bool = false
+var _text_filter: TextFilter = TextFilter.new()
 
 @onready var _panel: ColorRect = $Control/Panel
 @onready var _msg_container: VBoxContainer = $Control/MsgContainer
@@ -27,6 +33,8 @@ var _chat_open: bool = false
 @onready var _hint_label: Label = $Control/HintLabel
 
 func _ready() -> void:
+	if filter_file.length() > 0:
+		_text_filter.load_from_file(filter_file)
 	EventBus.chat_message_received.connect(_on_chat_message_received)
 
 	# Collect the fixed Label nodes from the scene in order.
@@ -70,7 +78,8 @@ func _on_message_submitted(text: String) -> void:
 	_set_chat_open(false)
 
 func _on_chat_message_received(sender_name: String, message: String) -> void:
-	_messages.append("[%s] %s" % [sender_name, message])
+	var clean := _text_filter.filter(message)
+	_messages.append("[%s] %s" % [sender_name, clean])
 	if _messages.size() > MAX_MESSAGES:
 		_messages = _messages.slice(_messages.size() - MAX_MESSAGES)
 	_refresh_labels()

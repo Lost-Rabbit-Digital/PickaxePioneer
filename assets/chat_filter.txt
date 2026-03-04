@@ -1,0 +1,12 @@
+# Pickaxe Pioneer — Chat Word Filter List
+# ----------------------------------------
+# One word per line.  Lines starting with # are comments.
+# Matching is case-insensitive and whole-word only.
+# Each matched character is replaced with ❤ in the chat display.
+#
+# Drop in any plain-text profanity list (e.g. github.com/dsojevic/profanity-list)
+# or add your own words below.
+#
+# Example entries (remove the leading # to activate):
+# badword
+# anotherbadword
