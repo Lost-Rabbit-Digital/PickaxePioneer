@@ -417,9 +417,8 @@ const FOLIAGE_CAVE_PLANT_ATLAS_COORDS: Array[Vector2i] = [
 	Vector2i(0, 1), Vector2i(1, 1),
 	Vector2i(7, 2),
 	Vector2i(0, 3), Vector2i(1, 3),
-	Vector2i(7, 4),
 ]
-const FOLIAGE_STALACTITE_ATLAS_COORD: Vector2i = Vector2i(5, 7)
+const FOLIAGE_STALACTITE_ATLAS_COORD: Vector2i = Vector2i(5, 2)
 const FOLIAGE_WEB_ATLAS_COORD: Vector2i = Vector2i(7, 4)
 
 @onready var player_node := $PlayerProbe as PlayerProbe
