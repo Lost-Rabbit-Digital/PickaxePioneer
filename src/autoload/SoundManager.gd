@@ -40,11 +40,11 @@ func _ready() -> void:
 		load("res://assets/sound_effects/pops/pop3.ogg"),
 	]
 	# Load Suno-generated SFX (graceful null if file not yet added)
-	_mining_hit_sound = _try_load("res://assets/sound_effects/mining_hit.ogg")
-	_sonar_ping_sound = _try_load("res://assets/sound_effects/sonar_ping.ogg")
-	_cat_damage_sound = _try_load("res://assets/sound_effects/cat_damage.ogg")
-	_explosion_sound = _try_load("res://assets/sound_effects/explosion.ogg")
-	_boss_stinger_sound = _try_load("res://assets/sound_effects/boss_stinger.ogg")
+	_mining_hit_sound = _try_load("res://assets/sound_effects/mining_hit.mp3")
+	_sonar_ping_sound = _try_load("res://assets/sound_effects/sonar_ping.mp3")
+	_cat_damage_sound = _try_load("res://assets/sound_effects/cat_damage.mp3")
+	_explosion_sound = _try_load("res://assets/sound_effects/explosion.mp3")
+	_boss_stinger_sound = _try_load("res://assets/sound_effects/boss_stinger.mp3")
 
 
 func _try_load(path: String) -> AudioStream:
