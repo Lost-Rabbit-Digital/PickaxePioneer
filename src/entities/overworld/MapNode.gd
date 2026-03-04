@@ -64,10 +64,16 @@ func _ready() -> void:
 	_update_visuals()
 
 func _update_visuals() -> void:
-	label.text = location_name
-
 	var frame_count := sprite.sprite_frames.get_frame_count("default")
 	sprite.frame = randi() % frame_count
+	refresh_visuals()
+
+## Recalculate tint, scale, and label based on the current sprite frame without
+## re-randomizing it.  Call this after manually setting sprite.frame (e.g. when
+## restoring a saved frame from planet config) to keep the visual scale in sync
+## with the planet size category for that frame.
+func refresh_visuals() -> void:
+	label.text = location_name
 
 	# Resolve size multiplier now that the frame (and thus planet size) is known
 	var planet_size: String = get_planet_info().get("size", "Medium")

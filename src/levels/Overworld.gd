@@ -264,6 +264,10 @@ func _restore_node_positions(positions: Dictionary) -> void:
 			node.position = Vector2(pos_data["x"], pos_data["y"])
 			if pos_data.has("sprite_frame"):
 				node.sprite.frame = pos_data["sprite_frame"]
+				# Recalculate tint and scale to match this frame's planet size
+				# category — _update_visuals() picked a random frame earlier, so
+				# _base_scale may not yet reflect the saved planet's true size.
+				node.refresh_visuals()
 
 func _get_cycle_order() -> Array[MapNode]:
 	# Return visible nodes in ring order so the circular layout places each node
