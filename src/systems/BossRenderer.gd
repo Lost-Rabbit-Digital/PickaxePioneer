@@ -24,7 +24,7 @@ func setup(boss_system: BossSystem, grid: Array, cell_size: int) -> void:
 # ---------------------------------------------------------------------------
 
 ## Draw all boss visual overlays onto `canvas` (must be called from _draw()).
-## Renders: per-tile pulse fills, boss-type creature shapes, warning vignettes.
+## Renders: per-segment pulse fills, boss-type creature shapes, warning vignettes.
 func draw_to(
 		canvas: Node2D,
 		min_col: int, max_col: int,
@@ -32,7 +32,7 @@ func draw_to(
 
 	if not _boss or not _boss.boss_active:
 		return
-	if _boss.boss_tile_positions.is_empty() and _boss.rat_segments.is_empty():
+	if _boss.boss_tile_positions.is_empty() and _boss.boss_segments.is_empty():
 		return
 
 	var boss_pulse := sin(_boss.boss_pulse_time * 4.5) * 0.5 + 0.5
@@ -131,11 +131,11 @@ func draw_to(
 
 	# Ancient One: core recharge warning ring
 	if _boss.boss_type == BossSystem.BOSS_TYPE_ANCIENT and _boss.ancient_core_recharge_warning:
-		for bp3 in _boss.boss_tile_positions:
-			if _is_valid(bp3) and _grid[bp3.x][bp3.y] == BOSS_CORE:
+		for seg in _boss.boss_segments:
+			if seg.is_core:
 				var ra := (sin(_boss.boss_pulse_time * 9.0) * 0.5 + 0.5) * 0.50
 				canvas.draw_rect(Rect2(
-					(bp3.x - 2) * _cell_size, (bp3.y - 2) * _cell_size,
+					seg.pos.x - 2.5 * _cell_size, seg.pos.y - 2.5 * _cell_size,
 					5 * _cell_size, 5 * _cell_size),
 					Color(1.0, 1.0, 0.80, ra), false, 3.0)
 				break
@@ -179,13 +179,12 @@ func _draw_boss_creatures(
 func _draw_rat(canvas: Node2D, min_col: int, max_col: int, min_row: int, max_row: int,
 		t: float, pulse: float,
 		core_fill: Color, core_border: Color, seg_fill: Color, seg_border: Color) -> void:
-	# Draw from free-floating rat_segments (not grid tiles)
 	var vp_left  := float(min_col * _cell_size - _cell_size)
 	var vp_right := float((max_col + 2) * _cell_size)
 	var vp_top   := float(min_row * _cell_size - _cell_size)
 	var vp_bot   := float((max_row + 2) * _cell_size)
 
-	for seg in _boss.rat_segments:
+	for seg in _boss.boss_segments:
 		var sp: Vector2 = seg.pos
 		if sp.x < vp_left or sp.x > vp_right or sp.y < vp_top or sp.y > vp_bot:
 			continue
@@ -242,21 +241,28 @@ func _draw_rat(canvas: Node2D, min_col: int, max_col: int, min_row: int, max_row
 func _draw_spider(canvas: Node2D, min_col: int, max_col: int, min_row: int, max_row: int,
 		t: float, pulse: float,
 		core_fill: Color, core_border: Color, seg_fill: Color, seg_border: Color) -> void:
-	var core_px := Vector2(-1.0, -1.0)
-	for bp in _boss.boss_tile_positions:
-		if _is_valid(bp) and _grid[bp.x][bp.y] == BOSS_CORE:
-			core_px = _tile_center(bp.x, bp.y)
+	var vp_left  := float(min_col * _cell_size - _cell_size * 2)
+	var vp_right := float((max_col + 3) * _cell_size)
+	var vp_top   := float(min_row * _cell_size - _cell_size * 2)
+	var vp_bot   := float((max_row + 3) * _cell_size)
+
+	# Find core position for leg-to-core connections
+	var core_pos := _boss.boss_center_pos
+	for seg in _boss.boss_segments:
+		if seg.is_core:
+			core_pos = seg.pos
 			break
 
-	for bp in _boss.boss_tile_positions:
-		if not _in_viewport(bp, min_col, max_col, min_row, max_row):
+	for seg in _boss.boss_segments:
+		var sp: Vector2 = seg.pos
+		if sp.x < vp_left or sp.x > vp_right or sp.y < vp_top or sp.y > vp_bot:
 			continue
-		var btile: int = _grid[bp.x][bp.y]
-		if btile != BOSS_SEGMENT and btile != BOSS_CORE:
-			continue
-		var ctr := _tile_center(bp.x, bp.y)
 
-		if btile == BOSS_CORE:
+		var hp_ratio := float(seg.hp) / float(seg.max_hp)
+		var damage_tint := 1.0 - hp_ratio
+
+		if seg.is_core:
+			var ctr := sp
 			var r_out := 26.0 + pulse * 5.0
 			var r_in  := 14.0
 			var pts_out := PackedVector2Array()
@@ -265,29 +271,45 @@ func _draw_spider(canvas: Node2D, min_col: int, max_col: int, min_row: int, max_
 				var a := float(i) / 16.0 * TAU + t * 0.4
 				pts_out.append(ctr + Vector2(cos(a) * r_out, sin(a) * r_out * 0.75))
 				pts_in.append(ctr + Vector2(cos(a) * r_in, sin(a) * r_in * 0.75))
-			canvas.draw_polygon(pts_out, PackedColorArray([core_fill]))
+			var cf := Color(core_fill.r + damage_tint * 0.3, core_fill.g, core_fill.b, core_fill.a)
+			canvas.draw_polygon(pts_out, PackedColorArray([cf]))
 			canvas.draw_polyline(pts_out + PackedVector2Array([pts_out[0]]), core_border, 2.5)
 			canvas.draw_polygon(pts_in, PackedColorArray([Color(core_border, 0.35 + pulse * 0.30)]))
+			# Fangs — oriented toward facing direction
+			var fa := _boss._spider_facing_angle
+			var fang_dir := Vector2(cos(fa), sin(fa))
+			var fang_perp := Vector2(-fang_dir.y, fang_dir.x)
+			var fang_base := ctr + fang_dir * 16.0
 			var fc := Color(core_border.r * 1.2, core_border.g * 0.5, core_border.b * 0.5, 0.90)
 			canvas.draw_polygon(PackedVector2Array([
-				Vector2(ctr.x - 8, ctr.y + 20), Vector2(ctr.x - 4, ctr.y + 34), Vector2(ctr.x - 16, ctr.y + 22)
+				fang_base + fang_perp * 8.0,
+				fang_base + fang_dir * 14.0 + fang_perp * 4.0,
+				fang_base - fang_perp * 2.0,
 			]), PackedColorArray([fc]))
 			canvas.draw_polygon(PackedVector2Array([
-				Vector2(ctr.x + 8, ctr.y + 20), Vector2(ctr.x + 4, ctr.y + 34), Vector2(ctr.x + 16, ctr.y + 22)
+				fang_base - fang_perp * 8.0,
+				fang_base + fang_dir * 14.0 - fang_perp * 4.0,
+				fang_base + fang_perp * 2.0,
 			]), PackedColorArray([fc]))
 		else:
-			var wave := sin(t * 4.5 + float(bp.x + bp.y) * 1.2) * 8.0
-			var leg_tip := ctr + Vector2(0, wave)
-			var leg_color := Color(seg_border.r, seg_border.g, seg_border.b, 0.75 + pulse * 0.20)
-			if core_px.x >= 0:
-				var dir := (leg_tip - core_px).normalized()
+			# Leg — tapered quadrilateral from core to leg tip
+			var wave := sin(t * 4.5 + seg.angle * 3.0) * 8.0
+			var leg_tip := sp + Vector2(0, wave)
+			var leg_color := Color(seg_border.r + damage_tint * 0.3,
+				seg_border.g * (1.0 - damage_tint * 0.2),
+				seg_border.b, 0.75 + pulse * 0.20)
+
+			var dir := (leg_tip - core_pos)
+			if dir.length() > 1.0:
+				dir = dir.normalized()
 				var perp := Vector2(-dir.y, dir.x)
-				var base := core_px + dir * 14.0
+				var base := core_pos + dir * 14.0
 				var pts := PackedVector2Array([
 					base + perp * 8.0, leg_tip + perp * 3.0,
 					leg_tip - perp * 3.0, base - perp * 8.0,
 				])
-				canvas.draw_polygon(pts, PackedColorArray([seg_fill]))
+				var sf := Color(seg_fill.r + damage_tint * 0.3, seg_fill.g, seg_fill.b, seg_fill.a)
+				canvas.draw_polygon(pts, PackedColorArray([sf]))
 				canvas.draw_polyline(pts + PackedVector2Array([pts[0]]), leg_color, 1.5)
 			canvas.draw_circle(leg_tip, 5.0, Color(seg_border.r, seg_border.g, seg_border.b, 0.80))
 
@@ -298,31 +320,44 @@ func _draw_spider(canvas: Node2D, min_col: int, max_col: int, min_row: int, max_
 func _draw_mole(canvas: Node2D, min_col: int, max_col: int, min_row: int, max_row: int,
 		t: float, pulse: float,
 		core_fill: Color, core_border: Color, seg_fill: Color, seg_border: Color) -> void:
-	var rock := sin(t * 1.8) * 5.0
-	for bp in _boss.boss_tile_positions:
-		if not _in_viewport(bp, min_col, max_col, min_row, max_row):
-			continue
-		var btile: int = _grid[bp.x][bp.y]
-		if btile != BOSS_SEGMENT and btile != BOSS_CORE:
-			continue
-		var ctr := _tile_center(bp.x, bp.y) + Vector2(rock * 0.5, 0.0)
+	# Segments invisible while the mole is underground
+	if _boss.mole_burrowed:
+		return
 
-		if btile == BOSS_CORE:
+	var vp_left  := float(min_col * _cell_size - _cell_size * 2)
+	var vp_right := float((max_col + 3) * _cell_size)
+	var vp_top   := float(min_row * _cell_size - _cell_size * 2)
+	var vp_bot   := float((max_row + 3) * _cell_size)
+
+	for seg in _boss.boss_segments:
+		var sp: Vector2 = seg.pos
+		if sp.x < vp_left or sp.x > vp_right or sp.y < vp_top or sp.y > vp_bot:
+			continue
+
+		var hp_ratio := float(seg.hp) / float(seg.max_hp)
+		var damage_tint := 1.0 - hp_ratio
+		var ctr := sp
+
+		if seg.is_core:
 			var hw := 24.0 + pulse * 4.0
 			var hh := 20.0
 			var fpts := PackedVector2Array()
 			for i in 12:
 				var a := float(i) / 12.0 * TAU
 				fpts.append(ctr + Vector2(cos(a) * hw, sin(a) * hh))
-			canvas.draw_polygon(fpts, PackedColorArray([core_fill]))
+			var cf := Color(core_fill.r + damage_tint * 0.2, core_fill.g, core_fill.b, core_fill.a)
+			canvas.draw_polygon(fpts, PackedColorArray([cf]))
 			canvas.draw_polyline(fpts + PackedVector2Array([fpts[0]]), core_border, 2.5)
+			# Snout
 			var sc2 := Color(core_fill.r + 0.12, core_fill.g + 0.08, core_fill.b, core_fill.a)
 			canvas.draw_circle(ctr + Vector2(0, 8), 10.0, sc2)
 			canvas.draw_circle(ctr + Vector2(0, 8), 10.0, Color(core_border, 0.5), false, 1.5)
+			# Eyes (small — mole is blind)
 			canvas.draw_circle(ctr + Vector2(-10, -5), 4.0, Color(0.05, 0.05, 0.05, 0.90))
 			canvas.draw_circle(ctr + Vector2(10, -5), 4.0, Color(0.05, 0.05, 0.05, 0.90))
 			canvas.draw_circle(ctr + Vector2(-9, -6), 1.5, Color(1.0, 1.0, 1.0, 0.70))
 			canvas.draw_circle(ctr + Vector2(11, -6), 1.5, Color(1.0, 1.0, 1.0, 0.70))
+			# Digging claws extending from body
 			var cc := Color(0.30, 0.20, 0.05, 0.85)
 			for side in [-1.0, 1.0]:
 				canvas.draw_polygon(PackedVector2Array([
@@ -331,20 +366,36 @@ func _draw_mole(canvas: Node2D, min_col: int, max_col: int, min_row: int, max_ro
 					ctr + Vector2(side * 34, 22),
 					ctr + Vector2(side * 24, 10),
 				]), PackedColorArray([cc]))
+		elif seg.get("is_claw", false):
+			# Claw segment — larger, more angular
+			var cw := 22.0 + sin(t * 2.5 + seg.angle) * 4.0
+			var ch := 18.0 + pulse * 3.0
+			var cpts := PackedVector2Array()
+			for i in 6:
+				var a := float(i) / 6.0 * TAU + seg.angle * 0.5
+				cpts.append(ctr + Vector2(cos(a) * cw, sin(a) * ch))
+			var sf := Color(seg_fill.r + damage_tint * 0.3, seg_fill.g * (1.0 - damage_tint * 0.2), seg_fill.b, seg_fill.a)
+			canvas.draw_polygon(cpts, PackedColorArray([sf]))
+			canvas.draw_polyline(cpts + PackedVector2Array([cpts[0]]), seg_border, 2.0)
+			# Claw tip
+			var clc := Color(seg_border.r * 0.6, seg_border.g * 0.5, 0.02, 0.75)
+			var tip_dir := (ctr - _boss.boss_center_pos).normalized()
+			canvas.draw_polygon(PackedVector2Array([
+				ctr + tip_dir * 12.0 + Vector2(-4, 0),
+				ctr + tip_dir * (22.0 + pulse * 5.0),
+				ctr + tip_dir * 12.0 + Vector2(4, 0),
+			]), PackedColorArray([clc]))
 		else:
-			var bw := 18.0 + sin(t * 2.1 + float(bp.x)) * 4.0
-			var bh := 16.0 + sin(t * 1.7 + float(bp.y)) * 3.0
+			# Body segment — rounded bumps
+			var bw := 18.0 + sin(t * 2.1 + seg.angle * 2.0) * 4.0
+			var bh := 16.0 + sin(t * 1.7 + seg.angle) * 3.0
 			var bpts := PackedVector2Array()
 			for i in 8:
 				var a := float(i) / 8.0 * TAU
 				bpts.append(ctr + Vector2(cos(a) * bw, sin(a) * bh))
-			canvas.draw_polygon(bpts, PackedColorArray([seg_fill]))
+			var sf := Color(seg_fill.r + damage_tint * 0.3, seg_fill.g * (1.0 - damage_tint * 0.2), seg_fill.b, seg_fill.a)
+			canvas.draw_polygon(bpts, PackedColorArray([sf]))
 			canvas.draw_polyline(bpts + PackedVector2Array([bpts[0]]), seg_border, 1.5)
-			if (bp.x + bp.y) % 3 == 0:
-				var clc := Color(seg_border.r * 0.6, seg_border.g * 0.5, 0.02, 0.75)
-				canvas.draw_polygon(PackedVector2Array([
-					ctr + Vector2(-4, -14), ctr + Vector2(0, -22 - pulse * 5.0), ctr + Vector2(4, -14)
-				]), PackedColorArray([clc]))
 
 # ---------------------------------------------------------------------------
 # Stone Golem
@@ -354,15 +405,28 @@ func _draw_golem(canvas: Node2D, min_col: int, max_col: int, min_row: int, max_r
 		t: float, pulse: float,
 		core_fill: Color, core_border: Color, seg_fill: Color, seg_border: Color) -> void:
 	var spin := t * 0.8
-	for bp in _boss.boss_tile_positions:
-		if not _in_viewport(bp, min_col, max_col, min_row, max_row):
-			continue
-		var btile: int = _grid[bp.x][bp.y]
-		if btile != BOSS_SEGMENT and btile != BOSS_CORE:
-			continue
-		var ctr := _tile_center(bp.x, bp.y)
+	var vp_left  := float(min_col * _cell_size - _cell_size * 2)
+	var vp_right := float((max_col + 3) * _cell_size)
+	var vp_top   := float(min_row * _cell_size - _cell_size * 2)
+	var vp_bot   := float((max_row + 3) * _cell_size)
 
-		if btile == BOSS_CORE:
+	# Per-armor-phase colors for segment visual differentiation
+	var golem_colors: Array = [
+		[Color(0.80, 0.50, 0.20), Color(0.95, 0.70, 0.40)],  # copper
+		[Color(0.55, 0.55, 0.65), Color(0.75, 0.75, 0.90)],  # iron
+		[Color(1.00, 0.85, 0.10), Color(1.00, 1.00, 0.50)],  # gold
+	]
+
+	for seg in _boss.boss_segments:
+		var sp: Vector2 = seg.pos
+		if sp.x < vp_left or sp.x > vp_right or sp.y < vp_top or sp.y > vp_bot:
+			continue
+
+		var hp_ratio := float(seg.hp) / float(seg.max_hp)
+		var damage_tint := 1.0 - hp_ratio
+		var ctr := sp
+
+		if seg.is_core:
 			var num_pts := 8
 			var r_outer := 22.0 + pulse * 6.0
 			var r_inner := 11.0
@@ -371,21 +435,37 @@ func _draw_golem(canvas: Node2D, min_col: int, max_col: int, min_row: int, max_r
 				var a := spin + float(i) / float(num_pts * 2) * TAU
 				var r := r_outer if i % 2 == 0 else r_inner
 				star_pts.append(ctr + Vector2(cos(a) * r, sin(a) * r))
-			canvas.draw_polygon(star_pts, PackedColorArray([core_fill]))
+			var cf := Color(core_fill.r + damage_tint * 0.2, core_fill.g, core_fill.b, core_fill.a)
+			canvas.draw_polygon(star_pts, PackedColorArray([cf]))
 			canvas.draw_polyline(star_pts + PackedVector2Array([star_pts[0]]), core_border, 2.5)
 			canvas.draw_circle(ctr, 8.0 + pulse * 4.0, Color(core_border.r, core_border.g, core_border.b, 0.60 + pulse * 0.30))
 		else:
-			var rotate_offset := sin(t * 1.2 + float(bp.x * 7 + bp.y * 3)) * 0.3
+			# Color segments by their armor phase
+			var armor_p: int = seg.get("armor_phase", 0)
+			var gci := clampi(armor_p, 0, golem_colors.size() - 1)
+			var s_fill: Color = golem_colors[gci][0]
+			var s_border: Color = golem_colors[gci][1]
+
+			# Dim segments not in the current phase
+			var is_active_phase := armor_p == _boss.golem_phase
+			var alpha_mult := 1.0 if is_active_phase else 0.4
+			s_fill = Color(s_fill.r, s_fill.g, s_fill.b, (0.18 + pulse * 0.18) * alpha_mult)
+			s_border = Color(s_border.r, s_border.g, s_border.b, (0.40 + pulse * 0.25) * alpha_mult)
+
+			var rotate_offset := sin(t * 1.2 + seg.angle * 7.0) * 0.3
 			var hw := 20.0 + pulse * 3.0
 			var hpts := PackedVector2Array()
 			for i in 6:
 				var a := rotate_offset + float(i) / 6.0 * TAU
 				hpts.append(ctr + Vector2(cos(a) * hw, sin(a) * hw * 0.75))
-			canvas.draw_polygon(hpts, PackedColorArray([seg_fill]))
-			canvas.draw_polyline(hpts + PackedVector2Array([hpts[0]]), seg_border, 2.0)
-			var lc := Color(seg_border.r, seg_border.g, seg_border.b, 0.35)
-			canvas.draw_line(ctr + Vector2(-14, 0), ctr + Vector2(14, 0), lc, 1.0)
-			canvas.draw_line(ctr + Vector2(0, -14), ctr + Vector2(0, 14), lc, 1.0)
+			var sf := Color(s_fill.r + damage_tint * 0.3, s_fill.g * (1.0 - damage_tint * 0.2), s_fill.b, s_fill.a)
+			canvas.draw_polygon(hpts, PackedColorArray([sf]))
+			canvas.draw_polyline(hpts + PackedVector2Array([hpts[0]]), s_border, 2.0)
+			# Crack lines
+			if is_active_phase:
+				var lc := Color(s_border.r, s_border.g, s_border.b, 0.35)
+				canvas.draw_line(ctr + Vector2(-14, 0), ctr + Vector2(14, 0), lc, 1.0)
+				canvas.draw_line(ctr + Vector2(0, -14), ctr + Vector2(0, 14), lc, 1.0)
 
 # ---------------------------------------------------------------------------
 # Ancient Star Beast
@@ -396,15 +476,21 @@ func _draw_ancient(canvas: Node2D, min_col: int, max_col: int, min_row: int, max
 		core_fill: Color, core_border: Color, seg_fill: Color, seg_border: Color) -> void:
 	var spin_a := t * 1.1
 	var spin_b := t * -0.7
-	for bp in _boss.boss_tile_positions:
-		if not _in_viewport(bp, min_col, max_col, min_row, max_row):
-			continue
-		var btile: int = _grid[bp.x][bp.y]
-		if btile != BOSS_SEGMENT and btile != BOSS_CORE:
-			continue
-		var ctr := _tile_center(bp.x, bp.y)
+	var vp_left  := float(min_col * _cell_size - _cell_size * 3)
+	var vp_right := float((max_col + 4) * _cell_size)
+	var vp_top   := float(min_row * _cell_size - _cell_size * 3)
+	var vp_bot   := float((max_row + 4) * _cell_size)
 
-		if btile == BOSS_CORE:
+	for seg in _boss.boss_segments:
+		var sp: Vector2 = seg.pos
+		if sp.x < vp_left or sp.x > vp_right or sp.y < vp_top or sp.y > vp_bot:
+			continue
+
+		var hp_ratio := float(seg.hp) / float(seg.max_hp)
+		var damage_tint := 1.0 - hp_ratio
+		var ctr := sp
+
+		if seg.is_core:
 			for ring in 2:
 				var spin_r := spin_a if ring == 0 else spin_b
 				var r_out := (28.0 if ring == 0 else 16.0) + pulse * 5.0
@@ -416,25 +502,34 @@ func _draw_ancient(canvas: Node2D, min_col: int, max_col: int, min_row: int, max
 					var rv := r_out if i % 2 == 0 else r_in
 					spts.append(ctr + Vector2(cos(a) * rv, sin(a) * rv))
 				var fc := core_fill if ring == 0 else Color(core_border, core_border.a * 0.65)
-				canvas.draw_polygon(spts, PackedColorArray([fc]))
+				var cf := Color(fc.r + damage_tint * 0.2, fc.g, fc.b, fc.a)
+				canvas.draw_polygon(spts, PackedColorArray([cf]))
 				canvas.draw_polyline(spts + PackedVector2Array([spts[0]]), core_border, 2.0 - float(ring) * 0.5)
 			canvas.draw_circle(ctr, 8.0 + pulse * 3.0, Color(0.0, 0.0, 0.0, 0.85))
 			canvas.draw_circle(ctr, 5.0, Color(core_border.r, core_border.g, core_border.b, 0.65 + pulse * 0.30))
 		else:
+			# Dim segments not in the current active ring
+			var seg_ring: int = seg.get("ring", 0)
+			var is_active_ring := seg_ring == _boss.ancient_phase
+			var alpha_mult := 1.0 if is_active_ring else 0.4
+
 			var shard_len := 22.0 + pulse * 6.0
 			var shard_w   := 9.0
-			var oscillate := sin(t * 3.0 + float(bp.x + bp.y) * 0.8) * 5.0
+			var oscillate := sin(t * 3.0 + seg.angle * 3.0) * 5.0
 			var pts := PackedVector2Array([
 				ctr + Vector2(0, -shard_len - oscillate),
 				ctr + Vector2(shard_w, 0),
 				ctr + Vector2(0, shard_len * 0.35),
 				ctr + Vector2(-shard_w, 0),
 			])
-			canvas.draw_polygon(pts, PackedColorArray([seg_fill]))
-			canvas.draw_polyline(pts + PackedVector2Array([pts[0]]), seg_border, 1.5)
-			canvas.draw_line(ctr + Vector2(0, -shard_len * 0.7 - oscillate),
-				ctr + Vector2(0, shard_len * 0.25),
-				Color(1.0, 1.0, 1.0, 0.20 + pulse * 0.20), 2.0)
+			var sf := Color(seg_fill.r + damage_tint * 0.3, seg_fill.g, seg_fill.b, seg_fill.a * alpha_mult)
+			var sb := Color(seg_border.r, seg_border.g, seg_border.b, seg_border.a * alpha_mult)
+			canvas.draw_polygon(pts, PackedColorArray([sf]))
+			canvas.draw_polyline(pts + PackedVector2Array([pts[0]]), sb, 1.5)
+			if is_active_ring:
+				canvas.draw_line(ctr + Vector2(0, -shard_len * 0.7 - oscillate),
+					ctr + Vector2(0, shard_len * 0.25),
+					Color(1.0, 1.0, 1.0, (0.20 + pulse * 0.20) * alpha_mult), 2.0)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -451,9 +546,10 @@ func _in_viewport(bp: Vector2i, min_col: int, max_col: int, min_row: int, max_ro
 	return bp.x >= min_col and bp.x <= max_col and bp.y >= min_row and bp.y <= max_row
 
 func _find_core_label_px(offset: Vector2) -> Vector2:
-	for bp in _boss.boss_tile_positions:
-		if _is_valid(bp) and _grid[bp.x][bp.y] == BOSS_CORE:
-			return Vector2(bp.x * _cell_size + offset.x, bp.y * _cell_size + offset.y)
+	# Use free-floating segment positions
+	for seg in _boss.boss_segments:
+		if seg.is_core:
+			return Vector2(seg.pos.x + offset.x, seg.pos.y + offset.y)
 	return Vector2(-9999.0, -9999.0)
 
 func _draw_edge_vignette(

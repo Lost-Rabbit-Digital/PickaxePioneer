@@ -1280,12 +1280,16 @@ func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 	if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
 		return
 
-	# Free-floating rat boss segments — check before grid tile lookup so clicks
+	# Free-floating boss segments — check before grid tile lookup so clicks
 	# register even over empty tiles where a segment is floating
-	if boss_system.boss_active and boss_system.boss_type == BossSystem.BOSS_TYPE_GIANT_RAT:
+	if boss_system.boss_active and not boss_system.boss_segments.is_empty():
 		var click_world := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
-		var hit := boss_system.try_hit_rat_segment(click_world)
+		var hit := boss_system.try_hit_boss_segment(click_world, smelt_system.last_ore_group)
 		if not hit.is_empty():
+			if hit.has("blocked"):
+				EventBus.ore_mined_popup.emit(0, hit.message)
+				SoundManager.play_impact_sound()
+				return
 			var miner: PlayerProbe = miner_node if miner_node else player_node
 			if miner:
 				_spawn_pickaxe_effect(miner.global_position, hit.pos)
