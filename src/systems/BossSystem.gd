@@ -531,6 +531,7 @@ func _activate(positions: Array[Vector2i], type: int, spawn_row: int) -> void:
 	boss_type = type
 	boss_pulse_time = 0.0
 	_boss_spawn_row = spawn_row
+	SoundManager.play_boss_stinger_sound()
 
 
 # ---------------------------------------------------------------------------
