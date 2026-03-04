@@ -49,6 +49,18 @@ const RAT_CHARGE_WARNING: float     = 1.5
 const RAT_CHARGE_LENGTH: int        = 5
 const RAT_CHARGE_FILL_CHANCE: float = 0.70
 
+# Giant Rat King — free-floating segment constants
+const RAT_SEGMENT_HP: int           = 3      # clicks to destroy a body segment
+const RAT_CORE_HP: int              = 5      # clicks to destroy the core
+const RAT_ORBIT_RADIUS_OUTER: float = 160.0  # outer ring orbit radius (pixels)
+const RAT_ORBIT_RADIUS_INNER: float = 90.0   # inner ring orbit radius (pixels)
+const RAT_FOLLOW_SPEED: float       = 35.0   # boss center follows player (pixels/sec)
+const RAT_ORBIT_SPEED: float        = 0.8    # radians per second for orbital motion
+const RAT_HIT_RADIUS: float         = 36.0   # click detection radius (pixels)
+
+# Boss despawn — if the player descends this many rows past spawn, boss despawns
+const BOSS_DESPAWN_ROWS: int = 20
+
 # Void Spider Matriarch — web trap around the player's position
 const SPIDER_WEB_INTERVAL: float    = 7.0
 const SPIDER_WEB_WARNING: float     = 1.5
@@ -95,6 +107,11 @@ var rat_charge_warning_active: bool = false
 var rat_charge_warning_timer: float = 0.0
 var rat_charge_target_pos: Vector2i = Vector2i(-1, -1)
 
+## Giant Rat free-floating segment state (read by BossRenderer)
+## Each entry: {pos: Vector2, hp: int, max_hp: int, is_core: bool, angle: float, orbit_r: float}
+var rat_segments: Array = []
+var rat_center_pos: Vector2 = Vector2.ZERO
+
 ## Void Spider web draw state
 var spider_web_warning_active: bool = false
 var spider_web_warning_timer: float = 0.0
@@ -133,6 +150,7 @@ var _player_row: int = -1
 var _grid_cols: int = 96
 var _grid_rows: int = 128
 var _surface_rows: int = 3
+var _cell_size: int = 64
 
 # Callables injected by MiningLevel at setup
 var _grid: Array = []
@@ -149,6 +167,7 @@ func setup(
 		grid_cols: int,
 		grid_rows: int,
 		surface_rows: int,
+		cell_size: int,
 		set_collision_fn: Callable,
 		show_banner_fn: Callable,
 		shake_camera_fn: Callable,
@@ -158,6 +177,7 @@ func setup(
 	_grid_cols = grid_cols
 	_grid_rows = grid_rows
 	_surface_rows = surface_rows
+	_cell_size = cell_size
 	_set_collision = set_collision_fn
 	_show_banner = show_banner_fn
 	_shake_camera = shake_camera_fn
@@ -184,6 +204,12 @@ func update(delta: float, player_col: int = -1, player_row: int = -1) -> void:
 	if not boss_active:
 		return
 	boss_pulse_time += delta
+
+	# Despawn if the player has descended far past the boss spawn depth
+	if _boss_spawn_row > 0 and _player_row > _boss_spawn_row + BOSS_DESPAWN_ROWS:
+		_on_boss_despawned()
+		return
+
 	_update_giant_rat(delta)
 	_update_spider(delta)
 	_update_blind_mole(delta)
@@ -294,36 +320,100 @@ func on_tile_mined(col: int, row: int, tile_type: int) -> void:
 		_on_boss_defeated()
 
 
+## Attempt to hit a free-floating rat segment at the given world position.
+## Returns a Dictionary with hit info ({pos, destroyed, is_core, minerals})
+## or an empty Dictionary if no segment was hit.
+func try_hit_rat_segment(click_world: Vector2) -> Dictionary:
+	if not boss_active or boss_type != BOSS_TYPE_GIANT_RAT:
+		return {}
+
+	# Find the closest segment within hit radius
+	var best_idx := -1
+	var best_dist := RAT_HIT_RADIUS + 1.0
+	for i in rat_segments.size():
+		var seg: Dictionary = rat_segments[i]
+		var d := click_world.distance_to(seg.pos)
+		if d < RAT_HIT_RADIUS and d < best_dist:
+			best_dist = d
+			best_idx = i
+
+	if best_idx < 0:
+		return {}
+
+	var seg: Dictionary = rat_segments[best_idx]
+	seg.hp -= 1
+
+	var destroyed := seg.hp <= 0
+	var result := {
+		"pos": seg.pos,
+		"destroyed": destroyed,
+		"is_core": seg.is_core,
+		"minerals": 75 if seg.is_core else 10,
+	}
+
+	if destroyed:
+		rat_segments.remove_at(best_idx)
+		_shake_camera.call(4.0, 0.2)
+		if rat_segments.is_empty():
+			_on_boss_defeated()
+
+	return result
+
+
 # ---------------------------------------------------------------------------
 # Spawn helpers
 # ---------------------------------------------------------------------------
 
 func _spawn_giant_rat_king(player_col: int) -> void:
 	var boss_row := BOSS_MILESTONES[0]
-	var positions: Array[Vector2i] = []
-	var half := BOSS_SEGMENT_COUNT / 2
+	var cs := _cell_size
 
-	for dc in range(-half, half + 1):
-		var col: int = clampi(player_col + dc, 2, _grid_cols - 3)
-		var tile_type := _TILE_BOSS_CORE if dc == 0 else _TILE_BOSS_SEGMENT
-		_set_grid(col, boss_row, tile_type)
-		_set_collision.call(col, boss_row, true)
-		positions.append(Vector2i(col, boss_row))
+	# Free-floating boss — no grid tiles placed.  Segments orbit the center.
+	rat_center_pos = Vector2(player_col * cs + cs * 0.5, boss_row * cs + cs * 0.5)
+	rat_segments.clear()
 
-	for dc in range(-half + 2, half - 1):
-		var col: int = clampi(player_col + dc, 2, _grid_cols - 3)
-		if _grid[col][boss_row + 1] != _TILE_SURFACE and _grid[col][boss_row + 1] != _TILE_EXIT_STATION:
-			_set_grid(col, boss_row + 1, _TILE_BOSS_SEGMENT)
-			_set_collision.call(col, boss_row + 1, true)
-			positions.append(Vector2i(col, boss_row + 1))
+	# Core — stays near the center
+	rat_segments.append({
+		"pos": rat_center_pos,
+		"hp": RAT_CORE_HP,
+		"max_hp": RAT_CORE_HP,
+		"is_core": true,
+		"angle": 0.0,
+		"orbit_r": 0.0,
+	})
 
-	_activate(positions, BOSS_TYPE_GIANT_RAT, boss_row)
+	# Outer ring — 6 segments
+	for i in 6:
+		var a := float(i) / 6.0 * TAU
+		rat_segments.append({
+			"pos": rat_center_pos + Vector2(cos(a), sin(a)) * RAT_ORBIT_RADIUS_OUTER,
+			"hp": RAT_SEGMENT_HP,
+			"max_hp": RAT_SEGMENT_HP,
+			"is_core": false,
+			"angle": a,
+			"orbit_r": RAT_ORBIT_RADIUS_OUTER,
+		})
+
+	# Inner ring — 6 segments (offset phase)
+	for i in 6:
+		var a := float(i) / 6.0 * TAU + TAU / 12.0
+		rat_segments.append({
+			"pos": rat_center_pos + Vector2(cos(a), sin(a)) * RAT_ORBIT_RADIUS_INNER,
+			"hp": RAT_SEGMENT_HP,
+			"max_hp": RAT_SEGMENT_HP,
+			"is_core": false,
+			"angle": a,
+			"orbit_r": RAT_ORBIT_RADIUS_INNER,
+		})
+
+	# Activate with empty tile positions — rat boss uses rat_segments instead
+	_activate([], BOSS_TYPE_GIANT_RAT, boss_row)
 	_rat_center = Vector2i(player_col, boss_row)
 	_rat_charge_timer = RAT_CHARGE_INTERVAL
 	_show_banner.call("GIANT SPACE RAT AWAKENS!", Color(0.90, 0.10, 0.05))
 	EventBus.boss_hint_popup.emit("Boss! Watch for charge attacks!")
 	_shake_camera.call(8.0, 0.4)
-	_pending_hints = ["Watch for CHARGE warnings — dodge the debris!", "Click each glowing tile to chip away at it!", "Defeat the boss to restore energy!"]
+	_pending_hints = ["Watch for CHARGE warnings — dodge the debris!", "Click on the floating segments to destroy them!", "Defeat the boss to restore energy!"]
 
 
 func _spawn_cave_spider_matriarch(player_col: int) -> void:
@@ -526,7 +616,16 @@ func _spawn_ancient_one(player_col: int) -> void:
 
 
 func _activate(positions: Array[Vector2i], type: int, spawn_row: int) -> void:
-	boss_tile_positions = positions
+	# Deduplicate positions — clamping near grid edges can produce repeats,
+	# and Array.erase() only removes the first match so phantom entries would
+	# prevent the boss from ever registering as defeated.
+	var seen: Dictionary = {}
+	var unique: Array[Vector2i] = []
+	for p in positions:
+		if not seen.has(p):
+			seen[p] = true
+			unique.append(p)
+	boss_tile_positions = unique
 	boss_active = true
 	boss_type = type
 	boss_pulse_time = 0.0
@@ -538,10 +637,12 @@ func _activate(positions: Array[Vector2i], type: int, spawn_row: int) -> void:
 # Defeat
 # ---------------------------------------------------------------------------
 
-func _on_boss_defeated() -> void:
+func _clear_boss_state() -> void:
 	boss_active = false
 	boss_tile_positions.clear()
 	boss_type = BOSS_TYPE_NONE
+	rat_segments.clear()
+	rat_center_pos = Vector2.ZERO
 	_rat_center = Vector2i(-1, -1)
 	_rat_charge_timer = 0.0
 	rat_charge_warning_active = false
@@ -565,6 +666,9 @@ func _on_boss_defeated() -> void:
 	_ancient_outer_count = 0
 	_ancient_inner_count = 0
 
+
+func _on_boss_defeated() -> void:
+	_clear_boss_state()
 	GameManager.bosses_defeated_total += 1
 	GameManager.add_currency(BOSS_REWARD_BONUS)
 	EventBus.minerals_earned.emit(BOSS_REWARD_BONUS)
@@ -574,6 +678,22 @@ func _on_boss_defeated() -> void:
 	GameManager.restore_energy(50)
 	EventBus.ore_mined_popup.emit(50, "Energy restored!")
 	_shake_camera.call(14.0, 0.6)
+
+
+func _on_boss_despawned() -> void:
+	# Remove any remaining grid-based boss tiles (for non-rat bosses)
+	for bp in boss_tile_positions:
+		if _is_valid_pos(bp):
+			_set_grid(bp.x, bp.y, 0)  # EMPTY
+			_set_collision.call(bp.x, bp.y, false)
+			_erase_tile_state.call(bp)
+	_clear_boss_state()
+	_show_banner.call("Boss retreats...", Color(0.70, 0.70, 0.70))
+	EventBus.boss_hint_popup.emit("The boss has retreated — keep mining!")
+
+
+func _is_valid_pos(pos: Vector2i) -> bool:
+	return pos.x >= 0 and pos.x < _grid_cols and pos.y >= 0 and pos.y < _grid_rows
 
 
 # ---------------------------------------------------------------------------
@@ -633,6 +753,28 @@ func _update_giant_rat(delta: float) -> void:
 	if boss_type != BOSS_TYPE_GIANT_RAT:
 		return
 
+	var cs := _cell_size
+
+	# Move center toward the player position (slowly)
+	if _player_col >= 0 and _player_row >= 0:
+		var player_px := Vector2(_player_col * cs + cs * 0.5, _player_row * cs + cs * 0.5)
+		var dir := (player_px - rat_center_pos)
+		var dist := dir.length()
+		if dist > 4.0:
+			rat_center_pos += dir.normalized() * minf(RAT_FOLLOW_SPEED * delta, dist)
+
+	# Update segment orbital positions
+	for seg in rat_segments:
+		if seg.is_core:
+			seg.pos = rat_center_pos + Vector2(0, sin(boss_pulse_time * 2.5) * 4.0)
+		else:
+			seg.angle += RAT_ORBIT_SPEED * delta * (0.7 if seg.orbit_r > 120.0 else 1.3)
+			seg.pos = rat_center_pos + Vector2(cos(seg.angle), sin(seg.angle)) * seg.orbit_r
+
+	# Update grid-coord center for charge direction
+	_rat_center = Vector2i(roundi(rat_center_pos.x / cs), roundi(rat_center_pos.y / cs))
+
+	# Charge attack timer
 	if rat_charge_warning_active:
 		rat_charge_warning_timer -= delta
 		if rat_charge_warning_timer <= 0.0:
@@ -800,35 +942,12 @@ func _execute_ancient_void_pulse() -> void:
 
 ## Reset all state at the start of a new run.
 func reset() -> void:
-	boss_active = false
-	boss_type = BOSS_TYPE_NONE
-	boss_tile_positions.clear()
+	_clear_boss_state()
 	boss_pulse_time = 0.0
 	_boss_milestones_seen = [false, false, false, false, false]
 	_boss_spawn_row = -1
-	_rat_center = Vector2i(-1, -1)
-	_rat_charge_timer = 0.0
-	rat_charge_warning_active = false
-	rat_charge_warning_timer = 0.0
-	rat_charge_target_pos = Vector2i(-1, -1)
-	_spider_center = Vector2i(-1, -1)
-	_spider_web_timer = 0.0
-	spider_web_warning_active = false
-	spider_web_warning_timer = 0.0
-	spider_web_target_pos = Vector2i(-1, -1)
-	_mole_tremor_timer = 0.0
-	mole_tremor_warning_active = false
 	mole_tremor_warning_timer = 0.0
-	_mole_center = Vector2i(-1, -1)
-	golem_phase = 0
-	_golem_segments_this_phase = 0
-	ancient_phase = 0
-	ancient_void_warning_active = false
+	spider_web_warning_timer = 0.0
 	ancient_void_warning_timer = 0.0
-	ancient_core_recharge_warning = false
-	_ancient_center = Vector2i(-1, -1)
-	_ancient_outer_positions.clear()
-	_ancient_outer_count = 0
-	_ancient_inner_count = 0
 	_ancient_void_timer = 0.0
 	_ancient_core_recharge_timer = 0.0

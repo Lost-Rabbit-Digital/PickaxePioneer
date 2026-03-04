@@ -535,7 +535,7 @@ func _ready() -> void:
 
 	# Initialise BossSystem with grid reference and MiningLevel callbacks
 	boss_system.setup(
-		grid, GRID_COLS, GRID_ROWS, SURFACE_ROWS,
+		grid, GRID_COLS, GRID_ROWS, SURFACE_ROWS, CELL_SIZE,
 		func(c, r, solid): _set_tile_collision(c, r, solid),
 		func(text, color): _show_zone_banner(text, color),
 		func(intensity, duration): _shake_camera(intensity, duration),
@@ -1279,6 +1279,26 @@ func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 	var row := grid_pos.y
 	if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
 		return
+
+	# Free-floating rat boss segments — check before grid tile lookup so clicks
+	# register even over empty tiles where a segment is floating
+	if boss_system.boss_active and boss_system.boss_type == BossSystem.BOSS_TYPE_GIANT_RAT:
+		var click_world := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
+		var hit := boss_system.try_hit_rat_segment(click_world)
+		if not hit.is_empty():
+			var miner: PlayerProbe = miner_node if miner_node else player_node
+			if miner:
+				_spawn_pickaxe_effect(miner.global_position, hit.pos)
+			if hit.destroyed:
+				_spawn_mining_particles(hit.pos, Color(0.85, 0.15, 0.05), 20, 60.0, 200.0)
+				SoundManager.play_drill_sound()
+				EventBus.ore_mined_popup.emit(hit.minerals, "Boss Core!" if hit.is_core else "Boss Segment!")
+				GameManager.add_currency(hit.minerals)
+			else:
+				_spawn_mining_particles(hit.pos, Color(0.85, 0.15, 0.05), 4, 30.0, 90.0)
+				SoundManager.play_impact_sound()
+				_shake_camera(1.5, 0.07)
+			return
 
 	var tile: int = grid[col][row]
 	if tile == TileType.EMPTY or tile == TileType.SURFACE:
