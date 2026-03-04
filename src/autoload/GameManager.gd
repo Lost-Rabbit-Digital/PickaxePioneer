@@ -61,6 +61,9 @@ var settlement_mandible_bonus: int = 0   # temporary +N mandible power for one r
 
 # Ladder count — persists across sessions; decremented each time player places a ladder
 var ladder_count: int = 10
+# Guest's ladder inventory in multiplayer — tracked on the host machine for authoritative validation.
+# On the guest machine, ladder_count itself serves as the guest's personal inventory.
+var guest_ladder_count: int = 10
 
 # Currently selected hotbar slot: 0 = pickaxe, 1 = ladder, 2 = empty
 var selected_hotbar_slot: int = 0
