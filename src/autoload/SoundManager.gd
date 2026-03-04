@@ -1,10 +1,30 @@
 extends Node
 
 # SoundManager
-# Generates and plays procedural sounds
+# Plays sample-based SFX with procedural fallbacks for missing files
 
 var sample_rate = 44100.0
 var _pop_sounds: Array = []
+
+# Suno-generated sound effect samples (loaded at runtime, null if file missing)
+var _mining_hit_sound: AudioStream = null
+var _sonar_ping_sound: AudioStream = null
+var _cat_damage_sound: AudioStream = null
+var _explosion_sound: AudioStream = null
+var _boss_stinger_sound: AudioStream = null
+var _player_jump_sound: AudioStream = null
+var _player_land_sound: AudioStream = null
+var _player_death_sound: AudioStream = null
+var _ui_click_sound: AudioStream = null
+var _purchase_confirm_sound: AudioStream = null
+var _boss_warning_sound: AudioStream = null
+var _boss_defeated_sound: AudioStream = null
+var _energy_low_sound: AudioStream = null
+var _chain_bonus_sound: AudioStream = null
+var _scene_transition_sound: AudioStream = null
+var _forager_deposit_sound: AudioStream = null
+var _depth_milestone_sound: AudioStream = null
+var _lucky_strike_sound: AudioStream = null
 
 var _rocket_engine_player: AudioStreamPlayer = null
 
@@ -32,6 +52,44 @@ func _ready() -> void:
 		load("res://assets/sound_effects/pops/pop2.ogg"),
 		load("res://assets/sound_effects/pops/pop3.ogg"),
 	]
+	# Load Suno-generated SFX (graceful null if file not yet added)
+	_mining_hit_sound = _try_load("res://assets/sound_effects/mining_hit.mp3")
+	_sonar_ping_sound = _try_load("res://assets/sound_effects/sonar_ping.mp3")
+	_cat_damage_sound = _try_load("res://assets/sound_effects/cat_damage.mp3")
+	_explosion_sound = _try_load("res://assets/sound_effects/explosion.mp3")
+	_boss_stinger_sound = _try_load("res://assets/sound_effects/boss_stinger.mp3")
+	_player_jump_sound = _try_load("res://assets/sound_effects/player_jump.mp3")
+	_player_land_sound = _try_load("res://assets/sound_effects/player_land.mp3")
+	_player_death_sound = _try_load("res://assets/sound_effects/player_death.mp3")
+	_ui_click_sound = _try_load("res://assets/sound_effects/ui_click.mp3")
+	_purchase_confirm_sound = _try_load("res://assets/sound_effects/purchase_confirm.mp3")
+	_boss_warning_sound = _try_load("res://assets/sound_effects/boss_warning.mp3")
+	_boss_defeated_sound = _try_load("res://assets/sound_effects/boss_defeated.mp3")
+	_energy_low_sound = _try_load("res://assets/sound_effects/energy_low.mp3")
+	_chain_bonus_sound = _try_load("res://assets/sound_effects/chain_bonus.mp3")
+	_scene_transition_sound = _try_load("res://assets/sound_effects/scene_transition.mp3")
+	_forager_deposit_sound = _try_load("res://assets/sound_effects/forager_deposit.mp3")
+	_depth_milestone_sound = _try_load("res://assets/sound_effects/depth_milestone.mp3")
+	_lucky_strike_sound = _try_load("res://assets/sound_effects/lucky_strike.mp3")
+
+
+func _try_load(path: String) -> AudioStream:
+	if ResourceLoader.exists(path):
+		return load(path)
+	return null
+
+
+func _play_sample(stream: AudioStream, volume_db: float = -8.0, pitch_min: float = 1.0, pitch_max: float = 1.0) -> void:
+	var player := AudioStreamPlayer.new()
+	add_child(player)
+	player.stream = stream
+	player.pitch_scale = randf_range(pitch_min, pitch_max)
+	player.bus = &"SFX"
+	player.volume_db = volume_db
+	player.play()
+	await player.finished
+	player.queue_free()
+
 
 func play_pickup_sound() -> void:
 	var player = AudioStreamPlayer.new()
@@ -47,17 +105,151 @@ func play_pickup_sound() -> void:
 	player.queue_free()
 
 func play_drill_sound() -> void:
+	if _mining_hit_sound:
+		_play_sample(_mining_hit_sound, -8.0, 0.85, 1.15)
+		return
+	# Fallback: pop sound
 	var player = AudioStreamPlayer.new()
 	add_child(player)
-
 	player.stream = _pop_sounds[randi() % _pop_sounds.size()]
 	player.pitch_scale = randf_range(0.8, 1.2)
 	player.bus = &"SFX"
 	player.volume_db = -8.0
 	player.play()
-
 	await player.finished
 	player.queue_free()
+
+func play_sonar_ping_sound() -> void:
+	if _sonar_ping_sound:
+		_play_sample(_sonar_ping_sound, -6.0)
+		return
+	# Fallback: procedural ping
+	var player := AudioStreamPlayer.new()
+	add_child(player)
+	var stream := AudioStreamGenerator.new()
+	stream.mix_rate = sample_rate
+	stream.buffer_length = 0.3
+	player.stream = stream
+	player.bus = &"SFX"
+	player.volume_db = -8.0
+	player.play()
+	var playback := player.get_stream_playback()
+	_fill_sonar_ping_buffer(playback)
+	await get_tree().create_timer(0.5).timeout
+	player.queue_free()
+
+func play_damage_sound() -> void:
+	if _cat_damage_sound:
+		_play_sample(_cat_damage_sound, -6.0, 0.9, 1.1)
+		return
+	# Fallback: procedural descending tone
+	var player = AudioStreamPlayer.new()
+	add_child(player)
+	var stream = AudioStreamGenerator.new()
+	stream.mix_rate = sample_rate
+	stream.buffer_length = 0.15
+	player.stream = stream
+	player.bus = &"SFX"
+	player.volume_db = -6.0
+	player.play()
+	var playback = player.get_stream_playback()
+	_fill_damage_buffer(playback)
+	await get_tree().create_timer(0.3).timeout
+	player.queue_free()
+
+func play_explosion_sound() -> void:
+	if _explosion_sound:
+		_play_sample(_explosion_sound, -5.0, 0.9, 1.1)
+		return
+	# Fallback: procedural white noise
+	var player = AudioStreamPlayer.new()
+	add_child(player)
+	var stream = AudioStreamGenerator.new()
+	stream.mix_rate = sample_rate
+	stream.buffer_length = 0.5
+	player.stream = stream
+	player.bus = &"SFX"
+	player.volume_db = -5.0
+	player.play()
+	var playback = player.get_stream_playback()
+	_fill_explosion_buffer(playback)
+	await get_tree().create_timer(0.6).timeout
+	player.queue_free()
+
+func play_boss_stinger_sound() -> void:
+	if _boss_stinger_sound:
+		_play_sample(_boss_stinger_sound, -4.0)
+		return
+	# Fallback: procedural ominous tone
+	var player := AudioStreamPlayer.new()
+	add_child(player)
+	var stream := AudioStreamGenerator.new()
+	stream.mix_rate = sample_rate
+	stream.buffer_length = 0.5
+	player.stream = stream
+	player.bus = &"SFX"
+	player.volume_db = -4.0
+	player.play()
+	var playback := player.get_stream_playback()
+	_fill_boss_stinger_buffer(playback)
+	await get_tree().create_timer(1.0).timeout
+	player.queue_free()
+
+func play_jump_sound() -> void:
+	if _player_jump_sound:
+		_play_sample(_player_jump_sound, -10.0, 0.9, 1.1)
+
+func play_land_sound() -> void:
+	if _player_land_sound:
+		_play_sample(_player_land_sound, -10.0, 0.9, 1.1)
+
+func play_death_sound() -> void:
+	if _player_death_sound:
+		_play_sample(_player_death_sound, -4.0)
+
+func play_ui_click_sound() -> void:
+	if _ui_click_sound:
+		_play_sample(_ui_click_sound, -8.0)
+
+func play_purchase_confirm_sound() -> void:
+	if _purchase_confirm_sound:
+		_play_sample(_purchase_confirm_sound, -6.0)
+
+func play_boss_warning_sound() -> void:
+	if _boss_warning_sound:
+		_play_sample(_boss_warning_sound, -5.0)
+
+func play_boss_defeated_sound() -> void:
+	if _boss_defeated_sound:
+		_play_sample(_boss_defeated_sound, -4.0)
+
+func play_energy_low_sound() -> void:
+	if _energy_low_sound:
+		_play_sample(_energy_low_sound, -6.0)
+
+func play_chain_bonus_sound() -> void:
+	if _chain_bonus_sound:
+		_play_sample(_chain_bonus_sound, -6.0)
+
+func play_scene_transition_sound() -> void:
+	if _scene_transition_sound:
+		_play_sample(_scene_transition_sound, -6.0)
+
+func play_forager_deposit_sound() -> void:
+	if _forager_deposit_sound:
+		_play_sample(_forager_deposit_sound, -6.0)
+
+func play_depth_milestone_sound() -> void:
+	if _depth_milestone_sound:
+		_play_sample(_depth_milestone_sound, -5.0)
+
+func play_lucky_strike_sound() -> void:
+	if _lucky_strike_sound:
+		_play_sample(_lucky_strike_sound, -5.0)
+
+func play_laser_sound() -> void:
+	# Placeholder — reuses sonar ping for now
+	play_sonar_ping_sound()
 
 func play_impact_sound() -> void:
 	# Short, sharp thud for hitting a block that isn't destroyed yet
@@ -78,43 +270,10 @@ func play_impact_sound() -> void:
 	await get_tree().create_timer(0.15).timeout
 	player.queue_free()
 
-func play_damage_sound() -> void:
-	# Short sharp "hurt" sound: descending tone + noise burst
-	var player = AudioStreamPlayer.new()
-	add_child(player)
 
-	var stream = AudioStreamGenerator.new()
-	stream.mix_rate = sample_rate
-	stream.buffer_length = 0.15
-	player.stream = stream
-	player.bus = &"SFX"
-	player.volume_db = -6.0
-	player.play()
-
-	var playback = player.get_stream_playback()
-	_fill_damage_buffer(playback)
-
-	await get_tree().create_timer(0.3).timeout
-	player.queue_free()
-
-func play_explosion_sound() -> void:
-	var player = AudioStreamPlayer.new()
-	add_child(player)
-
-	var stream = AudioStreamGenerator.new()
-	stream.mix_rate = sample_rate
-	stream.buffer_length = 0.5
-	player.stream = stream
-	player.bus = &"SFX"
-	player.volume_db = -5.0
-	player.play()
-	
-	var playback = player.get_stream_playback()
-	_fill_explosion_buffer(playback)
-	
-	await get_tree().create_timer(0.6).timeout
-	player.queue_free()
-
+# ---------------------------------------------------------------------------
+# Procedural buffer fills (fallbacks)
+# ---------------------------------------------------------------------------
 
 func _fill_impact_buffer(playback: AudioStreamGeneratorPlayback) -> void:
 	var phase = 0.0
@@ -153,3 +312,31 @@ func _fill_damage_buffer(playback: AudioStreamGeneratorPlayback) -> void:
 		# Gritty noise layer for impact texture
 		var noise = randf_range(-0.2, 0.2) * exp(-t * 22.0)
 		playback.push_frame(Vector2.ONE * (tone + noise))
+
+func _fill_sonar_ping_buffer(playback: AudioStreamGeneratorPlayback) -> void:
+	var phase := 0.0
+	var frames := playback.get_frames_available()
+
+	for i in range(frames):
+		var t := float(i) / sample_rate
+		# Clean sine ping at 1200 Hz that decays with a subtle echo
+		var freq := 1200.0 * exp(-t * 2.0)
+		var increment := freq / sample_rate
+		phase = fmod(phase + increment, 1.0)
+		var tone := sin(phase * TAU) * exp(-t * 6.0) * 0.5
+		playback.push_frame(Vector2.ONE * tone)
+
+func _fill_boss_stinger_buffer(playback: AudioStreamGeneratorPlayback) -> void:
+	var phase := 0.0
+	var frames := playback.get_frames_available()
+
+	for i in range(frames):
+		var t := float(i) / sample_rate
+		# Low ominous drone at 80 Hz with dissonant overtone
+		var freq := 80.0
+		var increment := freq / sample_rate
+		phase = fmod(phase + increment, 1.0)
+		var tone := sin(phase * TAU) * 0.4 * exp(-t * 2.0)
+		var overtone := sin(phase * TAU * 3.17) * 0.2 * exp(-t * 3.0)
+		var noise := randf_range(-0.1, 0.1) * exp(-t * 4.0)
+		playback.push_frame(Vector2.ONE * (tone + overtone + noise))

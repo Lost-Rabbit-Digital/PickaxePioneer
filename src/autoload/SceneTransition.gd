@@ -15,7 +15,8 @@ func fade_to_black(duration: float = 0.5) -> void:
 	if is_transitioning:
 		return
 	is_transitioning = true
-	
+	SoundManager.play_scene_transition_sound()
+
 	var tween = create_tween()
 	tween.tween_property(color_rect, "modulate:a", 1.0, duration)
 	await tween.finished

@@ -241,7 +241,7 @@ func _shop_reenergy_full() -> void:
 		EventBus.dollars_changed.emit(GameManager.dollars)
 		EventBus.energy_changed.emit(GameManager.current_energy, GameManager.get_max_energy())
 		GameManager.save_game()
-		SoundManager.play_drill_sound()
+		SoundManager.play_purchase_confirm_sound()
 		show_energy_shop()
 
 
@@ -251,7 +251,7 @@ func _shop_reenergy_half() -> void:
 		GameManager.restore_energy(GameManager.get_max_energy() / 2)
 		EventBus.dollars_changed.emit(GameManager.dollars)
 		GameManager.save_game()
-		SoundManager.play_drill_sound()
+		SoundManager.play_purchase_confirm_sound()
 		show_energy_shop()
 
 
@@ -261,7 +261,7 @@ func _shop_repair() -> void:
 		EventBus.dollars_changed.emit(GameManager.dollars)
 		GameManager.save_game()
 		player_node.heal(1)
-		SoundManager.play_drill_sound()
+		SoundManager.play_purchase_confirm_sound()
 		show_energy_shop()
 
 
@@ -273,7 +273,7 @@ func _shop_buy_ladders() -> void:
 		EventBus.dollars_changed.emit(GameManager.dollars)
 		GameManager.save_game()
 		EventBus.ore_mined_popup.emit(SHOP_LADDER_PACK_COUNT, "Ladders acquired!")
-		SoundManager.play_drill_sound()
+		SoundManager.play_purchase_confirm_sound()
 		show_energy_shop()
 
 
@@ -385,7 +385,7 @@ func _upgrade_buy_carapace() -> void:
 		if player:
 			player.health_component.max_health = GameManager.get_max_health()
 			EventBus.player_health_changed.emit(player.health_component.current_health, player.health_component.max_health)
-		SoundManager.play_drill_sound()
+		SoundManager.play_purchase_confirm_sound()
 		show_upgrade_station()
 
 
@@ -396,7 +396,7 @@ func _upgrade_buy_legs() -> void:
 		EventBus.dollars_changed.emit(GameManager.dollars)
 		GameManager.upgrade_legs()
 		EventBus.energy_changed.emit(GameManager.current_energy, GameManager.get_max_energy())
-		SoundManager.play_drill_sound()
+		SoundManager.play_purchase_confirm_sound()
 		show_upgrade_station()
 
 
@@ -406,7 +406,7 @@ func _upgrade_buy_mandibles() -> void:
 		GameManager.dollars -= cost
 		EventBus.dollars_changed.emit(GameManager.dollars)
 		GameManager.upgrade_mandibles()
-		SoundManager.play_drill_sound()
+		SoundManager.play_purchase_confirm_sound()
 		show_upgrade_station()
 
 
@@ -416,7 +416,7 @@ func _upgrade_buy_claws() -> void:
 		GameManager.dollars -= cost
 		EventBus.dollars_changed.emit(GameManager.dollars)
 		GameManager.upgrade_claws()
-		SoundManager.play_drill_sound()
+		SoundManager.play_purchase_confirm_sound()
 		show_upgrade_station()
 
 
@@ -548,7 +548,7 @@ func _smeltery_sell(ore_group: String) -> void:
 	var sell_value: int = roundi(SMELTERY_BAR_SELL_VALUES[ore_group] * GameManager.get_dollar_sell_mult()) * bar_count
 	run_bar_counts[ore_group] = 0
 	GameManager.add_dollars(sell_value)
-	SoundManager.play_pickup_sound()
+	SoundManager.play_purchase_confirm_sound()
 	EventBus.ore_mined_popup.emit(sell_value, "%d %s sold!" % [bar_count, SMELTERY_BAR_NAMES[ore_group]])
 	show_smeltery()
 
@@ -647,7 +647,7 @@ func _tavern_hire_mining() -> void:
 	run_bar_counts["iron"] = run_bar_counts.get("iron", 0) - CAT_TAVERN_MINING_CAT_IRON_BARS
 	if cat_system and player_node:
 		cat_system.hire(CatSystem.CatRole.MINING, player_node.global_position + Vector2(64, 0))
-	SoundManager.play_drill_sound()
+	SoundManager.play_purchase_confirm_sound()
 	show_cat_tavern()
 
 
@@ -659,7 +659,7 @@ func _tavern_hire_collecting() -> void:
 	run_bar_counts["copper"] = run_bar_counts.get("copper", 0) - CAT_TAVERN_COLLECT_CAT_COPPER_BARS
 	if cat_system and player_node:
 		cat_system.hire(CatSystem.CatRole.COLLECTING, player_node.global_position + Vector2(-64, 0))
-	SoundManager.play_drill_sound()
+	SoundManager.play_purchase_confirm_sound()
 	show_cat_tavern()
 
 

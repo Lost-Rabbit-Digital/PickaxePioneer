@@ -104,6 +104,7 @@ func _ready() -> void:
 # ---------------------------------------------------------------------------
 
 func _on_singleplayer_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	_active_submenu = "sp"
 	_hide_main_buttons()
 	_menu_title_label.text = "SINGLEPLAYER"
@@ -113,6 +114,7 @@ func _on_singleplayer_pressed() -> void:
 	_sp_back_btn.show()
 
 func _on_multiplayer_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	_active_submenu = "mp"
 	_hide_main_buttons()
 	_menu_title_label.text = "MULTIPLAYER"
@@ -148,16 +150,19 @@ func _show_main_buttons() -> void:
 	_host_save_back_btn.hide()
 
 func _on_inline_continue_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	_popup_mode = "continue"
 	_refresh_popup()
 	_save_popup.show()
 
 func _on_inline_new_game_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	_popup_mode = "new_game"
 	_refresh_popup()
 	_save_popup.show()
 
 func _on_inline_host_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	_active_submenu = "hosting"
 	_host_btn.hide()
 	_join_btn.hide()
@@ -168,6 +173,7 @@ func _on_inline_host_pressed() -> void:
 	_hosting_back_btn.show()
 
 func _on_inline_join_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	_mp_show_page("join")
 	_mp_overlay.show()
 
@@ -183,6 +189,7 @@ func _on_lan_pressed() -> void:
 	_host_save_back_btn.show()
 
 func _on_hosting_back_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	_active_submenu = "mp"
 	_lan_btn.hide()
 	_steam_btn.hide()
@@ -215,9 +222,11 @@ func _on_inline_host_save_new_game_pressed() -> void:
 	_save_popup.show()
 
 func _on_quit_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	get_tree().quit()
 
 func _on_settings_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	_settings_panel.sync_settings_ui()
 	_settings_overlay.show()
 
@@ -246,9 +255,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 func _on_credits_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	credits_panel.show()
 
 func _on_credits_close_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	credits_panel.hide()
 
 # ---------------------------------------------------------------------------
@@ -331,16 +342,19 @@ func _build_singleplayer_overlay() -> void:
 	_sp_overlay.add_child(back_btn)
 
 func _on_sp_new_game_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	_popup_mode = "new_game"
 	_refresh_popup()
 	_save_popup.show()
 
 func _on_sp_continue_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	_popup_mode = "continue"
 	_refresh_popup()
 	_save_popup.show()
 
 func _on_sp_back_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	_sp_overlay.hide()
 
 # ---------------------------------------------------------------------------

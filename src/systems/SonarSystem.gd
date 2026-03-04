@@ -27,6 +27,7 @@ func try_ping(player_grid_pos: Vector2i) -> void:
 		EventBus.ore_mined_popup.emit(0, "No energy for ping")
 		return
 	GameManager.consume_energy(energy_cost)
+	SoundManager.play_sonar_ping_sound()
 	ping_active = true
 	ping_elapsed = 0.0
 	wave_radius = 0.0

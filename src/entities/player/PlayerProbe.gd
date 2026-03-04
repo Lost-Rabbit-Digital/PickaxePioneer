@@ -214,12 +214,15 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("jump"):
 		if is_on_floor():
 			velocity.y = jump_velocity
+			SoundManager.play_jump_sound()
 		elif on_ladder:
 			velocity.y = jump_velocity  # Jump releases the player from the ladder
+			SoundManager.play_jump_sound()
 		elif not _double_jumped:
 			velocity.y = jump_velocity  # Double jump
 			_double_jumped = true
 			_spawn_poof()
+			SoundManager.play_jump_sound()
 
 	var pre_vel_y := velocity.y
 	move_and_slide()
@@ -368,12 +371,14 @@ func _on_health_changed(current: float, max_hp: int) -> void:
 	EventBus.player_health_changed.emit(current, max_hp)
 
 func _on_died() -> void:
+	SoundManager.play_death_sound()
 	EventBus.player_died.emit()
 
 func _update_particles(delta: float, was_on_floor: bool, vel_y_before_slide: float) -> void:
 	# Landing poof — trigger on first frame touching floor after a real fall
 	if is_on_floor() and not was_on_floor and vel_y_before_slide > POOF_VEL_THRESHOLD:
 		_spawn_poof()
+		SoundManager.play_land_sound()
 		_apply_fall_damage()
 
 	# Walking dust — emit small squares at feet while moving on the ground

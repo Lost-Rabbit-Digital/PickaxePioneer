@@ -50,6 +50,7 @@ func process(ore_group: String, base_minerals: int) -> void:
 			var bonus := maxi(1, roundi(base_minerals * combo[0]))
 			GameManager.add_currency(bonus)
 			EventBus.ore_mined_popup.emit(bonus, combo[1] + "!")
+			SoundManager.play_chain_bonus_sound()
 			# Combo resets chain
 			_prev_ore_group = ""
 			last_ore_group = ore_group
@@ -64,6 +65,7 @@ func process(ore_group: String, base_minerals: int) -> void:
 			var bonus := maxi(1, roundi(base_minerals * chain_data[0]))
 			GameManager.add_currency(bonus)
 			EventBus.ore_mined_popup.emit(bonus, chain_data[1] + "!")
+			SoundManager.play_chain_bonus_sound()
 	else:
 		# Different ore breaks chain, start fresh
 		_prev_ore_group = last_ore_group
