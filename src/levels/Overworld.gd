@@ -126,7 +126,9 @@ func _ready() -> void:
 	# Host also pushes the chart when its own Overworld is ready and a guest is
 	# already connected (normal lobby-start flow where both peers load together).
 	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
-		rpc_apply_planet_config.rpc_id(NetworkManager.guest_peer_id, SaveManager.get_planet_config())
+		var config := SaveManager.get_planet_config()
+		_add_ship_state_to_config(config)
+		rpc_apply_planet_config.rpc_id(NetworkManager.guest_peer_id, config)
 
 	if NetworkManager.is_multiplayer_session:
 		add_child(preload("res://src/ui/ChatBox.tscn").instantiate())
@@ -140,7 +142,21 @@ func _ready() -> void:
 func rpc_request_planet_config() -> void:
 	if not NetworkManager.is_host:
 		return
-	rpc_apply_planet_config.rpc_id(NetworkManager.guest_peer_id, SaveManager.get_planet_config())
+	var config := SaveManager.get_planet_config()
+	_add_ship_state_to_config(config)
+	rpc_apply_planet_config.rpc_id(NetworkManager.guest_peer_id, config)
+
+## Append the caravan's current position and remaining waypoints to a config
+## dict so the guest can reproduce the ship's location and in-flight movement.
+func _add_ship_state_to_config(config: Dictionary) -> void:
+	config["ship_node"] = current_node.name if current_node else ""
+	config["ship_caravan_x"] = caravan.position.x
+	config["ship_caravan_y"] = caravan.position.y
+	var flat: Array = []
+	for wp: Vector2 in caravan._waypoints_remaining:
+		flat.append(wp.x)
+		flat.append(wp.y)
+	config["ship_waypoints"] = flat
 
 ## Host → Guest: mirror the host's star chart so the guest sees the same planet
 ## names, positions, connections, and sprite frames as the host.
@@ -155,7 +171,81 @@ func rpc_apply_planet_config(config: Dictionary) -> void:
 	_restore_connections(config)
 	if config.has("node_positions"):
 		_restore_node_positions(config["node_positions"])
+	_apply_ship_state(config)
 	queue_redraw()
+
+## Position the caravan to match the host's ship state encoded in a config dict.
+## Handles two cases: parked at a node, or in-flight along remaining waypoints.
+func _apply_ship_state(config: Dictionary) -> void:
+	var ship_node_name: String = config.get("ship_node", "")
+	if ship_node_name.is_empty():
+		return
+
+	var node_lookup: Dictionary = {}
+	for n in nodes:
+		node_lookup[n.name] = n
+
+	var dest_node: MapNode = node_lookup.get(ship_node_name, null)
+	if not dest_node:
+		return
+
+	current_node.highlight(false)
+	current_node = dest_node
+	current_node.highlight(true)
+
+	var waypoints_flat: Array = config.get("ship_waypoints", [])
+	if waypoints_flat.size() >= 2:
+		# Ship is in transit — place caravan at its exact physical position and
+		# animate it along the remaining waypoints so the guest sees the journey.
+		var start := Vector2(config.get("ship_caravan_x", 0.0), config.get("ship_caravan_y", 0.0))
+		caravan.teleport_to(start)
+		_pending_node = dest_node
+		var waypoints: Array[Vector2] = []
+		for i in range(0, waypoints_flat.size() - 1, 2):
+			waypoints.append(Vector2(waypoints_flat[i], waypoints_flat[i + 1]))
+		caravan.arrived.connect(func() -> void:
+			caravan.set_map_node(current_node)
+			_pending_node = null
+		, CONNECT_ONE_SHOT)
+		caravan.move_along_path(waypoints)
+	else:
+		# Ship is parked — snap caravan to the node position.
+		caravan.teleport_to(dest_node.position)
+		caravan.set_map_node(dest_node)
+
+## Host → Guest: replicate a navigation move so the guest's caravan follows the
+## same path in real time.  start_x/y is the caravan's physical pixel position
+## at the moment the host initiated travel; waypoints_flat is the full ordered
+## sequence of [x, y, x, y, …] positions the caravan will pass through;
+## to_node_name is the destination MapNode (used to sync current_node/highlight).
+@rpc("authority", "call_remote", "reliable")
+func rpc_sync_ship_travel(start_x: float, start_y: float, waypoints_flat: Array, to_node_name: String) -> void:
+	var node_lookup: Dictionary = {}
+	for n in nodes:
+		node_lookup[n.name] = n
+
+	var dest_node: MapNode = node_lookup.get(to_node_name, null)
+	if not dest_node:
+		return
+
+	# Clear any existing guest arrival callback so it doesn't fire mid-redirect.
+	if caravan.arrived.is_connected(_on_caravan_arrived):
+		caravan.arrived.disconnect(_on_caravan_arrived)
+
+	current_node.highlight(false)
+	current_node = dest_node
+	current_node.highlight(true)
+	_pending_node = dest_node
+
+	caravan.teleport_to(Vector2(start_x, start_y))
+	var waypoints: Array[Vector2] = []
+	for i in range(0, waypoints_flat.size() - 1, 2):
+		waypoints.append(Vector2(waypoints_flat[i], waypoints_flat[i + 1]))
+	caravan.arrived.connect(func() -> void:
+		caravan.set_map_node(current_node)
+		_pending_node = null
+	, CONNECT_ONE_SHOT)
+	caravan.move_along_path(waypoints)
 
 func _show_coop_guest_banner() -> void:
 	var layer := CanvasLayer.new()
@@ -401,6 +491,14 @@ func _move_selection(direction: Vector2) -> void:
 		caravan.arrived.connect(_on_caravan_arrived, CONNECT_ONE_SHOT)
 		caravan.move_to(current_node.position)
 
+		if NetworkManager.is_multiplayer_session and NetworkManager.guest_peer_id > 0:
+			var flat: Array = []
+			for wp: Vector2 in caravan._waypoints_remaining:
+				flat.append(wp.x)
+				flat.append(wp.y)
+			rpc_sync_ship_travel.rpc_id(NetworkManager.guest_peer_id,
+					caravan.position.x, caravan.position.y, flat, best_neighbor.name)
+
 func _on_node_clicked(node: MapNode) -> void:
 	# In co-op, only the host navigates the star chart; guest watches
 	if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
@@ -432,6 +530,14 @@ func _on_node_clicked(node: MapNode) -> void:
 	_pending_node = node
 	caravan.arrived.connect(_on_caravan_arrived, CONNECT_ONE_SHOT)
 	caravan.move_along_path(waypoints)
+
+	if NetworkManager.is_multiplayer_session and NetworkManager.guest_peer_id > 0:
+		var flat: Array = []
+		for wp: Vector2 in caravan._waypoints_remaining:
+			flat.append(wp.x)
+			flat.append(wp.y)
+		rpc_sync_ship_travel.rpc_id(NetworkManager.guest_peer_id,
+				caravan.position.x, caravan.position.y, flat, node.name)
 
 func _on_caravan_arrived() -> void:
 	caravan.set_map_node(current_node)
