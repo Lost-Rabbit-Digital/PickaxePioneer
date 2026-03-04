@@ -3,7 +3,7 @@ extends Node
 # SoundManager
 # Plays sample-based SFX with procedural fallbacks for missing files
 
-var sample_rate = 44100.0
+var sample_rate: float = 44100.0
 var _pop_sounds: Array = []
 
 # Suno-generated sound effect samples (loaded at runtime, null if file missing)
