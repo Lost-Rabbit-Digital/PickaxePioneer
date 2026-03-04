@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://chatbox001"]
 
-[ext_resource type="Script" path="res://src/ui/ChatBox.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://c2jv5uta11u2n" path="res://src/ui/ChatBox.gd" id="1_script"]
 
 [node name="ChatBox" type="CanvasLayer"]
 layer = 15
@@ -30,7 +30,6 @@ offset_left = 8.0
 offset_top = 572.0
 offset_right = 306.0
 offset_bottom = 680.0
-mouse_filter = 1
 horizontal_scroll_mode = 0
 vertical_scroll_mode = 3
 
@@ -55,15 +54,14 @@ offset_left = 6.0
 offset_top = 686.0
 offset_right = 312.0
 offset_bottom = 710.0
-placeholder_text = "Say something... (Enter to send, Esc to cancel)"
 theme_override_font_sizes/font_size = 12
+placeholder_text = "Say something... (Enter to send, Esc to cancel)"
 
 [node name="HintLabel" type="Label" parent="Control"]
+modulate = Color(0.7, 0.7, 0.7, 0.7)
 layout_mode = 0
 offset_left = 8.0
 offset_top = 690.0
 offset_right = 308.0
 offset_bottom = 710.0
-mouse_filter = 2
-modulate = Color(0.7, 0.7, 0.7, 0.7)
 theme_override_font_sizes/font_size = 11

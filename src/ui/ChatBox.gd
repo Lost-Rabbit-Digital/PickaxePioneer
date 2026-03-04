@@ -103,7 +103,7 @@ func _on_chat_message_received(sender_name: String, message: String) -> void:
 func _add_label(text: String) -> void:
 	var lbl := Label.new()
 	lbl.text = text
-	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_ARBITRARY
+	lbl.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
 	lbl.size_flags_horizontal = Control.SIZE_FILL
 	lbl.modulate = Color(1.0, 1.0, 1.0, 0.92)
 	lbl.add_theme_font_size_override("font_size", 12)
