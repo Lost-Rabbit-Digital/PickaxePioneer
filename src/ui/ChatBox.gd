@@ -10,24 +10,29 @@ extends CanvasLayer
 ## uses an RPC to deliver them to the remote peer, then each peer displays
 ## them locally by listening to EventBus.chat_message_received.
 ##
+## Chat history is preserved across level transitions via a static variable.
+## The message area supports mouse-wheel scrolling to view older messages.
+##
 ## Edit the layout visually in src/ui/ChatBox.tscn — changes propagate to
 ## every scene automatically.
 
-const MAX_MESSAGES: int = 20
-const VISIBLE_LINES: int = 6
+const MAX_MESSAGES: int = 100
+
+## Persists across level transitions for the duration of the session.
+static var _history: Array[String] = []
 
 ## Path to the plain-text word list used for chat filtering.
 ## One word per line; lines starting with # are treated as comments.
 ## Set to "" to disable filtering.
 @export var filter_file: String = "res://assets/chat_filter.txt"
 
-var _messages: Array[String] = []
-var _msg_labels: Array[Label] = []
 var _chat_open: bool = false
+var _at_bottom: bool = true
 var _text_filter: TextFilter = TextFilter.new()
 
 @onready var _panel: ColorRect = $Control/Panel
-@onready var _msg_container: VBoxContainer = $Control/MsgContainer
+@onready var _scroll: ScrollContainer = $Control/ScrollContainer
+@onready var _msg_container: VBoxContainer = $Control/ScrollContainer/MsgContainer
 @onready var _input_bg: ColorRect = $Control/InputBg
 @onready var _input_field: LineEdit = $Control/InputField
 @onready var _hint_label: Label = $Control/HintLabel
@@ -37,10 +42,9 @@ func _ready() -> void:
 		_text_filter.load_from_file(filter_file)
 	EventBus.chat_message_received.connect(_on_chat_message_received)
 
-	# Collect the fixed Label nodes from the scene in order.
-	for child in _msg_container.get_children():
-		if child is Label:
-			_msg_labels.append(child as Label)
+	# Restore history from previous levels in this session.
+	for msg in _history:
+		_add_label(msg)
 
 	# Update hint text to match the current key binding.
 	var chat_events := InputMap.action_get_events("toggle_chat")
@@ -50,7 +54,12 @@ func _ready() -> void:
 	_hint_label.text = "%s — chat" % chat_key
 
 	_input_field.text_submitted.connect(_on_message_submitted)
+	_scroll.get_v_scroll_bar().value_changed.connect(_on_scroll_changed)
 	_set_chat_open(false)
+
+	# Wait one frame for layout to settle before scrolling to the bottom.
+	await get_tree().process_frame
+	_scroll_to_bottom()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or not event.pressed or event.echo:
@@ -79,13 +88,31 @@ func _on_message_submitted(text: String) -> void:
 
 func _on_chat_message_received(sender_name: String, message: String) -> void:
 	var clean := _text_filter.filter(message)
-	_messages.append("[%s] %s" % [sender_name, clean])
-	if _messages.size() > MAX_MESSAGES:
-		_messages = _messages.slice(_messages.size() - MAX_MESSAGES)
-	_refresh_labels()
+	var msg := "[%s] %s" % [sender_name, clean]
+	_history.append(msg)
+	if _history.size() > MAX_MESSAGES:
+		_history = _history.slice(_history.size() - MAX_MESSAGES)
+		var oldest := _msg_container.get_child(0)
+		if oldest:
+			oldest.queue_free()
+	_add_label(msg)
+	if _at_bottom:
+		await get_tree().process_frame
+		_scroll_to_bottom()
 
-func _refresh_labels() -> void:
-	var start: int = max(0, _messages.size() - VISIBLE_LINES)
-	for i in range(VISIBLE_LINES):
-		var msg_index: int = start + i
-		_msg_labels[i].text = _messages[msg_index] if msg_index < _messages.size() else ""
+func _add_label(text: String) -> void:
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_ARBITRARY
+	lbl.size_flags_horizontal = Control.SIZE_FILL
+	lbl.modulate = Color(1.0, 1.0, 1.0, 0.92)
+	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_msg_container.add_child(lbl)
+
+func _scroll_to_bottom() -> void:
+	_scroll.scroll_vertical = _scroll.get_v_scroll_bar().max_value
+
+func _on_scroll_changed(value: float) -> void:
+	var sb := _scroll.get_v_scroll_bar()
+	_at_bottom = value >= sb.max_value - sb.page - 1.0

@@ -2,11 +2,12 @@ class_name CustomizationMenu
 extends CanvasLayer
 
 # Customization Menu — toggle with X key during a mining run.
-# Displays a player cat preview on the left and a colour palette on the right.
+# Displays a player cat preview on the left and BBCode text buttons on the right.
+# Each button shows its hex code rendered in its own colour.
 # Selecting a colour tints the player sprite via modulate and persists via GameManager.
 
 const PANEL_W: int = 620
-const PANEL_H: int = 440
+const PANEL_H: int = 540
 
 const PALETTE: Array[Color] = [
 	Color("3f4328"), Color("5f7132"), Color("94ad39"), Color("c2d64f"),
@@ -24,9 +25,11 @@ const PALETTE: Array[Color] = [
 	Color("6d4e4b"), Color("867066"), Color("b49d7e"), Color("c4c6b8"),
 ]
 
-const SWATCH_SIZE: int = 36
-const SWATCH_GAP: int = 4
-const SWATCHES_PER_ROW: int = 8
+const BTN_W: int = 78
+const BTN_H: int = 24
+const BTN_GAP: int = 3
+const SWATCHES_PER_ROW: int = 4
+const SWATCH_FONT_SIZE: int = 12
 
 # Set by MiningLevel after instantiation
 var player: PlayerProbe = null
@@ -98,14 +101,12 @@ func _build_ui() -> void:
 	var preview_w: int = 160
 	var preview_h: int = 320
 
-	# Preview background
 	var preview_bg := ColorRect.new()
 	preview_bg.color = Color(0.07, 0.06, 0.10, 1.0)
 	preview_bg.position = Vector2(preview_x, preview_y)
 	preview_bg.size = Vector2(preview_w, preview_h)
 	add_child(preview_bg)
 
-	# Preview border
 	var pborder := ColorRect.new()
 	pborder.color = Color(0.28, 0.24, 0.36, 0.60)
 	pborder.position = Vector2(preview_x - 1, preview_y - 1)
@@ -113,7 +114,6 @@ func _build_ui() -> void:
 	pborder.z_index = -1
 	add_child(pborder)
 
-	# Animated player preview — loads the same SpriteFrames from the scene
 	_preview_sprite = AnimatedSprite2D.new()
 	var player_scene := load("res://src/entities/player/PlayerProbe.tscn") as PackedScene
 	if player_scene:
@@ -128,7 +128,6 @@ func _build_ui() -> void:
 	_preview_sprite.play(&"idle")
 	add_child(_preview_sprite)
 
-	# "Your Cat" label under preview
 	var preview_label := Label.new()
 	preview_label.text = "Your Cat"
 	preview_label.position = Vector2(preview_x, preview_y + preview_h + 6)
@@ -153,13 +152,13 @@ func _build_ui() -> void:
 	for i in range(PALETTE.size()):
 		var row: int = i / SWATCHES_PER_ROW
 		var col: int = i % SWATCHES_PER_ROW
-		var sx: int = palette_x + col * (SWATCH_SIZE + SWATCH_GAP)
-		var sy: int = swatch_start_y + row * (SWATCH_SIZE + SWATCH_GAP)
+		var sx: int = palette_x + col * (BTN_W + BTN_GAP)
+		var sy: int = swatch_start_y + row * (BTN_H + BTN_GAP)
 		_create_swatch(i, sx, sy)
 
 	# Reset button (below the swatches)
 	var total_rows: int = ceili(float(PALETTE.size()) / SWATCHES_PER_ROW)
-	var reset_y: int = swatch_start_y + total_rows * (SWATCH_SIZE + SWATCH_GAP) + 12
+	var reset_y: int = swatch_start_y + total_rows * (BTN_H + BTN_GAP) + 12
 
 	_reset_btn = Button.new()
 	_reset_btn.text = "RESET"
@@ -169,7 +168,7 @@ func _build_ui() -> void:
 	_reset_btn.pressed.connect(_on_reset)
 	add_child(_reset_btn)
 
-	# Close button at bottom center
+	# Close button at bottom centre
 	var close_btn := Button.new()
 	close_btn.text = "CLOSE"
 	close_btn.position = Vector2(px + (PANEL_W - 90) / 2, py + PANEL_H - 46)
@@ -181,26 +180,43 @@ func _build_ui() -> void:
 func _create_swatch(index: int, sx: int, sy: int) -> void:
 	var btn := Button.new()
 	btn.position = Vector2(sx, sy)
-	btn.size = Vector2(SWATCH_SIZE, SWATCH_SIZE)
-	btn.flat = true
+	btn.size = Vector2(BTN_W, BTN_H)
+	btn.text = ""
+	btn.clip_contents = true
 
-	# Colour fill via a StyleBoxFlat
+	# Normal style: dark neutral background
 	var style := StyleBoxFlat.new()
-	style.bg_color = PALETTE[index]
+	style.bg_color = Color(0.12, 0.11, 0.16, 1.0)
 	style.border_color = Color(0.30, 0.30, 0.35, 0.60)
 	style.set_border_width_all(1)
-	style.set_corner_radius_all(3)
+	style.set_corner_radius_all(2)
 	btn.add_theme_stylebox_override("normal", style)
 
 	var hover_style := style.duplicate() as StyleBoxFlat
-	hover_style.border_color = Color(1.0, 1.0, 1.0, 0.80)
+	hover_style.bg_color = Color(0.20, 0.19, 0.26, 1.0)
+	hover_style.border_color = Color(1.0, 1.0, 1.0, 0.60)
 	hover_style.set_border_width_all(2)
 	btn.add_theme_stylebox_override("hover", hover_style)
 
 	var pressed_style := style.duplicate() as StyleBoxFlat
+	pressed_style.bg_color = Color(0.15, 0.14, 0.20, 1.0)
 	pressed_style.border_color = Color(1.0, 0.82, 0.35, 1.0)
 	pressed_style.set_border_width_all(2)
 	btn.add_theme_stylebox_override("pressed", pressed_style)
+
+	btn.add_theme_stylebox_override("focus", style.duplicate())
+
+	# RichTextLabel with BBCode: hex code text rendered in its own colour
+	var rtl := RichTextLabel.new()
+	rtl.bbcode_enabled = true
+	var hex: String = PALETTE[index].to_html(false).to_lower()
+	rtl.text = "[center][color=#%s]#%s[/color][/center]" % [hex, hex]
+	rtl.size = Vector2(BTN_W, BTN_H)
+	rtl.position = Vector2(0, 4)
+	rtl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rtl.scroll_active = false
+	rtl.add_theme_font_size_override("normal_font_size", SWATCH_FONT_SIZE)
+	btn.add_child(rtl)
 
 	btn.pressed.connect(_on_swatch_pressed.bind(index))
 	add_child(btn)
@@ -238,13 +254,12 @@ func _refresh_swatch_borders() -> void:
 		if _selected_index >= 0 and i == _selected_index:
 			is_selected = true
 		elif _selected_index < 0 and GameManager.cat_color != Color.WHITE:
-			# Match by colour if index not tracked
 			if PALETTE[i].is_equal_approx(GameManager.cat_color):
 				is_selected = true
 
 		var style := StyleBoxFlat.new()
-		style.bg_color = PALETTE[i]
-		style.set_corner_radius_all(3)
+		style.bg_color = Color(0.12, 0.11, 0.16, 1.0)
+		style.set_corner_radius_all(2)
 		if is_selected:
 			style.border_color = Color(1.0, 0.82, 0.35, 1.0)
 			style.set_border_width_all(2)
