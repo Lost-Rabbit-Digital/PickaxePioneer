@@ -310,6 +310,7 @@ const DEPTH_ZONE_COLORS = [
 const ENERGY_DRAIN_BASE: float = 0.5      # 0.5 energy/sec on surface (halved)
 const ENERGY_DRAIN_DEPTH_MULT: float = 1.0 # Extra drain per depth ratio (halved)
 var _energy_drain_accum: float = 0.0
+var _energy_low_warned: bool = false
 
 # ---------------------------------------------------------------------------
 # Boss encounter system (§4) — logic lives in BossSystem.gd
@@ -1088,6 +1089,13 @@ func _process(delta: float) -> void:
 					_energy_drain_accum -= float(drain_amount)
 					if not GameManager.consume_energy(drain_amount):
 						_on_out_of_energy()
+					else:
+						var energy_pct := float(GameManager.current_energy) / float(GameManager.get_max_energy())
+						if energy_pct <= 0.25 and not _energy_low_warned:
+							_energy_low_warned = true
+							SoundManager.play_energy_low_sound()
+						elif energy_pct > 0.25:
+							_energy_low_warned = false
 			elif local_p.is_sleeping():
 				_energy_drain_accum = 0.0
 
@@ -1360,6 +1368,7 @@ func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 			var lucky := tile in ORE_TILES and randf() < lucky_chance
 			if lucky:
 				minerals *= 2
+				SoundManager.play_lucky_strike_sound()
 			# Mining Shroom buff: doubled yield on ore tiles
 			if _shroom_charges[0] > 0 and tile in ORE_TILES:
 				minerals *= 2
@@ -1703,6 +1712,7 @@ func _on_player_died() -> void:
 			rpc_ghost_mode.rpc_id(1, false)
 		return
 	_game_over = true
+	SoundManager.play_death_sound()
 	_show_game_over_overlay("LOST IN SPACE", "Run stardust has been lost...")
 	await get_tree().create_timer(2.5).timeout
 	GameManager.lose_run()
@@ -1865,6 +1875,7 @@ func _check_zone_transition(depth_row: int) -> void:
 		_current_zone_idx = new_zone_idx
 		if depth_row > 0:
 			_show_zone_banner(DEPTH_ZONE_NAMES[new_zone_idx], DEPTH_ZONE_COLORS[new_zone_idx], depth_row)
+			SoundManager.play_depth_milestone_sound()
 			if new_zone_idx > 0 and not _zones_discovered[new_zone_idx]:
 				_zones_discovered[new_zone_idx] = true
 				const DISCOVERY_ENERGY := 20

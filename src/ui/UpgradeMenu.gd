@@ -144,6 +144,7 @@ func _on_carapace_pressed() -> void:
 	if GameManager.mineral_currency >= carapace_cost:
 		GameManager.mineral_currency -= carapace_cost
 		GameManager.upgrade_carapace()
+		SoundManager.play_purchase_confirm_sound()
 		carapace_cost += 25
 		GameManager.save_game()
 		_update_ui()
@@ -152,6 +153,7 @@ func _on_legs_pressed() -> void:
 	if GameManager.mineral_currency >= legs_cost:
 		GameManager.mineral_currency -= legs_cost
 		GameManager.upgrade_legs()
+		SoundManager.play_purchase_confirm_sound()
 		legs_cost += 25
 		GameManager.save_game()
 		_update_ui()
@@ -160,6 +162,7 @@ func _on_mandibles_pressed() -> void:
 	if GameManager.mineral_currency >= mandibles_cost:
 		GameManager.mineral_currency -= mandibles_cost
 		GameManager.upgrade_mandibles()
+		SoundManager.play_purchase_confirm_sound()
 		mandibles_cost += 25
 		GameManager.save_game()
 		_update_ui()
@@ -168,6 +171,7 @@ func _on_mineral_sense_pressed() -> void:
 	if GameManager.mineral_currency >= mineral_sense_cost:
 		GameManager.mineral_currency -= mineral_sense_cost
 		GameManager.upgrade_mineral_sense()
+		SoundManager.play_purchase_confirm_sound()
 		mineral_sense_cost += 50
 		GameManager.save_game()
 		_update_ui()
@@ -176,6 +180,7 @@ func _on_gem_carapace_pressed() -> void:
 	if not GameManager.carapace_gem_socketed and GameManager.gem_count >= GameManager.GEM_SOCKET_COST:
 		GameManager.gem_count -= GameManager.GEM_SOCKET_COST
 		GameManager.carapace_gem_socketed = true
+		SoundManager.play_purchase_confirm_sound()
 		GameManager.save_game()
 		_update_ui()
 
@@ -183,6 +188,7 @@ func _on_gem_legs_pressed() -> void:
 	if not GameManager.legs_gem_socketed and GameManager.gem_count >= GameManager.GEM_SOCKET_COST:
 		GameManager.gem_count -= GameManager.GEM_SOCKET_COST
 		GameManager.legs_gem_socketed = true
+		SoundManager.play_purchase_confirm_sound()
 		GameManager.save_game()
 		_update_ui()
 
@@ -190,6 +196,7 @@ func _on_gem_mandibles_pressed() -> void:
 	if not GameManager.mandibles_gem_socketed and GameManager.gem_count >= GameManager.GEM_SOCKET_COST:
 		GameManager.gem_count -= GameManager.GEM_SOCKET_COST
 		GameManager.mandibles_gem_socketed = true
+		SoundManager.play_purchase_confirm_sound()
 		GameManager.save_game()
 		_update_ui()
 
@@ -197,5 +204,6 @@ func _on_gem_sense_pressed() -> void:
 	if not GameManager.sense_gem_socketed and GameManager.gem_count >= GameManager.GEM_SOCKET_COST:
 		GameManager.gem_count -= GameManager.GEM_SOCKET_COST
 		GameManager.sense_gem_socketed = true
+		SoundManager.play_purchase_confirm_sound()
 		GameManager.save_game()
 		_update_ui()

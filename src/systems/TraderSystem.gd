@@ -229,7 +229,7 @@ func _purchase(item_key: String) -> void:
 			EventBus.ore_mined_popup.emit(0, "Deep Space Map!")
 
 	EventBus.minerals_changed.emit(GameManager.run_mineral_currency)
-	SoundManager.play_drill_sound()
+	SoundManager.play_purchase_confirm_sound()
 	close_shop()
 	# Re-open with updated state if trader still nearby
 	var nearby := get_nearby_trader()

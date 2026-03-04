@@ -569,6 +569,7 @@ func _on_boss_defeated() -> void:
 	GameManager.add_currency(BOSS_REWARD_BONUS)
 	EventBus.minerals_earned.emit(BOSS_REWARD_BONUS)
 	EventBus.ore_mined_popup.emit(BOSS_REWARD_BONUS, "Boss defeated!")
+	SoundManager.play_boss_defeated_sound()
 	_show_banner.call("BOSS DEFEATED!", Color(0.30, 1.00, 0.40))
 	GameManager.restore_energy(50)
 	EventBus.ore_mined_popup.emit(50, "Energy restored!")
@@ -596,6 +597,7 @@ func _update_blind_mole(delta: float) -> void:
 		mole_tremor_warning_active = true
 		mole_tremor_warning_timer = MOLE_TREMOR_WARNING
 		EventBus.boss_hint_popup.emit("TREMOR INCOMING!")
+		SoundManager.play_boss_warning_sound()
 		_shake_camera.call(5.0, 0.3)
 
 
@@ -645,6 +647,7 @@ func _update_giant_rat(delta: float) -> void:
 		rat_charge_warning_timer = RAT_CHARGE_WARNING
 		rat_charge_target_pos = Vector2i(_player_col, _player_row)
 		EventBus.boss_hint_popup.emit("RAT KING CHARGES!")
+		SoundManager.play_boss_warning_sound()
 		_shake_camera.call(5.0, 0.3)
 
 
@@ -701,6 +704,7 @@ func _update_spider(delta: float) -> void:
 		spider_web_warning_timer = SPIDER_WEB_WARNING
 		spider_web_target_pos = Vector2i(_player_col, _player_row)
 		EventBus.boss_hint_popup.emit("WEB INCOMING!")
+		SoundManager.play_boss_warning_sound()
 		_shake_camera.call(4.0, 0.3)
 
 
@@ -755,6 +759,7 @@ func _update_ancient_one(delta: float) -> void:
 				ancient_void_warning_active = true
 				ancient_void_warning_timer = ANCIENT_VOID_PULSE_WARNING
 				EventBus.boss_hint_popup.emit("VOID PULSE INCOMING!")
+				SoundManager.play_boss_warning_sound()
 				_shake_camera.call(4.0, 0.3)
 
 	# Phase 3: core periodically recharges (resets accumulated hit damage)

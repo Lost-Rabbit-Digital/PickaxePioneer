@@ -113,6 +113,7 @@ func _do_deposit() -> void:
 	if carry > 0:
 		GameManager.mineral_currency += carry
 		EventBus.ore_mined_popup.emit(carry, "Scout Cat banked!")
+		SoundManager.play_forager_deposit_sound()
 		carry = 0
 	state = "deposit"
 	_deposit_timer = DEPOSIT_DELAY

@@ -115,9 +115,11 @@ func hide_menu() -> void:
 # ---------------------------------------------------------------------------
 
 func _on_resume_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	hide_menu()
 
 func _on_exit_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	_settings_panel.close_settings()
 	if not NetworkManager.is_multiplayer_session:
 		get_tree().paused = false
