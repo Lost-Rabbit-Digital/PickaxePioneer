@@ -355,6 +355,8 @@ const HEAL_FRAME_DURATION: float = 0.12 # Seconds each frame is shown during rev
 
 # Gravity-tile fall queue: Vector2i(col, row) -> float seconds_until_next_step
 var _gravity_pending: Dictionary = {}
+# Falling stalactites: Vector2i foliage pos -> float seconds_until_next_step
+var _falling_stalactites: Dictionary = {}
 var _mine_streak: int = 0
 var _zones_discovered: Array[bool] = [false, false, false, false, false]
 var _last_banner_time_ms: int = -5000
@@ -998,6 +1000,8 @@ func _process(delta: float) -> void:
   
 	# Gravity tile falling (gravel etc. drop when unsupported)
 	_process_gravity(delta)
+	# Stalactites fall when their ceiling tile is mined
+	_process_stalactites(delta)
 
 	# Continuous ladder placement — keep placing while left mouse is held and cursor moves
 	if GameManager.selected_hotbar_slot == 1 \
@@ -1541,12 +1545,68 @@ func _process_gravity(delta: float) -> void:
 		# unsupported — trigger a gravity check for it too.
 		_trigger_gravity_above(col, row)
 
+# Advance all pending falling stalactites by delta, dropping them one foliage row per step.
+func _process_stalactites(delta: float) -> void:
+	if _falling_stalactites.is_empty():
+		return
+
+	var keys: Array = _falling_stalactites.keys()
+	for pos in keys:
+		_falling_stalactites[pos] -= delta
+		if _falling_stalactites[pos] > 0.0:
+			continue
+
+		_falling_stalactites.erase(pos)
+
+		var col: int = pos.x
+		var row: int = pos.y
+
+		# Verify it is still a stalactite at this foliage position.
+		if _foliage_layer.get_cell_atlas_coords(pos) != FOLIAGE_STALACTITE_ATLAS_COORD:
+			continue
+
+		# Remove from current foliage position.
+		_foliage_layer.erase_cell(pos)
+
+		var below_row := row + 1
+		if below_row >= GRID_ROWS:
+			continue  # Fell off the bottom of the map — it's gone.
+
+		# If the cell below is empty in the main grid, keep falling.
+		if grid[col][below_row] == TileType.EMPTY:
+			var new_pos := Vector2i(col, below_row)
+			_foliage_layer.set_cell(new_pos, 0, FOLIAGE_STALACTITE_ATLAS_COORD)
+			_falling_stalactites[new_pos] = GRAVITY_FALL_DELAY
+		# else: stalactite hit solid ground — it shatters and disappears.
+
 func _mine_cell(col: int, row: int) -> void:
 	grid[col][row] = TileType.EMPTY
 	_set_tile_collision(col, row, false)
 	_set_visual_cell(col, row)
 	# A newly-empty cell may leave a gravity tile unsupported above it.
 	_trigger_gravity_above(col, row)
+	# Remove any cave plant that was resting on this tile (plant sits one row above).
+	_remove_cave_plant_above(col, row)
+	# Trigger any stalactite hanging below this tile to fall (stalactite hangs one row below).
+	_trigger_stalactite_below(col, row)
+
+# Cave plants grow upward from a solid floor; erase one if its support tile is removed.
+func _remove_cave_plant_above(col: int, row: int) -> void:
+	var above := Vector2i(col, row - 1)
+	if above.y < 0:
+		return
+	var atlas: Vector2i = _foliage_layer.get_cell_atlas_coords(above)
+	if atlas in FOLIAGE_CAVE_PLANT_ATLAS_COORDS:
+		_foliage_layer.erase_cell(above)
+
+# Stalactites hang below a solid ceiling; begin falling when their ceiling tile is mined.
+func _trigger_stalactite_below(col: int, row: int) -> void:
+	var below := Vector2i(col, row + 1)
+	if below.y >= GRID_ROWS:
+		return
+	var atlas: Vector2i = _foliage_layer.get_cell_atlas_coords(below)
+	if atlas == FOLIAGE_STALACTITE_ATLAS_COORD and not _falling_stalactites.has(below):
+		_falling_stalactites[below] = GRAVITY_FALL_DELAY
 
 # Spawns physical ore chunks that scatter from the mined tile position.
 # In multiplayer, minerals are awarded immediately (no physical chunks to sync across peers).
@@ -1593,6 +1653,8 @@ func _explode_area(center_col: int, center_row: int) -> void:
 				_remove_breaking_overlay(Vector2i(nc, nr))
 				# Explosion may leave gravity tiles unsupported above cleared cells.
 				_trigger_gravity_above(nc, nr)
+				_remove_cave_plant_above(nc, nr)
+				_trigger_stalactite_below(nc, nr)
 				# Particle burst at each cell so the explosion fills the full 3x3 area
 				var cell_world := Vector2(nc * CELL_SIZE + CELL_SIZE * 0.5, nr * CELL_SIZE + CELL_SIZE * 0.5)
 				_spawn_mining_particles(cell_world, Color(1.0, 0.55, 0.05), 4, 80.0, 280.0)
