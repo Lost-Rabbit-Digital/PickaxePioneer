@@ -600,6 +600,8 @@ func _setup_multiplayer_players() -> void:
 	else:
 		player_node.sprite.modulate = Color(1.0, 0.65, 0.25)  # host looks orange to guest
 		second.sprite.modulate = GameManager.cat_color          # guest is their own colour
+		# Inform the host of our current ladder count so it can validate future placement requests.
+		rpc_announce_guest_ladder_count.rpc_id(1, GameManager.ladder_count)
 
 	# Show the host's kit bonuses to the guest as an entry banner
 	if not NetworkManager.is_host:
@@ -1090,7 +1092,8 @@ func _process(delta: float) -> void:
 				_energy_drain_accum = 0.0
 
 func _update_cursor_highlight() -> void:
-	if not player_node:
+	var local_player := _get_local_player()
+	if not local_player:
 		_cursor_grid_pos = Vector2i(-1, -1)
 		_ladder_ghost_pos = Vector2i(-1, -1)
 		_ladder_ghost_valid = false
@@ -1098,9 +1101,9 @@ func _update_cursor_highlight() -> void:
 	var mouse_world := get_global_mouse_position()
 	var gp := Vector2i(floori(mouse_world.x / CELL_SIZE), floori(mouse_world.y / CELL_SIZE))
 	if gp.x >= 0 and gp.x < GRID_COLS and gp.y >= 0 and gp.y < GRID_ROWS:
-		var player_tile := player_node.get_grid_pos()
+		var player_tile := local_player.get_grid_pos()
 		var dist := Vector2(gp - player_tile).length()
-		if dist <= player_node.mine_range:
+		if dist <= local_player.mine_range:
 			_cursor_grid_pos = gp
 		else:
 			_cursor_grid_pos = Vector2i(-1, -1)
@@ -2134,6 +2137,11 @@ func _try_place_ladder_at(gp: Vector2i) -> void:
 	if GameManager.selected_hotbar_slot != 1:
 		EventBus.ore_mined_popup.emit(0, "Select the ladder (slot 2) to place ladders.")
 		return
+	# Guest in multiplayer: send request to host for authoritative placement
+	if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
+		_guest_request_place_ladder(gp)
+		return
+	# Host / single-player path
 	if not player_node:
 		return
 	if GameManager.ladder_count <= 0:
@@ -2157,8 +2165,29 @@ func _try_place_ladder_at(gp: Vector2i) -> void:
 	EventBus.ladder_count_changed.emit(GameManager.ladder_count)
 	EventBus.ore_mined_popup.emit(0, "Ladder placed!  (%d remaining)" % GameManager.ladder_count)
 	queue_redraw()
-	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+	if NetworkManager.is_multiplayer_session and NetworkManager.guest_peer_id > 0:
 		rpc_ladder_placed.rpc_id(NetworkManager.guest_peer_id, gp)
+
+## Guest-side helper: validates inputs locally for fast feedback then forwards the
+## placement request to the host, which is authoritative over the shared grid.
+func _guest_request_place_ladder(gp: Vector2i) -> void:
+	var local_player := _get_local_player()
+	if not local_player:
+		return
+	if GameManager.ladder_count <= 0:
+		EventBus.ore_mined_popup.emit(0, "No ladders! Buy packs at the Recharging Station.")
+		return
+	if gp.x < 0 or gp.x >= GRID_COLS or gp.y < 0 or gp.y >= GRID_ROWS:
+		EventBus.ore_mined_popup.emit(0, "Aim the cursor at an empty tile to place a ladder.")
+		return
+	var player_tile := local_player.get_grid_pos()
+	if Vector2(gp - player_tile).length() > local_player.mine_range:
+		EventBus.ore_mined_popup.emit(0, "Too far — move closer to place a ladder there.")
+		return
+	if grid[gp.x][gp.y] != TileType.EMPTY:
+		EventBus.ore_mined_popup.emit(0, "Can only place ladders in open space.")
+		return
+	rpc_request_place_ladder.rpc_id(1, gp)
 
 # ---------------------------------------------------------------------------
 # Ladder removal — right-click a placed ladder while holding the ladder slot
@@ -2167,6 +2196,11 @@ func _try_place_ladder_at(gp: Vector2i) -> void:
 func _try_remove_ladder_at(gp: Vector2i) -> void:
 	if GameManager.selected_hotbar_slot != 1:
 		return
+	# Guest in multiplayer: send request to host for authoritative removal
+	if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
+		_guest_request_remove_ladder(gp)
+		return
+	# Host / single-player path
 	if not player_node:
 		return
 	if gp.x < 0 or gp.x >= GRID_COLS or gp.y < 0 or gp.y >= GRID_ROWS:
@@ -2186,8 +2220,25 @@ func _try_remove_ladder_at(gp: Vector2i) -> void:
 	EventBus.ladder_count_changed.emit(GameManager.ladder_count)
 	EventBus.ore_mined_popup.emit(0, "Ladder retrieved!  (%d in stock)" % GameManager.ladder_count)
 	queue_redraw()
-	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
+	if NetworkManager.is_multiplayer_session and NetworkManager.guest_peer_id > 0:
 		rpc_ladder_removed.rpc_id(NetworkManager.guest_peer_id, gp)
+
+## Guest-side helper: validates inputs locally for fast feedback then forwards the
+## removal request to the host, which is authoritative over the shared grid.
+func _guest_request_remove_ladder(gp: Vector2i) -> void:
+	var local_player := _get_local_player()
+	if not local_player:
+		return
+	if gp.x < 0 or gp.x >= GRID_COLS or gp.y < 0 or gp.y >= GRID_ROWS:
+		return
+	if grid[gp.x][gp.y] != TileType.LADDER:
+		EventBus.ore_mined_popup.emit(0, "Right-click a placed ladder to retrieve it.")
+		return
+	var player_tile := local_player.get_grid_pos()
+	if Vector2(gp - player_tile).length() > local_player.mine_range:
+		EventBus.ore_mined_popup.emit(0, "Too far — move closer to retrieve that ladder.")
+		return
+	rpc_request_remove_ladder.rpc_id(1, gp)
 
 # ---------------------------------------------------------------------------
 # Multiplayer RPCs
@@ -2312,6 +2363,77 @@ func rpc_ladder_removed(grid_pos: Vector2i) -> void:
 	_set_tile_collision(grid_pos.x, grid_pos.y, false)
 	_set_visual_cell(grid_pos.x, grid_pos.y)
 	queue_redraw()
+
+## Guest → Host: request placing a ladder at grid_pos.
+## Host validates range from the synced guest position, inventory, and tile state.
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_request_place_ladder(grid_pos: Vector2i) -> void:
+	if not NetworkManager.is_host:
+		return
+	if not guest_player_node:
+		return
+	if grid_pos.x < 0 or grid_pos.x >= GRID_COLS or grid_pos.y < 0 or grid_pos.y >= GRID_ROWS:
+		return
+	var guest_tile := Vector2i(
+		floori(guest_player_node.global_position.x / CELL_SIZE),
+		floori(guest_player_node.global_position.y / CELL_SIZE)
+	)
+	if Vector2(grid_pos - guest_tile).length() > guest_player_node.mine_range:
+		return
+	if GameManager.guest_ladder_count <= 0:
+		return
+	if grid[grid_pos.x][grid_pos.y] != TileType.EMPTY:
+		return
+	grid[grid_pos.x][grid_pos.y] = TileType.LADDER
+	_set_visual_cell(grid_pos.x, grid_pos.y)
+	GameManager.guest_ladder_count -= 1
+	queue_redraw()
+	rpc_ladder_placed.rpc_id(NetworkManager.guest_peer_id, grid_pos)
+	rpc_sync_guest_ladder_count.rpc_id(NetworkManager.guest_peer_id, GameManager.guest_ladder_count)
+
+## Guest → Host: request retrieving a ladder at grid_pos.
+## Host validates range, tile, then returns the ladder to the guest's inventory.
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_request_remove_ladder(grid_pos: Vector2i) -> void:
+	if not NetworkManager.is_host:
+		return
+	if not guest_player_node:
+		return
+	if grid_pos.x < 0 or grid_pos.x >= GRID_COLS or grid_pos.y < 0 or grid_pos.y >= GRID_ROWS:
+		return
+	if grid[grid_pos.x][grid_pos.y] != TileType.LADDER:
+		return
+	var guest_tile := Vector2i(
+		floori(guest_player_node.global_position.x / CELL_SIZE),
+		floori(guest_player_node.global_position.y / CELL_SIZE)
+	)
+	if Vector2(grid_pos - guest_tile).length() > guest_player_node.mine_range:
+		return
+	grid[grid_pos.x][grid_pos.y] = TileType.EMPTY
+	_set_tile_collision(grid_pos.x, grid_pos.y, false)
+	_set_visual_cell(grid_pos.x, grid_pos.y)
+	GameManager.guest_ladder_count += 1
+	queue_redraw()
+	rpc_ladder_removed.rpc_id(NetworkManager.guest_peer_id, grid_pos)
+	rpc_sync_guest_ladder_count.rpc_id(NetworkManager.guest_peer_id, GameManager.guest_ladder_count)
+
+## Host → Guest: the guest's confirmed ladder count after a placement or retrieval.
+## Updates the guest's local ladder_count and saves so it persists between sessions.
+@rpc("authority", "call_remote", "reliable")
+func rpc_sync_guest_ladder_count(count: int) -> void:
+	GameManager.ladder_count = count
+	GameManager.save_game()
+	EventBus.ladder_count_changed.emit(count)
+
+## Guest → Host: announce the guest's current ladder count on join so the host can
+## seed guest_ladder_count for future placement validation.
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_announce_guest_ladder_count(count: int) -> void:
+	if not NetworkManager.is_host:
+		return
+	if multiplayer.get_remote_sender_id() != NetworkManager.guest_peer_id:
+		return
+	GameManager.guest_ladder_count = count
 
 ## Host → Guest: an explosive detonated — clear the blast area and apply local damage.
 ## Called after the host runs _explode_area so the guest's grid matches.
