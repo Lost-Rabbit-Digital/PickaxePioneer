@@ -132,6 +132,7 @@ func rpc_sync_transform(pos: Vector2, facing_left: bool, anim: StringName) -> vo
 	sprite.flip_h = facing_left
 	if sprite.animation != anim:
 		sprite.play(anim)
+	sleep_label.visible = (anim == &"sleep")
 
 func _physics_process(delta: float) -> void:
 	# Non-authority instances are driven solely by rpc_sync_transform — no local simulation.
