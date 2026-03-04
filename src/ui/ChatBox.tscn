@@ -24,62 +24,21 @@ offset_bottom = 716.0
 mouse_filter = 2
 color = Color(0, 0, 0, 0.55)
 
-[node name="MsgContainer" type="VBoxContainer" parent="Control"]
+[node name="ScrollContainer" type="ScrollContainer" parent="Control"]
 layout_mode = 0
 offset_left = 8.0
 offset_top = 572.0
 offset_right = 306.0
 offset_bottom = 680.0
-mouse_filter = 2
-theme_override_constants/separation = 0
+mouse_filter = 1
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 3
 
-[node name="Msg0" type="Label" parent="Control/MsgContainer"]
+[node name="MsgContainer" type="VBoxContainer" parent="Control/ScrollContainer"]
 layout_mode = 2
-custom_minimum_size = Vector2(298, 18)
+size_flags_horizontal = 3
 mouse_filter = 2
-modulate = Color(1, 1, 1, 0.92)
-theme_override_font_sizes/font_size = 12
-clip_text = true
-
-[node name="Msg1" type="Label" parent="Control/MsgContainer"]
-layout_mode = 2
-custom_minimum_size = Vector2(298, 18)
-mouse_filter = 2
-modulate = Color(1, 1, 1, 0.92)
-theme_override_font_sizes/font_size = 12
-clip_text = true
-
-[node name="Msg2" type="Label" parent="Control/MsgContainer"]
-layout_mode = 2
-custom_minimum_size = Vector2(298, 18)
-mouse_filter = 2
-modulate = Color(1, 1, 1, 0.92)
-theme_override_font_sizes/font_size = 12
-clip_text = true
-
-[node name="Msg3" type="Label" parent="Control/MsgContainer"]
-layout_mode = 2
-custom_minimum_size = Vector2(298, 18)
-mouse_filter = 2
-modulate = Color(1, 1, 1, 0.92)
-theme_override_font_sizes/font_size = 12
-clip_text = true
-
-[node name="Msg4" type="Label" parent="Control/MsgContainer"]
-layout_mode = 2
-custom_minimum_size = Vector2(298, 18)
-mouse_filter = 2
-modulate = Color(1, 1, 1, 0.92)
-theme_override_font_sizes/font_size = 12
-clip_text = true
-
-[node name="Msg5" type="Label" parent="Control/MsgContainer"]
-layout_mode = 2
-custom_minimum_size = Vector2(298, 18)
-mouse_filter = 2
-modulate = Color(1, 1, 1, 0.92)
-theme_override_font_sizes/font_size = 12
-clip_text = true
+theme_override_constants/separation = 2
 
 [node name="InputBg" type="ColorRect" parent="Control"]
 layout_mode = 0
