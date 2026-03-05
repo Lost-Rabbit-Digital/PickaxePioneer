@@ -67,3 +67,8 @@ Change to slot based inventory instead of capacity based
 
 change currency to "g"
 
+
+
+# Unrelated to prompts
+Overall game loop:
+  The cat society is lacking resources and sending you out with a daily quota to re-supply the base planet, you must completely mine a planet before sending the supplies back and continuing to the next planet with upgrades
