@@ -71,6 +71,18 @@ location_name = "South Settlement"
 node_type = 3
 scene_path = "res://src/levels/SettlementLevel.tscn"
 
+[node name="MineNode3" parent="." instance=ExtResource("3_node")]
+position = Vector2(1080, 460)
+location_name = "Obsidian Rift"
+node_type = 1
+scene_path = "res://src/levels/MiningLevel.tscn"
+
+[node name="FinalNode" parent="." instance=ExtResource("3_node")]
+position = Vector2(640, 110)
+location_name = "The Ancient Star"
+node_type = 1
+scene_path = "res://src/levels/MiningLevel.tscn"
+
 [node name="Caravan" parent="." instance=ExtResource("4_caravan")]
 position = Vector2(200, 360)
 
