@@ -393,7 +393,7 @@ func try_hit_boss_segment(click_world: Vector2, last_ore_group: String = "") -> 
 					return {"blocked": true, "message": "Break the crystal ring first!"}
 
 	seg.hp -= 1
-	var destroyed := seg.hp <= 0
+	var destroyed: bool = seg.hp <= 0
 
 	# Per-boss mineral reward
 	var minerals := 10
@@ -1092,7 +1092,7 @@ func _update_spider(delta: float) -> void:
 
 			# Breathing effect — legs pulse in and out
 			var breathe := sin(boss_pulse_time * 1.5) * 12.0
-			var r := seg.orbit_r + breathe
+			var r: float = seg.orbit_r + breathe
 
 			seg.angle = leg_angle
 			seg.pos = boss_center_pos + Vector2(cos(leg_angle), sin(leg_angle)) * r

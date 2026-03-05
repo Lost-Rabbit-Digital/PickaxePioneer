@@ -372,7 +372,7 @@ func _draw_mole(canvas: Node2D, min_col: int, max_col: int, min_row: int, max_ro
 			var ch := 18.0 + pulse * 3.0
 			var cpts := PackedVector2Array()
 			for i in 6:
-				var a := float(i) / 6.0 * TAU + seg.angle * 0.5
+				var a: float = float(i) / 6.0 * TAU + seg.angle * 0.5
 				cpts.append(ctr + Vector2(cos(a) * cw, sin(a) * ch))
 			var sf := Color(seg_fill.r + damage_tint * 0.3, seg_fill.g * (1.0 - damage_tint * 0.2), seg_fill.b, seg_fill.a)
 			canvas.draw_polygon(cpts, PackedColorArray([sf]))
