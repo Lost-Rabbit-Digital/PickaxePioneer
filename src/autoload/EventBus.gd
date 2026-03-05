@@ -36,4 +36,4 @@ signal multiplayer_guest_disconnected               # Host: guest left mid-sessi
 signal multiplayer_connected_to_host               # Guest: successfully connected
 signal multiplayer_connection_failed               # Guest: connection attempt failed
 signal multiplayer_guest_kit_updated               # Guest HUD should refresh to show host's kit
-signal chat_message_received(sender_name: String, message: String)  # Chat message delivered to local screen
+signal chat_message_received(sender_name: String, message: String, sender_color: Color)  # Chat message delivered to local screen

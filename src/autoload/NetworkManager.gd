@@ -111,20 +111,22 @@ func _on_server_disconnected() -> void:
 ## Call this from the ChatBox when the local player submits a message.
 func broadcast_chat_message(text: String) -> void:
 	var sender_name := "Host" if is_host else "Guest"
-	EventBus.chat_message_received.emit(sender_name, text)
+	var color_html := GameManager.cat_color.to_html(false)
+	EventBus.chat_message_received.emit(sender_name, text, GameManager.cat_color)
 	if is_host and guest_peer_id > 0:
-		_deliver_chat_message.rpc_id(guest_peer_id, sender_name, text)
+		_deliver_chat_message.rpc_id(guest_peer_id, sender_name, text, color_html)
 	elif not is_host:
-		_deliver_chat_message.rpc_id(1, sender_name, text)
+		_deliver_chat_message.rpc_id(1, sender_name, text, color_html)
 
 ## RPC target — called on the remote peer to display an incoming chat message.
 ## Sender name is validated against the actual remote peer ID so a client cannot
 ## spoof a different name (e.g. impersonate "Host" from the guest machine).
 @rpc("any_peer", "call_remote", "reliable")
-func _deliver_chat_message(sender_name: String, text: String) -> void:
+func _deliver_chat_message(sender_name: String, text: String, color_html: String) -> void:
 	var sender_id := multiplayer.get_remote_sender_id()
 	var expected_name := "Host" if sender_id == 1 else "Guest"
 	if sender_name != expected_name:
 		push_warning("NetworkManager: chat sender name mismatch from peer %d (got '%s')" % [sender_id, sender_name])
 		return
-	EventBus.chat_message_received.emit(sender_name, text)
+	var sender_color := Color.from_string(color_html, Color.WHITE)
+	EventBus.chat_message_received.emit(sender_name, text, sender_color)

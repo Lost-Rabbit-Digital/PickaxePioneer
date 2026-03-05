@@ -322,6 +322,10 @@ var has_left_spawn: bool = false
 
 # Camera
 var camera: Camera2D
+const ZOOM_MIN := 0.5
+const ZOOM_MAX := 2.0
+const ZOOM_STEP := 0.1
+var _camera_zoom := 1.0
 
 # TileMapLayer for collision
 var collision_tilemap: TileMapLayer
@@ -1198,6 +1202,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("sonar_ping"):
 		if player_node:
 			sonar_system.try_ping(player_node.get_grid_pos())
+	# Scroll wheel — zoom in / out
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_camera_zoom = clampf(_camera_zoom + ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
+			camera.zoom = Vector2(_camera_zoom, _camera_zoom)
+			get_viewport().set_input_as_handled()
+			return
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_camera_zoom = clampf(_camera_zoom - ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
+			camera.zoom = Vector2(_camera_zoom, _camera_zoom)
+			get_viewport().set_input_as_handled()
+			return
 	# Left-click — place a ladder at the cursor when the ladder slot is active
 	if event is InputEventMouseButton and event.pressed \
 			and event.button_index == MOUSE_BUTTON_LEFT:

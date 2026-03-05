@@ -21,7 +21,7 @@ var mine_range: float = 4.5  # Range in tiles
 var _mining: bool = false
 var _mine_target: Vector2i = Vector2i(-1, -1)
 var _mine_timer: float = 0.0
-const MINE_INTERVAL: float = 0.12  # Seconds between mining hits
+const MINE_INTERVAL: float = 0.21  # Seconds between mining hits (0.12 * 1.75 — 75% slower)
 
 # Reference set by MiningLevel after instantiation
 var mining_level: Node = null
