@@ -31,6 +31,18 @@ var depth_label: Label
 var dollars_label: Label
 var _earnings_tween: Tween
 
+# Ore-only pickup notification — icon + amount + name, upper-left
+const ORE_NAMES: Array[String] = [
+	"Lunar Copper", "Deep Lunar Copper",
+	"Meteor Iron", "Deep Meteor Iron",
+	"Star Gold", "Deep Star Gold",
+	"Cosmic Gem", "Deep Cosmic Gem",
+]
+var _ore_popup_root: Control
+var _ore_popup_icon: ColorRect
+var _ore_popup_label: Label
+var _ore_popup_tween: Tween
+
 # Boss hint notification — bottom-centre, larger and persistent, with a queue
 # so rapid hints (spawn warning + queued hints) don't overwrite each other.
 var _boss_hint_label: Label
@@ -146,6 +158,37 @@ func _ready() -> void:
 	earnings_label.add_theme_font_size_override("font_size", 14)
 	$Control.add_child(earnings_label)
 
+	# Ore pickup popup — icon + amount + name, shown only for actual ore (not special events).
+	# Positioned at the same y as earnings_label; only one is visible at a time.
+	_ore_popup_root = Control.new()
+	_ore_popup_root.position = Vector2(8, 44)
+	_ore_popup_root.custom_minimum_size = Vector2(200, 24)
+	_ore_popup_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ore_popup_root.modulate.a = 0.0
+	$Control.add_child(_ore_popup_root)
+
+	# Dark border behind the ore icon (1 px inset on each side)
+	var icon_bg := ColorRect.new()
+	icon_bg.color = Color(0.05, 0.05, 0.08, 0.90)
+	icon_bg.position = Vector2(0, 0)
+	icon_bg.size = Vector2(22, 22)
+	icon_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ore_popup_root.add_child(icon_bg)
+
+	# Ore colour swatch (inset 2 px inside the border)
+	_ore_popup_icon = ColorRect.new()
+	_ore_popup_icon.position = Vector2(2, 2)
+	_ore_popup_icon.size = Vector2(18, 18)
+	_ore_popup_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ore_popup_root.add_child(_ore_popup_icon)
+
+	# "+X Name" label to the right of the icon
+	_ore_popup_label = Label.new()
+	_ore_popup_label.position = Vector2(27, 1)
+	_ore_popup_label.custom_minimum_size = Vector2(170, 22)
+	_ore_popup_label.add_theme_font_size_override("font_size", 14)
+	_ore_popup_root.add_child(_ore_popup_label)
+
 	# Depth indicator — shows how far into space the cat has traveled
 	depth_label = Label.new()
 	depth_label.position = Vector2(8, 72)
@@ -242,18 +285,36 @@ func _on_minerals_changed(_amount: int) -> void:
 func _on_dollars_changed(amount: int) -> void:
 	dollars_label.text = "$%d" % amount
 
-# Called when a tile is mined — shows a coloured "+X OreName" popup.
+# Called when a tile is mined.
+# Ore pickups (ORE_NAMES + amount > 0) show a rich icon + amount + name popup.
+# All other events (LUCKY!, Streak!, system messages, etc.) use the plain earnings_label.
 func _on_ore_mined_popup(amount: int, ore_name: String) -> void:
 	var popup_color: Color = ORE_COLORS.get(ore_name, Color(1.0, 0.88, 0.2))
-	# amount == 0 means a pure notification (no mineral award) — omit the "+" prefix
-	earnings_label.text = "+%d %s" % [amount, ore_name] if amount > 0 else ore_name
-	earnings_label.modulate = Color(popup_color.r, popup_color.g, popup_color.b, 1.0)
+	var is_ore: bool = ore_name in ORE_NAMES and amount > 0
 
 	if _earnings_tween:
 		_earnings_tween.kill()
-	_earnings_tween = create_tween()
-	_earnings_tween.tween_interval(1.5)
-	_earnings_tween.tween_property(earnings_label, "modulate:a", 0.0, 0.45)
+	if _ore_popup_tween:
+		_ore_popup_tween.kill()
+	# Reset both elements so a fast re-trigger starts from a clean state.
+	earnings_label.modulate.a = 0.0
+	_ore_popup_root.modulate.a = 0.0
+
+	if is_ore:
+		_ore_popup_icon.color = popup_color
+		_ore_popup_label.text = "+%d  %s" % [amount, ore_name]
+		_ore_popup_label.modulate = Color(popup_color.r, popup_color.g, popup_color.b, 1.0)
+		_ore_popup_root.modulate.a = 1.0
+		_ore_popup_tween = create_tween()
+		_ore_popup_tween.tween_interval(1.5)
+		_ore_popup_tween.tween_property(_ore_popup_root, "modulate:a", 0.0, 0.45)
+	else:
+		# amount == 0 means a pure notification — omit the "+" prefix
+		earnings_label.text = "+%d %s" % [amount, ore_name] if amount > 0 else ore_name
+		earnings_label.modulate = Color(popup_color.r, popup_color.g, popup_color.b, 1.0)
+		_earnings_tween = create_tween()
+		_earnings_tween.tween_interval(1.5)
+		_earnings_tween.tween_property(earnings_label, "modulate:a", 0.0, 0.45)
 
 func _rebuild_health_bars(count: int) -> void:
 	for bar in health_bars:
