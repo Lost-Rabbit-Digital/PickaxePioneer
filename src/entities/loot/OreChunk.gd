@@ -30,6 +30,8 @@ const CHUNK_COLORS: Dictionary = {
 var ore_type: int = 0
 var value: int = 1
 var is_settled: bool = false
+# Cooldown so the "Inventory full!" popup is not emitted every frame.
+var _full_warn_cooldown: float = 0.0
 
 func _ready() -> void:
 	add_to_group("ore_chunk")
@@ -54,10 +56,18 @@ func _draw() -> void:
 	draw_rect(Rect2(-half, -half, CHUNK_SIZE * 0.45, CHUNK_SIZE * 0.45), color.lightened(0.45))
 
 func _physics_process(delta: float) -> void:
+	if _full_warn_cooldown > 0.0:
+		_full_warn_cooldown -= delta
+
 	# Collect when the player physically walks onto the chunk (settled or not).
 	var players := get_tree().get_nodes_in_group("player")
 	if players.size() > 0 and \
 			global_position.distance_to(players[0].global_position) < COLLECT_DIST:
+		if GameManager.is_inventory_full():
+			if _full_warn_cooldown <= 0.0:
+				EventBus.ore_mined_popup.emit(0, "Inventory full!")
+				_full_warn_cooldown = 3.0
+			return
 		collect()
 		return
 

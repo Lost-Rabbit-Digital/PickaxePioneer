@@ -35,6 +35,11 @@ const ICON_SZ: int  = 40
 const ROW_H: int    = 50
 const SEC_GAP: int  = 14
 
+# Inventory slot grid constants
+const SLOT_SIZE: int  = 52   # px per slot cell (icon + padding)
+const SLOT_GAP: int   = 4    # gap between cells
+const SLOT_COLS: int  = 10   # columns in the slot grid
+
 var _bg: ColorRect
 var _title: Label
 var _close_hint: Label
@@ -138,53 +143,133 @@ func _rebuild_content(ore_counts: Dictionary, shroom_charges: int, lucky_compass
 	for child in _content_root.get_children():
 		child.queue_free()
 
-	var y: int = 4
-	var col_w: int = (PANEL_W - 32) / 3  # Three equal columns
+	var content_w: int = PANEL_W - 32
+	var col_w: int = content_w / 2
 
 	# -----------------------------------------------------------------------
-	# Column 1: Mined Minerals
+	# Section 1: Inventory Slot Grid  (full width)
 	# -----------------------------------------------------------------------
-	y = _draw_section_header(_content_root, 0, y, col_w, "Mined Minerals",
+	var y: int = 4
+	y = _draw_section_header(_content_root, 0, y, content_w, "Inventory",
 		Color(0.85, 0.65, 0.20))
 	y += 4
+	y = _draw_slot_grid(_content_root, 0, y, content_w, ore_counts)
 
-	var any_ore := false
-	for ore in ORE_ORDER:
-		var count: int = ore_counts.get(ore["tile"], 0)
-		if count == 0:
-			continue
-		any_ore = true
-		y = _draw_ore_row(_content_root, 0, y, col_w, ore, count)
-
-	if not any_ore:
-		var none_lbl := Label.new()
-		none_lbl.text = "Nothing mined yet"
-		none_lbl.position = Vector2(4, y)
-		none_lbl.add_theme_font_size_override("font_size", 12)
-		none_lbl.modulate = Color(0.50, 0.50, 0.55, 0.80)
-		_content_root.add_child(none_lbl)
+	# Divider between grid and lower sections
+	var div := ColorRect.new()
+	div.color = Color(0.50, 0.40, 0.65, 0.30)
+	div.position = Vector2(0, y + 6)
+	div.size = Vector2(content_w, 1)
+	_content_root.add_child(div)
+	y += 14
 
 	# -----------------------------------------------------------------------
-	# Column 2: Equipment
+	# Lower half: Equipment (left col) | Artifacts (right col)
 	# -----------------------------------------------------------------------
-	var eq_x: int = col_w + 8
-	var eq_y: int = 4
-	eq_y = _draw_section_header(_content_root, eq_x, eq_y, col_w, "Equipment",
+	var eq_y: int = y
+	eq_y = _draw_section_header(_content_root, 0, eq_y, col_w, "Equipment",
 		Color(0.35, 0.75, 0.95))
 	eq_y += 4
-	eq_y = _draw_equipment(_content_root, eq_x, eq_y, col_w)
-	eq_y = _draw_ladders(_content_root, eq_x, eq_y, col_w)
+	eq_y = _draw_equipment(_content_root, 0, eq_y, col_w)
+	_draw_ladders(_content_root, 0, eq_y, col_w)
 
-	# -----------------------------------------------------------------------
-	# Column 3: Artifacts
-	# -----------------------------------------------------------------------
-	var art_x: int = col_w * 2 + 16
-	var art_y: int = 4
+	var art_x: int = col_w + 8
+	var art_y: int = y
 	art_y = _draw_section_header(_content_root, art_x, art_y, col_w - 8, "Artifacts",
 		Color(0.55, 0.90, 0.45))
 	art_y += 4
-	art_y = _draw_artifacts(_content_root, art_x, art_y, col_w - 8,
+	_draw_artifacts(_content_root, art_x, art_y, col_w - 8,
 		shroom_charges, lucky_compass, ancient_map)
+
+## Draws a grid of inventory slots. Occupied slots are filled with the ore's
+## colour; empty slots show a dark background. Returns the y position below the grid.
+func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictionary) -> int:
+	var total_slots: int = GameManager.get_ore_capacity()
+	var used_slots: int  = GameManager.run_ore_chunk_count
+
+	# Build an array of ore-type ids in collection order (grouped by type).
+	var slot_types: Array[int] = []
+	for ore in ORE_ORDER:
+		var count: int = ore_counts.get(ore["tile"], 0)
+		for _i in range(count):
+			slot_types.append(ore["tile"])
+
+	var cols: int = SLOT_COLS
+	var cell: int = SLOT_SIZE + SLOT_GAP
+	var rows: int = ceili(float(total_slots) / float(cols))
+
+	for idx in range(total_slots):
+		var col: int = idx % cols
+		var row: int = idx / cols
+		var sx: int = x + col * cell
+		var sy: int = y + row * cell
+
+		# Slot background
+		var bg := ColorRect.new()
+		bg.color = Color(0.08, 0.07, 0.10, 0.90)
+		bg.position = Vector2(sx, sy)
+		bg.size = Vector2(SLOT_SIZE, SLOT_SIZE)
+		parent.add_child(bg)
+
+		# Slot border
+		var border_col: Color
+		if idx < used_slots:
+			border_col = Color(0.60, 0.50, 0.75, 0.70)
+		else:
+			border_col = Color(0.30, 0.25, 0.40, 0.50)
+		for side in _slot_border_rects(sx, sy, SLOT_SIZE, SLOT_SIZE, 2):
+			var br := ColorRect.new()
+			br.color = border_col
+			br.position = side[0]
+			br.size = side[1]
+			parent.add_child(br)
+
+		# Occupied slot — show ore icon and tint
+		if idx < slot_types.size():
+			var tile_id: int = slot_types[idx]
+			# Find ore def for this tile id
+			for ore in ORE_ORDER:
+				if ore["tile"] == tile_id:
+					var fill := ColorRect.new()
+					fill.color = Color(ore["color"].r * 0.35, ore["color"].g * 0.35, ore["color"].b * 0.35, 1.0)
+					fill.position = Vector2(sx + 2, sy + 2)
+					fill.size = Vector2(SLOT_SIZE - 4, SLOT_SIZE - 4)
+					parent.add_child(fill)
+
+					var tex: Texture2D = load(ore["tex"]) as Texture2D
+					if tex:
+						var icon := TextureRect.new()
+						icon.texture = tex
+						icon.position = Vector2(sx + 4, sy + 4)
+						icon.size = Vector2(SLOT_SIZE - 8, SLOT_SIZE - 8)
+						icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+						icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+						icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+						icon.modulate = ore["color"]
+						parent.add_child(icon)
+					break
+
+	# Slot count label below the grid
+	var grid_h: int = rows * cell
+	var count_lbl := Label.new()
+	count_lbl.text = "%d / %d slots used" % [used_slots, total_slots]
+	count_lbl.position = Vector2(x, y + grid_h + 2)
+	count_lbl.custom_minimum_size = Vector2(w, 18)
+	count_lbl.add_theme_font_size_override("font_size", 12)
+	count_lbl.modulate = Color(0.65, 0.65, 0.70, 0.90)
+	parent.add_child(count_lbl)
+
+	return y + grid_h + 22
+
+
+func _slot_border_rects(x: int, y: int, w: int, h: int, t: int) -> Array:
+	return [
+		[Vector2(x, y),             Vector2(w, t)],
+		[Vector2(x, y + h - t),     Vector2(w, t)],
+		[Vector2(x, y),             Vector2(t, h)],
+		[Vector2(x + w - t, y),     Vector2(t, h)],
+	]
+
 
 func _draw_section_header(parent: Control, x: int, y: int, w: int, title: String, color: Color) -> int:
 	var lbl := Label.new()
@@ -255,7 +340,7 @@ func _draw_equipment(parent: Control, x: int, y: int, w: int) -> int:
 			"label": "Claws",
 			"color": Color(0.95, 0.65, 0.15),
 			"level": GameManager.mandibles_level,
-			"stat": "Capacity: %d" % GameManager.get_ore_capacity(),
+			"stat": "Slots: %d" % GameManager.get_ore_capacity(),
 		},
 		{
 			"label": "Whiskers",
