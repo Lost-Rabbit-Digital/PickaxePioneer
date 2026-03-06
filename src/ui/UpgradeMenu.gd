@@ -95,8 +95,8 @@ func _update_ui() -> void:
 	]
 
 	var current_cap := GameManager.get_ore_capacity()
-	drill_button.text = "Expand Cargo Hold Lv%d — Ore Capacity: %d → %d (%d Minerals)" % [
-		GameManager.mandibles_level, current_cap, current_cap + 25, mandibles_cost
+	drill_button.text = "Expand Cargo Hold Lv%d — Inventory Slots: %d → %d (%d Minerals)" % [
+		GameManager.mandibles_level, current_cap, current_cap + 2, mandibles_cost
 	]
 
 	var sense_level := GameManager.mineral_sense_level

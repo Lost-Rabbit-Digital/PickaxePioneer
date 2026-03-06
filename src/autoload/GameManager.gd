@@ -19,8 +19,9 @@ var run_ore_chunk_count: int = 0
 # Per-ore-type chunk counts (chunks physically picked up, used for inventory display)
 var run_ore_chunk_counts: Dictionary = {}
 
-# Base ore capacity per run (can be expanded by Cargo Bay spaceship upgrade)
-const BASE_ORE_CAPACITY: int = 200
+# Base inventory slots per run (each ore chunk collected occupies one slot).
+# Expanded by Cargo Bay spaceship upgrade and Claws (mandibles) upgrades.
+const BASE_INVENTORY_SLOTS: int = 20
 var last_overworld_node_name: String = ""
 ## Path of the scene currently loaded — used by drop-in logic to route a late-joining guest
 ## to the same location as the host rather than always sending them to the overworld.
@@ -417,9 +418,14 @@ func upgrade_claws() -> void:
 func get_sonar_ping_radius() -> float:
 	return 4.0 + mineral_sense_level * 3.0 + (3.0 if sense_gem_socketed else 0.0)
 
-## Ore carrying capacity per run (boosted by Cargo Bay upgrade and cargo hold upgrades).
+## Number of inventory slots available per run (slot-based; each ore chunk uses one slot).
+## Boosted by Cargo Bay spaceship upgrade and Claws (mandibles) upgrades.
 func get_ore_capacity() -> int:
-	return BASE_ORE_CAPACITY + (25 if cargo_bay_built else 0) + (mandibles_level * 25) + (25 if mandibles_gem_socketed else 0)
+	return BASE_INVENTORY_SLOTS + (5 if cargo_bay_built else 0) + (mandibles_level * 2) + (2 if mandibles_gem_socketed else 0)
+
+## Returns true when every inventory slot is occupied and no more ore can be picked up.
+func is_inventory_full() -> bool:
+	return run_ore_chunk_count >= get_ore_capacity()
 
 ## Caravan travel speed multiplier on the overworld (boosted by Warp Drive).
 func get_ship_speed_mult() -> float:

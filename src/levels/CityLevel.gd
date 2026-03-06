@@ -233,8 +233,8 @@ func _update_ui() -> void:
 		GameManager.carapace_level, hp, hp + 1, _carapace_cost]
 	_btn_legs.text      = "Upgrade Jet Boots Lv%d  —  Energy %d → %d, Speed %.0f → %.0f  ($%d)" % [
 		GameManager.legs_level, energy, energy + 25, spd, spd + 30.0, _legs_cost]
-	_btn_mandibles.text = "Expand Cargo Hold Lv%d  —  Capacity %d → %d  ($%d)" % [
-		GameManager.mandibles_level, cap, cap + 25, _mandibles_cost]
+	_btn_mandibles.text = "Expand Cargo Hold Lv%d  —  Slots %d → %d  ($%d)" % [
+		GameManager.mandibles_level, cap, cap + 2, _mandibles_cost]
 	_btn_sense.text     = "Tune Space Whiskers Lv%d  —  Radius %.0f → %.0f tiles, Energy %d → %d  ($%d)" % [
 		GameManager.mineral_sense_level, r, r + 3.0, fc, maxi(3, fc - 2), _sense_cost]
 

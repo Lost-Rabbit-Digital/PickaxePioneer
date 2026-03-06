@@ -356,8 +356,8 @@ func show_upgrade_station() -> void:
 
 	var mandibles_cost := 50 + 25 * GameManager.mandibles_level
 	var cap := GameManager.get_ore_capacity()
-	_upgrade_btn_mandibles.text = "Expand Cargo Hold Lv%d — Ore Capacity: %d → %d  ($%d)" % [
-		GameManager.mandibles_level, cap, cap + 25, mandibles_cost]
+	_upgrade_btn_mandibles.text = "Expand Cargo Hold Lv%d — Inventory Slots: %d → %d  ($%d)" % [
+		GameManager.mandibles_level, cap, cap + 2, mandibles_cost]
 	_upgrade_btn_mandibles.disabled = GameManager.dollars < mandibles_cost
 
 	var claws_cost := 50 + 25 * GameManager.claws_level
