@@ -1115,7 +1115,7 @@ func _update_cursor_highlight() -> void:
 	if gp.x >= 0 and gp.x < GRID_COLS and gp.y >= 0 and gp.y < GRID_ROWS:
 		var player_tile := local_player.get_grid_pos()
 		var dist := Vector2(gp - player_tile).length()
-		if dist <= local_player.mine_range:
+		if dist <= local_player.mine_range and has_line_of_sight(player_tile, gp):
 			_cursor_grid_pos = gp
 		else:
 			_cursor_grid_pos = Vector2i(-1, -1)
@@ -1289,6 +1289,34 @@ func _begin_heal_animation(pos_key: Vector2i) -> void:
 # ---------------------------------------------------------------------------
 # Mining API — called by PlayerProbe
 # ---------------------------------------------------------------------------
+
+## Returns true if no solid tile occludes the straight line from from_tile to
+## to_tile. The target tile itself is excluded so the player can mine tiles
+## that are directly adjacent to open space. Uses a float-step ray sampled at
+## quarter-tile resolution so thin columns are never skipped.
+func has_line_of_sight(from_tile: Vector2i, to_tile: Vector2i) -> bool:
+	var fx := from_tile.x + 0.5
+	var fy := from_tile.y + 0.5
+	var tx := to_tile.x + 0.5
+	var ty := to_tile.y + 0.5
+	var dx := tx - fx
+	var dy := ty - fy
+	var dist := sqrt(dx * dx + dy * dy)
+	if dist < 0.001:
+		return true
+	var steps := ceili(dist * 4.0)
+	for i in range(1, steps):
+		var t := float(i) / float(steps)
+		var cx := floori(fx + dx * t)
+		var cy := floori(fy + dy * t)
+		if cx == to_tile.x and cy == to_tile.y:
+			continue  # Target tile excluded — that is what we are trying to mine
+		if cx < 0 or cx >= GRID_COLS or cy < 0 or cy >= GRID_ROWS:
+			continue
+		var tile_type: int = grid[cx][cy]
+		if tile_type != TileType.EMPTY and tile_type != TileType.LADDER:
+			return false
+	return true
 
 func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 	var col := grid_pos.x
@@ -2315,6 +2343,8 @@ func rpc_request_mine(grid_pos: Vector2i) -> void:
 		)
 		var dist := Vector2(grid_pos - player_tile).length()
 		if dist > guest_player_node.mine_range:
+			return
+		if not has_line_of_sight(player_tile, grid_pos):
 			return
 	# Pass guest_player_node so the pickaxe effect originates from the guest avatar
 	try_mine_at(grid_pos, guest_player_node)

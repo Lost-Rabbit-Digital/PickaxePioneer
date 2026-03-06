@@ -295,6 +295,10 @@ func _handle_mining(delta: float) -> void:
 			_mining = false
 			return
 
+		if not mining_level.has_line_of_sight(player_tile, grid_pos):
+			_mining = false
+			return
+
 		if grid_pos != _mine_target:
 			_mine_target = grid_pos
 			_mine_timer = MINE_INTERVAL  # Pre-fill so first hit fires immediately
