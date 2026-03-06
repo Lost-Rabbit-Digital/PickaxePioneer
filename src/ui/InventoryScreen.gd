@@ -181,18 +181,23 @@ func _rebuild_content(ore_counts: Dictionary, shroom_charges: int, lucky_compass
 	_draw_artifacts(_content_root, art_x, art_y, col_w - 8,
 		shroom_charges, lucky_compass, ancient_map)
 
-## Draws a grid of inventory slots. Occupied slots are filled with the ore's
-## colour; empty slots show a dark background. Returns the y position below the grid.
+## Draws a grid of inventory slots. Same-type ores stack up to STACK_SIZE per slot.
+## Occupied slots show the ore icon and a count badge; empty slots show a dark background.
+## Returns the y position below the grid.
 func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictionary) -> int:
 	var total_slots: int = GameManager.get_ore_capacity()
-	var used_slots: int  = GameManager.run_ore_chunk_count
 
-	# Build an array of ore-type ids in collection order (grouped by type).
-	var slot_types: Array[int] = []
+	# Build an array of stacks in collection order (grouped by ore type, STACK_SIZE per slot).
+	# Each stack entry: {tile: int, count: int}
+	var stacks: Array[Dictionary] = []
 	for ore in ORE_ORDER:
-		var count: int = ore_counts.get(ore["tile"], 0)
-		for _i in range(count):
-			slot_types.append(ore["tile"])
+		var remaining: int = ore_counts.get(ore["tile"], 0)
+		while remaining > 0:
+			var stack_count: int = mini(remaining, GameManager.STACK_SIZE)
+			stacks.append({"tile": ore["tile"], "count": stack_count})
+			remaining -= stack_count
+
+	var used_slots: int = stacks.size()
 
 	var cols: int = SLOT_COLS
 	var cell: int = SLOT_SIZE + SLOT_GAP
@@ -224,10 +229,11 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 			br.size = side[1]
 			parent.add_child(br)
 
-		# Occupied slot — show ore icon and tint
-		if idx < slot_types.size():
-			var tile_id: int = slot_types[idx]
-			# Find ore def for this tile id
+		# Occupied slot — show ore icon, tint, and stack count badge
+		if idx < stacks.size():
+			var stack: Dictionary = stacks[idx]
+			var tile_id: int = stack["tile"]
+			var stack_count: int = stack["count"]
 			for ore in ORE_ORDER:
 				if ore["tile"] == tile_id:
 					var fill := ColorRect.new()
@@ -247,6 +253,16 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 						icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 						icon.modulate = ore["color"]
 						parent.add_child(icon)
+
+					# Stack count badge in bottom-right corner
+					var badge := Label.new()
+					badge.text = "×%d" % stack_count
+					badge.position = Vector2(sx + 2, sy + SLOT_SIZE - 16)
+					badge.size = Vector2(SLOT_SIZE - 4, 14)
+					badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+					badge.add_theme_font_size_override("font_size", 10)
+					badge.modulate = Color(1.0, 1.0, 1.0, 0.95)
+					parent.add_child(badge)
 					break
 
 	# Slot count label below the grid

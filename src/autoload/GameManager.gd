@@ -22,6 +22,8 @@ var run_ore_chunk_counts: Dictionary = {}
 # Base inventory slots per run (each ore chunk collected occupies one slot).
 # Expanded by Cargo Bay spaceship upgrade and Claws (mandibles) upgrades.
 const BASE_INVENTORY_SLOTS: int = 20
+# Maximum number of same-type ore chunks that stack into a single inventory slot.
+const STACK_SIZE: int = 32
 var last_overworld_node_name: String = ""
 ## Path of the scene currently loaded — used by drop-in logic to route a late-joining guest
 ## to the same location as the host rather than always sending them to the overworld.
@@ -423,9 +425,17 @@ func get_sonar_ping_radius() -> float:
 func get_ore_capacity() -> int:
 	return BASE_INVENTORY_SLOTS + (5 if cargo_bay_built else 0) + (mandibles_level * 2) + (2 if mandibles_gem_socketed else 0)
 
+## Number of slots currently occupied, counting stacks of up to STACK_SIZE chunks per slot.
+## Same ore type chunks stack together; one slot holds up to STACK_SIZE of a single type.
+func get_stacked_slots_used() -> int:
+	var total: int = 0
+	for count: int in run_ore_chunk_counts.values():
+		total += ceili(float(count) / float(STACK_SIZE))
+	return total
+
 ## Returns true when every inventory slot is occupied and no more ore can be picked up.
 func is_inventory_full() -> bool:
-	return run_ore_chunk_count >= get_ore_capacity()
+	return get_stacked_slots_used() >= get_ore_capacity()
 
 ## Caravan travel speed multiplier on the overworld (boosted by Warp Drive).
 func get_ship_speed_mult() -> float:
