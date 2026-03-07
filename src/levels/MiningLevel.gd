@@ -2191,9 +2191,8 @@ func _setup_hat_menu() -> void:
 	add_child(_hat_menu)
 
 func _setup_customization_menu() -> void:
-	_customization_menu = CustomizationMenu.new()
+	_customization_menu = $HUD/CustomizationMenu as CustomizationMenu
 	_customization_menu.player = player_node
-	add_child(_customization_menu)
 
 # Shops (Surface Hub, Energy Dock, Upgrade Bay, Space Forge, Cat Tavern)
 # are now managed by MiningShopSystem — see src/levels/MiningShopSystem.gd

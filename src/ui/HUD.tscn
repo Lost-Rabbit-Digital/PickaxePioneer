@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://hud1234568aa"]
+[gd_scene load_steps=3 format=3 uid="uid://hud1234568aa"]
 
 [ext_resource type="Script" uid="uid://cqagp0vwv0vae" path="res://src/ui/HUD.gd" id="1_hud"]
+[ext_resource type="PackedScene" uid="uid://custmmenu0001" path="res://src/ui/CustomizationMenu.tscn" id="2_custmenu"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -58,3 +59,5 @@ offset_bottom = 170.0
 grow_horizontal = 0
 theme_override_constants/separation = 4
 alignment = 2
+
+[node name="CustomizationMenu" parent="." instance=ExtResource("2_custmenu")]
