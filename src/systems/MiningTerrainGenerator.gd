@@ -130,14 +130,11 @@ func _random_tile(_col: int, row: int) -> int:
 
 	var base_hazard    := 0.08 + depth * 0.20
 	var explosive_bias := base_hazard * 0.45 if explosive_ok else 0.0
-	# Lava reduced here — _generate_lava_lakes() handles grouped lava pools
-	var lava_bias      := base_hazard * 0.10 if lava_ok      else 0.0
-	var total_hazard   := explosive_bias + lava_bias
+	# Lava generation moved entirely to _generate_lava_lakes() for semi-circular pools only
+	var total_hazard   := explosive_bias
 
 	if   r < explosive_bias * (2.0 / 3.0):       return T_EXPLOSIVE
 	elif r < explosive_bias:                       return T_EXPLOSIVE_ARMED
-	elif r < explosive_bias + lava_bias * 0.5:    return T_LAVA
-	elif r < total_hazard:                         return T_LAVA_FLOW
 	elif r < total_hazard + 0.02:                 return T_ENERGY_NODE
 	elif r < total_hazard + 0.03:                 return T_ENERGY_NODE_FULL
 
