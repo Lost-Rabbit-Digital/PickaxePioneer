@@ -12,7 +12,7 @@ extends Control
 @onready var settlement_node_4: MapNode = $SettlementNode4
 @onready var final_node: MapNode = $FinalNode
 @onready var pause_menu = $PauseMenu
-@onready var version_label: Label = $VersionLabel
+@onready var version_label: Label = $Camera2D/BackgroundCanvasLayer/VersionLabel
 @onready var camera: Camera2D = $Camera2D
 
 var current_node: MapNode
