@@ -81,7 +81,8 @@ func _ready() -> void:
 	version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "0.0.0")
 
 	# Collect all nodes first — needed before connection generation/restore
-	nodes = [city_node, mine_node_1, mine_node_2, mine_node_3, settlement_node_3, settlement_node_4, final_node]
+	# Note: mine_node_3 and settlement_node_4 are kept but hidden for backwards compatibility
+	nodes = [city_node, mine_node_1, mine_node_2, settlement_node_3, final_node]
 
 	# Restore or randomize mine nodes and their connections.
 	# Re-generate if the save predates the neural-network layout (no mine3_name key).
@@ -99,10 +100,7 @@ func _ready() -> void:
 	settlement_node_3.difficulty = 1
 	settlement_node_3.ore_types = []
 	settlement_node_3.hazard_types = []
-	settlement_node_4.description = "A remote trading post at the edge of explored space. Stock up before the final push."
-	settlement_node_4.difficulty = 2
-	settlement_node_4.ore_types = []
-	settlement_node_4.hazard_types = []
+	settlement_node_4.visible = false
 
 	# Instantiate the level info modal
 	_modal = preload("res://src/ui/LevelInfoModal.tscn").instantiate()
@@ -292,7 +290,7 @@ func _show_coop_guest_banner() -> void:
 	layer.add_child(lbl)
 
 func _randomize_mines() -> void:
-	# All four mine slots are always populated in the neural network layout.
+	# Two mine slots in the neural network layout.
 	var available_names := mine_names.duplicate()
 	available_names.shuffle()
 
@@ -306,20 +304,18 @@ func _randomize_mines() -> void:
 	mine_node_2._update_visuals()
 	mine_node_2.visible = true
 
-	mine_node_3.location_name = available_names[2]
-	_apply_mine_metadata(mine_node_3, available_names[2])
-	mine_node_3._update_visuals()
-	mine_node_3.visible = true
+	# Hide mine_node_3
+	mine_node_3.visible = false
 
 	# Final node picks a hard mine (difficulty 3) from the remaining pool.
 	var hard_names := mine_names.filter(func(n: String) -> bool:
 		return mine_metadata.get(n, {}).get("difficulty", 1) == 3 and \
-			not [available_names[0], available_names[1], available_names[2]].has(n)
+			not [available_names[0], available_names[1]].has(n)
 	)
 	if hard_names.is_empty():
-		hard_names = available_names.slice(3)
+		hard_names = available_names.slice(2)
 	hard_names.shuffle()
-	var final_name: String = hard_names[0] if hard_names.size() > 0 else available_names[3]
+	var final_name: String = hard_names[0] if hard_names.size() > 0 else available_names[2]
 	final_node.location_name = final_name
 	_apply_mine_metadata(final_node, final_name)
 	final_node._update_visuals()
@@ -331,7 +327,6 @@ func _restore_mines(config: Dictionary) -> void:
 	# Restore mine configuration from a saved planet config
 	var mine1_name: String = config.get("mine1_name", "")
 	var mine2_name: String = config.get("mine2_name", "")
-	var mine3_name: String = config.get("mine3_name", "")
 	var final_name: String = config.get("final_name", "")
 
 	if mine1_name != "":
@@ -346,11 +341,8 @@ func _restore_mines(config: Dictionary) -> void:
 		mine_node_2._update_visuals()
 	mine_node_2.visible = true
 
-	if mine3_name != "":
-		mine_node_3.location_name = mine3_name
-		_apply_mine_metadata(mine_node_3, mine3_name)
-		mine_node_3._update_visuals()
-	mine_node_3.visible = true
+	# Hide mine_node_3
+	mine_node_3.visible = false
 
 	if final_name != "":
 		final_node.location_name = final_name
@@ -381,6 +373,7 @@ func _save_planet_config() -> void:
 
 func _arrange_nodes_neural_network() -> void:
 	# Neural network layout: four layers from left (city) to right (final mine).
+	# Two mine planets in layer 2, one settlement in layer 3.
 	# Each layer's nodes are centred vertically with a small random jitter so
 	# repeated runs look slightly organic while preserving the layered structure.
 	# Planets are spread far apart to encourage use of camera panning/zooming.
@@ -390,14 +383,13 @@ func _arrange_nodes_neural_network() -> void:
 	# Layer 1 — Base City (single node, centred vertically)
 	city_node.position = Vector2(300, 600) + Vector2(randf_range(-jx * 0.5, jx * 0.5), randf_range(-jy * 0.5, jy * 0.5))
 
-	# Layer 2 — three mine planets, spread evenly down the height
-	mine_node_1.position  = Vector2(1100, 200) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
-	mine_node_2.position  = Vector2(1100, 600) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
-	mine_node_3.position  = Vector2(1100, 1000) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
+	# Layer 2 — two mine planets, spread across the height
+	mine_node_1.position  = Vector2(1100, 300) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
+	mine_node_2.position  = Vector2(1100, 900) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
 
-	# Layer 3 — two settlement nodes
-	settlement_node_3.position = Vector2(1900, 350) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
-	settlement_node_4.position = Vector2(1900, 850) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
+	# Layer 3 — single settlement node (centred vertically)
+	settlement_node_3.position = Vector2(1900, 600) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
+	settlement_node_4.position = Vector2(9999, 9999)  # Hide off-screen
 
 	# Layer 4 — final mine (single node, centred vertically)
 	final_node.position = Vector2(2700, 600) + Vector2(randf_range(-jx * 0.5, jx * 0.5), randf_range(-jy * 0.5, jy * 0.5))
@@ -429,23 +421,17 @@ func _apply_mine_metadata(node: MapNode, name: String) -> void:
 	node.hazard_types = meta.get("hazards", [])
 
 func _generate_connections() -> void:
-	# Neural network topology (bottom → top):
-	#   Layer 1 → Layer 2: city connects to all three mines
+	# Neural network topology (left → right):
+	#   Layer 1 → Layer 2: city connects to both mines
 	_connect_nodes(city_node, mine_node_1)
 	_connect_nodes(city_node, mine_node_2)
-	_connect_nodes(city_node, mine_node_3)
 
-	#   Layer 2 → Layer 3: each mine connects to both settlements
+	#   Layer 2 → Layer 3: each mine connects to the settlement
 	_connect_nodes(mine_node_1, settlement_node_3)
-	_connect_nodes(mine_node_1, settlement_node_4)
 	_connect_nodes(mine_node_2, settlement_node_3)
-	_connect_nodes(mine_node_2, settlement_node_4)
-	_connect_nodes(mine_node_3, settlement_node_3)
-	_connect_nodes(mine_node_3, settlement_node_4)
 
-	#   Layer 3 → Layer 4: both settlements connect to the final mine
+	#   Layer 3 → Layer 4: settlement connects to the final mine
 	_connect_nodes(settlement_node_3, final_node)
-	_connect_nodes(settlement_node_4, final_node)
 
 	_save_planet_config()
 

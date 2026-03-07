@@ -351,6 +351,7 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 			remaining -= stack_count
 
 	var used_ore_slots: int = stacks.size()
+	var total_used_slots: int = TOOL_SLOT_COUNT + used_ore_slots
 
 	var cols: int = SLOT_COLS
 	var cell: int = SLOT_SIZE + SLOT_GAP
@@ -515,7 +516,7 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 	# Slot count label below the grid
 	var grid_h: int = rows * cell
 	var count_lbl := Label.new()
-	count_lbl.text = "%d / %d ore slots used" % [used_ore_slots, ore_capacity]
+	count_lbl.text = "%d / %d slots used" % [total_used_slots, total_display_slots]
 	count_lbl.position = Vector2(x, y + grid_h + 2)
 	count_lbl.custom_minimum_size = Vector2(w, 18)
 	count_lbl.add_theme_font_size_override("font_size", 12)
