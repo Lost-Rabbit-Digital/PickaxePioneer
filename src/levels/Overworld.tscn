@@ -86,6 +86,10 @@ scene_path = "res://src/levels/MiningLevel.tscn"
 [node name="Caravan" parent="." instance=ExtResource("4_caravan")]
 position = Vector2(200, 360)
 
+[node name="Camera2D" type="Camera2D" parent="."]
+enabled = false
+zoom = Vector2(1, 1)
+
 [node name="VersionLabel" type="Label" parent="."]
 layout_mode = 1
 offset_left = 8.0

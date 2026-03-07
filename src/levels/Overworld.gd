@@ -13,11 +13,21 @@ extends Control
 @onready var final_node: MapNode = $FinalNode
 @onready var pause_menu = $PauseMenu
 @onready var version_label: Label = $VersionLabel
+@onready var camera: Camera2D = $Camera2D
 
 var current_node: MapNode
 var nodes: Array[MapNode] = []
 var _modal: LevelInfoModal = null
 var _pending_node: MapNode = null
+
+# Camera control
+var _camera_zoom: float = 1.0
+var _camera_pan_offset: Vector2 = Vector2.ZERO
+var _camera_min_zoom: float = 0.5
+var _camera_max_zoom: float = 3.0
+var _camera_zoom_speed: float = 0.1
+var _camera_pan_speed: float = 300.0
+var _camera_follow_caravan: bool = true
 
 # Asteroid mine name options for randomization
 var mine_names = [
@@ -135,6 +145,12 @@ func _ready() -> void:
 
 	if NetworkManager.is_multiplayer_session:
 		add_child(preload("res://src/ui/ChatBox.tscn").instantiate())
+
+	# Initialize camera
+	camera.enabled = true
+	camera.global_position = caravan.global_position
+	_camera_zoom = 1.0
+	_update_camera()
 
 	queue_redraw()
 
@@ -356,23 +372,24 @@ func _arrange_nodes_neural_network() -> void:
 	# Neural network layout: four layers from left (city) to right (final mine).
 	# Each layer's nodes are centred vertically with a small random jitter so
 	# repeated runs look slightly organic while preserving the layered structure.
-	var jx := 12.0  # horizontal jitter range (progression axis)
-	var jy := 18.0  # vertical jitter range (spread axis)
+	# Planets are spread far apart to encourage use of camera panning/zooming.
+	var jx := 50.0  # horizontal jitter range (progression axis)
+	var jy := 80.0  # vertical jitter range (spread axis)
 
 	# Layer 1 — Base City (single node, centred vertically)
-	city_node.position = Vector2(110, 360) + Vector2(randf_range(-jx * 0.5, jx * 0.5), randf_range(-jy * 0.5, jy * 0.5))
+	city_node.position = Vector2(300, 600) + Vector2(randf_range(-jx * 0.5, jx * 0.5), randf_range(-jy * 0.5, jy * 0.5))
 
 	# Layer 2 — three mine planets, spread evenly down the height
-	mine_node_1.position  = Vector2(380, 130) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
-	mine_node_2.position  = Vector2(380, 360) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
-	mine_node_3.position  = Vector2(380, 590) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
+	mine_node_1.position  = Vector2(1100, 200) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
+	mine_node_2.position  = Vector2(1100, 600) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
+	mine_node_3.position  = Vector2(1100, 1000) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
 
 	# Layer 3 — two settlement nodes
-	settlement_node_3.position = Vector2(650, 220) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
-	settlement_node_4.position = Vector2(650, 500) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
+	settlement_node_3.position = Vector2(1900, 350) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
+	settlement_node_4.position = Vector2(1900, 850) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
 
 	# Layer 4 — final mine (single node, centred vertically)
-	final_node.position = Vector2(920, 360) + Vector2(randf_range(-jx * 0.5, jx * 0.5), randf_range(-jy * 0.5, jy * 0.5))
+	final_node.position = Vector2(2700, 600) + Vector2(randf_range(-jx * 0.5, jx * 0.5), randf_range(-jy * 0.5, jy * 0.5))
 
 func _save_node_positions() -> void:
 	var node_positions := {}
@@ -462,7 +479,47 @@ func _draw() -> void:
 				visited_pairs.append(pair)
 				draw_dashed_line(node.position, neighbor.position, Color(1, 1, 1, 0.5), 2.0, 10.0)
 
+func _process(delta: float) -> void:
+	if _camera_follow_caravan:
+		camera.global_position = caravan.global_position + _camera_pan_offset
+	_update_camera()
+
+	# Pan camera with WASD or arrow keys when not following caravan
+	if not _camera_follow_caravan:
+		var pan_direction = Vector2.ZERO
+		if Input.is_action_pressed("ui_up"):
+			pan_direction.y -= 1
+		if Input.is_action_pressed("ui_down"):
+			pan_direction.y += 1
+		if Input.is_action_pressed("ui_left"):
+			pan_direction.x -= 1
+		if Input.is_action_pressed("ui_right"):
+			pan_direction.x += 1
+
+		if pan_direction != Vector2.ZERO:
+			_camera_pan_offset += pan_direction.normalized() * _camera_pan_speed * delta
+
 func _unhandled_input(event: InputEvent) -> void:
+	# Handle zoom with mouse wheel
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_camera_zoom = clamp(_camera_zoom + _camera_zoom_speed, _camera_min_zoom, _camera_max_zoom)
+			_update_camera()
+			get_viewport().set_input_as_handled()
+			return
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_camera_zoom = clamp(_camera_zoom - _camera_zoom_speed, _camera_min_zoom, _camera_max_zoom)
+			_update_camera()
+			get_viewport().set_input_as_handled()
+			return
+
+	# Handle space to toggle camera follow
+	if event.is_action_pressed("ui_select"):  # Space bar
+		_camera_follow_caravan = not _camera_follow_caravan
+		_camera_pan_offset = Vector2.ZERO
+		get_viewport().set_input_as_handled()
+		return
+
 	if event.is_action_pressed("ui_cancel"):
 		if _modal and _modal.visible:
 			return  # Let the modal handle its own dismissal
@@ -475,18 +532,21 @@ func _unhandled_input(event: InputEvent) -> void:
 			_enter_node(current_node)
 		return
 
-	var direction = Vector2.ZERO
-	if event.is_action_pressed("ui_up"):
-		direction = Vector2.UP
-	elif event.is_action_pressed("ui_down"):
-		direction = Vector2.DOWN
-	elif event.is_action_pressed("ui_left"):
-		direction = Vector2.LEFT
-	elif event.is_action_pressed("ui_right"):
-		direction = Vector2.RIGHT
+	# Only use arrow keys for node selection when following caravan;
+	# otherwise arrow keys are used for panning (handled in _process)
+	if _camera_follow_caravan:
+		var direction = Vector2.ZERO
+		if event.is_action_pressed("ui_up"):
+			direction = Vector2.UP
+		elif event.is_action_pressed("ui_down"):
+			direction = Vector2.DOWN
+		elif event.is_action_pressed("ui_left"):
+			direction = Vector2.LEFT
+		elif event.is_action_pressed("ui_right"):
+			direction = Vector2.RIGHT
 
-	if direction != Vector2.ZERO:
-		_move_selection(direction)
+		if direction != Vector2.ZERO:
+			_move_selection(direction)
 
 func _move_selection(direction: Vector2) -> void:
 	var best_neighbor: MapNode = null
@@ -614,3 +674,6 @@ func _on_modal_confirmed(node: MapNode) -> void:
 	elif node.node_type == MapNode.NodeType.EMPTY:
 		if node.name == "CityNode":
 			GameManager.load_mining_level(node.scene_path)
+
+func _update_camera() -> void:
+	camera.zoom = Vector2.ONE * _camera_zoom
