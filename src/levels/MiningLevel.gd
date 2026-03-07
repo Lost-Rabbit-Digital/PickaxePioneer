@@ -2008,7 +2008,7 @@ func _show_zone_banner(zone_name: String, color: Color, depth_row: int = -1) -> 
 	layer.add_child(label)
 	if depth_row >= 0:
 		var depth_label := Label.new()
-		depth_label.text = "Depth: %d m" % (depth_row * 10)
+		depth_label.text = "Depth: %d m" % (depth_row * 50)
 		depth_label.size = Vector2(VW, 26)
 		depth_label.position = Vector2(0, VH * 2 / 3 - banner_h / 2 + 42)
 		depth_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
