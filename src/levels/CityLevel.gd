@@ -219,7 +219,7 @@ func _button(x: int, y: int, w: int, h: int, text: String, callback: Callable) -
 
 # ── UI refresh ────────────────────────────────────────────────────────────────
 func _update_ui() -> void:
-	_minerals_label.text = "Dollars: $%d   |   Gems: %d" % [
+	_minerals_label.text = "Dollars: %dg   |   Gems: %d" % [
 		GameManager.dollars, GameManager.gem_count]
 
 	var hp    := GameManager.get_max_health()
@@ -229,13 +229,13 @@ func _update_ui() -> void:
 	var r     := GameManager.get_sonar_ping_radius()
 	var fc    := GameManager.get_sonar_ping_energy_cost()
 
-	_btn_carapace.text  = "Reinforce Spacesuit Lv%d  —  HP %d → %d  ($%d)" % [
+	_btn_carapace.text  = "Reinforce Spacesuit Lv%d  —  HP %d → %d  (%dg)" % [
 		GameManager.carapace_level, hp, hp + 1, _carapace_cost]
-	_btn_legs.text      = "Upgrade Jet Boots Lv%d  —  Energy %d → %d, Speed %.0f → %.0f  ($%d)" % [
+	_btn_legs.text      = "Upgrade Jet Boots Lv%d  —  Energy %d → %d, Speed %.0f → %.0f  (%dg)" % [
 		GameManager.legs_level, energy, energy + 25, spd, spd + 30.0, _legs_cost]
-	_btn_mandibles.text = "Expand Cargo Hold Lv%d  —  Slots %d → %d  ($%d)" % [
+	_btn_mandibles.text = "Expand Cargo Hold Lv%d  —  Slots %d → %d  (%dg)" % [
 		GameManager.mandibles_level, cap, cap + 2, _mandibles_cost]
-	_btn_sense.text     = "Tune Space Whiskers Lv%d  —  Radius %.0f → %.0f tiles, Energy %d → %d  ($%d)" % [
+	_btn_sense.text     = "Tune Space Whiskers Lv%d  —  Radius %.0f → %.0f tiles, Energy %d → %d  (%dg)" % [
 		GameManager.mineral_sense_level, r, r + 3.0, fc, maxi(3, fc - 2), _sense_cost]
 
 	var m := GameManager.dollars
@@ -395,7 +395,7 @@ func _refresh_chamber_panel() -> void:
 		elif not unlocked:
 			btn.text = "[LOCKED]  %s\n%s\n%s" % [upgrade["name"], upgrade["effect"], upgrade["unlock_label"]]
 		else:
-			btn.text = "Install %s  —  %s\nCost: $%d" % [upgrade["name"], upgrade["effect"], cost_val]
+			btn.text = "Install %s  —  %s\nCost: %dg" % [upgrade["name"], upgrade["effect"], cost_val]
 
 
 func _on_chamber_pressed(key: String) -> void:

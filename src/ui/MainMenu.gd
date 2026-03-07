@@ -909,7 +909,7 @@ func _refresh_popup() -> void:
 				lines = "  ▶ CURRENT"
 			else:
 				lines = "  Slot %d" % (i + 1)
-			lines += "  |  $%d" % summary.get("dollars", 0)
+			lines += "  |  %dg" % summary.get("dollars", 0)
 			lines += "  |  Minerals: %d / %d" % [summary.get("minerals", 0), summary.get("ore_capacity", 200)]
 			lines += "  |  Depth: %dm" % summary.get("deepest_row", 0)
 			var lvl_sum: int = summary.get("carapace_level", 0) + summary.get("legs_level", 0) + summary.get("mandibles_level", 0) + summary.get("mineral_sense_level", 0)
