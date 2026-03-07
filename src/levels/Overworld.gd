@@ -160,6 +160,9 @@ func _ready() -> void:
 	_camera_zoom = 1.0
 	_update_camera()
 
+	# Pan camera to ship when movement starts
+	caravan.movement_started.connect(_on_caravan_movement_started)
+
 	queue_redraw()
 
 ## Guest → Host: request the current star chart config.  Called from the guest's
@@ -660,6 +663,11 @@ func _on_caravan_arrived() -> void:
 	if _pending_node:
 		_enter_node(_pending_node)
 		_pending_node = null
+
+func _on_caravan_movement_started() -> void:
+	_camera_follow_caravan = true
+	_camera_pan_offset = Vector2.ZERO
+	_momentum_velocity = Vector2.ZERO
 
 func _find_path(from_node: MapNode, to_node: MapNode) -> Array[MapNode]:
 	# BFS over visible, connected nodes to find the shortest path.
