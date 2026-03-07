@@ -110,15 +110,6 @@ const ORE_COLORS: Dictionary = {
 	"Stardust Blend!":   Color(0.85, 0.75, 0.60),
 	# Scanner / system notifications
 	"No energy for ping":     Color(0.80, 0.20, 0.10),
-	# Space Trader events
-	"Space Trader!":         Color(1.00, 0.75, 0.10),
-	"Energy Cell Pack!":     Color(0.20, 0.80, 0.90),
-	"Spacesuit Patched!":    Color(0.85, 0.08, 0.08),
-	"Astro Shroom!":         Color(0.50, 0.90, 0.20),
-	"Lucky Star Chart!":     Color(1.00, 0.90, 0.10),
-	"Deep Space Map!":       Color(0.20, 0.90, 1.00),
-	"Not enough minerals":   Color(0.80, 0.20, 0.10),
-	"Already at full HP":    Color(0.60, 0.60, 0.60),
 	# Legendary Space Finds — name + " Found!" suffix, cosmic tones
 	"Astro Kitten Found!":    Color(0.60, 0.70, 0.95),
 	"Stellar Kitten Found!":  Color(0.65, 0.75, 1.00),

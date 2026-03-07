@@ -331,9 +331,8 @@ var _camera_zoom := 1.0
 var collision_tilemap: TileMapLayer
 var _tileset: TileSet
 
-# Shop + Trader systems (Node children — own all shop UI and trader NPC logic)
+# Shop system (Node child — owns all shop UI logic)
 var shop_system: MiningShopSystem = null
-var trader_system: TraderSystem = null
 
 # Terrain generation — extracted to MiningTerrainGenerator.gd
 var _terrain_generator: MiningTerrainGenerator = MiningTerrainGenerator.new()
@@ -391,7 +390,7 @@ var boss_system: BossSystem = BossSystem.new()
 # Mining/Collecting Cat subsystem — logic lives in CatSystem.gd (Node2D child)
 var cat_system: CatSystem = null
 
-# Run-length buffs — stored as single-element Arrays so TraderSystem can hold a writable reference
+# Run-length buffs — single-element Arrays for writable-reference passing
 var _shroom_charges: Array = [0]          # [int]  — Mining Shroom remaining charges
 var _lucky_compass_active: Array = [false] # [bool] — Lucky Compass active this run
 var _ancient_map_active: Array = [false]   # [bool] — Ancient Map active this run
@@ -531,11 +530,6 @@ func _ready() -> void:
 	shop_system = MiningShopSystem.new()
 	add_child(shop_system)
 	shop_system.setup(player_node, cat_system)
-
-	# Initialise TraderSystem (wandering trader NPC + shop UI)
-	trader_system = TraderSystem.new()
-	add_child(trader_system)
-	trader_system.setup(player_node, _shroom_charges, _lucky_compass_active, _ancient_map_active)
 
 	# Initialise BossSystem with grid reference and MiningLevel callbacks
 	boss_system.setup(
@@ -952,7 +946,7 @@ func _emit_lava_embers(delta: float, min_col: int, max_col: int, min_row: int, m
 func any_ui_open() -> bool:
 	var hat_open := _hat_menu != null and _hat_menu.visible
 	var custom_open := _customization_menu != null and _customization_menu.visible
-	return hat_open or custom_open or (shop_system != null and (shop_system.any_shop_open() or trader_system.shop_visible))
+	return hat_open or custom_open or (shop_system != null and shop_system.any_shop_open())
 
 # ---------------------------------------------------------------------------
 # Process — energy drain, cursor highlight, flashes
@@ -1020,7 +1014,7 @@ func _process(delta: float) -> void:
 	# Update sonar ping wave (§3.2) — delegated to SonarSystem
 	sonar_system.update(delta, 2.0 if _ancient_map_active[0] else 1.0)
 
-	# Boss system update (trader_system has its own _process as a Node child)
+	# Boss system update
 	var _boss_pcol := floori(player_node.global_position.x / CELL_SIZE) if player_node else -1
 	var _boss_prow := floori(player_node.global_position.y / CELL_SIZE) if player_node else -1
 	boss_system.update(delta, _boss_pcol, _boss_prow)
@@ -1045,7 +1039,7 @@ func _process(delta: float) -> void:
 			rpc_sync_resources.rpc_id(NetworkManager.guest_peer_id,
 				GameManager.run_mineral_currency, GameManager.current_energy)
 
-	if _game_over or shop_system.any_shop_open() or trader_system.shop_visible:
+	if _game_over or shop_system.any_shop_open():
 		return
 
 	# Update cursor highlight
@@ -1168,7 +1162,7 @@ func _check_exit_zone() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if _game_over:
 		return
-	if shop_system.any_shop_open() or trader_system.shop_visible:
+	if shop_system.any_shop_open():
 		if event.is_action_pressed("ui_cancel") and shop_system.any_shop_open():
 			shop_system.close_active_shop()
 			get_viewport().set_input_as_handled()
@@ -1950,7 +1944,6 @@ func _update_depth() -> void:
 		_last_depth = depth
 		EventBus.depth_changed.emit(depth)
 		_check_zone_transition(depth)
-		trader_system.check_milestone(depth)
 		boss_system.check_milestone(depth, player_node.get_grid_pos().x)
 		var _boss_hints := boss_system.get_pending_hints()
 		if not _boss_hints.is_empty():
@@ -2056,14 +2049,6 @@ func _update_interact_prompt() -> void:
 			var world_pos := Vector2(check.x * CELL_SIZE + CELL_SIZE * 0.5, check.y * CELL_SIZE)
 			local_p.set_prompt_position(get_viewport().get_canvas_transform() * world_pos)
 			return
-	# Trader prompt
-	var nearby_trader := trader_system.get_nearby_trader()
-	if nearby_trader.size() > 0:
-		local_p.show_prompt("Press %s to trade" % key)
-		local_p.set_prompt_position(
-			get_viewport().get_canvas_transform() * (nearby_trader["world_pos"] as Vector2)
-			+ Vector2(0, -CELL_SIZE))
-		return
 	# Farm NPC prompt
 	var nearby_npc: FarmAnimalNPC = _get_nearby_farm_npc()
 	if nearby_npc:
@@ -2093,10 +2078,6 @@ func _try_interact() -> void:
 	# In multiplayer only the host can use stations (resource spending is host-authoritative)
 	if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
 		EventBus.ore_mined_popup.emit(0, "Only the host can interact with stations.")
-		return
-	var nearby_trader := trader_system.get_nearby_trader()
-	if nearby_trader.size() > 0:
-		trader_system.show_shop(nearby_trader)
 		return
 	const STATION_SHOPS: Dictionary = {
 		TileType.REENERGY_STATION: "show_energy_shop",
