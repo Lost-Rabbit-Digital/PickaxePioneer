@@ -7,15 +7,12 @@ Add a staircase in hotbar slot 3
 
 
 
-If the tile under a plant is broken then remove the plant
-
 
 
 Add a radial emote menu with emotes above the character and also sending them to chat
 
 
 
-in the chatbox match the hex code color of the user to the hex code of their character
 
 
 sync companions with the host and client
@@ -32,14 +29,12 @@ Make the background layer random voronoi patterns of dirt and stone and other ti
 Tink sound when you cannot mine a block
 
 
-Overlay for which block you have selected
 
 
 Add the share a screenshot on our discord with discord link at the end of each run
 
 
 
-Add character customisation to main menu
 
 
 
@@ -53,22 +48,29 @@ Add continue game but greyed out instead of gone
 Character experience that is tied to steam user so they can unlock more cosmetics
 
 
-Line-of-sight mining, no mining through blocks
-
 
 Add a pop-up in the upper left with an icon/amount/name of the item you picked up, ore only
 
 
-Change to slot based inventory instead of capacity based
+
+Settlements are less common
 
 
 
 
 
-change currency to "g"
+
+
+
+
+
 
 
 
 # Unrelated to prompts
 Overall game loop:
-  The cat society is lacking resources and sending you out with a daily quota to re-supply the base planet, you must completely mine a planet before sending the supplies back and continuing to the next planet with upgrades
+  - The cat society is lacking resources and sending you out with a daily quota to re-supply the base planet, you must completely mine a planet before sending the supplies back and continuing to the next planet with upgrades
+
+Characters:
+  Base City Mayor
+  Random quest character

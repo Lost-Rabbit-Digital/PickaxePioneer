@@ -15,7 +15,7 @@ const EXIT_COLS: int = 2
 const VIEWPORT_W: int = 1280
 const VIEWPORT_H: int = 720
 
-const EXPLOSION_KNOCKBACK_STRENGTH: float = 600.0  # Velocity in pixels/second
+const EXPLOSION_KNOCKBACK_STRENGTH: float = 1200.0  # Velocity in pixels/second
 
 enum TileType {
 	EMPTY            = 0,
