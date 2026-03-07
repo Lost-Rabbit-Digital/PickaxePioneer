@@ -1972,7 +1972,6 @@ func _check_zone_transition(depth_row: int) -> void:
 		_current_zone_idx = new_zone_idx
 		if depth_row > 0:
 			_show_zone_banner(DEPTH_ZONE_NAMES[new_zone_idx], DEPTH_ZONE_COLORS[new_zone_idx], depth_row)
-			SoundManager.play_depth_milestone_sound()
 			if new_zone_idx > 0 and not _zones_discovered[new_zone_idx]:
 				_zones_discovered[new_zone_idx] = true
 				const DISCOVERY_ENERGY := 20
@@ -1985,6 +1984,7 @@ func _show_zone_banner(zone_name: String, color: Color, depth_row: int = -1) -> 
 	if now_ms - _last_banner_time_ms < COOLDOWN_MS:
 		return
 	_last_banner_time_ms = now_ms
+	SoundManager.play_depth_milestone_sound()
 	const VW: int = 1280
 	const VH: int = 720
 	var banner_h: int = 68 if depth_row >= 0 else 52
