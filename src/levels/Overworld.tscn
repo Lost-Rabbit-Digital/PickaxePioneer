@@ -29,18 +29,6 @@ size_flags_vertical = 4
 mouse_filter = 1
 script = ExtResource("1_overworld")
 
-[node name="Sprite2D" type="TextureRect" parent="."]
-z_index = -2
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-texture = ExtResource("2_aphkn")
-stretch_mode = 1
-
 [node name="CityNode" parent="." instance=ExtResource("3_node")]
 position = Vector2(200, 360)
 location_name = "Base City"
@@ -88,7 +76,22 @@ position = Vector2(200, 360)
 
 [node name="Camera2D" type="Camera2D" parent="."]
 enabled = false
-zoom = Vector2(1, 1)
+
+[node name="BackgroundCanvasLayer" type="CanvasLayer" parent="Camera2D"]
+layer = 0
+
+[node name="BackgroundSprite" type="TextureRect" parent="Camera2D/BackgroundCanvasLayer"]
+z_index = -2
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
+texture = ExtResource("2_aphkn")
+stretch_mode = 1
 
 [node name="VersionLabel" type="Label" parent="."]
 layout_mode = 1
