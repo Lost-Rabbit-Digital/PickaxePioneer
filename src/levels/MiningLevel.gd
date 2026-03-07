@@ -1984,12 +1984,14 @@ func _check_zone_transition(depth_row: int) -> void:
 	if new_zone_idx != _current_zone_idx:
 		_current_zone_idx = new_zone_idx
 		if depth_row > 0:
-			_show_zone_banner(DEPTH_ZONE_NAMES[new_zone_idx], DEPTH_ZONE_COLORS[new_zone_idx], depth_row)
-			if new_zone_idx > 0 and not _zones_discovered[new_zone_idx]:
+			# Show zone banner only on first discovery
+			if not _zones_discovered[new_zone_idx]:
+				_show_zone_banner(DEPTH_ZONE_NAMES[new_zone_idx], DEPTH_ZONE_COLORS[new_zone_idx], depth_row)
 				_zones_discovered[new_zone_idx] = true
-				const DISCOVERY_ENERGY := 20
-				GameManager.restore_energy(DISCOVERY_ENERGY)
-				EventBus.ore_mined_popup.emit(DISCOVERY_ENERGY, "Discovery!")
+				if new_zone_idx > 0:
+					const DISCOVERY_ENERGY := 20
+					GameManager.restore_energy(DISCOVERY_ENERGY)
+					EventBus.ore_mined_popup.emit(DISCOVERY_ENERGY, "Discovery!")
 
 func _show_zone_banner(zone_name: String, color: Color, depth_row: int = -1) -> void:
 	const COOLDOWN_MS: int = 5000
