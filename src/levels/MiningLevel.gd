@@ -1748,8 +1748,22 @@ func _spawn_ore_chunks(tile: int, minerals: int, world_pos: Vector2) -> void:
 		chunk.global_position = world_pos
 		add_child(chunk)
 
-func _explode_area(center_col: int, center_row: int) -> void:
+func _explode_area(center_col: int, center_row: int, chain_depth: int = 0) -> void:
+	const MAX_CHAIN_DEPTH = 5
 	var r := 1
+	var chain_explosives: Array[Vector2i] = []  # Track explosive tiles to chain react
+
+	# First pass: identify explosive tiles and collect their positions before clearing
+	for dc in range(-r, r + 1):
+		for dr in range(-r, r + 1):
+			var nc := center_col + dc
+			var nr := center_row + dr
+			if nc >= 0 and nc < GRID_COLS and nr >= 0 and nr < GRID_ROWS:
+				var tile: int = grid[nc][nr]
+				if tile == TileType.EXPLOSIVE or tile == TileType.EXPLOSIVE_ARMED:
+					chain_explosives.append(Vector2i(nc, nr))
+
+	# Second pass: clear tiles and apply effects
 	for dc in range(-r, r + 1):
 		for dr in range(-r, r + 1):
 			var nc := center_col + dc
@@ -1789,6 +1803,13 @@ func _explode_area(center_col: int, center_row: int) -> void:
 		if abs(gcol - center_col) <= r and abs(grow - center_row) <= r:
 			rpc_damage_guest.rpc_id(NetworkManager.guest_peer_id, 1)
 			rpc_apply_knockback.rpc_id(NetworkManager.guest_peer_id, explosion_center_world)
+
+	# Trigger chain reactions if depth limit not reached
+	if chain_depth < MAX_CHAIN_DEPTH:
+		for explosive_pos in chain_explosives:
+			# Small delay for visual effect between chain explosions
+			await get_tree().create_timer(0.05).timeout
+			_explode_area(explosive_pos.x, explosive_pos.y, chain_depth + 1)
 
 func _damage_player(amount: float) -> void:
 	if player_node and player_node.has_method("take_damage"):
