@@ -505,10 +505,10 @@ func _process(delta: float) -> void:
 		_momentum_velocity *= pow(_MOMENTUM_DAMPING, delta * 60.0)
 
 func _unhandled_input(event: InputEvent) -> void:
-	# Handle mouse drag panning
+	# Handle mouse drag panning (right-click drag)
 	if event is InputEventMouseButton:
 		match event.button_index:
-			MOUSE_BUTTON_LEFT:
+			MOUSE_BUTTON_RIGHT:
 				if event.pressed:
 					_is_dragging = true
 					_momentum_velocity = Vector2.ZERO
