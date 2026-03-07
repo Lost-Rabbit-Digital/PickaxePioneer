@@ -83,6 +83,8 @@ var _upgrade_btn_carapace: Button
 var _upgrade_btn_legs: Button
 var _upgrade_btn_mandibles: Button
 var _upgrade_btn_claws: Button
+var _upgrade_btn_ladder_climb_speed: Button
+var _upgrade_btn_mining_reach: Button
 
 var _smeltery_layer: CanvasLayer
 var _smeltery_minerals_label: Label
@@ -283,7 +285,7 @@ func _shop_buy_ladders() -> void:
 
 func _build_upgrade_station() -> void:
 	const PANEL_W: int = 500
-	const PANEL_H: int = 400
+	const PANEL_H: int = 510
 	const PX: int = (VW - PANEL_W) / 2
 	const PY: int = (VH - PANEL_H) / 2
 
@@ -326,17 +328,21 @@ func _build_upgrade_station() -> void:
 	const BTN_W: int = PANEL_W - 50
 	const BTN_H: int = 52
 
-	_upgrade_btn_carapace  = _make_btn(BTN_X, PY + 80, BTN_W, BTN_H, "", _upgrade_buy_carapace)
-	_upgrade_btn_legs      = _make_btn(BTN_X, PY + 140, BTN_W, BTN_H, "", _upgrade_buy_legs)
-	_upgrade_btn_mandibles = _make_btn(BTN_X, PY + 200, BTN_W, BTN_H, "", _upgrade_buy_mandibles)
-	_upgrade_btn_claws     = _make_btn(BTN_X, PY + 260, BTN_W, BTN_H, "", _upgrade_buy_claws)
+	_upgrade_btn_carapace        = _make_btn(BTN_X, PY + 80, BTN_W, BTN_H, "", _upgrade_buy_carapace)
+	_upgrade_btn_legs            = _make_btn(BTN_X, PY + 140, BTN_W, BTN_H, "", _upgrade_buy_legs)
+	_upgrade_btn_mandibles       = _make_btn(BTN_X, PY + 200, BTN_W, BTN_H, "", _upgrade_buy_mandibles)
+	_upgrade_btn_claws           = _make_btn(BTN_X, PY + 260, BTN_W, BTN_H, "", _upgrade_buy_claws)
+	_upgrade_btn_ladder_climb_speed = _make_btn(BTN_X, PY + 320, BTN_W, BTN_H, "", _upgrade_buy_ladder_climb_speed)
+	_upgrade_btn_mining_reach    = _make_btn(BTN_X, PY + 380, BTN_W, BTN_H, "", _upgrade_buy_mining_reach)
 	_upgrade_layer.add_child(_upgrade_btn_carapace)
 	_upgrade_layer.add_child(_upgrade_btn_legs)
 	_upgrade_layer.add_child(_upgrade_btn_mandibles)
 	_upgrade_layer.add_child(_upgrade_btn_claws)
+	_upgrade_layer.add_child(_upgrade_btn_ladder_climb_speed)
+	_upgrade_layer.add_child(_upgrade_btn_mining_reach)
 
 	_upgrade_layer.add_child(
-		_make_btn(BTN_X + (BTN_W - 180) / 2, PY + 344, 180, 40, "Close", hide_upgrade_station))
+		_make_btn(BTN_X + (BTN_W - 180) / 2, PY + 454, 180, 40, "Close", hide_upgrade_station))
 
 
 func show_upgrade_station() -> void:
@@ -365,6 +371,18 @@ func show_upgrade_station() -> void:
 	_upgrade_btn_claws.text = "Sharpen Claws Lv%d — Mining Power: %d → %d  (g%d)" % [
 		GameManager.claws_level, power, power + 3, claws_cost]
 	_upgrade_btn_claws.disabled = GameManager.dollars < claws_cost
+
+	var ladder_climb_cost := 75 + 25 * GameManager.ladder_climb_speed_level
+	var climb_speed := GameManager.get_ladder_climb_speed()
+	_upgrade_btn_ladder_climb_speed.text = "Boost Ladder Speed Lv%d — Speed: %.0f → %.0f px/s  (g%d)" % [
+		GameManager.ladder_climb_speed_level, climb_speed, climb_speed + 50.0, ladder_climb_cost]
+	_upgrade_btn_ladder_climb_speed.disabled = GameManager.dollars < ladder_climb_cost
+
+	var reach_cost := 75 + 25 * GameManager.mining_reach_level
+	var reach := GameManager.get_mining_reach()
+	_upgrade_btn_mining_reach.text = "Extend Mining Reach Lv%d — Range: %.1f → %.1f tiles  (g%d)" % [
+		GameManager.mining_reach_level, reach, reach + 0.75, reach_cost]
+	_upgrade_btn_mining_reach.disabled = GameManager.dollars < reach_cost
 
 	_upgrade_layer.visible = true
 	upgrade_station_visible = true
@@ -416,6 +434,30 @@ func _upgrade_buy_claws() -> void:
 		GameManager.dollars -= cost
 		EventBus.dollars_changed.emit(GameManager.dollars)
 		GameManager.upgrade_claws()
+		SoundManager.play_purchase_confirm_sound()
+		show_upgrade_station()
+
+
+func _upgrade_buy_ladder_climb_speed() -> void:
+	var cost := 75 + 25 * GameManager.ladder_climb_speed_level
+	if GameManager.dollars >= cost:
+		GameManager.dollars -= cost
+		EventBus.dollars_changed.emit(GameManager.dollars)
+		GameManager.upgrade_ladder_climb_speed()
+		if player_node:
+			player_node.ladder_climb_speed = GameManager.get_ladder_climb_speed()
+		SoundManager.play_purchase_confirm_sound()
+		show_upgrade_station()
+
+
+func _upgrade_buy_mining_reach() -> void:
+	var cost := 75 + 25 * GameManager.mining_reach_level
+	if GameManager.dollars >= cost:
+		GameManager.dollars -= cost
+		EventBus.dollars_changed.emit(GameManager.dollars)
+		GameManager.upgrade_mining_reach()
+		if player_node:
+			player_node.mine_range = GameManager.get_mining_reach()
 		SoundManager.play_purchase_confirm_sound()
 		show_upgrade_station()
 
