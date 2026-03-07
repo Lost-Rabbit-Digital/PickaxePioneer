@@ -13,10 +13,10 @@ var move_speed: float = 280.0
 var jump_velocity: float = -420.0
 var gravity: float = 980.0
 
-# Ladder climbing speed — matches jump_velocity magnitude so up/down feel as fast as falling
-const LADDER_CLIMB_SPEED: float = 420.0
+# Ladder climbing speed — will be computed from GameManager upgrade level
+var ladder_climb_speed: float = 420.0
 
-# Mining
+# Mining — will be computed from GameManager upgrade level
 var mine_range: float = 4.5  # Range in tiles
 var _mining: bool = false
 var _mine_target: Vector2i = Vector2i(-1, -1)
@@ -97,6 +97,8 @@ func _ready() -> void:
 	health_component.health_changed.connect(_on_health_changed)
 	health_component.died.connect(_on_died)
 	move_speed = GameManager.get_max_speed()
+	ladder_climb_speed = GameManager.get_ladder_climb_speed()
+	mine_range = GameManager.get_mining_reach()
 	EventBus.player_health_changed.emit(health_component.current_health, health_component.max_health)
 	sprite.play(&"idle")
 	sprite.modulate = GameManager.cat_color
@@ -160,9 +162,9 @@ func _physics_process(delta: float) -> void:
 
 	# Gravity — suppressed when on a ladder; player holds position unless actively climbing.
 	if _gripping_ladder:
-		velocity.y = -LADDER_CLIMB_SPEED  # Climb up
+		velocity.y = -ladder_climb_speed  # Climb up
 	elif _descending_ladder:
-		velocity.y = LADDER_CLIMB_SPEED   # Controlled descent
+		velocity.y = ladder_climb_speed   # Controlled descent
 	elif on_ladder:
 		velocity.y = 0  # Hold still on ladder — no input, no gravity
 	elif not is_on_floor():

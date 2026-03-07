@@ -84,6 +84,8 @@ var legs_level: int = 0
 var mandibles_level: int = 0
 var mineral_sense_level: int = 0
 var claws_level: int = 0
+var ladder_climb_speed_level: int = 0
+var mining_reach_level: int = 0
 
 # Gem socketing system — gems collected as items, socketed for passive bonuses
 var gem_count: int = 0                       # unspent gems in the colony's stockpile
@@ -177,7 +179,8 @@ func start_game() -> void:
 	# In multiplayer, host sends upgrade state to guest before loading overworld
 	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
 		rpc_start_game_as_guest.rpc_id(NetworkManager.guest_peer_id,
-			carapace_level, legs_level, mandibles_level, mineral_sense_level,
+			carapace_level, legs_level, mandibles_level, mineral_sense_level, claws_level,
+			ladder_climb_speed_level, mining_reach_level,
 			carapace_gem_socketed, legs_gem_socketed, mandibles_gem_socketed, sense_gem_socketed,
 			warp_drive_built, cargo_bay_built, long_scanner_built, gem_refinery_built, trade_amplifier_built)
 	load_overworld()
@@ -188,12 +191,16 @@ func start_game() -> void:
 ## scene loading in separate RPCs prevents the guest from loading Overworld twice.
 @rpc("authority", "call_remote", "reliable")
 func rpc_start_game_as_guest(carapace_lvl: int, legs_lvl: int, mandibles_lvl: int,
-		mineral_sense_lvl: int, carapace_gem: bool, legs_gem: bool, mandibles_gem: bool,
-		sense_gem: bool, warp: bool, cargo: bool, scanner: bool, refinery: bool, amplifier: bool) -> void:
+		mineral_sense_lvl: int, claws_lvl: int, ladder_climb_lvl: int, mining_reach_lvl: int,
+		carapace_gem: bool, legs_gem: bool, mandibles_gem: bool, sense_gem: bool,
+		warp: bool, cargo: bool, scanner: bool, refinery: bool, amplifier: bool) -> void:
 	carapace_level = carapace_lvl
 	legs_level = legs_lvl
 	mandibles_level = mandibles_lvl
 	mineral_sense_level = mineral_sense_lvl
+	claws_level = claws_lvl
+	ladder_climb_speed_level = ladder_climb_lvl
+	mining_reach_level = mining_reach_lvl
 	carapace_gem_socketed = carapace_gem
 	legs_gem_socketed = legs_gem
 	mandibles_gem_socketed = mandibles_gem
@@ -215,7 +222,8 @@ func _on_guest_connected(peer_id: int) -> void:
 	if "MiningLevel" in current_scene_path:
 		# Host is mid-mine — send guest directly into the same mine.
 		rpc_drop_in_to_mine_as_guest.rpc_id(peer_id,
-			carapace_level, legs_level, mandibles_level, mineral_sense_level,
+			carapace_level, legs_level, mandibles_level, mineral_sense_level, claws_level,
+			ladder_climb_speed_level, mining_reach_level,
 			carapace_gem_socketed, legs_gem_socketed, mandibles_gem_socketed, sense_gem_socketed,
 			warp_drive_built, cargo_bay_built, long_scanner_built, gem_refinery_built, trade_amplifier_built,
 			current_scene_path, current_energy,
@@ -229,7 +237,8 @@ func _on_guest_connected(peer_id: int) -> void:
 		# the guest calls rpc_request_planet_config once its scene is ready, and
 		# the host responds with rpc_apply_planet_config.
 		rpc_start_game_as_guest.rpc_id(peer_id,
-			carapace_level, legs_level, mandibles_level, mineral_sense_level,
+			carapace_level, legs_level, mandibles_level, mineral_sense_level, claws_level,
+			ladder_climb_speed_level, mining_reach_level,
 			carapace_gem_socketed, legs_gem_socketed, mandibles_gem_socketed, sense_gem_socketed,
 			warp_drive_built, cargo_bay_built, long_scanner_built, gem_refinery_built, trade_amplifier_built)
 		rpc_load_overworld_as_guest.rpc_id(peer_id)
@@ -339,8 +348,9 @@ func rpc_load_mine_as_guest(path: String, start_energy: int,
 ## Applies the host's kit then loads the same MiningLevel the host is already in.
 @rpc("authority", "call_remote", "reliable")
 func rpc_drop_in_to_mine_as_guest(carapace_lvl: int, legs_lvl: int, mandibles_lvl: int,
-		mineral_sense_lvl: int, carapace_gem: bool, legs_gem: bool, mandibles_gem: bool,
-		sense_gem: bool, warp: bool, cargo: bool, scanner: bool, refinery: bool, amplifier: bool,
+		mineral_sense_lvl: int, claws_lvl: int, ladder_climb_lvl: int, mining_reach_lvl: int,
+		carapace_gem: bool, legs_gem: bool, mandibles_gem: bool, sense_gem: bool,
+		warp: bool, cargo: bool, scanner: bool, refinery: bool, amplifier: bool,
 		mine_path: String, start_energy: int,
 		sky_r: float, sky_g: float, sky_b: float,
 		ore_types: Array, hazard_types: Array,
@@ -349,6 +359,9 @@ func rpc_drop_in_to_mine_as_guest(carapace_lvl: int, legs_lvl: int, mandibles_lv
 	legs_level = legs_lvl
 	mandibles_level = mandibles_lvl
 	mineral_sense_level = mineral_sense_lvl
+	claws_level = claws_lvl
+	ladder_climb_speed_level = ladder_climb_lvl
+	mining_reach_level = mining_reach_lvl
 	carapace_gem_socketed = carapace_gem
 	legs_gem_socketed = legs_gem
 	mandibles_gem_socketed = mandibles_gem
@@ -424,6 +437,16 @@ func upgrade_claws() -> void:
 	save_game()
 	print("Claws sharpened to level ", claws_level)
 
+func upgrade_ladder_climb_speed() -> void:
+	ladder_climb_speed_level += 1
+	save_game()
+	print("Ladder climbing speed upgraded to level ", ladder_climb_speed_level)
+
+func upgrade_mining_reach() -> void:
+	mining_reach_level += 1
+	save_game()
+	print("Mining reach expanded to level ", mining_reach_level)
+
 func get_sonar_ping_radius() -> float:
 	return 4.0 + mineral_sense_level * 3.0 + (3.0 if sense_gem_socketed else 0.0)
 
@@ -458,6 +481,12 @@ func get_dollar_sell_mult() -> float:
 
 func get_sonar_ping_energy_cost() -> int:
 	return maxi(1, 5 - mineral_sense_level)
+
+func get_ladder_climb_speed() -> float:
+	return 420.0 + (ladder_climb_speed_level * 50.0)
+
+func get_mining_reach() -> float:
+	return 4.5 + (mining_reach_level * 0.75)
 
 func get_max_health() -> int:
 	return 3 + carapace_level + (1 if carapace_gem_socketed else 0)
@@ -508,6 +537,8 @@ func save_game() -> void:
 		"mandibles_level": mandibles_level,
 		"mineral_sense_level": mineral_sense_level,
 		"claws_level": claws_level,
+		"ladder_climb_speed_level": ladder_climb_speed_level,
+		"mining_reach_level": mining_reach_level,
 		"settlement_energy_bonus": settlement_energy_bonus,
 		"settlement_forager_bonus": settlement_forager_bonus,
 		"settlement_shroom_charges": settlement_shroom_charges,
@@ -564,6 +595,8 @@ func load_game() -> void:
 			mandibles_level = data.get("mandibles_level", 0)
 			mineral_sense_level = data.get("mineral_sense_level", 0)
 			claws_level = data.get("claws_level", 0)
+			ladder_climb_speed_level = data.get("ladder_climb_speed_level", 0)
+			mining_reach_level = data.get("mining_reach_level", 0)
 			settlement_energy_bonus = data.get("settlement_energy_bonus", 0)
 			settlement_forager_bonus = data.get("settlement_forager_bonus", 0)
 			settlement_shroom_charges = data.get("settlement_shroom_charges", 0)
