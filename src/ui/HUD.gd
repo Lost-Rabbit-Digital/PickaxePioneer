@@ -192,7 +192,7 @@ func _ready() -> void:
 	dollars_label = Label.new()
 	dollars_label.position = Vector2(12, 106)
 	dollars_label.custom_minimum_size = Vector2(136, 22)
-	dollars_label.text = "$%d" % GameManager.dollars
+	dollars_label.text = "g%d" % GameManager.dollars
 	dollars_label.modulate = Color(0.30, 1.0, 0.40, 1.0)  # Green tint
 	$Control.add_child(dollars_label)
 
@@ -274,7 +274,7 @@ func _on_minerals_changed(_amount: int) -> void:
 	scrap_label.text = "Slots: %d/%d" % [GameManager.get_stacked_slots_used(), GameManager.get_ore_capacity()]
 
 func _on_dollars_changed(amount: int) -> void:
-	dollars_label.text = "$%d" % amount
+	dollars_label.text = "g%d" % amount
 
 # Called when a tile is mined.
 # Ore pickups (ORE_NAMES + amount > 0) show a rich icon + amount + name popup.
