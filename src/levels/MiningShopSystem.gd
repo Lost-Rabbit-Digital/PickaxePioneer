@@ -205,7 +205,7 @@ func _build_energy_shop() -> void:
 	_energy_layer.add_child(_energy_btn_repair)
 
 	_energy_btn_ladders = _make_btn(BTN_X, PY + 254, BTN_W, BTN_H,
-		"Buy %d Ladders  —  $%d" % [SHOP_LADDER_PACK_COUNT, SHOP_LADDER_PACK_COST],
+		"Buy %d Ladders  —  g%d" % [SHOP_LADDER_PACK_COUNT, SHOP_LADDER_PACK_COST],
 		_shop_buy_ladders)
 	_energy_layer.add_child(_energy_btn_ladders)
 
@@ -214,13 +214,13 @@ func _build_energy_shop() -> void:
 
 
 func show_energy_shop() -> void:
-	_energy_minerals_label.text = "$%d" % GameManager.dollars
+	_energy_minerals_label.text = "g%d" % GameManager.dollars
 	var max_e := GameManager.get_max_energy()
-	_energy_btn_full.text = "Full Rest  (%d→%d energy)  — $%d" % [
+	_energy_btn_full.text = "Full Rest  (%d→%d energy)  — g%d" % [
 		GameManager.current_energy, max_e, SHOP_REENERGY_FULL_COST]
-	_energy_btn_half.text = "Rest 50%%  (+%d energy)  — $%d" % [
+	_energy_btn_half.text = "Rest 50%%  (+%d energy)  — g%d" % [
 		max_e / 2, SHOP_REENERGY_HALF_COST]
-	_energy_btn_repair.text = "+1 Health Bar  — $%d" % SHOP_REPAIR_COST
+	_energy_btn_repair.text = "+1 Health Bar  — g%d" % SHOP_REPAIR_COST
 	_energy_btn_full.disabled   = GameManager.dollars < SHOP_REENERGY_FULL_COST or GameManager.current_energy >= max_e
 	_energy_btn_half.disabled   = GameManager.dollars < SHOP_REENERGY_HALF_COST or GameManager.current_energy >= max_e
 	_energy_btn_repair.disabled = GameManager.dollars < SHOP_REPAIR_COST or (player_node != null and player_node.is_at_max_health())
@@ -340,29 +340,29 @@ func _build_upgrade_station() -> void:
 
 
 func show_upgrade_station() -> void:
-	_upgrade_minerals_label.text = "Dollars: $%d" % GameManager.dollars
+	_upgrade_minerals_label.text = "Dollars: g%d" % GameManager.dollars
 
 	var carapace_cost := 50 + 25 * GameManager.carapace_level
 	var hp := GameManager.get_max_health()
-	_upgrade_btn_carapace.text = "Reinforce Spacesuit Lv%d — Max HP: %d → %d  ($%d)" % [
+	_upgrade_btn_carapace.text = "Reinforce Spacesuit Lv%d — Max HP: %d → %d  (g%d)" % [
 		GameManager.carapace_level, hp, hp + 1, carapace_cost]
 	_upgrade_btn_carapace.disabled = GameManager.dollars < carapace_cost
 
 	var legs_cost := 50 + 25 * GameManager.legs_level
 	var energy_cap := GameManager.get_max_energy()
-	_upgrade_btn_legs.text = "Upgrade Mining Boots Lv%d — Energy Limit: %d → %d  ($%d)" % [
+	_upgrade_btn_legs.text = "Upgrade Mining Boots Lv%d — Energy Limit: %d → %d  (g%d)" % [
 		GameManager.legs_level, energy_cap, energy_cap + 25, legs_cost]
 	_upgrade_btn_legs.disabled = GameManager.dollars < legs_cost
 
 	var mandibles_cost := 50 + 25 * GameManager.mandibles_level
 	var cap := GameManager.get_ore_capacity()
-	_upgrade_btn_mandibles.text = "Expand Cargo Hold Lv%d — Inventory Slots: %d → %d  ($%d)" % [
+	_upgrade_btn_mandibles.text = "Expand Cargo Hold Lv%d — Inventory Slots: %d → %d  (g%d)" % [
 		GameManager.mandibles_level, cap, cap + 2, mandibles_cost]
 	_upgrade_btn_mandibles.disabled = GameManager.dollars < mandibles_cost
 
 	var claws_cost := 50 + 25 * GameManager.claws_level
 	var power := GameManager.get_mandibles_power()
-	_upgrade_btn_claws.text = "Sharpen Claws Lv%d — Mining Power: %d → %d  ($%d)" % [
+	_upgrade_btn_claws.text = "Sharpen Claws Lv%d — Mining Power: %d → %d  (g%d)" % [
 		GameManager.claws_level, power, power + 3, claws_cost]
 	_upgrade_btn_claws.disabled = GameManager.dollars < claws_cost
 
@@ -507,7 +507,7 @@ func _build_smeltery() -> void:
 
 
 func show_smeltery() -> void:
-	_smeltery_minerals_label.text = "Dollars: $%d" % GameManager.dollars
+	_smeltery_minerals_label.text = "Dollars: g%d" % GameManager.dollars
 	for ore_group in SMELTERY_ORE_GROUPS_ORDER:
 		var ore_count := get_ore_group_count(ore_group)
 		var bar_count: int = run_bar_counts.get(ore_group, 0)
@@ -518,7 +518,7 @@ func show_smeltery() -> void:
 		_smeltery_bar_labels[ore_group].text = "%s: %d" % [SMELTERY_BAR_NAMES[ore_group], bar_count]
 		var sell_per_bar: int = roundi(SMELTERY_BAR_SELL_VALUES[ore_group] * GameManager.get_dollar_sell_mult())
 		var sell_total: int = sell_per_bar * bar_count
-		_smeltery_sell_btns[ore_group].text = "Sell All ($%d/bar | $%d total)" % [sell_per_bar, sell_total]
+		_smeltery_sell_btns[ore_group].text = "Sell All (g%d/bar | g%d total)" % [sell_per_bar, sell_total]
 		_smeltery_sell_btns[ore_group].disabled = bar_count <= 0
 	_smeltery_layer.visible = true
 	smeltery_visible = true
