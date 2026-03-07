@@ -910,10 +910,7 @@ func _refresh_popup() -> void:
 			else:
 				lines = "  Slot %d" % (i + 1)
 			lines += "  |  %dg" % summary.get("dollars", 0)
-			lines += "  |  Minerals: %d / %d" % [summary.get("minerals", 0), summary.get("ore_capacity", 200)]
 			lines += "  |  Depth: %dm" % summary.get("deepest_row", 0)
-			var lvl_sum: int = summary.get("carapace_level", 0) + summary.get("legs_level", 0) + summary.get("mandibles_level", 0) + summary.get("mineral_sense_level", 0)
-			lines += "\n  Upgrades: Lv%d total" % lvl_sum
 			var last_node: String = summary.get("last_node", "")
 			if last_node != "":
 				lines += "  |  Last: %s" % last_node
