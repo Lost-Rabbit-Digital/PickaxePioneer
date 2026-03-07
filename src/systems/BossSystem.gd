@@ -14,7 +14,7 @@ extends RefCounted
 # ---------------------------------------------------------------------------
 
 const BOSS_MILESTONES: Array[int] = [32, 64, 96, 112, 128]
-const BOSS_DRAIN_MULT: float      = 1.5   # energy drain multiplier while boss alive
+const BOSS_DRAIN_MULT: float      = 0.75   # energy drain multiplier while boss alive (halved)
 const BOSS_REWARD_BONUS: int      = 100   # flat mineral bonus on defeat
 
 const BOSS_TYPE_NONE: int      = 0
