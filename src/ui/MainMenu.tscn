@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://bxak3nvx2p7qd" path="res://src/ui/MenuBackground.gd" id="2_bgscript"]
 [ext_resource type="Script" uid="uid://b2f4ygsyu65y" path="res://src/ui/main_menu/social_buttons.gd" id="3_ihbld"]
 [ext_resource type="Texture2D" uid="uid://bhww7y11pvgal" path="res://assets/social_icons/discord_icon_normal.png" id="4_ihbld"]
+[ext_resource type="Texture2D" uid="uid://dyv7plmj7wntn" path="res://assets/cat_miner.png" id="5_cat_char"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_version"]
 content_margin_left = 8.0
@@ -200,6 +201,34 @@ visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "BACK"
+
+[node name="CharacterContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_left = 0.0
+anchor_top = 0.5
+anchor_right = 0.0
+anchor_bottom = 0.5
+offset_left = 20.0
+offset_top = -140.0
+offset_right = 180.0
+offset_bottom = 140.0
+grow_horizontal = 1
+grow_vertical = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="CharacterSprite" type="TextureRect" parent="CharacterContainer"]
+layout_mode = 2
+texture = ExtResource("5_cat_char")
+expand_mode = 2
+stretch_mode = 4
+
+[node name="CustomizeButton" type="Button" parent="CharacterContainer"]
+layout_mode = 2
+tooltip_text = "Customize your Mining Cat."
+theme_override_font_sizes/font_size = 18
+text = "CUSTOMIZE"
 
 [node name="SocialButtons" type="HBoxContainer" parent="."]
 layout_mode = 1
