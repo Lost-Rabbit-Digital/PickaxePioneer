@@ -9,15 +9,9 @@ extends CanvasLayer
 
 # Ore display order (matches terrain depth: shallow → deep)
 # Textures and colors must match MiningLevel.TILE_TEXTURE_PATHS and TILE_COLORS exactly.
-# Pickaxe textures in upgrade progression order (matches claws_level)
-const PICKAXE_TEXTURES: Array = [
-	"res://assets/db32_rpg_items/pickaxe_crusty.png",
-	"res://assets/db32_rpg_items/pickaxe_iron.png",
-	"res://assets/db32_rpg_items/pickaxe_silver.png",
-	"res://assets/db32_rpg_items/pickaxe_gold.png",
-	"res://assets/db32_rpg_items/pickaxe_steel.png",
-	"res://assets/db32_rpg_items/pickaxe_platinum.png",
-]
+const ITEMS_TILESET_PATH: String = "res://assets/db32_rpg_items/items_tileset.tres"
+const PICKAXE_ATLAS_COORD: Vector2i = Vector2i(0, 10)
+const TILE_SIZE: int = 16
 
 const ORE_ORDER: Array = [
 	{"tile": 3,  "name": "Lunar Copper",      "tex": "res://assets/blocks/stone_ore_copper.png",             "color": Color(0.90, 0.60, 0.25)},
@@ -107,6 +101,23 @@ func _ready() -> void:
 	_build_frame()
 	_build_tooltip()
 	_build_drag_ghost()
+
+func _get_pickaxe_texture() -> Texture2D:
+	var tileset = load(ITEMS_TILESET_PATH) as TileSet
+	if not tileset:
+		return null
+	var source = tileset.get_source(0) as TileSetAtlasSource
+	if not source:
+		return null
+	var atlas_texture = AtlasTexture.new()
+	atlas_texture.atlas = source.texture
+	atlas_texture.region = Rect2i(
+		PICKAXE_ATLAS_COORD.x * TILE_SIZE,
+		PICKAXE_ATLAS_COORD.y * TILE_SIZE,
+		TILE_SIZE,
+		TILE_SIZE
+	)
+	return atlas_texture
 
 func _process(_delta: float) -> void:
 	if _is_dragging and _drag_ghost.visible:
@@ -389,7 +400,7 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 						GameManager.get_mandibles_power(),
 						GameManager.mandibles_level
 					],
-					"tex_path": PICKAXE_TEXTURES[clampi(GameManager.claws_level, 0, PICKAXE_TEXTURES.size() - 1)],
+					"texture": _get_pickaxe_texture(),
 					"count": -1,
 				}
 			else:
@@ -531,7 +542,7 @@ func _draw_tool_slot_content(parent: Control, sx: int, sy: int, tool_idx: int, s
 
 	if tool_idx == 0:
 		# Pickaxe — texture icon
-		var tex: Texture2D = load(slot_data["tex_path"]) as Texture2D
+		var tex: Texture2D = slot_data.get("texture") as Texture2D
 		if tex:
 			var icon := TextureRect.new()
 			icon.texture = tex
@@ -671,8 +682,7 @@ func _start_drag(slot_data: Dictionary) -> void:
 
 	if slot_type == "tool":
 		# Pickaxe texture ghost
-		var tex_path: String = slot_data.get("tex_path", "")
-		var tex: Texture2D = load(tex_path) as Texture2D if tex_path != "" else null
+		var tex: Texture2D = slot_data.get("texture") as Texture2D
 		if tex:
 			var icon := TextureRect.new()
 			icon.texture = tex
