@@ -54,7 +54,7 @@ const IDLE_TO_SLEEP_TIME: float = 5.0  # Seconds before transitioning to sleep
 
 # Sprint — hold Shift for 1.5× speed, costs extra energy
 const SPRINT_MULT: float = 1.5
-const SPRINT_ENERGY_RATE: float = 2.0     # Energy units consumed per second while sprinting (halved)
+const SPRINT_ENERGY_RATE: float = 1.0     # Energy units consumed per second while sprinting (halved)
 var _sprinting: bool = false
 var _sprint_energy_accum: float = 0.0
 

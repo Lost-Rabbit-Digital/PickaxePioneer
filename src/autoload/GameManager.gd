@@ -480,7 +480,7 @@ func get_dollar_sell_mult() -> float:
 	return 1.25 if trade_amplifier_built else 1.0
 
 func get_sonar_ping_energy_cost() -> int:
-	return maxi(1, 5 - mineral_sense_level)
+	return maxi(1, ceili((5 - mineral_sense_level) / 2.0))
 
 func get_ladder_climb_speed() -> float:
 	return 420.0 + (ladder_climb_speed_level * 50.0)

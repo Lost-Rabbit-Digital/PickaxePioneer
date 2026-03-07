@@ -309,15 +309,15 @@ const DEPTH_ZONE_COLORS = [
 ]
 
 # Time-based energy drain: base rate (energy per second) + depth multiplier
-const ENERGY_DRAIN_BASE: float = 0.5      # 0.5 energy/sec on surface (halved)
-const ENERGY_DRAIN_DEPTH_MULT: float = 1.0 # Extra drain per depth ratio (halved)
+const ENERGY_DRAIN_BASE: float = 0.25      # 0.25 energy/sec on surface (halved)
+const ENERGY_DRAIN_DEPTH_MULT: float = 0.5 # Extra drain per depth ratio (halved)
 var _energy_drain_accum: float = 0.0
 var _energy_low_warned: bool = false
 
 # ---------------------------------------------------------------------------
 # Boss encounter system (§4) — logic lives in BossSystem.gd
 # ---------------------------------------------------------------------------
-const BOSS_DRAIN_MULT: float = 1.5   # energy drain multiplier while boss is alive
+const BOSS_DRAIN_MULT: float = 0.75   # energy drain multiplier while boss is alive (halved)
 
 var grid: Array = []
 var has_left_spawn: bool = false
