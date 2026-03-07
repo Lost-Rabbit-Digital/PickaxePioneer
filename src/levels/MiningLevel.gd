@@ -1113,9 +1113,11 @@ func _update_cursor_highlight() -> void:
 	var mouse_world := get_global_mouse_position()
 	var gp := Vector2i(floori(mouse_world.x / CELL_SIZE), floori(mouse_world.y / CELL_SIZE))
 	if gp.x >= 0 and gp.x < GRID_COLS and gp.y >= 0 and gp.y < GRID_ROWS:
-		var player_tile := local_player.get_grid_pos()
-		var dist := Vector2(gp - player_tile).length()
-		if dist <= local_player.mine_range and has_line_of_sight(local_player.global_position, gp):
+		# World-space distance from player position to tile centre (in tile units)
+		# matches the range check used in PlayerProbe so the highlight is accurate.
+		var tile_center := Vector2(gp.x + 0.5, gp.y + 0.5) * CELL_SIZE
+		var dist := local_player.global_position.distance_to(tile_center) / CELL_SIZE
+		if dist <= local_player.mine_range + 0.5 and has_line_of_sight(local_player.global_position, gp):
 			_cursor_grid_pos = gp
 		else:
 			_cursor_grid_pos = Vector2i(-1, -1)
@@ -1290,10 +1292,11 @@ func _begin_heal_animation(pos_key: Vector2i) -> void:
 # Mining API — called by PlayerProbe
 # ---------------------------------------------------------------------------
 
-## Returns true if no solid tile occludes the straight line from the player's
-## world position to to_tile. Both the player's own tile and the target tile are
-## excluded so standing on a surface tile or mining adjacent tiles always works.
-## Uses a float-step ray sampled at quarter-tile resolution.
+## Returns true if no solid tile occludes the line from the player's world
+## position to to_tile. Adjacent tiles (within 1.5 tile-units) always pass.
+## For farther tiles, casts a primary ray plus four body-offset forgiveness rays
+## so that blocks beside or below the player's feet remain selectable even when
+## the player is flush against a wall. Uses sixth-tile-resolution stepping.
 func has_line_of_sight(from_world: Vector2, to_tile: Vector2i) -> bool:
 	var fx := from_world.x / float(CELL_SIZE)
 	var fy := from_world.y / float(CELL_SIZE)
@@ -1302,17 +1305,40 @@ func has_line_of_sight(from_world: Vector2, to_tile: Vector2i) -> bool:
 	var dx := tx - fx
 	var dy := ty - fy
 	var dist := sqrt(dx * dx + dy * dy)
-	if dist < 0.001:
+	if dist < 1.5:
+		# Adjacent tiles are always reachable — skip ray entirely.
 		return true
 	var from_tile_x := floori(fx)
 	var from_tile_y := floori(fy)
-	var steps := ceili(dist * 4.0)
+	var steps := ceili(dist * 6.0)
+	# Primary ray from player centre.
+	if _cast_ray(fx, fy, dx, dy, steps, from_tile_x, from_tile_y, to_tile):
+		return true
+	# Forgiveness rays from four points around the player body (~half-tile offsets).
+	# If any ray is unobstructed we allow the block to be selected.
+	var offsets: Array[Vector2] = [
+		Vector2(-0.4, 0.0), Vector2(0.4, 0.0),
+		Vector2(0.0, -0.4), Vector2(0.0, 0.4),
+	]
+	for off: Vector2 in offsets:
+		var ofx := fx + off.x
+		var ofy := fy + off.y
+		var odx := tx - ofx
+		var ody := ty - ofy
+		var osteps := ceili(sqrt(odx * odx + ody * ody) * 6.0)
+		if _cast_ray(ofx, ofy, odx, ody, osteps, floori(ofx), floori(ofy), to_tile):
+			return true
+	return false
+
+## Walks a ray in tile-space and returns false if any non-empty, non-ladder
+## intermediate tile blocks it. The origin tile and target tile are excluded.
+func _cast_ray(fx: float, fy: float, dx: float, dy: float, steps: int,
+		from_tx: int, from_ty: int, to_tile: Vector2i) -> bool:
 	for i in range(1, steps):
 		var t := float(i) / float(steps)
 		var cx := floori(fx + dx * t)
 		var cy := floori(fy + dy * t)
-		# Exclude both the player's own tile and the target tile
-		if (cx == to_tile.x and cy == to_tile.y) or (cx == from_tile_x and cy == from_tile_y):
+		if (cx == to_tile.x and cy == to_tile.y) or (cx == from_tx and cy == from_ty):
 			continue
 		if cx < 0 or cx >= GRID_COLS or cy < 0 or cy >= GRID_ROWS:
 			continue

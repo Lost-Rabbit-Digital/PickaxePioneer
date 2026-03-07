@@ -285,13 +285,12 @@ func _handle_mining(delta: float) -> void:
 			floori(mouse_world.y / CELL_SIZE)
 		)
 
-		# Check range (distance from player center to target tile center)
-		var player_tile := Vector2i(
-			floori(global_position.x / CELL_SIZE),
-			floori(global_position.y / CELL_SIZE)
-		)
-		var dist := Vector2(grid_pos - player_tile).length()
-		if dist > mine_range:
+		# Check range: world-space distance from player position to tile centre.
+		# This is more forgiving than tile-index distance because it accounts for
+		# where the player actually stands within their tile.
+		var tile_center := Vector2(grid_pos.x + 0.5, grid_pos.y + 0.5) * CELL_SIZE
+		var dist := global_position.distance_to(tile_center) / CELL_SIZE
+		if dist > mine_range + 0.5:
 			_mining = false
 			return
 
