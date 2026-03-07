@@ -24,6 +24,7 @@ var _waypoints_remaining: Array[Vector2] = []
 var _current_map_node: MapNode = null
 
 signal arrived
+signal movement_started
 
 func _ready() -> void:
 	target_position = position
@@ -68,6 +69,7 @@ func move_along_path(positions: Array[Vector2]) -> void:
 	target_position = full_path[-1]
 	is_moving = true
 	_wiggle_time = 0.0
+	movement_started.emit()
 	SoundManager.start_rocket_engine_sound()
 
 	# Flip sprite based on horizontal direction to the first waypoint
