@@ -1,13 +1,10 @@
 class_name CustomizationMenu
-extends CanvasLayer
+extends Control
 
 # Customization Menu — toggle with X key during a mining run.
-# Displays a player cat preview on the left and BBCode text buttons on the right.
-# Each button shows its hex code rendered in its own colour.
+# Static UI structure lives in CustomizationMenu.tscn (edit it directly in the Godot editor).
+# The colour palette swatches are built dynamically in _ready() from PALETTE.
 # Selecting a colour tints the player sprite via modulate and persists via GameManager.
-
-const PANEL_W: int = 620
-const PANEL_H: int = 540
 
 const PALETTE: Array[Color] = [
 	Color("3f4328"), Color("5f7132"), Color("94ad39"), Color("c2d64f"),
@@ -31,90 +28,24 @@ const BTN_GAP: int = 3
 const SWATCHES_PER_ROW: int = 4
 const SWATCH_FONT_SIZE: int = 12
 
-# Set by MiningLevel after instantiation
+# Set by MiningLevel after the scene is ready
 var player: PlayerProbe = null
 
-var _preview_sprite: AnimatedSprite2D
+@onready var _preview_sprite: AnimatedSprite2D = $Panel/PreviewSprite
+@onready var _swatch_container: Control = $Panel/SwatchContainer
+
 var _selected_index: int = -1
 var _swatch_buttons: Array[Button] = []
-var _reset_btn: Button
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	hide()
-	_build_ui()
+	_load_preview_frames()
+	_build_swatches()
+	$Panel/CloseButton.pressed.connect(close)
+	$Panel/ResetButton.pressed.connect(_on_reset)
 
-func _build_ui() -> void:
-	var vp_w: int = 1280
-	var vp_h: int = 720
-	var px: int = (vp_w - PANEL_W) / 2
-	var py: int = (vp_h - PANEL_H) / 2
-
-	# Dark backdrop
-	var backdrop := ColorRect.new()
-	backdrop.color = Color(0.0, 0.0, 0.0, 0.72)
-	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(backdrop)
-
-	# Main panel
-	var panel := ColorRect.new()
-	panel.color = Color(0.10, 0.09, 0.14, 0.97)
-	panel.position = Vector2(px, py)
-	panel.size = Vector2(PANEL_W, PANEL_H)
-	add_child(panel)
-
-	# Border
-	for side in _border_rects(px, py, PANEL_W, PANEL_H, 2):
-		var br := ColorRect.new()
-		br.color = Color(0.80, 0.62, 0.22, 0.85)
-		br.position = side[0]
-		br.size = side[1]
-		add_child(br)
-
-	# Title
-	var title := Label.new()
-	title.text = "CUSTOMIZATION"
-	title.position = Vector2(px + 20, py + 12)
-	title.add_theme_font_size_override("font_size", 20)
-	title.modulate = Color(1.00, 0.82, 0.35)
-	add_child(title)
-
-	# Close hint
-	var hint := Label.new()
-	hint.text = "[X] Close"
-	hint.position = Vector2(px + PANEL_W - 100, py + 14)
-	hint.add_theme_font_size_override("font_size", 13)
-	hint.modulate = Color(0.55, 0.55, 0.65, 0.90)
-	add_child(hint)
-
-	# Separator under title
-	var sep := ColorRect.new()
-	sep.color = Color(0.80, 0.62, 0.22, 0.40)
-	sep.position = Vector2(px + 16, py + 44)
-	sep.size = Vector2(PANEL_W - 32, 1)
-	add_child(sep)
-
-	# --- Left side: player preview ---
-	var preview_x: int = px + 30
-	var preview_y: int = py + 60
-	var preview_w: int = 160
-	var preview_h: int = 320
-
-	var preview_bg := ColorRect.new()
-	preview_bg.color = Color(0.07, 0.06, 0.10, 1.0)
-	preview_bg.position = Vector2(preview_x, preview_y)
-	preview_bg.size = Vector2(preview_w, preview_h)
-	add_child(preview_bg)
-
-	var pborder := ColorRect.new()
-	pborder.color = Color(0.28, 0.24, 0.36, 0.60)
-	pborder.position = Vector2(preview_x - 1, preview_y - 1)
-	pborder.size = Vector2(preview_w + 2, preview_h + 2)
-	pborder.z_index = -1
-	add_child(pborder)
-
-	_preview_sprite = AnimatedSprite2D.new()
+func _load_preview_frames() -> void:
 	var player_scene := load("res://src/entities/player/PlayerProbe.tscn") as PackedScene
 	if player_scene:
 		var temp := player_scene.instantiate()
@@ -122,60 +53,15 @@ func _build_ui() -> void:
 		if source_sprite:
 			_preview_sprite.sprite_frames = source_sprite.sprite_frames
 		temp.queue_free()
-	_preview_sprite.scale = Vector2(5.0, 5.0)
-	_preview_sprite.position = Vector2(preview_x + preview_w / 2, preview_y + preview_h / 2 - 10)
-	_preview_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_preview_sprite.play(&"idle")
-	add_child(_preview_sprite)
 
-	var preview_label := Label.new()
-	preview_label.text = "Your Cat"
-	preview_label.position = Vector2(preview_x, preview_y + preview_h + 6)
-	preview_label.custom_minimum_size = Vector2(preview_w, 20)
-	preview_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	preview_label.add_theme_font_size_override("font_size", 13)
-	preview_label.modulate = Color(0.70, 0.70, 0.75)
-	add_child(preview_label)
-
-	# --- Right side: colour palette ---
-	var palette_x: int = px + 220
-	var palette_y: int = py + 60
-
-	var palette_label := Label.new()
-	palette_label.text = "COLOUR"
-	palette_label.position = Vector2(palette_x, palette_y - 2)
-	palette_label.add_theme_font_size_override("font_size", 14)
-	palette_label.modulate = Color(0.80, 0.75, 0.90)
-	add_child(palette_label)
-
-	var swatch_start_y: int = palette_y + 24
+func _build_swatches() -> void:
 	for i in range(PALETTE.size()):
 		var row: int = i / SWATCHES_PER_ROW
 		var col: int = i % SWATCHES_PER_ROW
-		var sx: int = palette_x + col * (BTN_W + BTN_GAP)
-		var sy: int = swatch_start_y + row * (BTN_H + BTN_GAP)
+		var sx: int = col * (BTN_W + BTN_GAP)
+		var sy: int = row * (BTN_H + BTN_GAP)
 		_create_swatch(i, sx, sy)
-
-	# Reset button (below the swatches)
-	var total_rows: int = ceili(float(PALETTE.size()) / SWATCHES_PER_ROW)
-	var reset_y: int = swatch_start_y + total_rows * (BTN_H + BTN_GAP) + 12
-
-	_reset_btn = Button.new()
-	_reset_btn.text = "RESET"
-	_reset_btn.position = Vector2(palette_x, reset_y)
-	_reset_btn.size = Vector2(90, 30)
-	_reset_btn.add_theme_font_size_override("font_size", 13)
-	_reset_btn.pressed.connect(_on_reset)
-	add_child(_reset_btn)
-
-	# Close button at bottom centre
-	var close_btn := Button.new()
-	close_btn.text = "CLOSE"
-	close_btn.position = Vector2(px + (PANEL_W - 90) / 2, py + PANEL_H - 46)
-	close_btn.size = Vector2(90, 32)
-	close_btn.add_theme_font_size_override("font_size", 14)
-	close_btn.pressed.connect(close)
-	add_child(close_btn)
 
 func _create_swatch(index: int, sx: int, sy: int) -> void:
 	var btn := Button.new()
@@ -219,7 +105,7 @@ func _create_swatch(index: int, sx: int, sy: int) -> void:
 	btn.add_child(rtl)
 
 	btn.pressed.connect(_on_swatch_pressed.bind(index))
-	add_child(btn)
+	_swatch_container.add_child(btn)
 	_swatch_buttons.append(btn)
 
 func _on_swatch_pressed(index: int) -> void:
@@ -292,11 +178,3 @@ func _unhandled_input(event: InputEvent) -> void:
 	if visible and event.is_action_pressed("toggle_customization_menu"):
 		close()
 		get_viewport().set_input_as_handled()
-
-func _border_rects(x: int, y: int, w: int, h: int, t: int) -> Array:
-	return [
-		[Vector2(x, y),             Vector2(w, t)],
-		[Vector2(x, y + h - t),     Vector2(w, t)],
-		[Vector2(x, y),             Vector2(t, h)],
-		[Vector2(x + w - t, y),     Vector2(t, h)],
-	]
