@@ -430,7 +430,7 @@ func _spawn_poof() -> void:
 func _apply_fall_damage() -> void:
 	if _is_falling:
 		var fall_distance := global_position.y - _fall_start_y
-		if fall_distance > FALL_DAMAGE_THRESHOLD:
+		if fall_distance > FALL_DAMAGE_THRESHOLD and not on_ladder:
 			var damage := health_component.max_health / 2
 			health_component.damage(damage)
 			var cam := get_viewport().get_camera_2d()
