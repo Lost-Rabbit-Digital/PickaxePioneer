@@ -353,26 +353,26 @@ func _save_planet_config() -> void:
 	SaveManager.save_planet_config(config)
 
 func _arrange_nodes_neural_network() -> void:
-	# Neural network layout: four layers from bottom (city) to top (final mine).
-	# Each layer's nodes are centred horizontally with a small random jitter so
+	# Neural network layout: four layers from left (city) to right (final mine).
+	# Each layer's nodes are centred vertically with a small random jitter so
 	# repeated runs look slightly organic while preserving the layered structure.
-	var jx := 18.0  # horizontal jitter range
-	var jy := 12.0  # vertical jitter range
+	var jx := 12.0  # horizontal jitter range (progression axis)
+	var jy := 18.0  # vertical jitter range (spread axis)
 
-	# Layer 1 — Base City (single node, centred)
-	city_node.position = Vector2(640, 625) + Vector2(randf_range(-jx * 0.5, jx * 0.5), randf_range(-jy * 0.5, jy * 0.5))
+	# Layer 1 — Base City (single node, centred vertically)
+	city_node.position = Vector2(110, 360) + Vector2(randf_range(-jx * 0.5, jx * 0.5), randf_range(-jy * 0.5, jy * 0.5))
 
-	# Layer 2 — three mine planets, spread evenly across the width
-	mine_node_1.position  = Vector2(200, 460) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
-	mine_node_2.position  = Vector2(640, 460) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
-	mine_node_3.position  = Vector2(1080, 460) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
+	# Layer 2 — three mine planets, spread evenly down the height
+	mine_node_1.position  = Vector2(380, 130) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
+	mine_node_2.position  = Vector2(380, 360) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
+	mine_node_3.position  = Vector2(380, 590) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
 
 	# Layer 3 — two settlement nodes
-	settlement_node_3.position = Vector2(380, 285) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
-	settlement_node_4.position = Vector2(900, 285) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
+	settlement_node_3.position = Vector2(650, 220) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
+	settlement_node_4.position = Vector2(650, 500) + Vector2(randf_range(-jx, jx), randf_range(-jy, jy))
 
-	# Layer 4 — final mine (single node, centred)
-	final_node.position = Vector2(640, 110) + Vector2(randf_range(-jx * 0.5, jx * 0.5), randf_range(-jy * 0.5, jy * 0.5))
+	# Layer 4 — final mine (single node, centred vertically)
+	final_node.position = Vector2(920, 360) + Vector2(randf_range(-jx * 0.5, jx * 0.5), randf_range(-jy * 0.5, jy * 0.5))
 
 func _save_node_positions() -> void:
 	var node_positions := {}
