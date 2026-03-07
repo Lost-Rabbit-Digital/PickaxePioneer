@@ -295,7 +295,7 @@ func _handle_mining(delta: float) -> void:
 			_mining = false
 			return
 
-		if not mining_level.has_line_of_sight(player_tile, grid_pos):
+		if not mining_level.has_line_of_sight(global_position, grid_pos):
 			_mining = false
 			return
 
