@@ -165,8 +165,11 @@ func _draw() -> void:
 			var cursor_row: int = level._cursor_grid_pos.y
 			var tile_type: int = grid[cursor_col][cursor_row]
 			var is_mineable: bool = level._is_tile_mineable(tile_type)
-			var border_color: Color = Color(0.20, 0.90, 0.20) if is_mineable else Color(0.90, 0.20, 0.20)
-			_draw_dotted_border(cursor_col * CELL_SIZE, cursor_row * CELL_SIZE, CELL_SIZE, CELL_SIZE, border_color, 3)
+			# Only draw the border if it's a real block (not air) and is mineable (green border),
+			# or if it's a real block and not mineable (red border for shops, protected blocks, etc.)
+			if tile_type != _T_EMPTY:
+				var border_color: Color = Color(0.20, 0.90, 0.20) if is_mineable else Color(0.90, 0.20, 0.20)
+				_draw_dotted_border(cursor_col * CELL_SIZE, cursor_row * CELL_SIZE, CELL_SIZE, CELL_SIZE, border_color, 3)
 
 	# -------------------------------------------------------------------------
 	# Boss overlays — delegated to BossRenderer
