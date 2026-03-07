@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ic6y8d5m67dq"
-path="res://.godot/imported/armor_chest_iron.png-71bf170e8cc0b068a4ad67c6b8ab5406.ctex"
+uid="uid://csfikasygqibw"
+path="res://.godot/imported/db32_items_spritesheet.png-3fda3a38d7d286e9932d21ef8ef0bcef.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/db32_rpg_items/armor_chest_iron.png"
-dest_files=["res://.godot/imported/armor_chest_iron.png-71bf170e8cc0b068a4ad67c6b8ab5406.ctex"]
+source_file="res://assets/db32_rpg_items/db32_items_spritesheet.png"
+dest_files=["res://.godot/imported/db32_items_spritesheet.png-3fda3a38d7d286e9932d21ef8ef0bcef.ctex"]
 
 [params]
 
