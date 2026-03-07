@@ -104,5 +104,21 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_version")
 text = "v0.1.0"
 horizontal_alignment = 1
 
+[node name="CenterButton" type="Button" parent="Camera2D/BackgroundCanvasLayer"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = -34.0
+offset_right = 108.0
+offset_bottom = -8.0
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_version")
+text = "Center Camera"
+
 [node name="PauseMenu" parent="." instance=ExtResource("7_pausemenu")]
 visible = false
+
+[connection signal="pressed" from="Camera2D/BackgroundCanvasLayer/CenterButton" to="." method="_on_center_button_pressed"]

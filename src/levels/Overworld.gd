@@ -725,3 +725,7 @@ func _on_modal_confirmed(node: MapNode) -> void:
 
 func _update_camera() -> void:
 	camera.zoom = Vector2.ONE * _camera_zoom
+
+
+func _on_center_button_pressed() -> void:
+	pass # Replace with function body.
