@@ -145,11 +145,12 @@ func _physics_process(delta: float) -> void:
 	var pre_floor := is_on_floor()
 
 	# Track fall start position
-	if pre_floor and not _gripping_ladder and not _descending_ladder:
-		# Player is on floor and not using ladder, reset fall tracking
+	if (pre_floor or on_ladder) and not _gripping_ladder and not _descending_ladder:
+		# Player is on floor/ladder and not using ladder, reset fall tracking
 		_is_falling = false
-	elif not pre_floor and not _is_falling:
-		# Player just left the ground, start tracking fall
+		_fall_start_y = 0.0
+	elif not pre_floor and not _is_falling and not on_ladder:
+		# Player just left the ground, start tracking fall (not if on ladder)
 		_is_falling = true
 		_fall_start_y = global_position.y
 
@@ -430,7 +431,7 @@ func _spawn_poof() -> void:
 func _apply_fall_damage() -> void:
 	if _is_falling:
 		var fall_distance := global_position.y - _fall_start_y
-		if fall_distance > FALL_DAMAGE_THRESHOLD:
+		if fall_distance > FALL_DAMAGE_THRESHOLD and not on_ladder:
 			var damage := health_component.max_health / 2
 			health_component.damage(damage)
 			var cam := get_viewport().get_camera_2d()
