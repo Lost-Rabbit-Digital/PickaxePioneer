@@ -165,9 +165,9 @@ const TILE_HP: Dictionary = {
 }
 
 const TILE_MIN_HITS: Dictionary = {
-	TileType.SURFACE_GRASS:   1,
-	TileType.DIRT:            1,
-	TileType.DIRT_DARK:       1,
+	TileType.SURFACE_GRASS:   2,
+	TileType.DIRT:            2,
+	TileType.DIRT_DARK:       2,
 	TileType.STONE:           2,
 	TileType.STONE_DARK:      2,
 	TileType.ORE_COPPER:      3,
