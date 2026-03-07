@@ -1097,6 +1097,10 @@ func _process(delta: float) -> void:
 			elif local_p.is_sleeping():
 				_energy_drain_accum = 0.0
 
+func _is_tile_mineable(tile_type: int) -> bool:
+	"""Check if a tile type can be mined."""
+	return tile_type in MINEABLE_TILES
+
 func _update_cursor_highlight() -> void:
 	var local_player := _get_local_player()
 	if not local_player:

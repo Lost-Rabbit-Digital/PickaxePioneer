@@ -161,11 +161,12 @@ func _draw() -> void:
 			draw_rect(Rect2(lx, ly, CELL_SIZE, CELL_SIZE), border_c, false, 2.0)
 	else:
 		if level._cursor_grid_pos.x >= 0 and level._cursor_grid_pos.y >= 0:
-			var highlight_rect := Rect2(
-				level._cursor_grid_pos.x * CELL_SIZE,
-				level._cursor_grid_pos.y * CELL_SIZE,
-				CELL_SIZE, CELL_SIZE)
-			draw_rect(highlight_rect, Color(1.0, 1.0, 1.0, 0.2), false, 2.0)
+			var cursor_col: int = level._cursor_grid_pos.x
+			var cursor_row: int = level._cursor_grid_pos.y
+			var tile_type: int = grid[cursor_col][cursor_row]
+			var is_mineable: bool = level._is_tile_mineable(tile_type)
+			var border_color: Color = Color(0.20, 0.90, 0.20) if is_mineable else Color(0.90, 0.20, 0.20)
+			_draw_dotted_border(cursor_col * CELL_SIZE, cursor_row * CELL_SIZE, CELL_SIZE, CELL_SIZE, border_color, 3)
 
 	# -------------------------------------------------------------------------
 	# Boss overlays — delegated to BossRenderer
@@ -222,3 +223,38 @@ func _draw() -> void:
 		var c: Color = p["color"]
 		c.a = alpha
 		draw_rect(Rect2(p["pos"].x - sz * 0.5, p["pos"].y - sz * 0.5, sz, sz), c)
+
+
+## Draw a dotted border around a rectangle.
+## Draws 6px solid segments with 4px gaps to create a dotted effect.
+func _draw_dotted_border(x: float, y: float, w: float, h: float, color: Color, line_width: float) -> void:
+	const DOT_SIZE: int = 6
+	const GAP_SIZE: int = 4
+
+	# Top border
+	var pos = x
+	while pos < x + w:
+		var end_pos = mini(pos + DOT_SIZE, x + w)
+		draw_line(Vector2(pos, y), Vector2(end_pos, y), color, line_width)
+		pos += DOT_SIZE + GAP_SIZE
+
+	# Bottom border
+	pos = x
+	while pos < x + w:
+		var end_pos = mini(pos + DOT_SIZE, x + w)
+		draw_line(Vector2(pos, y + h), Vector2(end_pos, y + h), color, line_width)
+		pos += DOT_SIZE + GAP_SIZE
+
+	# Left border
+	pos = y
+	while pos < y + h:
+		var end_pos = mini(pos + DOT_SIZE, y + h)
+		draw_line(Vector2(x, pos), Vector2(x, end_pos), color, line_width)
+		pos += DOT_SIZE + GAP_SIZE
+
+	# Right border
+	pos = y
+	while pos < y + h:
+		var end_pos = mini(pos + DOT_SIZE, y + h)
+		draw_line(Vector2(x + w, pos), Vector2(x + w, end_pos), color, line_width)
+		pos += DOT_SIZE + GAP_SIZE
