@@ -22,6 +22,27 @@ func _ready() -> void:
 	enter_button.pressed.connect(_on_enter_pressed)
 	hide()
 
+func show_locked_message(node: MapNode) -> void:
+	# Show a lock message for a node that cannot be accessed yet
+	_current_node = null
+	title_label.text = node.location_name + " [LOCKED]"
+	type_label.text = "[ Progression Gate ]"
+	type_label.modulate = Color(0.8, 0.6, 0.4)
+	description_label.text = _get_lock_reason_text(node)
+	hazards_label.visible = false
+	hsep2.visible = true
+	enter_button.text = "OK"
+	enter_button.disabled = true
+	planet_info_label.visible = false
+	show()
+
+func _get_lock_reason_text(node: MapNode) -> String:
+	# Return helpful message explaining why the node is locked
+	if node.node_type == MapNode.NodeType.SETTLEMENT:
+		return "This settlement is only accessible after you've completed a mining run on one of the first-tier mining asteroids. Return to the Clowder and explore Mine Node 1, 2, or 3 to progress."
+	# Assume it's the final node if it's locked and not a settlement
+	return "The final mining challenge awaits, but only after you've proven yourself in the settlements. Complete a mining run on one of the frontier settlements to unlock this sector."
+
 func show_for_node(node: MapNode) -> void:
 	_current_node = node
 	title_label.text = node.location_name
@@ -78,7 +99,9 @@ func _default_description(node: MapNode) -> String:
 
 func _on_enter_pressed() -> void:
 	hide()
-	confirmed.emit(_current_node)
+	# Only emit confirmed if a node was actually selected (not a lock message)
+	if _current_node != null:
+		confirmed.emit(_current_node)
 
 func _on_cancel_pressed() -> void:
 	hide()

@@ -276,10 +276,20 @@ func _add_label(parent: Control, text: String, lx: float, ly: float,
 
 func _on_return_pressed() -> void:
 	GameManager.bank_currency()
+	# Mark tier as completed if this was a mine or settlement run
+	if GameManager.current_node_type == MapNode.NodeType.MINE:
+		GameManager.mark_tier_completed(MapNode.NodeType.MINE)
+	elif GameManager.current_node_type == MapNode.NodeType.SETTLEMENT:
+		GameManager.mark_tier_completed(MapNode.NodeType.SETTLEMENT)
 	queue_free()
 	GameManager.load_overworld()
 
 func _on_dive_again_pressed() -> void:
 	GameManager.bank_currency()
+	# Mark tier as completed if this was a mine or settlement run
+	if GameManager.current_node_type == MapNode.NodeType.MINE:
+		GameManager.mark_tier_completed(MapNode.NodeType.MINE)
+	elif GameManager.current_node_type == MapNode.NodeType.SETTLEMENT:
+		GameManager.mark_tier_completed(MapNode.NodeType.SETTLEMENT)
 	queue_free()
 	GameManager.load_mining_level()
