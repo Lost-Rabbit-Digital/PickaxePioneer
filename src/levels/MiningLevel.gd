@@ -15,6 +15,8 @@ const EXIT_COLS: int = 2
 const VIEWPORT_W: int = 1280
 const VIEWPORT_H: int = 720
 
+const EXPLOSION_KNOCKBACK_STRENGTH: float = 600.0  # Velocity in pixels/second
+
 enum TileType {
 	EMPTY            = 0,
 	DIRT             = 1,
@@ -1769,23 +1771,37 @@ func _explode_area(center_col: int, center_row: int) -> void:
 				_spawn_mining_particles(cell_world, Color(1.0, 0.90, 0.20, 0.8), 2, 50.0, 180.0)
 	SoundManager.play_explosion_sound()
 	_shake_camera(12.0, 0.55)
+	var explosion_center_world := Vector2(center_col * CELL_SIZE + CELL_SIZE * 0.5, center_row * CELL_SIZE + CELL_SIZE * 0.5)
 	if player_node:
 		var player_col := int(player_node.global_position.x / CELL_SIZE)
 		var player_row := int(player_node.global_position.y / CELL_SIZE)
 		if abs(player_col - center_col) <= r and abs(player_row - center_row) <= r:
 			_damage_player(1)
+			_apply_knockback(player_node, explosion_center_world)
 	# In multiplayer check if the guest is also caught in the blast radius
 	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0 and guest_player_node:
 		var gcol := int(guest_player_node.global_position.x / CELL_SIZE)
 		var grow := int(guest_player_node.global_position.y / CELL_SIZE)
 		if abs(gcol - center_col) <= r and abs(grow - center_row) <= r:
 			rpc_damage_guest.rpc_id(NetworkManager.guest_peer_id, 1)
+			rpc_apply_knockback.rpc_id(NetworkManager.guest_peer_id, explosion_center_world)
 
 func _damage_player(amount: float) -> void:
 	if player_node and player_node.has_method("take_damage"):
 		player_node.take_damage(amount)
 		SoundManager.play_damage_sound()
 		_shake_camera(5.0, 0.25)
+
+func _apply_knockback(target_player: PlayerProbe, explosion_center: Vector2) -> void:
+	if not target_player:
+		return
+	var direction := (target_player.global_position - explosion_center).normalized()
+	target_player.velocity += direction * EXPLOSION_KNOCKBACK_STRENGTH
+
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_apply_knockback(explosion_center: Vector2) -> void:
+	if player_node:
+		_apply_knockback(player_node, explosion_center)
 
 func _on_player_died() -> void:
 	if _game_over:
