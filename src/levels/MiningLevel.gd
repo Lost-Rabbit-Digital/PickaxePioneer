@@ -2168,15 +2168,18 @@ func _setup_farm_animals() -> void:
 	else:
 		chosen = all_animal_types[randi() % all_animal_types.size()]
 	var tex := load(chosen["texture_path"]) as Texture2D
-	# Randomise count between 2 and 5 NPCs
-	var count := randi_range(2, 5)
-	var bounce_left := 1.0 * CELL_SIZE
-	var bounce_right := 20.0 * CELL_SIZE
-	# Build a pool of valid surface columns and shuffle them for unique spread
+	# Spread NPCs across the entire mining planet
+	var count := 40  # More NPCs distributed throughout all depths
+	# Build a pool of valid columns and shuffle them for unique spread
 	var col_pool: Array[int] = []
 	for c in range(2, 94):
 		col_pool.append(c)
 	col_pool.shuffle()
+	# Build a pool of valid rows (entire mining depth)
+	var row_pool: Array[int] = []
+	for r in range(0, GRID_ROWS):
+		row_pool.append(r)
+	row_pool.shuffle()
 	for i in count:
 		var npc := npc_scene.instantiate() as FarmAnimalNPC
 		npc.animal_name = chosen["name"]
@@ -2186,12 +2189,17 @@ func _setup_farm_animals() -> void:
 			spr.hframes = 2
 			spr.frame = 0
 		npc.scale = Vector2(4.0, 4.0)
+		# Distribute across the entire mining planet
+		var col := col_pool[i % col_pool.size()]
+		var row := row_pool[i % row_pool.size()]
 		npc.position = Vector2(
-			col_pool[i] * CELL_SIZE + CELL_SIZE,
-			FARM_NPC_ROW * CELL_SIZE + CELL_SIZE - 16
+			col * CELL_SIZE + CELL_SIZE,
+			row * CELL_SIZE + CELL_SIZE - 16
 		)
-		npc.bounce_left = bounce_left
-		npc.bounce_right = bounce_right
+		# Adjust bounce range based on depth to prevent NPCs from bouncing too far off-screen
+		var bounce_range := 5.0 * CELL_SIZE
+		npc.bounce_left = maxi(0.0, (col - 5) * CELL_SIZE)
+		npc.bounce_right = mini(GRID_COLS * CELL_SIZE, (col + 5) * CELL_SIZE)
 		var speed := randf_range(40.0, 80.0)
 		npc.velocity = Vector2(speed * (1.0 if randf() > 0.5 else -1.0), 0.0)
 		add_child(npc)
