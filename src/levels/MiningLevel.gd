@@ -133,8 +133,8 @@ const TILE_ATLAS_COORDS: Dictionary = {
 	TileType.ORE_GOLD_DEEP:    Vector2i(1, 8),
 	TileType.ORE_GEM:          Vector2i(8, 7),   # stone_generic_ore_crystalline.png
 	TileType.ORE_GEM_DEEP:     Vector2i(8, 7),
-	TileType.EXPLOSIVE:        Vector2i(4, 2),   # eucalyptus_log_top.png
-	TileType.EXPLOSIVE_ARMED:  Vector2i(4, 2),
+	TileType.EXPLOSIVE:        Vector2i(5, 8),
+	TileType.EXPLOSIVE_ARMED:  Vector2i(5, 8),
 	TileType.LAVA:             Vector2i(5, 6),   # sand_ugly_3.png
 	TileType.LAVA_FLOW:        Vector2i(5, 6),
 	TileType.ENERGY_NODE:      Vector2i(9, 3),   # limestone.png
