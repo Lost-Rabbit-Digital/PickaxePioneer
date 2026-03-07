@@ -3,9 +3,9 @@ extends CanvasLayer
 
 # Inventory overlay — toggled with I key during a mining run.
 # Shows three sections:
-#   1. Mined Minerals — ore tiles collected this run, with terrain icons
-#   2. Equipment     — carapace / legs / mandibles / mineral sense levels
-#   3. Artifacts     — active run-buff items from the Wandering Trader
+#   1. Inventory Slot Grid  — tool items (pickaxe, ladder) + mined ore, with tooltips and drag
+#   2. Equipment            — pelt / paws / claws / whiskers upgrade levels
+#   3. Artifacts            — active run-buff items from the Wandering Trader
 
 # Ore display order (matches terrain depth: shallow → deep)
 # Textures and colors must match MiningLevel.TILE_TEXTURE_PATHS and TILE_COLORS exactly.
@@ -39,8 +39,29 @@ const ARTIFACT_DEFS: Dictionary = {
 	"map":     {"label": "Ancient Map",    "desc": "x2 Sonar Radius",        "plant": "res://assets/blocks/plants/fern.png",           "color": Color(0.20, 0.90, 1.00)},
 }
 
+# Tool items that occupy dedicated slots at the front of the inventory grid.
+# These are always present; the pickaxe is a usable tool and the ladder is a placeable tool.
+const TOOL_DEFS: Array = [
+	{
+		"id": "pickaxe",
+		"name": "Pickaxe",
+		"slot_type": "Tool",
+		"color": Color(0.80, 0.65, 0.35),
+		"border_color": Color(0.95, 0.65, 0.15, 0.90),
+		"desc": "Your primary digging tool.\nLeft-click to swing and break tiles.\nPower scales with Claws upgrade level.",
+	},
+	{
+		"id": "ladder",
+		"name": "Ladder",
+		"slot_type": "Placeable",
+		"color": Color(0.85, 0.65, 0.20),
+		"border_color": Color(0.80, 0.60, 0.15, 0.90),
+		"desc": "Climbable scaffolding tile.\nSelect hotbar slot 2 and left-click to place.\nRight-click a placed ladder to retrieve it.",
+	},
+]
+
 const PANEL_W: int  = 780
-const PANEL_H: int  = 520
+const PANEL_H: int  = 560
 const ICON_SZ: int  = 40
 const ROW_H: int    = 50
 const SEC_GAP: int  = 14
@@ -49,6 +70,7 @@ const SEC_GAP: int  = 14
 const SLOT_SIZE: int  = 52   # px per slot cell (icon + padding)
 const SLOT_GAP: int   = 4    # gap between cells
 const SLOT_COLS: int  = 10   # columns in the slot grid
+const TOOL_SLOT_COUNT: int = 2  # Pickaxe slot + Ladder slot
 
 var _bg: ColorRect
 var _title: Label
@@ -60,10 +82,36 @@ var _content_root: Control
 # Reference set by MiningLevel when it instantiates this screen
 var mining_level: Node = null
 
+# -------------------------------------------------------------------
+# Tooltip — floating info panel shown when hovering a slot
+# -------------------------------------------------------------------
+var _tooltip_root: Control
+var _tooltip_bg: ColorRect
+var _tooltip_name_lbl: Label
+var _tooltip_type_lbl: Label
+var _tooltip_stat_lbl: Label
+var _tooltip_desc_lbl: Label
+
+# -------------------------------------------------------------------
+# Drag ghost — semi-transparent item copy that follows the cursor
+# -------------------------------------------------------------------
+var _drag_ghost: Control
+var _drag_ghost_bg: ColorRect
+var _drag_ghost_icon_root: Control  # Only this container's children are cleared between drags
+var _is_dragging: bool = false
+var _drag_slot_data: Dictionary = {}
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	hide()
 	_build_frame()
+	_build_tooltip()
+	_build_drag_ghost()
+
+func _process(_delta: float) -> void:
+	if _is_dragging and _drag_ghost.visible:
+		var mp: Vector2 = get_viewport().get_mouse_position()
+		_drag_ghost.position = mp + Vector2(10, 10)
 
 func _build_frame() -> void:
 	var vp_w: int = 1280
@@ -125,6 +173,92 @@ func _build_frame() -> void:
 	_content_root.clip_contents = true
 	add_child(_content_root)
 
+func _build_tooltip() -> void:
+	_tooltip_root = Control.new()
+	_tooltip_root.visible = false
+	_tooltip_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_tooltip_root)
+
+	# Background
+	_tooltip_bg = ColorRect.new()
+	_tooltip_bg.color = Color(0.07, 0.06, 0.11, 0.97)
+	_tooltip_bg.size = Vector2(230, 108)
+	_tooltip_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tooltip_root.add_child(_tooltip_bg)
+
+	# Border around tooltip
+	var bc := Color(0.60, 0.50, 0.75, 0.80)
+	for side in _border_rects(0, 0, 230, 108, 2):
+		var br := ColorRect.new()
+		br.color = bc
+		br.position = side[0]
+		br.size = side[1]
+		br.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_tooltip_root.add_child(br)
+
+	_tooltip_name_lbl = Label.new()
+	_tooltip_name_lbl.position = Vector2(10, 7)
+	_tooltip_name_lbl.custom_minimum_size = Vector2(210, 20)
+	_tooltip_name_lbl.add_theme_font_size_override("font_size", 14)
+	_tooltip_name_lbl.modulate = Color(1.0, 0.95, 0.70)
+	_tooltip_name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tooltip_root.add_child(_tooltip_name_lbl)
+
+	_tooltip_type_lbl = Label.new()
+	_tooltip_type_lbl.position = Vector2(10, 26)
+	_tooltip_type_lbl.custom_minimum_size = Vector2(210, 16)
+	_tooltip_type_lbl.add_theme_font_size_override("font_size", 11)
+	_tooltip_type_lbl.modulate = Color(0.55, 0.85, 0.55)
+	_tooltip_type_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tooltip_root.add_child(_tooltip_type_lbl)
+
+	_tooltip_stat_lbl = Label.new()
+	_tooltip_stat_lbl.position = Vector2(10, 44)
+	_tooltip_stat_lbl.custom_minimum_size = Vector2(210, 18)
+	_tooltip_stat_lbl.add_theme_font_size_override("font_size", 12)
+	_tooltip_stat_lbl.modulate = Color(0.90, 0.85, 0.75)
+	_tooltip_stat_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tooltip_root.add_child(_tooltip_stat_lbl)
+
+	_tooltip_desc_lbl = Label.new()
+	_tooltip_desc_lbl.position = Vector2(10, 63)
+	_tooltip_desc_lbl.custom_minimum_size = Vector2(210, 40)
+	_tooltip_desc_lbl.add_theme_font_size_override("font_size", 10)
+	_tooltip_desc_lbl.modulate = Color(0.60, 0.60, 0.68)
+	_tooltip_desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tooltip_desc_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tooltip_root.add_child(_tooltip_desc_lbl)
+
+func _build_drag_ghost() -> void:
+	_drag_ghost = Control.new()
+	_drag_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_drag_ghost.visible = false
+	_drag_ghost.size = Vector2(SLOT_SIZE, SLOT_SIZE)
+	add_child(_drag_ghost)
+
+	_drag_ghost_bg = ColorRect.new()
+	_drag_ghost_bg.color = Color(0.20, 0.18, 0.26, 0.80)
+	_drag_ghost_bg.position = Vector2.ZERO
+	_drag_ghost_bg.size = Vector2(SLOT_SIZE, SLOT_SIZE)
+	_drag_ghost_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_drag_ghost.add_child(_drag_ghost_bg)
+
+	# Ghost border (permanent frame, not cleared between drags)
+	for side in _slot_border_rects(0, 0, SLOT_SIZE, SLOT_SIZE, 2):
+		var br := ColorRect.new()
+		br.color = Color(0.85, 0.80, 0.40, 0.70)
+		br.position = side[0]
+		br.size = side[1]
+		br.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_drag_ghost.add_child(br)
+
+	# Dedicated container for icon content — cleared on each new drag
+	_drag_ghost_icon_root = Control.new()
+	_drag_ghost_icon_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_drag_ghost_icon_root.position = Vector2.ZERO
+	_drag_ghost_icon_root.size = Vector2(SLOT_SIZE, SLOT_SIZE)
+	_drag_ghost.add_child(_drag_ghost_icon_root)
+
 func _border_rects(x: int, y: int, w: int, h: int, t: int) -> Array:
 	return [
 		[Vector2(x, y),             Vector2(w, t)],      # top
@@ -140,6 +274,8 @@ func open(ore_counts: Dictionary, shroom_charges: int, lucky_compass: bool, anci
 	get_tree().paused = true
 
 func close() -> void:
+	_hide_tooltip()
+	_end_drag()
 	hide()
 	get_tree().paused = false
 
@@ -147,8 +283,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	if visible and event.is_action_pressed("toggle_inventory"):
 		close()
 		get_viewport().set_input_as_handled()
+	# End drag if mouse is released outside any interactive slot
+	if _is_dragging and event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+			_end_drag()
 
 func _rebuild_content(ore_counts: Dictionary, shroom_charges: int, lucky_compass: bool, ancient_map: bool) -> void:
+	_hide_tooltip()
+	_end_drag()
+
 	# Clear previous content
 	for child in _content_root.get_children():
 		child.queue_free()
@@ -157,7 +300,7 @@ func _rebuild_content(ore_counts: Dictionary, shroom_charges: int, lucky_compass
 	var col_w: int = content_w / 2
 
 	# -----------------------------------------------------------------------
-	# Section 1: Inventory Slot Grid  (full width)
+	# Section 1: Inventory Slot Grid  (full width) — tools + ore
 	# -----------------------------------------------------------------------
 	var y: int = 4
 	y = _draw_section_header(_content_root, 0, y, content_w, "Inventory",
@@ -180,9 +323,7 @@ func _rebuild_content(ore_counts: Dictionary, shroom_charges: int, lucky_compass
 	eq_y = _draw_section_header(_content_root, 0, eq_y, col_w, "Equipment",
 		Color(0.35, 0.75, 0.95))
 	eq_y += 4
-	eq_y = _draw_equipment(_content_root, 0, eq_y, col_w)
-	eq_y = _draw_pickaxe(_content_root, 0, eq_y, col_w)
-	_draw_ladders(_content_root, 0, eq_y, col_w)
+	_draw_equipment(_content_root, 0, eq_y, col_w)
 
 	var art_x: int = col_w + 8
 	var art_y: int = y
@@ -192,94 +333,189 @@ func _rebuild_content(ore_counts: Dictionary, shroom_charges: int, lucky_compass
 	_draw_artifacts(_content_root, art_x, art_y, col_w - 8,
 		shroom_charges, lucky_compass, ancient_map)
 
-## Draws a grid of inventory slots. Same-type ores stack up to STACK_SIZE per slot.
-## Occupied slots show the ore icon and a count badge; empty slots show a dark background.
-## Returns the y position below the grid.
+# -----------------------------------------------------------------------
+# Slot grid — tool slots first (pickaxe, ladder), then ore stacks.
+# Every occupied slot has an interactive overlay for tooltip + drag.
+# -----------------------------------------------------------------------
 func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictionary) -> int:
-	var total_slots: int = GameManager.get_ore_capacity()
+	var ore_capacity: int = GameManager.get_ore_capacity()
+	var total_display_slots: int = TOOL_SLOT_COUNT + ore_capacity
 
-	# Build an array of stacks in collection order (grouped by ore type, STACK_SIZE per slot).
-	# Each stack entry: {tile: int, count: int}
+	# Build ore stacks (same-type chunks grouped up to STACK_SIZE per slot)
 	var stacks: Array[Dictionary] = []
 	for ore in ORE_ORDER:
 		var remaining: int = ore_counts.get(ore["tile"], 0)
 		while remaining > 0:
 			var stack_count: int = mini(remaining, GameManager.STACK_SIZE)
-			stacks.append({"tile": ore["tile"], "count": stack_count})
+			stacks.append({"tile": ore["tile"], "count": stack_count, "ore": ore})
 			remaining -= stack_count
 
-	var used_slots: int = stacks.size()
+	var used_ore_slots: int = stacks.size()
 
 	var cols: int = SLOT_COLS
 	var cell: int = SLOT_SIZE + SLOT_GAP
-	var rows: int = ceili(float(total_slots) / float(cols))
+	var rows: int = ceili(float(total_display_slots) / float(cols))
 
-	for idx in range(total_slots):
+	# Panel content_root offset in viewport space (for tooltip positioning)
+	var vp_w: int = 1280
+	var vp_h: int = 720
+	var cr_gx: int = (vp_w - PANEL_W) / 2 + 16
+	var cr_gy: int = (vp_h - PANEL_H) / 2 + 52
+
+	for idx in range(total_display_slots):
 		var col: int = idx % cols
 		var row: int = idx / cols
 		var sx: int = x + col * cell
 		var sy: int = y + row * cell
+
+		var is_tool: bool = idx < TOOL_SLOT_COUNT
+		var slot_data: Dictionary = {}
+		var is_occupied: bool = false
+
+		if is_tool:
+			is_occupied = true
+			var tdef: Dictionary = TOOL_DEFS[idx]
+			if idx == 0:
+				# Pickaxe tool slot
+				slot_data = {
+					"type": "tool",
+					"name": tdef["name"],
+					"slot_type": tdef["slot_type"],
+					"color": tdef["color"],
+					"border_color": tdef["border_color"],
+					"desc": tdef["desc"],
+					"stat": "Power: %d  (Claws Lv%d)" % [
+						GameManager.get_mandibles_power(),
+						GameManager.mandibles_level
+					],
+					"tex_path": PICKAXE_TEXTURES[clampi(GameManager.claws_level, 0, PICKAXE_TEXTURES.size() - 1)],
+					"count": -1,
+				}
+			else:
+				# Ladder placeable slot
+				slot_data = {
+					"type": "placeable",
+					"name": tdef["name"],
+					"slot_type": tdef["slot_type"],
+					"color": tdef["color"],
+					"border_color": tdef["border_color"],
+					"desc": tdef["desc"],
+					"stat": "Count: %d" % GameManager.ladder_count,
+					"tex_path": "",
+					"count": GameManager.ladder_count,
+				}
+		else:
+			var ore_idx: int = idx - TOOL_SLOT_COUNT
+			if ore_idx < stacks.size():
+				is_occupied = true
+				var stack: Dictionary = stacks[ore_idx]
+				var ore: Dictionary = stack["ore"]
+				slot_data = {
+					"type": "ore",
+					"name": ore["name"],
+					"slot_type": "Ore",
+					"color": ore["color"],
+					"border_color": Color(0.60, 0.50, 0.75, 0.70),
+					"desc": "Mine ore and bank it at the surface station for minerals.",
+					"stat": "×%d chunks" % stack["count"],
+					"tex_path": ore["tex"],
+					"count": stack["count"],
+				}
+
+		# --- Slot visuals ---
 
 		# Slot background
 		var bg := ColorRect.new()
 		bg.color = Color(0.08, 0.07, 0.10, 0.90)
 		bg.position = Vector2(sx, sy)
 		bg.size = Vector2(SLOT_SIZE, SLOT_SIZE)
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		parent.add_child(bg)
+
+		# Tool slots get a tinted background tint to distinguish them
+		if is_tool:
+			var bc: Color = slot_data["border_color"]
+			var tint := ColorRect.new()
+			tint.color = Color(bc.r * 0.10, bc.g * 0.10, bc.b * 0.08, 1.0)
+			tint.position = Vector2(sx + 2, sy + 2)
+			tint.size = Vector2(SLOT_SIZE - 4, SLOT_SIZE - 4)
+			tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			parent.add_child(tint)
 
 		# Slot border
 		var border_col: Color
-		if idx < used_slots:
+		if is_tool:
+			border_col = slot_data["border_color"]
+		elif is_occupied:
 			border_col = Color(0.60, 0.50, 0.75, 0.70)
 		else:
 			border_col = Color(0.30, 0.25, 0.40, 0.50)
+
 		for side in _slot_border_rects(sx, sy, SLOT_SIZE, SLOT_SIZE, 2):
 			var br := ColorRect.new()
 			br.color = border_col
 			br.position = side[0]
 			br.size = side[1]
+			br.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			parent.add_child(br)
 
-		# Occupied slot — show ore icon, tint, and stack count badge
-		if idx < stacks.size():
-			var stack: Dictionary = stacks[idx]
-			var tile_id: int = stack["tile"]
-			var stack_count: int = stack["count"]
-			for ore in ORE_ORDER:
-				if ore["tile"] == tile_id:
-					var fill := ColorRect.new()
-					fill.color = Color(ore["color"].r * 0.35, ore["color"].g * 0.35, ore["color"].b * 0.35, 1.0)
-					fill.position = Vector2(sx + 2, sy + 2)
-					fill.size = Vector2(SLOT_SIZE - 4, SLOT_SIZE - 4)
-					parent.add_child(fill)
+		# Slot icon content
+		if is_tool:
+			_draw_tool_slot_content(parent, sx, sy, idx, slot_data)
+		elif is_occupied:
+			var stack: Dictionary = stacks[idx - TOOL_SLOT_COUNT]
+			var ore: Dictionary = stack["ore"]
 
-					var tex: Texture2D = load(ore["tex"]) as Texture2D
-					if tex:
-						var icon := TextureRect.new()
-						icon.texture = tex
-						icon.position = Vector2(sx + 4, sy + 4)
-						icon.size = Vector2(SLOT_SIZE - 8, SLOT_SIZE - 8)
-						icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-						icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-						icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-						icon.modulate = ore["color"]
-						parent.add_child(icon)
+			var fill := ColorRect.new()
+			fill.color = Color(ore["color"].r * 0.35, ore["color"].g * 0.35, ore["color"].b * 0.35, 1.0)
+			fill.position = Vector2(sx + 2, sy + 2)
+			fill.size = Vector2(SLOT_SIZE - 4, SLOT_SIZE - 4)
+			fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			parent.add_child(fill)
 
-					# Stack count badge in bottom-right corner
-					var badge := Label.new()
-					badge.text = "×%d" % stack_count
-					badge.position = Vector2(sx + 2, sy + SLOT_SIZE - 16)
-					badge.size = Vector2(SLOT_SIZE - 4, 14)
-					badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-					badge.add_theme_font_size_override("font_size", 10)
-					badge.modulate = Color(1.0, 1.0, 1.0, 0.95)
-					parent.add_child(badge)
-					break
+			var tex: Texture2D = load(ore["tex"]) as Texture2D
+			if tex:
+				var icon := TextureRect.new()
+				icon.texture = tex
+				icon.position = Vector2(sx + 4, sy + 4)
+				icon.size = Vector2(SLOT_SIZE - 8, SLOT_SIZE - 8)
+				icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+				icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+				icon.modulate = ore["color"]
+				icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				parent.add_child(icon)
+
+			# Stack count badge in bottom-right corner
+			var badge := Label.new()
+			badge.text = "×%d" % stack["count"]
+			badge.position = Vector2(sx + 2, sy + SLOT_SIZE - 16)
+			badge.size = Vector2(SLOT_SIZE - 4, 14)
+			badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			badge.add_theme_font_size_override("font_size", 10)
+			badge.modulate = Color(1.0, 1.0, 1.0, 0.95)
+			badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			parent.add_child(badge)
+
+		# --- Interactive overlay (hover tooltip + drag) for occupied slots ---
+		if is_occupied or is_tool:
+			var hit := Control.new()
+			hit.position = Vector2(sx, sy)
+			hit.size = Vector2(SLOT_SIZE, SLOT_SIZE)
+			hit.mouse_filter = Control.MOUSE_FILTER_STOP
+			# Capture slot data in closure-friendly variable
+			var captured: Dictionary = slot_data.duplicate()
+			var slot_gx: int = cr_gx + sx
+			var slot_gy: int = cr_gy + sy
+			hit.mouse_entered.connect(_on_slot_hover_enter.bind(captured, slot_gx, slot_gy))
+			hit.mouse_exited.connect(_on_slot_hover_exit)
+			hit.gui_input.connect(_on_slot_gui_input.bind(captured))
+			parent.add_child(hit)
 
 	# Slot count label below the grid
 	var grid_h: int = rows * cell
 	var count_lbl := Label.new()
-	count_lbl.text = "%d / %d slots used" % [used_slots, total_slots]
+	count_lbl.text = "%d / %d ore slots used" % [used_ore_slots, ore_capacity]
 	count_lbl.position = Vector2(x, y + grid_h + 2)
 	count_lbl.custom_minimum_size = Vector2(w, 18)
 	count_lbl.add_theme_font_size_override("font_size", 12)
@@ -288,6 +524,219 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 
 	return y + grid_h + 22
 
+# Draws icon content inside a tool slot (pickaxe texture or ladder icon)
+func _draw_tool_slot_content(parent: Control, sx: int, sy: int, tool_idx: int, slot_data: Dictionary) -> void:
+	var item_color: Color = slot_data["color"]
+
+	if tool_idx == 0:
+		# Pickaxe — texture icon
+		var tex: Texture2D = load(slot_data["tex_path"]) as Texture2D
+		if tex:
+			var icon := TextureRect.new()
+			icon.texture = tex
+			icon.position = Vector2(sx + 5, sy + 5)
+			icon.size = Vector2(SLOT_SIZE - 10, SLOT_SIZE - 10)
+			icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			icon.modulate = item_color
+			icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			parent.add_child(icon)
+
+		# "T" badge in top-left corner (Tool)
+		var tag := Label.new()
+		tag.text = "T"
+		tag.position = Vector2(sx + 3, sy + 2)
+		tag.add_theme_font_size_override("font_size", 9)
+		tag.modulate = Color(item_color.r, item_color.g, item_color.b, 0.65)
+		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		parent.add_child(tag)
+
+	else:
+		# Ladder — hand-drawn icon scaled into the slot
+		var pole_color := Color(0.80, 0.60, 0.15, 0.90)
+		var rung_color := Color(0.70, 0.50, 0.10, 0.90)
+
+		var lp := ColorRect.new()
+		lp.color = pole_color
+		lp.position = Vector2(sx + 12, sy + 5)
+		lp.size = Vector2(4, 41)
+		lp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		parent.add_child(lp)
+
+		var rp := ColorRect.new()
+		rp.color = pole_color
+		rp.position = Vector2(sx + 36, sy + 5)
+		rp.size = Vector2(4, 41)
+		rp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		parent.add_child(rp)
+
+		for r in 4:
+			var rung := ColorRect.new()
+			rung.color = rung_color
+			rung.position = Vector2(sx + 12, sy + 8 + r * 10)
+			rung.size = Vector2(28, 3)
+			rung.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			parent.add_child(rung)
+
+		# Count badge bottom-right
+		var badge := Label.new()
+		badge.text = "×%d" % slot_data["count"]
+		badge.position = Vector2(sx + 2, sy + SLOT_SIZE - 16)
+		badge.size = Vector2(SLOT_SIZE - 4, 14)
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		badge.add_theme_font_size_override("font_size", 10)
+		badge.modulate = Color(1.0, 1.0, 1.0, 0.95)
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		parent.add_child(badge)
+
+		# "P" badge in top-left corner (Placeable)
+		var tag := Label.new()
+		tag.text = "P"
+		tag.position = Vector2(sx + 3, sy + 2)
+		tag.add_theme_font_size_override("font_size", 9)
+		tag.modulate = Color(pole_color.r, pole_color.g, pole_color.b, 0.65)
+		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		parent.add_child(tag)
+
+# -----------------------------------------------------------------------
+# Slot interactivity — hover tooltip
+# -----------------------------------------------------------------------
+
+func _on_slot_hover_enter(slot_data: Dictionary, slot_gx: int, slot_gy: int) -> void:
+	_show_tooltip(slot_data, slot_gx, slot_gy)
+
+func _on_slot_hover_exit() -> void:
+	_hide_tooltip()
+
+func _show_tooltip(slot_data: Dictionary, slot_gx: int, slot_gy: int) -> void:
+	_tooltip_name_lbl.text = slot_data.get("name", "")
+	_tooltip_type_lbl.text = slot_data.get("slot_type", "")
+	_tooltip_stat_lbl.text = slot_data.get("stat", "")
+	_tooltip_desc_lbl.text = slot_data.get("desc", "")
+
+	var item_color: Color = slot_data.get("color", Color(0.90, 0.90, 0.90))
+	_tooltip_name_lbl.modulate = item_color
+
+	match slot_data.get("type", ""):
+		"tool":      _tooltip_type_lbl.modulate = Color(0.95, 0.65, 0.15)
+		"placeable": _tooltip_type_lbl.modulate = Color(0.55, 0.90, 0.40)
+		"ore":       _tooltip_type_lbl.modulate = Color(0.50, 0.80, 0.95)
+		_:           _tooltip_type_lbl.modulate = Color(0.70, 0.70, 0.75)
+
+	# Position tooltip to the right of the slot; flip left if near screen edge
+	var tw: int = 230
+	var th: int = 108
+	var tx: float = slot_gx + SLOT_SIZE + 6
+	var ty: float = slot_gy - 8
+	if tx + tw > 1270:
+		tx = slot_gx - tw - 6
+	if ty + th > 715:
+		ty = 715 - th
+	if ty < 4:
+		ty = 4
+
+	_tooltip_root.position = Vector2(tx, ty)
+	_tooltip_root.visible = true
+
+func _hide_tooltip() -> void:
+	if _tooltip_root:
+		_tooltip_root.visible = false
+
+# -----------------------------------------------------------------------
+# Slot interactivity — drag ghost
+# -----------------------------------------------------------------------
+
+func _on_slot_gui_input(event: InputEvent, slot_data: Dictionary) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			_start_drag(slot_data)
+		else:
+			_end_drag()
+
+func _start_drag(slot_data: Dictionary) -> void:
+	_drag_slot_data = slot_data
+	_is_dragging = true
+
+	# Clear previous icon content from the dedicated icon container
+	for child in _drag_ghost_icon_root.get_children():
+		child.queue_free()
+
+	# Tint ghost background with item color
+	var item_color: Color = slot_data.get("color", Color(0.5, 0.5, 0.5))
+	_drag_ghost_bg.color = Color(item_color.r * 0.18, item_color.g * 0.18, item_color.b * 0.22, 0.85)
+
+	var slot_type: String = slot_data.get("type", "")
+
+	if slot_type == "tool":
+		# Pickaxe texture ghost
+		var tex_path: String = slot_data.get("tex_path", "")
+		var tex: Texture2D = load(tex_path) as Texture2D if tex_path != "" else null
+		if tex:
+			var icon := TextureRect.new()
+			icon.texture = tex
+			icon.position = Vector2(5, 5)
+			icon.size = Vector2(SLOT_SIZE - 10, SLOT_SIZE - 10)
+			icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			icon.modulate = Color(item_color.r, item_color.g, item_color.b, 0.75)
+			icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_drag_ghost_icon_root.add_child(icon)
+
+	elif slot_type == "placeable":
+		# Ladder icon ghost
+		var pc := Color(0.80, 0.60, 0.15, 0.70)
+		var rc := Color(0.70, 0.50, 0.10, 0.70)
+		var lp := ColorRect.new()
+		lp.color = pc; lp.position = Vector2(12, 5); lp.size = Vector2(4, 41)
+		lp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_drag_ghost_icon_root.add_child(lp)
+		var rp := ColorRect.new()
+		rp.color = pc; rp.position = Vector2(36, 5); rp.size = Vector2(4, 41)
+		rp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_drag_ghost_icon_root.add_child(rp)
+		for r in 4:
+			var rung := ColorRect.new()
+			rung.color = rc
+			rung.position = Vector2(12, 8 + r * 10)
+			rung.size = Vector2(28, 3)
+			rung.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_drag_ghost_icon_root.add_child(rung)
+
+	elif slot_type == "ore":
+		# Ore icon ghost
+		var tex_path: String = slot_data.get("tex_path", "")
+		var tex: Texture2D = load(tex_path) as Texture2D if tex_path != "" else null
+		if tex:
+			var fill := ColorRect.new()
+			fill.color = Color(item_color.r * 0.35, item_color.g * 0.35, item_color.b * 0.35, 0.80)
+			fill.position = Vector2(2, 2)
+			fill.size = Vector2(SLOT_SIZE - 4, SLOT_SIZE - 4)
+			fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_drag_ghost_icon_root.add_child(fill)
+			var icon := TextureRect.new()
+			icon.texture = tex
+			icon.position = Vector2(4, 4)
+			icon.size = Vector2(SLOT_SIZE - 8, SLOT_SIZE - 8)
+			icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			icon.modulate = Color(item_color.r, item_color.g, item_color.b, 0.80)
+			icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_drag_ghost_icon_root.add_child(icon)
+
+	# Position ghost at cursor offset
+	var mp: Vector2 = get_viewport().get_mouse_position()
+	_drag_ghost.position = mp + Vector2(10, 10)
+	_drag_ghost.visible = true
+
+func _end_drag() -> void:
+	_is_dragging = false
+	_drag_ghost.visible = false
+	# Clear icon content container (bg and border rects stay for next drag)
+	for child in _drag_ghost_icon_root.get_children():
+		child.queue_free()
 
 func _slot_border_rects(x: int, y: int, w: int, h: int, t: int) -> Array:
 	return [
@@ -478,100 +927,3 @@ func _draw_artifacts(parent: Control, x: int, y: int, w: int,
 		y += ROW_H + 2
 
 	return y
-
-func _draw_pickaxe(parent: Control, x: int, y: int, w: int) -> int:
-	y += SEC_GAP
-
-	var tex_index: int = clampi(GameManager.claws_level, 0, PICKAXE_TEXTURES.size() - 1)
-	var tex: Texture2D = load(PICKAXE_TEXTURES[tex_index]) as Texture2D
-	if tex:
-		var icon := TextureRect.new()
-		icon.texture = tex
-		icon.position = Vector2(x + 2, y + 2)
-		icon.size = Vector2(ICON_SZ, ICON_SZ)
-		icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		parent.add_child(icon)
-
-	var name_lbl := Label.new()
-	name_lbl.text = "Pickaxe"
-	name_lbl.position = Vector2(x + ICON_SZ + 8, y + 4)
-	name_lbl.custom_minimum_size = Vector2(w - ICON_SZ - 50, 20)
-	name_lbl.add_theme_font_size_override("font_size", 13)
-	name_lbl.modulate = Color(0.80, 0.65, 0.35)
-	parent.add_child(name_lbl)
-
-	var stat_lbl := Label.new()
-	stat_lbl.text = "Power: %d" % GameManager.get_mandibles_power()
-	stat_lbl.position = Vector2(x + ICON_SZ + 8, y + 24)
-	stat_lbl.custom_minimum_size = Vector2(w - ICON_SZ - 10, 18)
-	stat_lbl.add_theme_font_size_override("font_size", 11)
-	stat_lbl.modulate = Color(0.60, 0.55, 0.45, 0.80)
-	parent.add_child(stat_lbl)
-
-	return y + ROW_H + 2
-
-
-func _draw_ladders(parent: Control, x: int, y: int, w: int) -> int:
-	var count: int = GameManager.ladder_count
-	y += SEC_GAP
-
-	# Ladder icon — two poles + three rungs drawn as ColorRects
-	var icon_container := Control.new()
-	icon_container.position = Vector2(x + 2, y + 2)
-	icon_container.size = Vector2(ICON_SZ, ICON_SZ)
-
-	var pole_color := Color(0.80, 0.60, 0.15, 0.90)
-	var rung_color := Color(0.70, 0.50, 0.10, 0.90)
-
-	var lp := ColorRect.new()
-	lp.color = pole_color
-	lp.position = Vector2(6, 2)
-	lp.size = Vector2(5, 36)
-	icon_container.add_child(lp)
-
-	var rp := ColorRect.new()
-	rp.color = pole_color
-	rp.position = Vector2(29, 2)
-	rp.size = Vector2(5, 36)
-	icon_container.add_child(rp)
-
-	for r in 3:
-		var rung := ColorRect.new()
-		rung.color = rung_color
-		rung.position = Vector2(6, 5 + r * 12)
-		rung.size = Vector2(28, 4)
-		icon_container.add_child(rung)
-
-	parent.add_child(icon_container)
-
-	# Name
-	var name_lbl := Label.new()
-	name_lbl.text = "Ladders"
-	name_lbl.position = Vector2(x + ICON_SZ + 8, y + 4)
-	name_lbl.custom_minimum_size = Vector2(w - ICON_SZ - 50, 20)
-	name_lbl.add_theme_font_size_override("font_size", 13)
-	name_lbl.modulate = Color(0.85, 0.65, 0.20)
-	parent.add_child(name_lbl)
-
-	# Count
-	var count_lbl := Label.new()
-	count_lbl.text = "×%d" % count
-	count_lbl.position = Vector2(x + w - 42, y + 4)
-	count_lbl.custom_minimum_size = Vector2(40, 20)
-	count_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	count_lbl.add_theme_font_size_override("font_size", 13)
-	count_lbl.modulate = Color(0.90, 0.90, 0.90)
-	parent.add_child(count_lbl)
-
-	# "[F] to place" hint
-	var hint_lbl := Label.new()
-	hint_lbl.text = "[F] to place"
-	hint_lbl.position = Vector2(x + ICON_SZ + 8, y + 24)
-	hint_lbl.custom_minimum_size = Vector2(w - ICON_SZ - 10, 18)
-	hint_lbl.add_theme_font_size_override("font_size", 11)
-	hint_lbl.modulate = Color(0.60, 0.55, 0.45, 0.80)
-	parent.add_child(hint_lbl)
-
-	return y + ROW_H + 2
