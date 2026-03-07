@@ -728,4 +728,6 @@ func _update_camera() -> void:
 
 
 func _on_center_button_pressed() -> void:
-	pass # Replace with function body.
+	_camera_follow_caravan = true
+	_camera_pan_offset = Vector2.ZERO
+	_momentum_velocity = Vector2.ZERO
