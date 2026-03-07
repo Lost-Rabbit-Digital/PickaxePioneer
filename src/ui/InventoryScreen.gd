@@ -9,6 +9,16 @@ extends CanvasLayer
 
 # Ore display order (matches terrain depth: shallow → deep)
 # Textures and colors must match MiningLevel.TILE_TEXTURE_PATHS and TILE_COLORS exactly.
+# Pickaxe textures in upgrade progression order (matches claws_level)
+const PICKAXE_TEXTURES: Array = [
+	"res://assets/db32_rpg_items/pickaxe_crusty.png",
+	"res://assets/db32_rpg_items/pickaxe_iron.png",
+	"res://assets/db32_rpg_items/pickaxe_silver.png",
+	"res://assets/db32_rpg_items/pickaxe_gold.png",
+	"res://assets/db32_rpg_items/pickaxe_steel.png",
+	"res://assets/db32_rpg_items/pickaxe_platinum.png",
+]
+
 const ORE_ORDER: Array = [
 	{"tile": 3,  "name": "Lunar Copper",      "tex": "res://assets/blocks/stone_ore_copper.png",             "color": Color(0.90, 0.60, 0.25)},
 	{"tile": 4,  "name": "Deep Lunar Copper", "tex": "res://assets/blocks/stone_ore_copper.png",             "color": Color(0.80, 0.50, 0.15)},
@@ -171,6 +181,7 @@ func _rebuild_content(ore_counts: Dictionary, shroom_charges: int, lucky_compass
 		Color(0.35, 0.75, 0.95))
 	eq_y += 4
 	eq_y = _draw_equipment(_content_root, 0, eq_y, col_w)
+	eq_y = _draw_pickaxe(_content_root, 0, eq_y, col_w)
 	_draw_ladders(_content_root, 0, eq_y, col_w)
 
 	var art_x: int = col_w + 8
@@ -467,6 +478,40 @@ func _draw_artifacts(parent: Control, x: int, y: int, w: int,
 		y += ROW_H + 2
 
 	return y
+
+func _draw_pickaxe(parent: Control, x: int, y: int, w: int) -> int:
+	y += SEC_GAP
+
+	var tex_index: int = clampi(GameManager.claws_level, 0, PICKAXE_TEXTURES.size() - 1)
+	var tex: Texture2D = load(PICKAXE_TEXTURES[tex_index]) as Texture2D
+	if tex:
+		var icon := TextureRect.new()
+		icon.texture = tex
+		icon.position = Vector2(x + 2, y + 2)
+		icon.size = Vector2(ICON_SZ, ICON_SZ)
+		icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		parent.add_child(icon)
+
+	var name_lbl := Label.new()
+	name_lbl.text = "Pickaxe"
+	name_lbl.position = Vector2(x + ICON_SZ + 8, y + 4)
+	name_lbl.custom_minimum_size = Vector2(w - ICON_SZ - 50, 20)
+	name_lbl.add_theme_font_size_override("font_size", 13)
+	name_lbl.modulate = Color(0.80, 0.65, 0.35)
+	parent.add_child(name_lbl)
+
+	var stat_lbl := Label.new()
+	stat_lbl.text = "Power: %d" % GameManager.get_mandibles_power()
+	stat_lbl.position = Vector2(x + ICON_SZ + 8, y + 24)
+	stat_lbl.custom_minimum_size = Vector2(w - ICON_SZ - 10, 18)
+	stat_lbl.add_theme_font_size_override("font_size", 11)
+	stat_lbl.modulate = Color(0.60, 0.55, 0.45, 0.80)
+	parent.add_child(stat_lbl)
+
+	return y + ROW_H + 2
+
 
 func _draw_ladders(parent: Control, x: int, y: int, w: int) -> int:
 	var count: int = GameManager.ladder_count
