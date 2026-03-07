@@ -78,7 +78,7 @@ position = Vector2(200, 360)
 enabled = false
 
 [node name="BackgroundCanvasLayer" type="CanvasLayer" parent="Camera2D"]
-layer = 0
+layer = -1
 
 [node name="BackgroundSprite" type="TextureRect" parent="Camera2D/BackgroundCanvasLayer"]
 z_index = -2
