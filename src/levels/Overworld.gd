@@ -26,8 +26,16 @@ var _camera_pan_offset: Vector2 = Vector2.ZERO
 var _camera_min_zoom: float = 0.5
 var _camera_max_zoom: float = 3.0
 var _camera_zoom_speed: float = 0.1
-var _camera_pan_speed: float = 300.0
 var _camera_follow_caravan: bool = true
+
+# Mouse drag panning
+var _is_dragging: bool = false
+var _momentum_velocity: Vector2 = Vector2.ZERO
+var _drag_velocity: Vector2 = Vector2.ZERO
+var _mouse_delta_acc: Vector2 = Vector2.ZERO
+const _MOMENTUM_DAMPING: float = 0.97
+const _MOMENTUM_THRESHOLD: float = 0.5
+const _DRAG_VEL_BLEND: float = 0.70
 
 # Asteroid mine name options for randomization
 var mine_names = [
@@ -484,39 +492,63 @@ func _process(delta: float) -> void:
 		camera.global_position = caravan.global_position + _camera_pan_offset
 	_update_camera()
 
-	# Pan camera with WASD or arrow keys when not following caravan
-	if not _camera_follow_caravan:
-		var pan_direction = Vector2.ZERO
-		if Input.is_action_pressed("ui_up"):
-			pan_direction.y -= 1
-		if Input.is_action_pressed("ui_down"):
-			pan_direction.y += 1
-		if Input.is_action_pressed("ui_left"):
-			pan_direction.x -= 1
-		if Input.is_action_pressed("ui_right"):
-			pan_direction.x += 1
-
-		if pan_direction != Vector2.ZERO:
-			_camera_pan_offset += pan_direction.normalized() * _camera_pan_speed * delta
+	# Handle momentum decay for mouse drag panning
+	if _is_dragging:
+		# Continuously estimate drag velocity so releasing feels natural
+		if delta > 0.0:
+			var instant := _mouse_delta_acc / delta
+			_drag_velocity = _drag_velocity.lerp(instant, _DRAG_VEL_BLEND)
+		_mouse_delta_acc = Vector2.ZERO
+	elif _momentum_velocity.length_squared() > _MOMENTUM_THRESHOLD * _MOMENTUM_THRESHOLD:
+		# Coast with throw momentum; damp it each frame (frame-rate independent)
+		_camera_pan_offset += _momentum_velocity * delta
+		_momentum_velocity *= pow(_MOMENTUM_DAMPING, delta * 60.0)
 
 func _unhandled_input(event: InputEvent) -> void:
-	# Handle zoom with mouse wheel
+	# Handle mouse drag panning
 	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_camera_zoom = clamp(_camera_zoom + _camera_zoom_speed, _camera_min_zoom, _camera_max_zoom)
-			_update_camera()
-			get_viewport().set_input_as_handled()
-			return
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_camera_zoom = clamp(_camera_zoom - _camera_zoom_speed, _camera_min_zoom, _camera_max_zoom)
-			_update_camera()
-			get_viewport().set_input_as_handled()
-			return
+		match event.button_index:
+			MOUSE_BUTTON_LEFT:
+				if event.pressed:
+					_is_dragging = true
+					_momentum_velocity = Vector2.ZERO
+					_drag_velocity = Vector2.ZERO
+					_mouse_delta_acc = Vector2.ZERO
+					get_viewport().set_input_as_handled()
+				else:
+					_is_dragging = false
+					# Transfer the drag velocity as throw momentum
+					_momentum_velocity = _drag_velocity
+					_drag_velocity = Vector2.ZERO
+					_mouse_delta_acc = Vector2.ZERO
+					get_viewport().set_input_as_handled()
+			MOUSE_BUTTON_WHEEL_UP:
+				if event.pressed:
+					_camera_zoom = clamp(_camera_zoom + _camera_zoom_speed, _camera_min_zoom, _camera_max_zoom)
+					_update_camera()
+					get_viewport().set_input_as_handled()
+				return
+			MOUSE_BUTTON_WHEEL_DOWN:
+				if event.pressed:
+					_camera_zoom = clamp(_camera_zoom - _camera_zoom_speed, _camera_min_zoom, _camera_max_zoom)
+					_update_camera()
+					get_viewport().set_input_as_handled()
+				return
+
+	elif event is InputEventMouseMotion and _is_dragging:
+		# Drag right → camera pans left. Divide by zoom so dragging feels
+		# consistent across different zoom levels
+		var world_delta: Vector2 = (event as InputEventMouseMotion).relative / _camera_zoom
+		_camera_pan_offset -= world_delta
+		_mouse_delta_acc -= world_delta
+		get_viewport().set_input_as_handled()
+		return
 
 	# Handle space to toggle camera follow
 	if event.is_action_pressed("ui_select"):  # Space bar
 		_camera_follow_caravan = not _camera_follow_caravan
 		_camera_pan_offset = Vector2.ZERO
+		_momentum_velocity = Vector2.ZERO
 		get_viewport().set_input_as_handled()
 		return
 
@@ -532,8 +564,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_enter_node(current_node)
 		return
 
-	# Only use arrow keys for node selection when following caravan;
-	# otherwise arrow keys are used for panning (handled in _process)
+	# Arrow keys for node selection when following caravan
 	if _camera_follow_caravan:
 		var direction = Vector2.ZERO
 		if event.is_action_pressed("ui_up"):
