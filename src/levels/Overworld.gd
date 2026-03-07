@@ -524,6 +524,11 @@ func _on_node_clicked(node: MapNode) -> void:
 	if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
 		return
 
+	# Check if node is locked due to progression gates
+	if _is_node_locked(node):
+		_show_lock_message(node)
+		return
+
 	# Cancel any in-progress travel
 	if caravan.arrived.is_connected(_on_caravan_arrived):
 		caravan.arrived.disconnect(_on_caravan_arrived)
@@ -596,6 +601,23 @@ func _find_path(from_node: MapNode, to_node: MapNode) -> Array[MapNode]:
 	var fallback: Array[MapNode] = [from_node, to_node]
 	return fallback
 
+func _is_node_locked(node: MapNode) -> bool:
+	# Check if a node is locked due to progression gates
+	# Settlements are locked until player completes a tier-1 mine
+	if node.node_type == MapNode.NodeType.SETTLEMENT:
+		return not GameManager.has_completed_tier_1_mine
+
+	# Final node is locked until player completes a tier-2 settlement
+	if node == final_node:
+		return not GameManager.has_completed_tier_2_settlement
+
+	# All other nodes (City and Mines) are always accessible
+	return false
+
+func _show_lock_message(node: MapNode) -> void:
+	# Show a lock message to the player
+	_modal.show_locked_message(node)
+
 func _enter_node(node: MapNode) -> void:
 	_modal.show_for_node(node)
 
@@ -603,6 +625,7 @@ func _on_modal_confirmed(node: MapNode) -> void:
 	GameManager.last_overworld_node_name = node.location_name
 	GameManager.allowed_ore_types = node.ore_types.duplicate()
 	GameManager.allowed_hazard_types = node.hazard_types.duplicate()
+	GameManager.current_node_type = node.node_type
 	if node.node_type == MapNode.NodeType.MINE:
 		GameManager.sky_color = node.get_average_pixel_color()
 	GameManager.save_game()

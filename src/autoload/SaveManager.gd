@@ -196,6 +196,8 @@ func _snapshot_game_manager() -> Dictionary:
 		"equipped_leaf": gm.equipped_leaf,
 		"equipped_ice": gm.equipped_ice,
 		"cat_color": gm.cat_color.to_html(),
+		"has_completed_tier_1_mine": gm.has_completed_tier_1_mine,
+		"has_completed_tier_2_settlement": gm.has_completed_tier_2_settlement,
 	}
 	# Preserve existing planet config if present
 	if active_slot >= 0 and active_slot < MAX_SLOTS and _slots[active_slot] != null:
@@ -241,6 +243,8 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 		gm.cat_color = Color.from_string(color_html, Color.WHITE)
 	else:
 		gm.cat_color = Color.WHITE
+	gm.has_completed_tier_1_mine = data.get("has_completed_tier_1_mine", false)
+	gm.has_completed_tier_2_settlement = data.get("has_completed_tier_2_settlement", false)
 
 func _reset_game_manager() -> void:
 	var gm = GameManager
@@ -282,3 +286,5 @@ func _reset_game_manager() -> void:
 	gm.equipped_leaf = false
 	gm.equipped_ice = false
 	gm.cat_color = Color.WHITE
+	gm.has_completed_tier_1_mine = false
+	gm.has_completed_tier_2_settlement = false

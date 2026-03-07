@@ -115,6 +115,13 @@ var long_scanner_built: bool = false     # always show both asteroid mines on ov
 var gem_refinery_built: bool = false     # +1 bonus gem per gem ore mined
 var trade_amplifier_built: bool = false  # +25% dollar payout when selling bars
 
+# Planet progression tracking (persisted to save)
+var has_completed_tier_1_mine: bool = false       # True when player completes any Mine 1/2/3
+var has_completed_tier_2_settlement: bool = false # True when player completes any Settlement 3/4
+
+# Current node type for the active mine/settlement run (transient, not persisted)
+var current_node_type: int = 0  # MapNode.NodeType value of the node being mined/visited
+
 const SAVE_PATH = "user://save_data.json"
 
 func _ready() -> void:
@@ -484,6 +491,14 @@ func reenergy_completely(cost: int) -> bool:
 func is_out_of_energy() -> bool:
 	return current_energy <= 0
 
+func mark_tier_completed(node_type: int) -> void:
+	# Record that a specific tier has been completed
+	if node_type == 1:  # MapNode.NodeType.MINE
+		has_completed_tier_1_mine = true
+	elif node_type == 3:  # MapNode.NodeType.SETTLEMENT
+		has_completed_tier_2_settlement = true
+	save_game()
+
 func save_game() -> void:
 	var save_data = {
 		"mineral_currency": mineral_currency,
@@ -515,6 +530,8 @@ func save_game() -> void:
 		"equipped_leaf": equipped_leaf,
 		"equipped_ice": equipped_ice,
 		"cat_color": cat_color.to_html(),
+		"has_completed_tier_1_mine": has_completed_tier_1_mine,
+		"has_completed_tier_2_settlement": has_completed_tier_2_settlement,
 	}
 
 	SaveManager.save_active_slot()
@@ -573,6 +590,8 @@ func load_game() -> void:
 				cat_color = Color.from_string(color_html, Color.WHITE)
 			else:
 				cat_color = Color.WHITE
+			has_completed_tier_1_mine = data.get("has_completed_tier_1_mine", false)
+			has_completed_tier_2_settlement = data.get("has_completed_tier_2_settlement", false)
 			print("Game loaded")
 		else:
 			print("Failed to parse save file")
