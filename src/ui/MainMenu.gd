@@ -70,6 +70,7 @@ func _ready() -> void:
 	$VBoxContainer/QuitButton.pressed.connect(_on_quit_pressed)
 	$CreditsButton.pressed.connect(_on_credits_pressed)
 	$CreditsPanel/VBox/CloseButton.pressed.connect(_on_credits_close_pressed)
+	$CharacterContainer/CustomizeButton.pressed.connect(_on_customize_character_pressed)
 
 	_continue_btn.pressed.connect(_on_inline_continue_pressed)
 	_new_game_btn.pressed.connect(_on_inline_new_game_pressed)
@@ -261,6 +262,10 @@ func _on_credits_pressed() -> void:
 func _on_credits_close_pressed() -> void:
 	SoundManager.play_ui_click_sound()
 	credits_panel.hide()
+
+func _on_customize_character_pressed() -> void:
+	SoundManager.play_ui_click_sound()
+	# TODO: Open character customization screen
 
 # ---------------------------------------------------------------------------
 # Singleplayer overlay — built in code
