@@ -473,7 +473,14 @@ var _level_particles: Array = []
 const LEVEL_PARTICLE_MAX: int = 300
 
 func _ready() -> void:
-	_pickaxe_texture = load("res://assets/db32_rpg_items/pickaxe_steel.png") as Texture2D
+	var _items_tileset := load("res://assets/db32_rpg_items/items_tileset.tres") as TileSet
+	if _items_tileset:
+		var _atlas_source := _items_tileset.get_source(0) as TileSetAtlasSource
+		if _atlas_source:
+			var _atlas_tex := AtlasTexture.new()
+			_atlas_tex.atlas = _atlas_source.texture
+			_atlas_tex.region = Rect2i(0 * 16, 10 * 16, 16, 16)
+			_pickaxe_texture = _atlas_tex
 	
 
 	texture_filter = TEXTURE_FILTER_NEAREST

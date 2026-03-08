@@ -72,14 +72,9 @@ var _low_hp_tween: Tween
 # Hotbar — bottom-centre quick-slot strip (pickaxe, ladder, empty); click opens inventory
 const HOTBAR_SLOT_SIZE: int = 48
 const HOTBAR_SLOT_GAP: int = 4
-const HOTBAR_PICKAXE_TEXTURES: Array = [
-	"res://assets/db32_rpg_items/pickaxe_crusty.png",
-	"res://assets/db32_rpg_items/pickaxe_gold.png",
-	"res://assets/db32_rpg_items/pickaxe_iron.png",
-	"res://assets/db32_rpg_items/pickaxe_platinum.png",
-	"res://assets/db32_rpg_items/pickaxe_silver.png",
-	"res://assets/db32_rpg_items/pickaxe_steel.png"
-]
+const ITEMS_TILESET_PATH: String = "res://assets/db32_rpg_items/items_tileset.tres"
+const PICKAXE_ATLAS_COORD: Vector2i = Vector2i(0, 10)
+const TILE_SIZE: int = 16
 var _hotbar_slots: Array[PanelContainer] = []
 var _hotbar_styles: Array[StyleBoxFlat] = []  # One StyleBoxFlat per slot for border recolouring
 var _hotbar_ladder_icon: Control       # Ladder slot content — shown/hidden based on ladder count
@@ -587,6 +582,23 @@ func _set_hotbar_selection(slot: int) -> void:
 			Color(0.50, 0.40, 0.65, 0.80)    # Purple — unselected
 		)
 
+func _get_pickaxe_texture() -> Texture2D:
+	var tileset := load(ITEMS_TILESET_PATH) as TileSet
+	if not tileset:
+		return null
+	var source := tileset.get_source(0) as TileSetAtlasSource
+	if not source:
+		return null
+	var atlas_texture := AtlasTexture.new()
+	atlas_texture.atlas = source.texture
+	atlas_texture.region = Rect2i(
+		PICKAXE_ATLAS_COORD.x * TILE_SIZE,
+		PICKAXE_ATLAS_COORD.y * TILE_SIZE,
+		TILE_SIZE,
+		TILE_SIZE
+	)
+	return atlas_texture
+
 func _build_hotbar() -> void:
 	var slot_outer: int = HOTBAR_SLOT_SIZE + 6  # content + border (3 px margin each side)
 	var total_w: int = 3 * slot_outer + 2 * HOTBAR_SLOT_GAP
@@ -616,9 +628,8 @@ func _build_hotbar() -> void:
 		_hotbar_styles.append(style)
 
 		if i == 0:
-			# Pickaxe tool — random block texture
-			var tex_path: String = HOTBAR_PICKAXE_TEXTURES[randi() % HOTBAR_PICKAXE_TEXTURES.size()]
-			var tex: Texture2D = load(tex_path) as Texture2D
+			# Pickaxe tool — icon from items tileset
+			var tex: Texture2D = _get_pickaxe_texture()
 			if tex:
 				var icon := TextureRect.new()
 				icon.texture = tex
