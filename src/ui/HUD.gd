@@ -559,8 +559,8 @@ func _show_next_boss_hint() -> void:
 	_boss_hint_tween.tween_callback(_show_next_boss_hint)
 
 # ---------------------------------------------------------------------------
-# Hotbar — 3 slots at bottom-centre (pickaxe tool, ladder tool, empty).
-# Clicking a slot selects it; 1/2/3 keys also switch the active slot.
+# Hotbar — 10 slots at bottom-centre (pickaxe tool, ladder tool, 8 × empty).
+# Clicking a slot selects it; 1–9 and 0 keys also switch the active slot.
 # The selected slot is outlined yellow; others keep the default purple.
 # ---------------------------------------------------------------------------
 
@@ -572,6 +572,20 @@ func _unhandled_input(event: InputEvent) -> void:
 			_set_hotbar_selection(1)
 		elif event.keycode == KEY_3:
 			_set_hotbar_selection(2)
+		elif event.keycode == KEY_4:
+			_set_hotbar_selection(3)
+		elif event.keycode == KEY_5:
+			_set_hotbar_selection(4)
+		elif event.keycode == KEY_6:
+			_set_hotbar_selection(5)
+		elif event.keycode == KEY_7:
+			_set_hotbar_selection(6)
+		elif event.keycode == KEY_8:
+			_set_hotbar_selection(7)
+		elif event.keycode == KEY_9:
+			_set_hotbar_selection(8)
+		elif event.keycode == KEY_0:
+			_set_hotbar_selection(9)
 
 func _set_hotbar_selection(slot: int) -> void:
 	GameManager.selected_hotbar_slot = slot
@@ -601,7 +615,7 @@ func _get_pickaxe_texture() -> Texture2D:
 
 func _build_hotbar() -> void:
 	var slot_outer: int = HOTBAR_SLOT_SIZE + 6  # content + border (3 px margin each side)
-	var total_w: int = 3 * slot_outer + 2 * HOTBAR_SLOT_GAP
+	var total_w: int = 10 * slot_outer + 9 * HOTBAR_SLOT_GAP
 	var hb_x: int = (1280 - total_w) / 2
 	var hb_y: int = 6
 
@@ -612,7 +626,7 @@ func _build_hotbar() -> void:
 	$Control.add_child(container)
 	_hotbar_container = container
 
-	for i in range(3):
+	for i in range(10):
 		var slot := PanelContainer.new()
 		slot.custom_minimum_size = Vector2(HOTBAR_SLOT_SIZE, HOTBAR_SLOT_SIZE)
 
@@ -688,7 +702,7 @@ func _build_hotbar() -> void:
 			_hotbar_ladder_icon.visible = GameManager.ladder_count > 0
 			slot.add_child(_hotbar_ladder_icon)
 
-		# Slot 3 (i == 2) intentionally left empty
+		# Slots 3–10 (i == 2–9) intentionally left empty
 
 		container.add_child(slot)
 		_hotbar_slots.append(slot)
