@@ -36,37 +36,37 @@ node_type = 2
 scene_path = "res://src/levels/CityLevel.tscn"
 
 [node name="MineNode1" parent="." instance=ExtResource("3_node")]
-position = Vector2(600, 200)
+position = Vector2(511, 177)
 location_name = "Iron Mine"
 node_type = 1
 scene_path = "res://src/levels/MiningLevel.tscn"
 
 [node name="MineNode2" parent="." instance=ExtResource("3_node")]
-position = Vector2(800, 500)
+position = Vector2(531, 335)
 location_name = "Gold Mine"
 node_type = 1
 scene_path = "res://src/levels/MiningLevel.tscn"
 
 [node name="SettlementNode3" parent="." instance=ExtResource("3_node")]
-position = Vector2(1000, 200)
+position = Vector2(756, 262)
 location_name = "North Settlement"
 node_type = 3
 scene_path = "res://src/levels/SettlementLevel.tscn"
 
 [node name="SettlementNode4" parent="." instance=ExtResource("3_node")]
-position = Vector2(600, 600)
+position = Vector2(765, 391)
 location_name = "South Settlement"
 node_type = 3
 scene_path = "res://src/levels/SettlementLevel.tscn"
 
 [node name="MineNode3" parent="." instance=ExtResource("3_node")]
-position = Vector2(1080, 460)
+position = Vector2(510, 448)
 location_name = "Obsidian Rift"
 node_type = 1
 scene_path = "res://src/levels/MiningLevel.tscn"
 
 [node name="FinalNode" parent="." instance=ExtResource("3_node")]
-position = Vector2(640, 110)
+position = Vector2(1081, 358)
 location_name = "The Ancient Star"
 node_type = 1
 scene_path = "res://src/levels/MiningLevel.tscn"
@@ -80,19 +80,6 @@ enabled = false
 [node name="BackgroundCanvasLayer" type="CanvasLayer" parent="Camera2D"]
 layer = -1
 
-[node name="BackgroundSprite" type="TextureRect" parent="Camera2D/BackgroundCanvasLayer"]
-z_index = -2
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-mouse_filter = 2
-texture = ExtResource("2_aphkn")
-stretch_mode = 1
-
 [node name="VersionLabel" type="Label" parent="Camera2D/BackgroundCanvasLayer"]
 offset_left = 8.0
 offset_top = 8.0
@@ -105,18 +92,32 @@ text = "v0.1.0"
 horizontal_alignment = 1
 
 [node name="CenterButton" type="Button" parent="Camera2D/BackgroundCanvasLayer"]
+z_index = 1
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 8.0
 offset_top = -34.0
-offset_right = 108.0
+offset_right = 126.0
 offset_bottom = -8.0
 grow_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 14
 theme_override_styles/normal = SubResource("StyleBoxFlat_version")
 text = "Center Camera"
+
+[node name="BackgroundSprite" type="TextureRect" parent="Camera2D/BackgroundCanvasLayer"]
+z_index = -2
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
+texture = ExtResource("2_aphkn")
+stretch_mode = 1
 
 [node name="PauseMenu" parent="." instance=ExtResource("7_pausemenu")]
 visible = false
