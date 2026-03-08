@@ -68,7 +68,7 @@ var ladder_count: int = 10
 # On the guest machine, ladder_count itself serves as the guest's personal inventory.
 var guest_ladder_count: int = 10
 
-# Currently selected hotbar slot: 0 = pickaxe, 1 = ladder, 2 = empty
+# Currently selected hotbar slot: 0 = pickaxe, 1 = ladder, 2–9 = empty
 var selected_hotbar_slot: int = 0
 
 # Equipped followers (independent toggles)
