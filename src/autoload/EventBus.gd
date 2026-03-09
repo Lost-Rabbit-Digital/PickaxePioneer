@@ -44,3 +44,6 @@ signal chat_message_received(sender_name: String, message: String, sender_color:
 signal xp_changed(current_xp: int, xp_to_next: int)   # Emitted whenever XP changes
 signal player_leveled_up(new_level: int, perk_points: int)  # Emitted on each level-up
 signal perk_points_changed(perk_points: int)            # Emitted when points are spent/gained
+
+# Trinket Signals
+signal trinket_equipped(trinket_id: String)  # Emitted when a trinket is equipped or unequipped

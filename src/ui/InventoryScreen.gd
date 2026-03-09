@@ -329,11 +329,16 @@ func _rebuild_content(ore_counts: Dictionary, shroom_charges: int, lucky_compass
 	eq_y += 4
 	eq_y = _draw_equipment(_content_root, 0, eq_y, eq_col_w)
 	eq_y = _draw_money(_content_root, 0, eq_y + 8, eq_col_w)
-	eq_y = _draw_section_header(_content_root, 0, eq_y + 8, eq_col_w, "Trinkets",
+	eq_y = _draw_section_header(_content_root, 0, eq_y + 8, eq_col_w, "Run Buffs",
 		Color(0.55, 0.90, 0.45))
 	eq_y += 4
-	_draw_artifacts(_content_root, 0, eq_y, eq_col_w,
+	eq_y = _draw_artifacts(_content_root, 0, eq_y, eq_col_w,
 		shroom_charges, lucky_compass, ancient_map)
+
+	eq_y = _draw_section_header(_content_root, 0, eq_y + 8, eq_col_w, "Trinkets",
+		Color(0.80, 0.55, 1.00))
+	eq_y += 4
+	_draw_trinkets(_content_root, 0, eq_y, eq_col_w)
 
 	# -----------------------------------------------------------------------
 	# RIGHT COLUMN: Inventory slot grid — tools + ore
@@ -951,6 +956,55 @@ func _draw_artifacts(parent: Control, x: int, y: int, w: int,
 		desc_lbl.custom_minimum_size = Vector2(w - ICON_SZ - 10, 18)
 		desc_lbl.add_theme_font_size_override("font_size", 11)
 		desc_lbl.modulate = Color(0.75, 0.75, 0.80)
+		parent.add_child(desc_lbl)
+
+		y += ROW_H + 2
+
+	return y
+
+func _draw_trinkets(parent: Control, x: int, y: int, w: int) -> int:
+	var equipped := TrinketSystem.get_equipped_ids()
+
+	if equipped.is_empty():
+		var none_lbl := Label.new()
+		none_lbl.text = "No trinkets equipped"
+		none_lbl.position = Vector2(x + 2, y)
+		none_lbl.add_theme_font_size_override("font_size", 12)
+		none_lbl.modulate = Color(0.50, 0.50, 0.55, 0.80)
+		parent.add_child(none_lbl)
+		return y + 22
+
+	for id in equipped:
+		var def: Dictionary = TrinketSystem.TRINKETS[id]
+		var tcolor: Color = def["color"]
+
+		var icon_bg := ColorRect.new()
+		icon_bg.color = Color(tcolor.r * 0.25, tcolor.g * 0.25, tcolor.b * 0.25, 1.0)
+		icon_bg.position = Vector2(x + 2, y + 2)
+		icon_bg.size = Vector2(ICON_SZ, ICON_SZ)
+		parent.add_child(icon_bg)
+
+		var icon_fill := ColorRect.new()
+		icon_fill.color = tcolor
+		icon_fill.position = Vector2(x + 2, y + 2)
+		icon_fill.size = Vector2(ICON_SZ * 0.55, ICON_SZ * 0.55)
+		parent.add_child(icon_fill)
+
+		var name_lbl := Label.new()
+		name_lbl.text = def["name"]
+		name_lbl.position = Vector2(x + ICON_SZ + 8, y + 2)
+		name_lbl.custom_minimum_size = Vector2(w - ICON_SZ - 10, 20)
+		name_lbl.add_theme_font_size_override("font_size", 13)
+		name_lbl.modulate = tcolor
+		parent.add_child(name_lbl)
+
+		var desc_lbl := Label.new()
+		desc_lbl.text = def["desc"]
+		desc_lbl.position = Vector2(x + ICON_SZ + 8, y + 22)
+		desc_lbl.custom_minimum_size = Vector2(w - ICON_SZ - 10, 18)
+		desc_lbl.add_theme_font_size_override("font_size", 10)
+		desc_lbl.modulate = Color(0.75, 0.75, 0.80)
+		desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		parent.add_child(desc_lbl)
 
 		y += ROW_H + 2

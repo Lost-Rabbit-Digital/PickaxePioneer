@@ -203,6 +203,20 @@ func _snapshot_game_manager() -> Dictionary:
 		"player_level": gm.player_level,
 		"perk_points": gm.perk_points,
 		"perk_ranks": gm.perk_ranks.duplicate(),
+		# Trinkets
+		"trinket_paraglider": gm.trinket_paraglider,
+		"trinket_jet_boots": gm.trinket_jet_boots,
+		"trinket_stone_of_regen": gm.trinket_stone_of_regen,
+		"trinket_spring_boots": gm.trinket_spring_boots,
+		"trinket_jumping_bean": gm.trinket_jumping_bean,
+		"trinket_sneakers": gm.trinket_sneakers,
+		"trinket_gecko_gloves": gm.trinket_gecko_gloves,
+		"trinket_boots_of_sprinting": gm.trinket_boots_of_sprinting,
+		"trinket_cube_of_curing": gm.trinket_cube_of_curing,
+		"trinket_scuba_helmet": gm.trinket_scuba_helmet,
+		"trinket_magnet": gm.trinket_magnet,
+		"trinket_cosmic_radiation": gm.trinket_cosmic_radiation,
+		"trinket_curse_of_core": gm.trinket_curse_of_core,
 	}
 	# Preserve existing planet config if present
 	if active_slot >= 0 and active_slot < MAX_SLOTS and _slots[active_slot] != null:
@@ -257,6 +271,20 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 	gm.perk_points = data.get("perk_points", 0)
 	var saved_ranks: Variant = data.get("perk_ranks", {})
 	gm.perk_ranks = saved_ranks if saved_ranks is Dictionary else {}
+	# Trinkets
+	gm.trinket_paraglider = data.get("trinket_paraglider", false)
+	gm.trinket_jet_boots = data.get("trinket_jet_boots", false)
+	gm.trinket_stone_of_regen = data.get("trinket_stone_of_regen", false)
+	gm.trinket_spring_boots = data.get("trinket_spring_boots", false)
+	gm.trinket_jumping_bean = data.get("trinket_jumping_bean", false)
+	gm.trinket_sneakers = data.get("trinket_sneakers", false)
+	gm.trinket_gecko_gloves = data.get("trinket_gecko_gloves", false)
+	gm.trinket_boots_of_sprinting = data.get("trinket_boots_of_sprinting", false)
+	gm.trinket_cube_of_curing = data.get("trinket_cube_of_curing", false)
+	gm.trinket_scuba_helmet = data.get("trinket_scuba_helmet", false)
+	gm.trinket_magnet = data.get("trinket_magnet", false)
+	gm.trinket_cosmic_radiation = data.get("trinket_cosmic_radiation", false)
+	gm.trinket_curse_of_core = data.get("trinket_curse_of_core", false)
 
 func _reset_game_manager() -> void:
 	var gm = GameManager
@@ -304,3 +332,17 @@ func _reset_game_manager() -> void:
 	gm.player_level = 1
 	gm.perk_points = 0
 	gm.perk_ranks = {}
+	# Trinkets
+	gm.trinket_paraglider = false
+	gm.trinket_jet_boots = false
+	gm.trinket_stone_of_regen = false
+	gm.trinket_spring_boots = false
+	gm.trinket_jumping_bean = false
+	gm.trinket_sneakers = false
+	gm.trinket_gecko_gloves = false
+	gm.trinket_boots_of_sprinting = false
+	gm.trinket_cube_of_curing = false
+	gm.trinket_scuba_helmet = false
+	gm.trinket_magnet = false
+	gm.trinket_cosmic_radiation = false
+	gm.trinket_curse_of_core = false
