@@ -1452,6 +1452,8 @@ func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 		_tile_last_hit.erase(pos_key)
 		_remove_breaking_overlay(pos_key)
 		_mine_cell(col, row)
+		# Grant XP for breaking a block — ore tiles worth more than stone/dirt
+		GameManager.add_xp(5 if tile in ORE_TILES else 2)
 		# Sync tile break to guest
 		if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
 			var rpc_burst := TILE_PARTICLE_COLORS.get(tile, Color(0.7, 0.6, 0.4)) as Color
@@ -1468,7 +1470,7 @@ func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 		if tile in MINEABLE_TILES:
 			var minerals: int = TILE_MINERALS.get(tile, 1)
 			_mine_streak += 1
-			var lucky_chance := LUCKY_STRIKE_CHANCE * (2.0 if _lucky_compass_active[0] else 1.0)
+			var lucky_chance := (LUCKY_STRIKE_CHANCE + GameManager.get_lucky_strike_bonus()) * (2.0 if _lucky_compass_active[0] else 1.0)
 			var lucky := tile in ORE_TILES and randf() < lucky_chance
 			if lucky:
 				minerals *= 2
@@ -1477,6 +1479,9 @@ func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 			if _shroom_charges[0] > 0 and tile in ORE_TILES:
 				minerals *= 2
 				_shroom_charges[0] -= 1
+			# Motherlode perk: percentage bonus to ore yield
+			if tile in ORE_TILES:
+				minerals = roundi(float(minerals) * GameManager.get_ore_yield_mult())
 			# Fossil forgiveness check (§3.6) — before awarding base minerals
 			fossil_system.check(tile, FOSSIL_TYPES.get(tile, {}))
 			# Consecutive smelting bonus (§3.5) — awards extra currency internally

@@ -1,16 +1,18 @@
 class_name CityLevel
 extends Node2D
 
-# ── Layout ────────────────────────────────────────────────────────────────────
+## City hub level — reached after banking a run.
+## Left panel: Perk Tree status and prompt (upgrades handled via P key perk tree).
+## Right panel: Spaceship upgrades (milestone-gated, bought with dollars).
+
 const VW: int = 1280
 const VH: int = 720
 const PANEL_W: int = 490
 const PANEL_H: int = 590
-const GAP: int     = 20
+const GAP: int = 20
 const PANEL_Y: int = 65
-# Horizontally centred pair of panels
-const LEFT_X: int  = (VW - PANEL_W * 2 - GAP) / 2   # 140
-const RIGHT_X: int = LEFT_X + PANEL_W + GAP           # 650
+const LEFT_X: int  = (VW - PANEL_W * 2 - GAP) / 2
+const RIGHT_X: int = LEFT_X + PANEL_W + GAP
 
 const SHIP_UPGRADES: Array = [
 	{
@@ -45,25 +47,16 @@ const SHIP_UPGRADES: Array = [
 	},
 ]
 
-# Upgrade costs scale per session (same behaviour as the old UpgradeMenu)
-var _carapace_cost: int  = 50
-var _legs_cost: int      = 50
-var _mandibles_cost: int = 50
-var _sense_cost: int     = 75
-
-# ── UI refs ───────────────────────────────────────────────────────────────────
 var _canvas: CanvasLayer
-var _minerals_label: Label
 var _status_label: Label
-var _btn_carapace: Button
-var _btn_legs: Button
-var _btn_mandibles: Button
-var _btn_sense: Button
-var _btn_gem_carapace: Button
-var _btn_gem_legs: Button
-var _btn_gem_mandibles: Button
-var _btn_gem_sense: Button
 var _chamber_buttons: Dictionary = {}
+
+# Perk tree info panel refs (left panel)
+var _perk_level_lbl   : Label
+var _perk_points_lbl  : Label
+var _perk_xp_bg       : ColorRect
+var _perk_xp_fill     : ColorRect
+var _perk_xp_lbl      : Label
 
 
 func _ready() -> void:
@@ -75,65 +68,106 @@ func _build_ui() -> void:
 	_canvas = CanvasLayer.new()
 	_canvas.layer = 5
 	add_child(_canvas)
-	_build_upgrades_panel()
+	_build_perk_panel()
 	_build_chambers_panel()
 
 
-# ── Left panel: Upgrades + Gem Sockets ───────────────────────────────────────
-func _build_upgrades_panel() -> void:
+# ── Left panel: Perk Tree status ─────────────────────────────────────────────
+func _build_perk_panel() -> void:
 	var px := LEFT_X
 	var py := PANEL_Y
 
 	_panel_border(px, py)
 	_panel_body(px, py)
 
-	var title := _label("Space Station — Upgrades", px, py + 12, PANEL_W, 30, 20)
-	title.modulate = Color(1.0, 0.80, 0.35)
+	var title := _label("Perk Tree", px, py + 12, PANEL_W, 30, 22)
+	title.modulate = Color(0.80, 0.60, 1.00)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	var sub := _label("Spend minerals to permanently upgrade your space cat.", px, py + 48, PANEL_W, 22)
-	sub.modulate = Color(0.70, 0.65, 0.55)
+	var sub := _label("Earn XP by mining and defeating bosses.", px, py + 50, PANEL_W, 22)
+	sub.modulate = Color(0.70, 0.65, 0.80)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	_minerals_label = _label("", px, py + 74, PANEL_W, 26)
-	_minerals_label.modulate = Color(1.0, 0.85, 0.20)
-	_minerals_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_divider(px, py + 80)
 
-	_divider(px, py + 108)
+	# Level display
+	_perk_level_lbl = _label("", px + 20, py + 96, PANEL_W - 40, 36, 26)
+	_perk_level_lbl.modulate = Color(1.00, 0.85, 0.20)
 
-	const BTN_W: int  = PANEL_W - 40   # 20 px margin each side
-	const BTN_H: int  = 40
-	const BTN_GAP: int = 48
-	var bx := px + 20
-	var by := py + 120
+	# XP bar
+	var xp_bg := ColorRect.new()
+	xp_bg.color = Color(0.10, 0.08, 0.20, 0.90)
+	xp_bg.position = Vector2(px + 20, py + 142)
+	xp_bg.size = Vector2(PANEL_W - 40, 16)
+	xp_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.add_child(xp_bg)
+	_perk_xp_bg = xp_bg
 
-	_btn_carapace  = _button(bx, by, BTN_W, BTN_H, "", _on_carapace_pressed);  by += BTN_GAP
-	_btn_legs      = _button(bx, by, BTN_W, BTN_H, "", _on_legs_pressed);      by += BTN_GAP
-	_btn_mandibles = _button(bx, by, BTN_W, BTN_H, "", _on_mandibles_pressed); by += BTN_GAP
-	_btn_sense     = _button(bx, by, BTN_W, BTN_H, "", _on_sense_pressed);     by += BTN_GAP + 8
+	_perk_xp_fill = ColorRect.new()
+	_perk_xp_fill.color = Color(0.45, 0.25, 0.90, 1.00)
+	_perk_xp_fill.position = Vector2(px + 20, py + 142)
+	_perk_xp_fill.size = Vector2(0, 16)
+	_perk_xp_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.add_child(_perk_xp_fill)
 
-	_divider(px, by)
-	by += 14
+	_perk_xp_lbl = _label("", px + 20, py + 162, PANEL_W - 40, 18, 12)
+	_perk_xp_lbl.modulate = Color(0.75, 0.65, 1.00)
 
-	var gem_hdr := _label("Gem Sockets  (cost: %d gems each)" % GameManager.GEM_SOCKET_COST,
-		px, by, PANEL_W, 22)
-	gem_hdr.modulate = Color(0.15, 0.85, 0.75)
-	gem_hdr.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	by += 30
+	# Perk points available
+	_perk_points_lbl = _label("", px + 20, py + 188, PANEL_W - 40, 28, 16)
 
-	_btn_gem_carapace  = _button(bx, by, BTN_W, BTN_H, "", _on_gem_carapace_pressed);  by += BTN_GAP
-	_btn_gem_legs      = _button(bx, by, BTN_W, BTN_H, "", _on_gem_legs_pressed);      by += BTN_GAP
-	_btn_gem_mandibles = _button(bx, by, BTN_W, BTN_H, "", _on_gem_mandibles_pressed); by += BTN_GAP
-	_btn_gem_sense     = _button(bx, by, BTN_W, BTN_H, "", _on_gem_sense_pressed)
+	_divider(px, py + 224)
 
-	_status_label = _label("", px, py + PANEL_H - 36, PANEL_W, 28)
-	_status_label.modulate = Color(0.50, 1.0, 0.50)
-	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# Describe branches
+	var branch_info: Array[String] = [
+		"PELT  —  HP, Energy, Boss resistance",
+		"CLAWS  —  Mining power, Reach, Ore yield",
+		"WHISKERS  —  Sonar, Cargo, Ladder speed",
+	]
+	var branch_colors: Array[Color] = [
+		Color(0.95, 0.40, 0.40),
+		Color(0.30, 0.90, 0.45),
+		Color(0.75, 0.50, 1.00),
+	]
+	var info_y := py + 238
+	for i in range(3):
+		var lbl := _label(branch_info[i], px + 20, info_y, PANEL_W - 40, 22, 13)
+		lbl.modulate = branch_colors[i]
+		info_y += 28
 
-	_update_ui()
+	_divider(px, info_y + 6)
+
+	# Open perk tree hint
+	var hint := _label("Press  [P]  to open the Perk Tree", px, info_y + 20, PANEL_W, 30, 16)
+	hint.modulate = Color(0.55, 0.80, 0.55)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	# Open perk tree button
+	var btn_w := 220
+	var btn := _button((px + (PANEL_W - btn_w) / 2), info_y + 58, btn_w, 44,
+		"Open Perk Tree  [P]", _on_open_perk_tree_pressed)
+	btn.tooltip_text = "View and spend perk points. Also accessible with the P key from anywhere."
+
+	_refresh_perk_panel()
 
 
-# ── Right panel: Colony Chambers ─────────────────────────────────────────────
+func _refresh_perk_panel() -> void:
+	var lv    : int   = GameManager.player_level
+	var xp    : int   = GameManager.player_xp
+	var xp_nx : int   = PerkSystem.xp_for_next_level(lv)
+	var pts   : int   = GameManager.perk_points
+	_perk_level_lbl.text = "Level  %d" % lv
+	_perk_xp_lbl.text    = "XP  %d / %d" % [xp, xp_nx]
+	var bar_w: float = float(PANEL_W - 40) * float(xp) / float(maxi(1, xp_nx))
+	_perk_xp_fill.size.x = bar_w
+	_perk_points_lbl.text = (
+		"%d Perk Point%s available" % [pts, "s" if pts != 1 else ""]
+		if pts > 0 else
+		"No perk points  —  keep mining!")
+	_perk_points_lbl.modulate = Color(0.40, 1.00, 0.50) if pts > 0 else Color(0.55, 0.55, 0.60)
+
+
+# ── Right panel: Spaceship Upgrades ──────────────────────────────────────────
 func _build_chambers_panel() -> void:
 	var px := RIGHT_X
 	var py := PANEL_Y
@@ -149,13 +183,18 @@ func _build_chambers_panel() -> void:
 	sub.modulate = Color(0.70, 0.65, 0.55)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	_divider(px, py + 78)
+	var dollars_lbl := _label("", px, py + 74, PANEL_W, 22)
+	dollars_lbl.modulate = Color(0.30, 1.0, 0.40)
+	dollars_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dollars_lbl.text = "Dollars: %dg" % GameManager.dollars
+
+	_divider(px, py + 100)
 
 	const BTN_W: int   = PANEL_W - 40
 	const BTN_H: int   = 66
 	const BTN_GAP: int = 76
 	var bx := px + 20
-	var by := py + 92
+	var by := py + 114
 
 	for upgrade in SHIP_UPGRADES:
 		var btn := _button(bx, by, BTN_W, BTN_H, "", _on_chamber_pressed.bind(upgrade["key"]))
@@ -164,6 +203,10 @@ func _build_chambers_panel() -> void:
 		by += BTN_GAP
 
 	_divider(px, py + PANEL_H - 64)
+
+	_status_label = _label("", px, py + PANEL_H - 48, PANEL_W, 28)
+	_status_label.modulate = Color(0.50, 1.0, 0.50)
+	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	_button((px + (PANEL_W - 220) / 2), py + PANEL_H - 52, 220, 44,
 		"Return to Map", _on_return_button_pressed)
@@ -217,158 +260,7 @@ func _button(x: int, y: int, w: int, h: int, text: String, callback: Callable) -
 	return btn
 
 
-# ── UI refresh ────────────────────────────────────────────────────────────────
-func _update_ui() -> void:
-	_minerals_label.text = "Dollars: %dg   |   Gems: %d" % [
-		GameManager.dollars, GameManager.gem_count]
-
-	var hp    := GameManager.get_max_health()
-	var energy  := GameManager.get_max_energy()
-	var spd   := GameManager.get_max_speed()
-	var cap   := GameManager.get_ore_capacity()
-	var r     := GameManager.get_sonar_ping_radius()
-	var fc    := GameManager.get_sonar_ping_energy_cost()
-
-	_btn_carapace.text  = "Reinforce Spacesuit Lv%d  —  HP %d → %d  (%dg)" % [
-		GameManager.carapace_level, hp, hp + 1, _carapace_cost]
-	_btn_legs.text      = "Upgrade Jet Boots Lv%d  —  Energy %d → %d, Speed %.0f → %.0f  (%dg)" % [
-		GameManager.legs_level, energy, energy + 25, spd, spd + 30.0, _legs_cost]
-	_btn_mandibles.text = "Expand Cargo Hold Lv%d  —  Slots %d → %d  (%dg)" % [
-		GameManager.mandibles_level, cap, cap + 2, _mandibles_cost]
-	_btn_sense.text     = "Tune Space Whiskers Lv%d  —  Radius %.0f → %.0f tiles, Energy %d → %d  (%dg)" % [
-		GameManager.mineral_sense_level, r, r + 3.0, fc, maxi(3, fc - 2), _sense_cost]
-
-	var m := GameManager.dollars
-	_btn_carapace.disabled  = m < _carapace_cost
-	_btn_legs.disabled      = m < _legs_cost
-	_btn_mandibles.disabled = m < _mandibles_cost
-	_btn_sense.disabled     = m < _sense_cost
-
-	# Gem sockets
-	if GameManager.carapace_gem_socketed:
-		_btn_gem_carapace.text = "[SOCKETED]  Shield Gem — +1 Max HP"
-		_btn_gem_carapace.disabled = true
-	else:
-		_btn_gem_carapace.text = "Socket Shield Gem — +1 Max HP  (%d gems)" % GameManager.GEM_SOCKET_COST
-		_btn_gem_carapace.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
-
-	if GameManager.legs_gem_socketed:
-		_btn_gem_legs.text = "[SOCKETED]  Booster Gem — +25 Energy, +15 Speed"
-		_btn_gem_legs.disabled = true
-	else:
-		_btn_gem_legs.text = "Socket Booster Gem — +25 Energy, +15 Speed  (%d gems)" % GameManager.GEM_SOCKET_COST
-		_btn_gem_legs.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
-
-	if GameManager.mandibles_gem_socketed:
-		_btn_gem_mandibles.text = "[SOCKETED]  Cargo Gem — +25 Ore Capacity"
-		_btn_gem_mandibles.disabled = true
-	else:
-		_btn_gem_mandibles.text = "Socket Cargo Gem — +25 Ore Capacity  (%d gems)" % GameManager.GEM_SOCKET_COST
-		_btn_gem_mandibles.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
-
-	if GameManager.sense_gem_socketed:
-		_btn_gem_sense.text = "[SOCKETED]  Sensor Gem — +3 Scanner Radius"
-		_btn_gem_sense.disabled = true
-	else:
-		_btn_gem_sense.text = "Socket Sensor Gem — +3 Scanner Radius  (%d gems)" % GameManager.GEM_SOCKET_COST
-		_btn_gem_sense.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
-
-
-func _set_status(msg: String) -> void:
-	_status_label.text = msg
-
-
-# ── Upgrade purchases ─────────────────────────────────────────────────────────
-func _on_carapace_pressed() -> void:
-	if GameManager.dollars < _carapace_cost:
-		return
-	GameManager.dollars -= _carapace_cost
-	EventBus.dollars_changed.emit(GameManager.dollars)
-	GameManager.upgrade_carapace()
-	_carapace_cost += 25
-	GameManager.save_game()
-	_set_status("Spacesuit reinforced!")
-	_update_ui()
-
-
-func _on_legs_pressed() -> void:
-	if GameManager.dollars < _legs_cost:
-		return
-	GameManager.dollars -= _legs_cost
-	EventBus.dollars_changed.emit(GameManager.dollars)
-	GameManager.upgrade_legs()
-	_legs_cost += 25
-	GameManager.save_game()
-	_set_status("Jet boots upgraded!")
-	_update_ui()
-
-
-func _on_mandibles_pressed() -> void:
-	if GameManager.dollars < _mandibles_cost:
-		return
-	GameManager.dollars -= _mandibles_cost
-	EventBus.dollars_changed.emit(GameManager.dollars)
-	GameManager.upgrade_mandibles()
-	_mandibles_cost += 25
-	GameManager.save_game()
-	_set_status("Cargo hold expanded!")
-	_update_ui()
-
-
-func _on_sense_pressed() -> void:
-	if GameManager.dollars < _sense_cost:
-		return
-	GameManager.dollars -= _sense_cost
-	EventBus.dollars_changed.emit(GameManager.dollars)
-	GameManager.upgrade_mineral_sense()
-	_sense_cost += 50
-	GameManager.save_game()
-	_set_status("Space whiskers tuned!")
-	_update_ui()
-
-
-# ── Gem sockets ───────────────────────────────────────────────────────────────
-func _on_gem_carapace_pressed() -> void:
-	if GameManager.carapace_gem_socketed or GameManager.gem_count < GameManager.GEM_SOCKET_COST:
-		return
-	GameManager.gem_count -= GameManager.GEM_SOCKET_COST
-	GameManager.carapace_gem_socketed = true
-	GameManager.save_game()
-	_set_status("Shield Gem socketed!")
-	_update_ui()
-
-
-func _on_gem_legs_pressed() -> void:
-	if GameManager.legs_gem_socketed or GameManager.gem_count < GameManager.GEM_SOCKET_COST:
-		return
-	GameManager.gem_count -= GameManager.GEM_SOCKET_COST
-	GameManager.legs_gem_socketed = true
-	GameManager.save_game()
-	_set_status("Booster Gem socketed!")
-	_update_ui()
-
-
-func _on_gem_mandibles_pressed() -> void:
-	if GameManager.mandibles_gem_socketed or GameManager.gem_count < GameManager.GEM_SOCKET_COST:
-		return
-	GameManager.gem_count -= GameManager.GEM_SOCKET_COST
-	GameManager.mandibles_gem_socketed = true
-	GameManager.save_game()
-	_set_status("Cargo Gem socketed!")
-	_update_ui()
-
-
-func _on_gem_sense_pressed() -> void:
-	if GameManager.sense_gem_socketed or GameManager.gem_count < GameManager.GEM_SOCKET_COST:
-		return
-	GameManager.gem_count -= GameManager.GEM_SOCKET_COST
-	GameManager.sense_gem_socketed = true
-	GameManager.save_game()
-	_set_status("Sensor Gem socketed!")
-	_update_ui()
-
-
-# ── Colony Chambers ───────────────────────────────────────────────────────────
+# ── Spaceship upgrades ────────────────────────────────────────────────────────
 func _is_chamber_unlocked(key: String) -> bool:
 	match key:
 		"warp_drive":      return GameManager.total_minerals_banked >= 500
@@ -410,10 +302,13 @@ func _on_chamber_pressed(key: String) -> void:
 		EventBus.dollars_changed.emit(GameManager.dollars)
 		GameManager.set(upgrade["built_prop"], true)
 		GameManager.save_game()
-		_set_status("%s installed!" % upgrade["name"])
+		_status_label.text = "%s installed!" % upgrade["name"]
 		_refresh_chamber_panel()
-		_update_ui()
 		break
+
+
+func _on_open_perk_tree_pressed() -> void:
+	PerkTreeMenu._open()
 
 
 func _on_return_button_pressed() -> void:

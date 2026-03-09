@@ -198,6 +198,11 @@ func _snapshot_game_manager() -> Dictionary:
 		"cat_color": gm.cat_color.to_html(),
 		"has_completed_tier_1_mine": gm.has_completed_tier_1_mine,
 		"has_completed_tier_2_settlement": gm.has_completed_tier_2_settlement,
+		# Perk tree
+		"player_xp": gm.player_xp,
+		"player_level": gm.player_level,
+		"perk_points": gm.perk_points,
+		"perk_ranks": gm.perk_ranks.duplicate(),
 	}
 	# Preserve existing planet config if present
 	if active_slot >= 0 and active_slot < MAX_SLOTS and _slots[active_slot] != null:
@@ -245,6 +250,12 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 		gm.cat_color = Color.WHITE
 	gm.has_completed_tier_1_mine = data.get("has_completed_tier_1_mine", false)
 	gm.has_completed_tier_2_settlement = data.get("has_completed_tier_2_settlement", false)
+	# Perk tree
+	gm.player_xp = data.get("player_xp", 0)
+	gm.player_level = data.get("player_level", 1)
+	gm.perk_points = data.get("perk_points", 0)
+	var saved_ranks: Variant = data.get("perk_ranks", {})
+	gm.perk_ranks = saved_ranks if saved_ranks is Dictionary else {}
 
 func _reset_game_manager() -> void:
 	var gm = GameManager
@@ -288,3 +299,8 @@ func _reset_game_manager() -> void:
 	gm.cat_color = Color.WHITE
 	gm.has_completed_tier_1_mine = false
 	gm.has_completed_tier_2_settlement = false
+	# Perk tree
+	gm.player_xp = 0
+	gm.player_level = 1
+	gm.perk_points = 0
+	gm.perk_ranks = {}

@@ -31,6 +31,14 @@ var depth_label: Label
 var dollars_label: Label
 var _earnings_tween: Tween
 
+# XP / level display (lower-left of info panel)
+var _xp_bar_bg   : ColorRect
+var _xp_bar_fill : ColorRect
+var _level_label : Label
+var _perk_hint   : Label
+var _levelup_banner : Label
+var _levelup_tween  : Tween
+
 # Ore-only pickup notification — icon + amount + name, upper-left
 const ORE_NAMES: Array[String] = [
 	"Lunar Copper", "Deep Lunar Copper",
@@ -190,6 +198,57 @@ func _ready() -> void:
 	dollars_label.text = "%dg" %GameManager.dollars
 	dollars_label.modulate = Color(0.30, 1.0, 0.40, 1.0)  # Green tint
 	$Control.add_child(dollars_label)
+
+	# Expand info panel to fit the XP bar row
+	info_panel.size = Vector2(210, 148)
+
+	# Level label — shows "Lv.1" in the info panel
+	_level_label = Label.new()
+	_level_label.position = Vector2(8, 124)
+	_level_label.custom_minimum_size = Vector2(80, 18)
+	_level_label.add_theme_font_size_override("font_size", 12)
+	_level_label.add_theme_color_override("font_color", Color(0.80, 0.65, 1.00, 1.0))
+	_level_label.text = "Lv.%d" % GameManager.player_level
+	$Control.add_child(_level_label)
+
+	# XP bar background
+	_xp_bar_bg = ColorRect.new()
+	_xp_bar_bg.color = Color(0.10, 0.08, 0.20, 0.90)
+	_xp_bar_bg.position = Vector2(50, 127)
+	_xp_bar_bg.size = Vector2(156, 12)
+	_xp_bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$Control.add_child(_xp_bar_bg)
+
+	# XP bar fill
+	_xp_bar_fill = ColorRect.new()
+	_xp_bar_fill.color = Color(0.45, 0.25, 0.90, 1.00)
+	_xp_bar_fill.position = Vector2(50, 127)
+	_xp_bar_fill.size = Vector2(0, 12)
+	_xp_bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$Control.add_child(_xp_bar_fill)
+
+	# "[P] Perks" hint label — tiny, right side of XP bar
+	_perk_hint = Label.new()
+	_perk_hint.text = "[P]"
+	_perk_hint.position = Vector2(8, 141)
+	_perk_hint.custom_minimum_size = Vector2(50, 12)
+	_perk_hint.add_theme_font_size_override("font_size", 10)
+	_perk_hint.add_theme_color_override("font_color", Color(0.55, 0.45, 0.75, 0.80))
+	$Control.add_child(_perk_hint)
+
+	# Level-up banner — top-centre flash
+	_levelup_banner = Label.new()
+	_levelup_banner.position = Vector2(440, 50)
+	_levelup_banner.custom_minimum_size = Vector2(400, 30)
+	_levelup_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_levelup_banner.modulate = Color(1.0, 0.85, 0.20, 0.0)
+	_levelup_banner.add_theme_font_size_override("font_size", 22)
+	$Control.add_child(_levelup_banner)
+
+	_update_xp_display()
+
+	EventBus.xp_changed.connect(_on_xp_changed)
+	EventBus.player_leveled_up.connect(_on_player_leveled_up)
 
 	_update_ladder_display(GameManager.ladder_count)
 
@@ -717,3 +776,28 @@ func _on_hotbar_slot_input(event: InputEvent, slot_index: int) -> void:
 func set_hotbar_visible(value: bool) -> void:
 	if _hotbar_container:
 		_hotbar_container.visible = value
+
+# ---------------------------------------------------------------------------
+# XP / Level callbacks
+# ---------------------------------------------------------------------------
+
+func _update_xp_display() -> void:
+	var xp     : int   = GameManager.player_xp
+	var xp_max : int   = PerkSystem.xp_for_next_level(GameManager.player_level)
+	var ratio  : float = float(xp) / float(maxi(1, xp_max))
+	_xp_bar_fill.size.x = 156.0 * ratio
+	_level_label.text   = "Lv.%d" % GameManager.player_level
+
+func _on_xp_changed(_xp: int, _xp_next: int) -> void:
+	_update_xp_display()
+
+func _on_player_leveled_up(new_level: int, points: int) -> void:
+	_update_xp_display()
+	var pts_str : String = "%d point%s" % [points, "s" if points != 1 else ""]
+	_levelup_banner.text = "LEVEL UP!  Lv.%d  —  %s  [P]" % [new_level, pts_str]
+	if _levelup_tween:
+		_levelup_tween.kill()
+	_levelup_tween = create_tween()
+	_levelup_tween.tween_property(_levelup_banner, "modulate:a", 1.0, 0.20)
+	_levelup_tween.tween_interval(3.0)
+	_levelup_tween.tween_property(_levelup_banner, "modulate:a", 0.0, 0.60)

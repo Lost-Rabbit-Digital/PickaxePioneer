@@ -37,3 +37,8 @@ signal multiplayer_connected_to_host               # Guest: successfully connect
 signal multiplayer_connection_failed               # Guest: connection attempt failed
 signal multiplayer_guest_kit_updated               # Guest HUD should refresh to show host's kit
 signal chat_message_received(sender_name: String, message: String, sender_color: Color)  # Chat message delivered to local screen
+
+# Perk / XP Signals
+signal xp_changed(current_xp: int, xp_to_next: int)   # Emitted whenever XP changes
+signal player_leveled_up(new_level: int, perk_points: int)  # Emitted on each level-up
+signal perk_points_changed(perk_points: int)            # Emitted when points are spent/gained
