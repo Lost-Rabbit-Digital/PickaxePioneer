@@ -42,10 +42,11 @@ func get_slot_summary(index: int) -> Dictionary:
 	var cargo_bay: bool = slot.get("cargo_bay_built", false)
 	var mandibles_gem: bool = slot.get("mandibles_gem_socketed", false)
 	var ore_capacity: int = 200 + (25 if cargo_bay else 0) + (mandibles_lvl * 25) + (25 if mandibles_gem else 0)
+	# Migrate legacy saves that used separate mineral_currency + dollars keys
+	var legacy_coins: int = slot.get("mineral_currency", 0) * 100 + slot.get("dollars", 0) * 100
 	return {
-		"minerals": slot.get("mineral_currency", 0),
+		"coins": slot.get("coins", legacy_coins),
 		"ore_capacity": ore_capacity,
-		"dollars": slot.get("dollars", 0),
 		"deepest_row": slot.get("deepest_row_reached", 0),
 		"last_node": slot.get("last_overworld_node_name", ""),
 		"carapace_level": slot.get("carapace_level", 0),
@@ -165,8 +166,7 @@ func _migrate_legacy_save() -> void:
 func _snapshot_game_manager() -> Dictionary:
 	var gm = GameManager
 	var data := {
-		"mineral_currency": gm.mineral_currency,
-		"dollars": gm.dollars,
+		"coins": gm.coins,
 		"carapace_level": gm.carapace_level,
 		"legs_level": gm.legs_level,
 		"mandibles_level": gm.mandibles_level,
@@ -181,7 +181,7 @@ func _snapshot_game_manager() -> Dictionary:
 		"legs_gem_socketed": gm.legs_gem_socketed,
 		"mandibles_gem_socketed": gm.mandibles_gem_socketed,
 		"sense_gem_socketed": gm.sense_gem_socketed,
-		"total_minerals_banked": gm.total_minerals_banked,
+		"total_coins_banked": gm.total_coins_banked,
 		"bosses_defeated_total": gm.bosses_defeated_total,
 		"total_fossils": gm.total_fossils,
 		"deepest_row_reached": gm.deepest_row_reached,
@@ -203,6 +203,20 @@ func _snapshot_game_manager() -> Dictionary:
 		"player_level": gm.player_level,
 		"perk_points": gm.perk_points,
 		"perk_ranks": gm.perk_ranks.duplicate(),
+		# Trinkets
+		"trinket_paraglider": gm.trinket_paraglider,
+		"trinket_jet_boots": gm.trinket_jet_boots,
+		"trinket_stone_of_regen": gm.trinket_stone_of_regen,
+		"trinket_spring_boots": gm.trinket_spring_boots,
+		"trinket_jumping_bean": gm.trinket_jumping_bean,
+		"trinket_sneakers": gm.trinket_sneakers,
+		"trinket_gecko_gloves": gm.trinket_gecko_gloves,
+		"trinket_boots_of_sprinting": gm.trinket_boots_of_sprinting,
+		"trinket_cube_of_curing": gm.trinket_cube_of_curing,
+		"trinket_scuba_helmet": gm.trinket_scuba_helmet,
+		"trinket_magnet": gm.trinket_magnet,
+		"trinket_cosmic_radiation": gm.trinket_cosmic_radiation,
+		"trinket_curse_of_core": gm.trinket_curse_of_core,
 	}
 	# Preserve existing planet config if present
 	if active_slot >= 0 and active_slot < MAX_SLOTS and _slots[active_slot] != null:
@@ -213,8 +227,9 @@ func _snapshot_game_manager() -> Dictionary:
 
 func _apply_to_game_manager(data: Dictionary) -> void:
 	var gm = GameManager
-	gm.mineral_currency = data.get("mineral_currency", 0)
-	gm.dollars = data.get("dollars", 0)
+	# Migrate legacy saves that stored mineral_currency + dollars separately
+	var legacy_coins: int = data.get("mineral_currency", 0) * 100 + data.get("dollars", 0) * 100
+	gm.coins = data.get("coins", legacy_coins)
 	gm.carapace_level = data.get("carapace_level", 0)
 	gm.legs_level = data.get("legs_level", 0)
 	gm.mandibles_level = data.get("mandibles_level", 0)
@@ -229,7 +244,7 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 	gm.legs_gem_socketed = data.get("legs_gem_socketed", false)
 	gm.mandibles_gem_socketed = data.get("mandibles_gem_socketed", false)
 	gm.sense_gem_socketed = data.get("sense_gem_socketed", false)
-	gm.total_minerals_banked = data.get("total_minerals_banked", 0)
+	gm.total_coins_banked = data.get("total_coins_banked", data.get("total_minerals_banked", 0) * 100)
 	gm.bosses_defeated_total = data.get("bosses_defeated_total", 0)
 	gm.total_fossils = data.get("total_fossils", 0)
 	gm.deepest_row_reached = data.get("deepest_row_reached", 0)
@@ -256,12 +271,25 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 	gm.perk_points = data.get("perk_points", 0)
 	var saved_ranks: Variant = data.get("perk_ranks", {})
 	gm.perk_ranks = saved_ranks if saved_ranks is Dictionary else {}
+	# Trinkets
+	gm.trinket_paraglider = data.get("trinket_paraglider", false)
+	gm.trinket_jet_boots = data.get("trinket_jet_boots", false)
+	gm.trinket_stone_of_regen = data.get("trinket_stone_of_regen", false)
+	gm.trinket_spring_boots = data.get("trinket_spring_boots", false)
+	gm.trinket_jumping_bean = data.get("trinket_jumping_bean", false)
+	gm.trinket_sneakers = data.get("trinket_sneakers", false)
+	gm.trinket_gecko_gloves = data.get("trinket_gecko_gloves", false)
+	gm.trinket_boots_of_sprinting = data.get("trinket_boots_of_sprinting", false)
+	gm.trinket_cube_of_curing = data.get("trinket_cube_of_curing", false)
+	gm.trinket_scuba_helmet = data.get("trinket_scuba_helmet", false)
+	gm.trinket_magnet = data.get("trinket_magnet", false)
+	gm.trinket_cosmic_radiation = data.get("trinket_cosmic_radiation", false)
+	gm.trinket_curse_of_core = data.get("trinket_curse_of_core", false)
 
 func _reset_game_manager() -> void:
 	var gm = GameManager
-	gm.mineral_currency = 0
-	gm.run_mineral_currency = 0
-	gm.dollars = 0
+	gm.coins = 0
+	gm.run_coins = 0
 	gm.run_ore_counts.clear()
 	gm.run_ore_earnings.clear()
 	gm.run_ore_chunk_count = 0
@@ -283,7 +311,7 @@ func _reset_game_manager() -> void:
 	gm.legs_gem_socketed = false
 	gm.mandibles_gem_socketed = false
 	gm.sense_gem_socketed = false
-	gm.total_minerals_banked = 0
+	gm.total_coins_banked = 0
 	gm.bosses_defeated_total = 0
 	gm.total_fossils = 0
 	gm.deepest_row_reached = 0
@@ -304,3 +332,17 @@ func _reset_game_manager() -> void:
 	gm.player_level = 1
 	gm.perk_points = 0
 	gm.perk_ranks = {}
+	# Trinkets
+	gm.trinket_paraglider = false
+	gm.trinket_jet_boots = false
+	gm.trinket_stone_of_regen = false
+	gm.trinket_spring_boots = false
+	gm.trinket_jumping_bean = false
+	gm.trinket_sneakers = false
+	gm.trinket_gecko_gloves = false
+	gm.trinket_boots_of_sprinting = false
+	gm.trinket_cube_of_curing = false
+	gm.trinket_scuba_helmet = false
+	gm.trinket_magnet = false
+	gm.trinket_cosmic_radiation = false
+	gm.trinket_curse_of_core = false

@@ -8,6 +8,7 @@ extends CharacterBody2D
 const GRAVITY: float = 600.0
 const CHUNK_SIZE: float = 20.0
 const COLLECT_DIST: float = 30.0
+const MAGNET_SPEED: float = 220.0  # Pixels/sec toward player when Magnet trinket equipped
 # Speed threshold below which a grounded chunk is considered at rest.
 const SETTLE_SPEED_THRESHOLD: float = 5.0
 # Bitmask for the "settled ore" physics layer (Layer 4 = value 8).
@@ -61,15 +62,25 @@ func _physics_process(delta: float) -> void:
 
 	# Collect when the player physically walks onto the chunk (settled or not).
 	var players := get_tree().get_nodes_in_group("player")
-	if players.size() > 0 and \
-			global_position.distance_to(players[0].global_position) < COLLECT_DIST:
-		if GameManager.is_inventory_full():
-			if _full_warn_cooldown <= 0.0:
-				EventBus.ore_mined_popup.emit(0, "Inventory full!")
-				_full_warn_cooldown = 3.0
+	if players.size() > 0:
+		var dist_to_player := global_position.distance_to(players[0].global_position)
+		if dist_to_player < COLLECT_DIST:
+			if GameManager.is_inventory_full():
+				if _full_warn_cooldown <= 0.0:
+					EventBus.ore_mined_popup.emit(0, "Inventory full!")
+					_full_warn_cooldown = 3.0
+				return
+			collect()
 			return
-		collect()
-		return
+		# Magnet trinket — pull the chunk toward the player when within range.
+		var magnet_range := GameManager.get_magnet_range()
+		if magnet_range > 0.0 and dist_to_player < magnet_range:
+			if not GameManager.is_inventory_full():
+				var dir := (players[0].global_position - global_position).normalized()
+				velocity = dir * MAGNET_SPEED
+				is_settled = false
+				collision_layer = 4
+				return
 
 	# Settled chunks keep probing downward so floor detection stays current.
 	# If the terrain beneath is mined away, they resume falling.

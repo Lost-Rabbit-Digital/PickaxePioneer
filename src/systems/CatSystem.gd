@@ -231,7 +231,7 @@ func _update_collecting_cat(cat: HiredCat, delta: float) -> void:
 			cat.deposit_timer -= delta
 			if cat.deposit_timer <= 0.0:
 				if cat.carry > 0:
-					GameManager.mineral_currency += cat.carry
+					GameManager.coins += cat.carry * 100
 					EventBus.ore_mined_popup.emit(cat.carry, "Collecting Cat banked!")
 					cat.carry = 0
 				cat.state = "collecting"

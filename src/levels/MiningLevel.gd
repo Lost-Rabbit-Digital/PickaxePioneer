@@ -438,6 +438,7 @@ const FOLIAGE_WEB_ATLAS_COORD: Vector2i = Vector2i(7, 4)
 
 var _inventory_screen: InventoryScreen = null
 var _hat_menu: HatMenu = null
+var _trinket_menu: TrinketMenu = null
 var _customization_menu: CustomizationMenu = null
 
 # Farm animal NPCs
@@ -553,6 +554,7 @@ func _ready() -> void:
 
 	_setup_inventory_screen()
 	_setup_hat_menu()
+	_setup_trinket_menu()
 	_setup_customization_menu()
 
 	if NetworkManager.is_multiplayer_session:
@@ -954,8 +956,9 @@ func _emit_lava_embers(delta: float, min_col: int, max_col: int, min_row: int, m
 
 func any_ui_open() -> bool:
 	var hat_open := _hat_menu != null and _hat_menu.visible
+	var trinket_open := _trinket_menu != null and _trinket_menu.visible
 	var custom_open := _customization_menu != null and _customization_menu.visible
-	return hat_open or custom_open or (shop_system != null and shop_system.any_shop_open())
+	return hat_open or trinket_open or custom_open or (shop_system != null and shop_system.any_shop_open())
 
 # ---------------------------------------------------------------------------
 # Process — energy drain, cursor highlight, flashes
@@ -1046,7 +1049,7 @@ func _process(delta: float) -> void:
 		if _resource_sync_timer >= RESOURCE_SYNC_INTERVAL:
 			_resource_sync_timer = 0.0
 			rpc_sync_resources.rpc_id(NetworkManager.guest_peer_id,
-				GameManager.run_mineral_currency, GameManager.current_energy)
+				GameManager.run_coins, GameManager.current_energy)
 
 	if _game_over or shop_system.any_shop_open():
 		return
@@ -1194,6 +1197,13 @@ func _unhandled_input(event: InputEvent) -> void:
 				_hat_menu.close()
 			else:
 				_hat_menu.open()
+		return
+	if event.is_action_pressed("toggle_trinket_menu"):
+		if _trinket_menu:
+			if _trinket_menu.visible:
+				_trinket_menu.close()
+			else:
+				_trinket_menu.open()
 		return
 	if event.is_action_pressed("toggle_customization_menu"):
 		if _customization_menu:
@@ -1491,7 +1501,7 @@ func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 				var world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
 				_spawn_ore_chunks(tile, minerals, world_pos)
 				GameManager.track_ore_mined(tile, minerals)
-				EventBus.minerals_changed.emit(GameManager.run_mineral_currency)
+				EventBus.coins_changed.emit(GameManager.run_coins)
 				var popup_label: String = "LUCKY!" if lucky else TILE_NAMES.get(tile, "Mineral")
 				EventBus.ore_mined_popup.emit(minerals, popup_label)
 			# Non-ore tiles (dirt, stone, grass) give no minerals.
@@ -1587,7 +1597,7 @@ func _check_streak_milestone() -> void:
 	if _mine_streak > 0 and _mine_streak % 5 == 0:
 		var bonus := mini(_mine_streak, 15)
 		GameManager.add_currency(bonus)
-		EventBus.minerals_earned.emit(bonus)
+		EventBus.coins_earned.emit(bonus)
 		EventBus.ore_mined_popup.emit(bonus, "Streak!")
 
 # ---------------------------------------------------------------------------
@@ -2233,6 +2243,11 @@ func _setup_hat_menu() -> void:
 	_hat_menu.player = player_node
 	add_child(_hat_menu)
 
+func _setup_trinket_menu() -> void:
+	_trinket_menu = TrinketMenu.new()
+	_trinket_menu.player = player_node
+	add_child(_trinket_menu)
+
 func _setup_customization_menu() -> void:
 	_customization_menu = $HUD/CustomizationMenu as CustomizationMenu
 	_customization_menu.player = player_node
@@ -2458,9 +2473,9 @@ func rpc_pickaxe_effect(from_x: float, from_y: float, to_x: float, to_y: float) 
 ## is discarded rather than overwriting a more recent update.
 @rpc("authority", "call_remote", "unreliable_ordered")
 func rpc_sync_resources(minerals: int, energy: int) -> void:
-	GameManager.run_mineral_currency = minerals
+	GameManager.run_coins = minerals
 	GameManager.current_energy = energy
-	EventBus.minerals_changed.emit(minerals)
+	EventBus.coins_changed.emit(minerals)
 	EventBus.energy_changed.emit(energy, GameManager.get_max_energy())
 
 ## Host → Guest: the run has ended successfully (exit station reached).

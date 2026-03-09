@@ -7,10 +7,10 @@ extends Control
 @onready var info_label: Label = $Panel/InfoLabel
 @onready var dialogue_label: Label = $Panel/Shopkeeper/DialogueLabel
 
-var carapace_cost: int = 50
-var legs_cost: int = 50
-var mandibles_cost: int = 50
-var mineral_sense_cost: int = 75
+var carapace_cost: int = 5000
+var legs_cost: int = 5000
+var mandibles_cost: int = 5000
+var mineral_sense_cost: int = 7500
 
 var _sense_button: Button
 
@@ -83,20 +83,20 @@ func _update_dialogue() -> void:
 
 func _update_ui() -> void:
 	var current_hp := GameManager.get_max_health()
-	hull_button.text = "Reinforce Spacesuit Lv%d — Max HP: %d → %d (%d Minerals)" % [
-		GameManager.carapace_level, current_hp, current_hp + 1, carapace_cost
+	hull_button.text = "Reinforce Spacesuit Lv%d — Max HP: %d → %d (%s)" % [
+		GameManager.carapace_level, current_hp, current_hp + 1, GameManager.format_coins(carapace_cost)
 	]
 
 	var current_energy_cap := GameManager.get_max_energy()
 	var current_speed := GameManager.get_max_speed()
-	engine_button.text = "Upgrade Jet Boots Lv%d — Energy: %d→%d, Speed: %.0f→%.0f (%d Minerals)" % [
+	engine_button.text = "Upgrade Jet Boots Lv%d — Energy: %d→%d, Speed: %.0f→%.0f (%s)" % [
 		GameManager.legs_level, current_energy_cap, current_energy_cap + 25,
-		current_speed, current_speed + 30.0, legs_cost
+		current_speed, current_speed + 30.0, GameManager.format_coins(legs_cost)
 	]
 
 	var current_cap := GameManager.get_ore_capacity()
-	drill_button.text = "Expand Cargo Hold Lv%d — Inventory Slots: %d → %d (%d Minerals)" % [
-		GameManager.mandibles_level, current_cap, current_cap + 2, mandibles_cost
+	drill_button.text = "Expand Cargo Hold Lv%d — Inventory Slots: %d → %d (%s)" % [
+		GameManager.mandibles_level, current_cap, current_cap + 2, GameManager.format_coins(mandibles_cost)
 	]
 
 	var sense_level := GameManager.mineral_sense_level
@@ -104,11 +104,11 @@ func _update_ui() -> void:
 	var sense_radius_next := sense_radius + 3.0
 	var sense_energy := GameManager.get_sonar_ping_energy_cost()
 	var sense_energy_next := maxi(3, sense_energy - 2)
-	_sense_button.text = "Tune Space Whiskers (Scanner) Lv%d — Radius: %.0f→%.0f tiles, Energy: %d→%d (%d Minerals)" % [
-		sense_level, sense_radius, sense_radius_next, sense_energy, sense_energy_next, mineral_sense_cost
+	_sense_button.text = "Tune Space Whiskers (Scanner) Lv%d — Radius: %.0f→%.0f tiles, Energy: %d→%d (%s)" % [
+		sense_level, sense_radius, sense_radius_next, sense_energy, sense_energy_next, GameManager.format_coins(mineral_sense_cost)
 	]
 
-	info_label.text = "Minerals: %d   |   Gems: %d" % [GameManager.mineral_currency, GameManager.gem_count]
+	info_label.text = "%s   |   Gems: %d" % [GameManager.format_coins(GameManager.coins), GameManager.gem_count]
 
 	_gem_label.text = "--- Gem Sockets (cost: %d gems each) ---" % GameManager.GEM_SOCKET_COST
 
@@ -141,38 +141,38 @@ func _update_ui() -> void:
 		_gem_sense_button.disabled = GameManager.gem_count < GameManager.GEM_SOCKET_COST
 
 func _on_carapace_pressed() -> void:
-	if GameManager.mineral_currency >= carapace_cost:
-		GameManager.mineral_currency -= carapace_cost
+	if GameManager.coins >= carapace_cost:
+		GameManager.coins -= carapace_cost
 		GameManager.upgrade_carapace()
 		SoundManager.play_purchase_confirm_sound()
-		carapace_cost += 25
+		carapace_cost += 2500
 		GameManager.save_game()
 		_update_ui()
 
 func _on_legs_pressed() -> void:
-	if GameManager.mineral_currency >= legs_cost:
-		GameManager.mineral_currency -= legs_cost
+	if GameManager.coins >= legs_cost:
+		GameManager.coins -= legs_cost
 		GameManager.upgrade_legs()
 		SoundManager.play_purchase_confirm_sound()
-		legs_cost += 25
+		legs_cost += 2500
 		GameManager.save_game()
 		_update_ui()
 
 func _on_mandibles_pressed() -> void:
-	if GameManager.mineral_currency >= mandibles_cost:
-		GameManager.mineral_currency -= mandibles_cost
+	if GameManager.coins >= mandibles_cost:
+		GameManager.coins -= mandibles_cost
 		GameManager.upgrade_mandibles()
 		SoundManager.play_purchase_confirm_sound()
-		mandibles_cost += 25
+		mandibles_cost += 2500
 		GameManager.save_game()
 		_update_ui()
 
 func _on_mineral_sense_pressed() -> void:
-	if GameManager.mineral_currency >= mineral_sense_cost:
-		GameManager.mineral_currency -= mineral_sense_cost
+	if GameManager.coins >= mineral_sense_cost:
+		GameManager.coins -= mineral_sense_cost
 		GameManager.upgrade_mineral_sense()
 		SoundManager.play_purchase_confirm_sound()
-		mineral_sense_cost += 50
+		mineral_sense_cost += 5000
 		GameManager.save_game()
 		_update_ui()
 
