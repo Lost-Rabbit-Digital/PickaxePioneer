@@ -17,12 +17,14 @@ signal inventory_updated(item_name: String, quantity: int)
 signal game_state_changed(new_state: int)
 
 # Currency Signals
-signal minerals_changed(amount: int)
-signal minerals_earned(amount: int)  # Emitted with each individual mining earn
+## Emitted whenever the run wallet (run_coins) or persistent wallet (coins) changes.
+## `copper` is the new total of the wallet that changed (run or persistent).
+signal coins_changed(copper: int)
+## Emitted with each individual ore/bonus earn event (copper amount).
+signal coins_earned(copper: int)
 signal ore_mined_popup(amount: int, ore_name: String)  # Emitted on mine with ore type for HUD popup
 signal boss_hint_popup(hint: String)  # Boss instructions and attack warnings — routed to a dedicated centre-bottom panel
 signal ladder_count_changed(count: int)  # Emitted when the player's ladder inventory changes
-signal dollars_changed(amount: int)  # Emitted when player's dollar balance changes
 
 # Energy Signals
 signal energy_changed(current_energy: int, max_energy: int)

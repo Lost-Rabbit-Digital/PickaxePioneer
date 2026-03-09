@@ -13,10 +13,11 @@ extends Node
 # ---------------------------------------------------------------------------
 # Shop costs
 # ---------------------------------------------------------------------------
-const SHOP_REENERGY_FULL_COST: int = 10
-const SHOP_REENERGY_HALF_COST: int = 5
-const SHOP_REPAIR_COST: int = 15
-const SHOP_LADDER_PACK_COST: int = 20   # buys 10 ladders
+## Shop costs in copper (100 copper = 1 silver).
+const SHOP_REENERGY_FULL_COST: int = 1000   # 10s
+const SHOP_REENERGY_HALF_COST: int = 500    # 5s
+const SHOP_REPAIR_COST: int = 1500          # 15s
+const SHOP_LADDER_PACK_COST: int = 2000     # 20s — buys 10 ladders
 const SHOP_LADDER_PACK_COUNT: int = 10
 
 # Cat Tavern hire costs (in bars)
@@ -36,8 +37,9 @@ const SMELTERY_ORE_GROUP_TILES: Dictionary = {
 	"gem":    [9, 10],
 }
 const SMELTERY_ORES_PER_BAR: int = 3
+## Bar sell values in copper (1500c = 15s, 3000c = 30s, 5000c = 50s, 7500c = 75s).
 const SMELTERY_BAR_SELL_VALUES: Dictionary = {
-	"copper": 15, "iron": 30, "gold": 50, "gem": 75,
+	"copper": 1500, "iron": 3000, "gold": 5000, "gem": 7500,
 }
 const SMELTERY_BAR_NAMES: Dictionary = {
 	"copper": "Lunar Bar", "iron": "Meteor Bar", "gold": "Star Bar", "gem": "Cosmic Bar",
@@ -201,7 +203,7 @@ func _build_energy_shop() -> void:
 	_energy_layer.add_child(_energy_btn_repair)
 
 	_energy_btn_ladders = _make_btn(BTN_X, PY + 254, BTN_W, BTN_H,
-		"Buy %d Ladders  —  %dg" % [SHOP_LADDER_PACK_COUNT, SHOP_LADDER_PACK_COST],
+		"Buy %d Ladders  —  %s" % [SHOP_LADDER_PACK_COUNT, GameManager.format_coins(SHOP_LADDER_PACK_COST)],
 		_shop_buy_ladders)
 	_energy_layer.add_child(_energy_btn_ladders)
 
@@ -210,17 +212,17 @@ func _build_energy_shop() -> void:
 
 
 func show_energy_shop() -> void:
-	_energy_minerals_label.text = "%dg" % GameManager.dollars
+	_energy_minerals_label.text = GameManager.format_coins(GameManager.coins)
 	var max_e := GameManager.get_max_energy()
-	_energy_btn_full.text = "Full Rest  (%d→%d energy)  — %dg" % [
-		GameManager.current_energy, max_e, SHOP_REENERGY_FULL_COST]
-	_energy_btn_half.text = "Rest 50%%  (+%d energy)  — %dg" % [
-		max_e / 2, SHOP_REENERGY_HALF_COST]
-	_energy_btn_repair.text = "Pelt Patch (+1 HP)  — %dg" % SHOP_REPAIR_COST
-	_energy_btn_full.disabled   = GameManager.dollars < SHOP_REENERGY_FULL_COST or GameManager.current_energy >= max_e
-	_energy_btn_half.disabled   = GameManager.dollars < SHOP_REENERGY_HALF_COST or GameManager.current_energy >= max_e
-	_energy_btn_repair.disabled = GameManager.dollars < SHOP_REPAIR_COST or (player_node != null and player_node.is_at_max_health())
-	_energy_btn_ladders.disabled = GameManager.dollars < SHOP_LADDER_PACK_COST
+	_energy_btn_full.text = "Full Rest  (%d→%d energy)  — %s" % [
+		GameManager.current_energy, max_e, GameManager.format_coins(SHOP_REENERGY_FULL_COST)]
+	_energy_btn_half.text = "Rest 50%%  (+%d energy)  — %s" % [
+		max_e / 2, GameManager.format_coins(SHOP_REENERGY_HALF_COST)]
+	_energy_btn_repair.text = "Pelt Patch (+1 HP)  — %s" % GameManager.format_coins(SHOP_REPAIR_COST)
+	_energy_btn_full.disabled   = GameManager.coins < SHOP_REENERGY_FULL_COST or GameManager.current_energy >= max_e
+	_energy_btn_half.disabled   = GameManager.coins < SHOP_REENERGY_HALF_COST or GameManager.current_energy >= max_e
+	_energy_btn_repair.disabled = GameManager.coins < SHOP_REPAIR_COST or (player_node != null and player_node.is_at_max_health())
+	_energy_btn_ladders.disabled = GameManager.coins < SHOP_LADDER_PACK_COST
 	_energy_layer.visible = true
 	energy_shop_visible = true
 
@@ -231,10 +233,10 @@ func hide_energy_shop() -> void:
 
 
 func _shop_reenergy_full() -> void:
-	if GameManager.dollars >= SHOP_REENERGY_FULL_COST:
-		GameManager.dollars -= SHOP_REENERGY_FULL_COST
+	if GameManager.coins >= SHOP_REENERGY_FULL_COST:
+		GameManager.coins -= SHOP_REENERGY_FULL_COST
 		GameManager.current_energy = GameManager.get_max_energy()
-		EventBus.dollars_changed.emit(GameManager.dollars)
+		EventBus.coins_changed.emit(GameManager.coins)
 		EventBus.energy_changed.emit(GameManager.current_energy, GameManager.get_max_energy())
 		GameManager.save_game()
 		SoundManager.play_purchase_confirm_sound()
@@ -242,19 +244,19 @@ func _shop_reenergy_full() -> void:
 
 
 func _shop_reenergy_half() -> void:
-	if GameManager.dollars >= SHOP_REENERGY_HALF_COST:
-		GameManager.dollars -= SHOP_REENERGY_HALF_COST
+	if GameManager.coins >= SHOP_REENERGY_HALF_COST:
+		GameManager.coins -= SHOP_REENERGY_HALF_COST
 		GameManager.restore_energy(GameManager.get_max_energy() / 2)
-		EventBus.dollars_changed.emit(GameManager.dollars)
+		EventBus.coins_changed.emit(GameManager.coins)
 		GameManager.save_game()
 		SoundManager.play_purchase_confirm_sound()
 		show_energy_shop()
 
 
 func _shop_repair() -> void:
-	if GameManager.dollars >= SHOP_REPAIR_COST and player_node:
-		GameManager.dollars -= SHOP_REPAIR_COST
-		EventBus.dollars_changed.emit(GameManager.dollars)
+	if GameManager.coins >= SHOP_REPAIR_COST and player_node:
+		GameManager.coins -= SHOP_REPAIR_COST
+		EventBus.coins_changed.emit(GameManager.coins)
 		GameManager.save_game()
 		player_node.heal(1)
 		SoundManager.play_purchase_confirm_sound()
@@ -262,11 +264,11 @@ func _shop_repair() -> void:
 
 
 func _shop_buy_ladders() -> void:
-	if GameManager.dollars >= SHOP_LADDER_PACK_COST:
-		GameManager.dollars -= SHOP_LADDER_PACK_COST
+	if GameManager.coins >= SHOP_LADDER_PACK_COST:
+		GameManager.coins -= SHOP_LADDER_PACK_COST
 		GameManager.ladder_count += SHOP_LADDER_PACK_COUNT
 		EventBus.ladder_count_changed.emit(GameManager.ladder_count)
-		EventBus.dollars_changed.emit(GameManager.dollars)
+		EventBus.coins_changed.emit(GameManager.coins)
 		GameManager.save_game()
 		EventBus.ore_mined_popup.emit(SHOP_LADDER_PACK_COUNT, "Ladders acquired!")
 		SoundManager.play_purchase_confirm_sound()
@@ -354,12 +356,14 @@ func _build_upgrade_station() -> void:
 	_upgrade_layer.add_child(close_btn)
 
 
+## Upgrade costs in copper: base 5000 (50s), scaling +2500 per level.
+## Whiskers/reach base 7500 (75s), scaling +2500 per level.
 func show_upgrade_station() -> void:
-	_upgrade_minerals_label.text = "Level %d  |  %d Perk Point%s  |  %dg" % [
+	_upgrade_minerals_label.text = "Level %d  |  %d Perk Point%s  |  %s" % [
 		GameManager.player_level,
 		GameManager.perk_points,
 		"s" if GameManager.perk_points != 1 else "",
-		GameManager.dollars,
+		GameManager.format_coins(GameManager.coins),
 	]
 	_upgrade_layer.visible = true
 	upgrade_station_visible = true
@@ -457,7 +461,7 @@ func _build_smeltery() -> void:
 
 
 func show_smeltery() -> void:
-	_smeltery_minerals_label.text = "Dollars: %dg" % GameManager.dollars
+	_smeltery_minerals_label.text = GameManager.format_coins(GameManager.coins)
 	for ore_group in SMELTERY_ORE_GROUPS_ORDER:
 		var ore_count := get_ore_group_count(ore_group)
 		var bar_count: int = run_bar_counts.get(ore_group, 0)
@@ -468,7 +472,8 @@ func show_smeltery() -> void:
 		_smeltery_bar_labels[ore_group].text = "%s: %d" % [SMELTERY_BAR_NAMES[ore_group], bar_count]
 		var sell_per_bar: int = roundi(SMELTERY_BAR_SELL_VALUES[ore_group] * GameManager.get_dollar_sell_mult())
 		var sell_total: int = sell_per_bar * bar_count
-		_smeltery_sell_btns[ore_group].text = "Sell All (%dg/bar | %dg total)" % [sell_per_bar, sell_total]
+		_smeltery_sell_btns[ore_group].text = "Sell All (%s/bar | %s total)" % [
+			GameManager.format_coins(sell_per_bar), GameManager.format_coins(sell_total)]
 		_smeltery_sell_btns[ore_group].disabled = bar_count <= 0
 	_smeltery_layer.visible = true
 	smeltery_visible = true
@@ -495,11 +500,12 @@ func _smeltery_sell(ore_group: String) -> void:
 	var bar_count: int = run_bar_counts.get(ore_group, 0)
 	if bar_count <= 0:
 		return
+	# sell_value is in copper (SMELTERY_BAR_SELL_VALUES already denominated in copper)
 	var sell_value: int = roundi(SMELTERY_BAR_SELL_VALUES[ore_group] * GameManager.get_dollar_sell_mult()) * bar_count
 	run_bar_counts[ore_group] = 0
-	GameManager.add_dollars(sell_value)
+	GameManager.add_coins_direct(sell_value)
 	SoundManager.play_purchase_confirm_sound()
-	EventBus.ore_mined_popup.emit(sell_value, "%d %s sold!" % [bar_count, SMELTERY_BAR_NAMES[ore_group]])
+	EventBus.ore_mined_popup.emit(0, "%d %s sold! +%s" % [bar_count, SMELTERY_BAR_NAMES[ore_group], GameManager.format_coins(sell_value)])
 	show_smeltery()
 
 

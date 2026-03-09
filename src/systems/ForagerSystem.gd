@@ -111,7 +111,7 @@ func reset(spawn_pos: Vector2, bonus_capacity: int) -> void:
 
 func _do_deposit() -> void:
 	if carry > 0:
-		GameManager.mineral_currency += carry
+		GameManager.coins += carry * 100
 		EventBus.ore_mined_popup.emit(carry, "Scout Cat banked!")
 		SoundManager.play_forager_deposit_sound()
 		carry = 0

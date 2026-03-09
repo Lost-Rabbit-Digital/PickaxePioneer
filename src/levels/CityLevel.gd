@@ -3,7 +3,7 @@ extends Node2D
 
 ## City hub level — reached after banking a run.
 ## Left panel: Perk Tree status and prompt (upgrades handled via P key perk tree).
-## Right panel: Spaceship upgrades (milestone-gated, bought with dollars).
+## Right panel: Spaceship upgrades (milestone-gated, bought with coins).
 
 const VW: int = 1280
 const VH: int = 720
@@ -18,7 +18,7 @@ const SHIP_UPGRADES: Array = [
 	{
 		"key": "warp_drive", "name": "Warp Drive",
 		"effect": "2x overworld travel speed",
-		"unlock_label": "Bank 500 minerals total to unlock",
+		"unlock_label": "Bank 50s total to unlock",
 		"cost_const": "SHIP_COST_WARP_DRIVE", "built_prop": "warp_drive_built",
 	},
 	{
@@ -30,7 +30,7 @@ const SHIP_UPGRADES: Array = [
 	{
 		"key": "long_scanner", "name": "Long-Range Scanner",
 		"effect": "Always shows both asteroid mines",
-		"unlock_label": "Bank 1000 minerals total to unlock",
+		"unlock_label": "Bank 10g total to unlock",
 		"cost_const": "SHIP_COST_LONG_SCANNER", "built_prop": "long_scanner_built",
 	},
 	{
@@ -41,7 +41,7 @@ const SHIP_UPGRADES: Array = [
 	},
 	{
 		"key": "trade_amplifier", "name": "Trade Amplifier",
-		"effect": "+25% dollar payout on bar sales",
+		"effect": "+25% coin payout on bar sales",
 		"unlock_label": "Reach sector 96 in a run to unlock",
 		"cost_const": "SHIP_COST_TRADE_AMPLIFIER", "built_prop": "trade_amplifier_built",
 	},
@@ -186,7 +186,7 @@ func _build_chambers_panel() -> void:
 	var dollars_lbl := _label("", px, py + 74, PANEL_W, 22)
 	dollars_lbl.modulate = Color(0.30, 1.0, 0.40)
 	dollars_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	dollars_lbl.text = "Dollars: %dg" % GameManager.dollars
+	dollars_lbl.text = "Coins: %s" % GameManager.format_coins(GameManager.coins)
 
 	_divider(px, py + 100)
 
@@ -263,9 +263,9 @@ func _button(x: int, y: int, w: int, h: int, text: String, callback: Callable) -
 # ── Spaceship upgrades ────────────────────────────────────────────────────────
 func _is_chamber_unlocked(key: String) -> bool:
 	match key:
-		"warp_drive":      return GameManager.total_minerals_banked >= 500
+		"warp_drive":      return GameManager.total_coins_banked >= 50000
 		"cargo_bay":       return GameManager.bosses_defeated_total >= 1
-		"long_scanner":    return GameManager.total_minerals_banked >= 1000
+		"long_scanner":    return GameManager.total_coins_banked >= 100000
 		"gem_refinery":    return GameManager.total_fossils >= 10
 		"trade_amplifier": return GameManager.deepest_row_reached >= 96
 	return false
@@ -280,14 +280,14 @@ func _refresh_chamber_panel() -> void:
 		var cost_val: int  = GameManager.get(upgrade["cost_const"])
 		var unlocked: bool = _is_chamber_unlocked(upgrade["key"])
 
-		btn.disabled = built or not unlocked or GameManager.dollars < cost_val
+		btn.disabled = built or not unlocked or GameManager.coins < cost_val
 
 		if built:
 			btn.text = "[INSTALLED]  %s\n%s" % [upgrade["name"], upgrade["effect"]]
 		elif not unlocked:
 			btn.text = "[LOCKED]  %s\n%s\n%s" % [upgrade["name"], upgrade["effect"], upgrade["unlock_label"]]
 		else:
-			btn.text = "Install %s  —  %s\nCost: %dg" % [upgrade["name"], upgrade["effect"], cost_val]
+			btn.text = "Install %s  —  %s\nCost: %s" % [upgrade["name"], upgrade["effect"], GameManager.format_coins(cost_val)]
 
 
 func _on_chamber_pressed(key: String) -> void:
@@ -296,10 +296,10 @@ func _on_chamber_pressed(key: String) -> void:
 			continue
 		var built: bool   = GameManager.get(upgrade["built_prop"])
 		var cost_val: int = GameManager.get(upgrade["cost_const"])
-		if built or not _is_chamber_unlocked(key) or GameManager.dollars < cost_val:
+		if built or not _is_chamber_unlocked(key) or GameManager.coins < cost_val:
 			return
-		GameManager.dollars -= cost_val
-		EventBus.dollars_changed.emit(GameManager.dollars)
+		GameManager.coins -= cost_val
+		EventBus.coins_changed.emit(GameManager.coins)
 		GameManager.set(upgrade["built_prop"], true)
 		GameManager.save_game()
 		_status_label.text = "%s installed!" % upgrade["name"]
