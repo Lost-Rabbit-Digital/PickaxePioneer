@@ -114,7 +114,8 @@ func _ready() -> void:
 	_modal.confirmed.connect(_on_modal_confirmed)
 
 	# Arrange nodes - restore saved positions or generate fresh neural network layout
-	if saved_config.has("node_positions") and saved_config["node_positions"].has("MineNode3"):
+	# Check for current layout nodes (MineNode1/MineNode2) instead of legacy MineNode3
+	if saved_config.has("node_positions") and saved_config["node_positions"].has("MineNode1"):
 		_restore_node_positions(saved_config["node_positions"])
 		_save_node_positions()  # Persist sprite frames if missing from a legacy save
 	else:
@@ -744,6 +745,9 @@ func _enter_node(node: MapNode) -> void:
 	_modal.show_for_node(node)
 
 func _on_modal_confirmed(node: MapNode) -> void:
+	# Save planet frame state before leaving the overworld
+	_save_node_positions()
+
 	GameManager.last_overworld_node_name = node.location_name
 	GameManager.allowed_ore_types = node.ore_types.duplicate()
 	GameManager.allowed_hazard_types = node.hazard_types.duplicate()
