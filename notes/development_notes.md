@@ -46,11 +46,11 @@ Understanding what's actually built prevents re-implementing or mis-scoping task
 Everything the cat needs to feel like a cat, not an ant.
 
 **In scope (must ship together):**
-- [ ] Tasks 1.2–1.6: All in-game UI string updates (upgrade buttons, HUD labels, settlement consumable names, overworld modal text)
-- [ ] Task 2.1: Wandering Trader item name updates (Pelt Patch, etc.)
-- [ ] Task 2.2: Boss name banners in-game (Giant Rat King row 32, Void Spider Matriarch row 64, The Ancient Star Beast row 128)
-- [ ] Task 2.3: ForagerSystem — update any visible "forager ant" strings to "Scout Cat"
-- [ ] Planet color atmosphere tinting (done — merged)
+- [x] Tasks 1.2–1.6: All in-game UI string updates (upgrade buttons, HUD labels, settlement consumable names, overworld modal text)
+- [x] Task 2.1: Wandering Trader item name updates (Pelt Patch, etc.)
+- [x] Task 2.2: Boss name banners in-game (Giant Rat King row 32, Void Spider Matriarch row 64, The Ancient Star Beast row 128)
+- [x] Task 2.3: ForagerSystem — update any visible "forager ant" strings to "Scout Cat"
+- [x] Planet color atmosphere tinting (done — merged)
 
 **Stretch (include if time allows):**
 - [ ] Task 4.1: Scout Cat visual upgrade — programmatic ear silhouette (Option A)
@@ -150,7 +150,7 @@ Everything the cat needs to feel like a cat, not an ant.
 - **Alchemy system** — distil rare minerals into colony buffs. Needs harvestable fungi/roots tile types first, which don't exist.
 - **Harvestable fungi and roots** — requires new tile types, art, and collection mechanics.
 - **Introduce rival cat clowders competing** — needs AI pathfinding and contested-resource systems.
-- **Cargo/abdomen capacity** — separate carry limit on top of energy. The design doc (§3.7) explicitly defers this until after the Forager Ant is implemented; the Forager changes the risk calculus entirely.
+- **Cargo capacity** — separate carry limit on top of energy. The design doc (§3.7) explicitly defers this until after the Scout Cat is implemented; the Scout Cat changes the risk calculus entirely.
 - **ADOM-style overworld with cavern networks** — an overworld exists; cavern networks connecting mine nodes would be a major structural redesign.
 
 ---

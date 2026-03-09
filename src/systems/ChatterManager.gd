@@ -10,7 +10,7 @@ var timer: Timer
 var messages: Array[String] = [
 	# Flavor
 	"Nice haul!",
-	"The Clowder needs more minerals...",
+	"The clowder needs more minerals...",
 	"The deep tunnels are dangerous.",
 	"Seen any rats down there?",
 	"My claws are getting dull.",
@@ -18,12 +18,12 @@ var messages: Array[String] = [
 	"Stay safe in the tunnels.",
 	"Found gold ore yesterday!",
 	"Watch out for lava flows.",
-	"My paws are sore again.",
+	"My paws are killing me.",
 	"I miss the upper galleries.",
 	"Who digs these side tunnels?",
-	"My whiskers are picking up vibrations.",
+	"My whiskers are tingling...",
 	"Anyone got a spare energy cell?",
-	"The Matriarch is demanding more.",
+	"The Matriarch wants more.",
 	"Just one more run...",
 	"Did you hear that rumbling?",
 	"Sensing mineral veins ahead...",
@@ -36,7 +36,7 @@ var messages: Array[String] = [
 	# Tips
 	"Don't step on lava!",
 	"You have to surface to keep your minerals.",
-	"Upgrade your pelt to survive longer.",
+	"Thicken your pelt to survive longer.",
 	"The exit station is your only way out.",
 	"Watch your pelt integrity!",
 	"Sharper claws dig faster.",
@@ -46,7 +46,7 @@ var messages: Array[String] = [
 	"Different mines have different ore richness.",
 
 	# Lore
-	"The Clowder grows ever deeper.",
+	"The clowder grows ever deeper.",
 	"How far does the earth go?",
 	"They say there's a gem vein nearby.",
 	"I found a strange crystal yesterday.",

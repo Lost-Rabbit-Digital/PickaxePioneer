@@ -3,7 +3,7 @@ extends CharacterBody2D
 
 # Ore chunk — spawned when an ore block is fully mined.
 # Falls with gravity, lands on terrain. No automatic magnet — the player must
-# physically walk onto the chunk (or the forager ant sweeps it up) to collect it.
+# physically walk onto the chunk (or the Scout Cat sweeps it up) to collect it.
 
 const GRAVITY: float = 600.0
 const CHUNK_SIZE: float = 20.0
@@ -110,6 +110,6 @@ func collect() -> void:
 	SoundManager.play_pickup_sound()
 	queue_free()
 
-# Collected silently by the forager ant — no sound or popup.
+# Collected silently by the Scout Cat — no sound or popup.
 func collect_silent() -> void:
 	queue_free()

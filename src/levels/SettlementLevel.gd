@@ -738,7 +738,7 @@ func _setup_supply_dock_shop() -> void:
 	by += BTN_GAP
 
 	_btn_rations = _make_button(_shop_layer, bx, by, bw, BTN_H,
-		"Space Snacks  —  +20 scout cat carry capacity next run  (%d minerals)" % COST_RATIONS,
+		"Scout Snacks  —  +20 Scout Cat carry capacity next run  (%d minerals)" % COST_RATIONS,
 		_buy_rations)
 	by += BTN_GAP
 
@@ -748,7 +748,7 @@ func _setup_supply_dock_shop() -> void:
 	by += BTN_GAP
 
 	_btn_sharpen = _make_button(_shop_layer, bx, by, bw, BTN_H,
-		"Pickaxe Sharpener  —  +1 Mining power next run  (%d minerals)" % COST_SHARPENING,
+		"Claw Whetstone  —  +1 Claw power next run  (%d minerals)" % COST_SHARPENING,
 		_buy_sharpening)
 	by += BTN_GAP
 
@@ -821,7 +821,7 @@ func _buy_rations() -> void:
 	GameManager.mineral_currency -= COST_RATIONS
 	GameManager.settlement_forager_bonus += 20
 	GameManager.save_game()
-	_set_status("+20 Scout Cat carry capacity next run!")
+	_set_status("+20 Scout Cat carry cap next run!")
 	_refresh_minerals()
 	_update_button_states()
 
@@ -841,6 +841,6 @@ func _buy_sharpening() -> void:
 	GameManager.mineral_currency -= COST_SHARPENING
 	GameManager.settlement_mandible_bonus += 1
 	GameManager.save_game()
-	_set_status("+1 Mining power next run!")
+	_set_status("+1 Claw power next run!")
 	_refresh_minerals()
 	_update_button_states()
