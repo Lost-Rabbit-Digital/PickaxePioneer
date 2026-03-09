@@ -8,9 +8,13 @@ enum GameState {
 }
 
 var current_state: GameState = GameState.MENU
-var mineral_currency: int = 0
-var run_mineral_currency: int = 0
-var dollars: int = 0  # Persistent currency earned by selling bars at the smeltery
+## Unified coin wallet (persistent). Stored as total copper units.
+## 100 copper = 1 silver (s), 100 silver = 1 gold (g).
+## Use format_coins() to display, add_currency() / add_dollars() to earn,
+## and bank_currency() at run end to transfer run_coins here.
+var coins: int = 0
+## Run-scoped coin wallet (lost on death, banked on completion).
+var run_coins: int = 0
 # Per-ore tracking for run summary (tile_type_id -> count/minerals)
 var run_ore_counts: Dictionary = {}
 var run_ore_earnings: Dictionary = {}
@@ -108,14 +112,16 @@ var sense_gem_socketed: bool = false         # +3 sonar ping radius
 
 # Spaceship Upgrade system — permanent ship upgrades unlocked by milestone conditions.
 # Unlock conditions are checked at runtime; build costs are spent from dollars.
-const SHIP_COST_WARP_DRIVE: int       = 200   # unlocks when total_minerals_banked >= 500
-const SHIP_COST_CARGO_BAY: int        = 150   # unlocks when bosses_defeated_total >= 1
-const SHIP_COST_LONG_SCANNER: int     = 300   # unlocks when total_minerals_banked >= 1000
-const SHIP_COST_GEM_REFINERY: int     = 250   # unlocks when total_fossils >= 10
-const SHIP_COST_TRADE_AMPLIFIER: int  = 200   # unlocks when deepest_row_reached >= 96
+## Spaceship upgrade costs in copper (1 silver = 100 copper).
+## 20000 copper = 2g, 15000 = 1g 50s, 30000 = 3g, 25000 = 2g 50s.
+const SHIP_COST_WARP_DRIVE: int       = 20000  # unlocks when total_coins_banked >= 50000
+const SHIP_COST_CARGO_BAY: int        = 15000  # unlocks when bosses_defeated_total >= 1
+const SHIP_COST_LONG_SCANNER: int     = 30000  # unlocks when total_coins_banked >= 100000
+const SHIP_COST_GEM_REFINERY: int     = 25000  # unlocks when total_fossils >= 10
+const SHIP_COST_TRADE_AMPLIFIER: int  = 20000  # unlocks when deepest_row_reached >= 96
 
 # Cumulative milestone trackers (persisted to save)
-var total_minerals_banked: int = 0       # sum of all currency ever banked
+var total_coins_banked: int = 0          # sum of all coins ever banked (in copper)
 var bosses_defeated_total: int = 0       # total boss encounters won
 var total_fossils: int = 0               # total fossils found across all runs
 var deepest_row_reached: int = 0         # deepest grid row ever reached
@@ -154,13 +160,39 @@ func _process(delta: float) -> void:
 	if current_state == GameState.PLAYING:
 		total_playtime_seconds += delta
 
-func add_currency(amount: int) -> void:
-	run_mineral_currency += amount
-	EventBus.minerals_changed.emit(run_mineral_currency)
+## Format a copper amount as a human-readable coin string.
+## Examples: 12345 → "1g 23s 45c", 500 → "5s", 7 → "7c", 0 → "0c"
+static func format_coins(copper: int) -> String:
+	if copper <= 0:
+		return "0c"
+	var gold := copper / 10000
+	var rem  := copper % 10000
+	var silver := rem / 100
+	var cents  := rem % 100
+	var parts: Array[String] = []
+	if gold   > 0: parts.append("%dg" % gold)
+	if silver > 0: parts.append("%ds" % silver)
+	if cents  > 0: parts.append("%dc" % cents)
+	return " ".join(parts)
 
+## Add copper directly to the run wallet (use for ore pickups, bonuses, etc.).
+## Callers may pass old "mineral unit" amounts — multiply by 100 to get copper.
+func add_currency(amount: int) -> void:
+	run_coins += amount * 100
+	EventBus.coins_changed.emit(run_coins)
+
+## Add copper directly to the persistent wallet (use for smeltery sales, etc.).
+## Callers may pass old "dollar" amounts — multiply by 100 to get copper.
 func add_dollars(amount: int) -> void:
-	dollars += amount
-	EventBus.dollars_changed.emit(dollars)
+	coins += amount * 100
+	EventBus.coins_changed.emit(coins)
+	save_game()
+
+## Add a copper amount directly to the persistent wallet without any conversion.
+## Use this when the value is already in copper (e.g. computed from copper-denominated prices).
+func add_coins_direct(copper: int) -> void:
+	coins += copper
+	EventBus.coins_changed.emit(coins)
 	save_game()
 
 func track_ore_mined(tile_type: int, minerals: int) -> void:
@@ -175,13 +207,13 @@ func track_ore_chunk_collected_by_type(ore_type: int) -> void:
 	run_ore_chunk_counts[ore_type] = run_ore_chunk_counts.get(ore_type, 0) + 1
 
 func bank_currency() -> void:
-	# Award XP for successfully banking minerals (1 XP per mineral)
-	if run_mineral_currency > 0:
-		add_xp(run_mineral_currency)
-	total_minerals_banked += run_mineral_currency
-	mineral_currency += run_mineral_currency
-	run_mineral_currency = 0
-	EventBus.minerals_changed.emit(0)
+	# Award XP for successfully banking minerals (1 XP per silver-equivalent)
+	if run_coins > 0:
+		add_xp(run_coins / 100)
+	total_coins_banked += run_coins
+	coins += run_coins
+	run_coins = 0
+	EventBus.coins_changed.emit(0)
 
 func change_state(new_state: GameState) -> void:
 	current_state = new_state
@@ -261,12 +293,12 @@ func pause_game() -> void:
 	change_state(GameState.PAUSED)
 
 func lose_run() -> void:
-	run_mineral_currency = 0
+	run_coins = 0
 	run_ore_counts.clear()
 	run_ore_earnings.clear()
 	run_ore_chunk_count = 0
 	run_ore_chunk_counts.clear()
-	EventBus.minerals_changed.emit(0)
+	EventBus.coins_changed.emit(0)
 	# Clear planet config so the overworld re-randomizes on next visit
 	if not NetworkManager.is_multiplayer_session or NetworkManager.is_host:
 		SaveManager.clear_active_slot_run_data()
@@ -276,32 +308,32 @@ func lose_run() -> void:
 
 @rpc("authority", "call_remote", "reliable")
 func rpc_lose_run_as_guest() -> void:
-	run_mineral_currency = 0
+	run_coins = 0
 	run_ore_counts.clear()
 	run_ore_earnings.clear()
 	run_ore_chunk_count = 0
 	run_ore_chunk_counts.clear()
-	EventBus.minerals_changed.emit(0)
+	EventBus.coins_changed.emit(0)
 	await _transition_to_scene("res://src/levels/Overworld.tscn")
 
 func complete_run() -> void:
 	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
-		rpc_complete_run_as_guest.rpc_id(NetworkManager.guest_peer_id, run_mineral_currency)
+		rpc_complete_run_as_guest.rpc_id(NetworkManager.guest_peer_id, run_coins)
 	var summary_scene = load("res://src/ui/RunSummary.tscn")
 	var summary = summary_scene.instantiate()
 	get_tree().root.add_child(summary)
 	# Note: RunSummary handles banking and returning to Overworld
 
 @rpc("authority", "call_remote", "reliable")
-func rpc_complete_run_as_guest(final_minerals: int) -> void:
-	run_mineral_currency = final_minerals
-	EventBus.minerals_changed.emit(run_mineral_currency)
+func rpc_complete_run_as_guest(final_coins: int) -> void:
+	run_coins = final_coins
+	EventBus.coins_changed.emit(run_coins)
 	var summary_scene = load("res://src/ui/RunSummary.tscn")
 	var summary = summary_scene.instantiate()
 	get_tree().root.add_child(summary)
 
 func load_mining_level(scene_path: String = "") -> void:
-	run_mineral_currency = 0 # Reset run currency on entry
+	run_coins = 0 # Reset run currency on entry
 	run_ore_counts.clear()
 	run_ore_earnings.clear()
 	run_ore_chunk_count = 0
@@ -314,7 +346,7 @@ func load_mining_level(scene_path: String = "") -> void:
 		settlement_energy_bonus = 0
 	# shroom / mandible / forager bonuses are consumed by MiningLevel on entry
 
-	EventBus.minerals_changed.emit(0)
+	EventBus.coins_changed.emit(0)
 	EventBus.energy_changed.emit(current_energy, get_max_energy())
 	var path := scene_path if scene_path != "" else "res://src/levels/MiningLevel.tscn"
 	# Host generates the terrain seed and animal type so both can be synced to the guest.
@@ -341,7 +373,7 @@ func rpc_load_mine_as_guest(path: String, start_energy: int,
 		ore_types: Array, hazard_types: Array,
 		shroom_charges: int, mandible_bonus: int,
 		animal_type: String, seed_value: int) -> void:
-	run_mineral_currency = 0
+	run_coins = 0
 	run_ore_counts.clear()
 	run_ore_earnings.clear()
 	run_ore_chunk_count = 0
@@ -354,7 +386,7 @@ func rpc_load_mine_as_guest(path: String, start_energy: int,
 	settlement_mandible_bonus = mandible_bonus
 	planet_animal_type = animal_type
 	terrain_seed = seed_value
-	EventBus.minerals_changed.emit(0)
+	EventBus.coins_changed.emit(0)
 	EventBus.energy_changed.emit(current_energy, get_max_energy())
 	await _transition_to_scene(path)
 
@@ -386,7 +418,7 @@ func rpc_drop_in_to_mine_as_guest(carapace_lvl: int, legs_lvl: int, mandibles_lv
 	gem_refinery_built = refinery
 	trade_amplifier_built = amplifier
 	EventBus.multiplayer_guest_kit_updated.emit()
-	run_mineral_currency = 0
+	run_coins = 0
 	run_ore_counts.clear()
 	run_ore_earnings.clear()
 	run_ore_chunk_count = 0
@@ -397,7 +429,7 @@ func rpc_drop_in_to_mine_as_guest(carapace_lvl: int, legs_lvl: int, mandibles_lv
 	allowed_hazard_types = hazard_types.duplicate()
 	planet_animal_type = animal_type
 	terrain_seed = seed_value
-	EventBus.minerals_changed.emit(0)
+	EventBus.coins_changed.emit(0)
 	EventBus.energy_changed.emit(current_energy, get_max_energy())
 	change_state(GameState.PLAYING)
 	await _transition_to_scene(mine_path)
@@ -438,7 +470,7 @@ func upgrade_legs() -> void:
 func upgrade_mandibles() -> void:
 	mandibles_level += 1
 	save_game()
-	EventBus.minerals_changed.emit(run_mineral_currency)
+	EventBus.coins_changed.emit(run_coins)
 	print("Cargo hold expanded to level ", mandibles_level)
 
 func upgrade_mineral_sense() -> void:
@@ -535,11 +567,11 @@ func restore_energy(amount: int) -> void:
 	current_energy = min(current_energy + amount, get_max_energy())
 	EventBus.energy_changed.emit(current_energy, get_max_energy())
 
-func reenergy_completely(cost: int) -> bool:
-	if run_mineral_currency >= cost:
-		run_mineral_currency -= cost
+func reenergy_completely(cost_copper: int) -> bool:
+	if run_coins >= cost_copper:
+		run_coins -= cost_copper
 		current_energy = get_max_energy()
-		EventBus.minerals_changed.emit(run_mineral_currency)
+		EventBus.coins_changed.emit(run_coins)
 		EventBus.energy_changed.emit(current_energy, get_max_energy())
 		return true
 	return false
@@ -587,8 +619,7 @@ func mark_tier_completed(node_type: int) -> void:
 
 func save_game() -> void:
 	var save_data = {
-		"mineral_currency": mineral_currency,
-		"dollars": dollars,
+		"coins": coins,
 		"carapace_level": carapace_level,
 		"legs_level": legs_level,
 		"mandibles_level": mandibles_level,
@@ -605,7 +636,7 @@ func save_game() -> void:
 		"legs_gem_socketed": legs_gem_socketed,
 		"mandibles_gem_socketed": mandibles_gem_socketed,
 		"sense_gem_socketed": sense_gem_socketed,
-		"total_minerals_banked": total_minerals_banked,
+		"total_coins_banked": total_coins_banked,
 		"bosses_defeated_total": bosses_defeated_total,
 		"total_fossils": total_fossils,
 		"deepest_row_reached": deepest_row_reached,
@@ -645,8 +676,10 @@ func load_game() -> void:
 		var error = json.parse(json_string)
 		if error == OK:
 			var data = json.data
-			mineral_currency = data.get("mineral_currency", 0)
-			dollars = data.get("dollars", 0)
+			# Migrate legacy saves that stored mineral_currency + dollars separately
+			var legacy_minerals: int = data.get("mineral_currency", 0)
+			var legacy_dollars: int = data.get("dollars", 0)
+			coins = data.get("coins", legacy_minerals * 100 + legacy_dollars * 100)
 			carapace_level = data.get("carapace_level", 0)
 			legs_level = data.get("legs_level", 0)
 			mandibles_level = data.get("mandibles_level", 0)
@@ -663,7 +696,7 @@ func load_game() -> void:
 			legs_gem_socketed = data.get("legs_gem_socketed", false)
 			mandibles_gem_socketed = data.get("mandibles_gem_socketed", false)
 			sense_gem_socketed = data.get("sense_gem_socketed", false)
-			total_minerals_banked = data.get("total_minerals_banked", 0)
+			total_coins_banked = data.get("total_coins_banked", data.get("total_minerals_banked", 0) * 100)
 			bosses_defeated_total = data.get("bosses_defeated_total", 0)
 			total_fossils = data.get("total_fossils", 0)
 			deepest_row_reached = data.get("deepest_row_reached", 0)

@@ -879,21 +879,28 @@ func _draw_money(parent: Control, x: int, y: int, w: int) -> int:
 	hdiv.size = Vector2(w, 1)
 	parent.add_child(hdiv)
 
-	var min_lbl := Label.new()
-	min_lbl.text = "Minerals: %d" % GameManager.mineral_currency
-	min_lbl.position = Vector2(x + 2, y + 6)
-	min_lbl.add_theme_font_size_override("font_size", 13)
-	min_lbl.modulate = Color(0.95, 0.85, 0.20)
-	parent.add_child(min_lbl)
+	var wallet_lbl := Label.new()
+	wallet_lbl.text = "Wallet: %s" % GameManager.format_coins(GameManager.coins)
+	wallet_lbl.position = Vector2(x + 2, y + 6)
+	wallet_lbl.add_theme_font_size_override("font_size", 13)
+	wallet_lbl.modulate = Color(0.95, 0.85, 0.20)
+	parent.add_child(wallet_lbl)
+
+	var run_lbl := Label.new()
+	run_lbl.text = "This run: %s" % GameManager.format_coins(GameManager.run_coins)
+	run_lbl.position = Vector2(x + 2, y + 24)
+	run_lbl.add_theme_font_size_override("font_size", 11)
+	run_lbl.modulate = Color(0.75, 0.70, 0.45)
+	parent.add_child(run_lbl)
 
 	var gem_lbl := Label.new()
 	gem_lbl.text = "Gems: %d" % GameManager.gem_count
-	gem_lbl.position = Vector2(x + 2, y + 24)
+	gem_lbl.position = Vector2(x + 2, y + 42)
 	gem_lbl.add_theme_font_size_override("font_size", 13)
 	gem_lbl.modulate = Color(0.20, 0.90, 0.90)
 	parent.add_child(gem_lbl)
 
-	return y + 46
+	return y + 62
 
 func _draw_artifacts(parent: Control, x: int, y: int, w: int,
 		shroom_charges: int, lucky_compass: bool, ancient_map: bool) -> int:

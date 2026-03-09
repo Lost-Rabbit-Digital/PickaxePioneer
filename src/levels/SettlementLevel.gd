@@ -40,11 +40,11 @@ const GROUND_TEXTURE_PATH: String = "res://assets/blocks/grass_side.png"
 const GROUND_DEEP_TEXTURE_PATH: String = "res://assets/blocks/dirt.png"
 const SUPPLY_DOCK_TEXTURE_PATH: String = "res://assets/blocks/cobblestone_bricks_mossy.png"
 
-# Consumable shop costs (same as before)
-const COST_ENERGY_CACHE: int  = 20
-const COST_RATIONS: int       = 25
-const COST_SHROOM: int        = 35
-const COST_SHARPENING: int    = 30
+# Consumable shop costs in copper (100 copper = 1 silver).
+const COST_ENERGY_CACHE: int  = 2000   # 20s
+const COST_RATIONS: int       = 2500   # 25s
+const COST_SHROOM: int        = 3500   # 35s
+const COST_SHARPENING: int    = 3000   # 30s
 
 # ---------------------------------------------------------------------------
 # State
@@ -733,22 +733,22 @@ func _setup_supply_dock_shop() -> void:
 	var by := py + 116
 
 	_btn_energy = _make_button(_shop_layer, bx, by, bw, BTN_H,
-		"Energy Cell Cache  —  +50 starting energy next run  (%d minerals)" % COST_ENERGY_CACHE,
+		"Energy Cell Cache  —  +50 starting energy next run  (%s)" % GameManager.format_coins(COST_ENERGY_CACHE),
 		_buy_energy_cache)
 	by += BTN_GAP
 
 	_btn_rations = _make_button(_shop_layer, bx, by, bw, BTN_H,
-		"Scout Snacks  —  +20 Scout Cat carry capacity next run  (%d minerals)" % COST_RATIONS,
+		"Scout Snacks  —  +20 Scout Cat carry capacity next run  (%s)" % GameManager.format_coins(COST_RATIONS),
 		_buy_rations)
 	by += BTN_GAP
 
 	_btn_shroom = _make_button(_shop_layer, bx, by, bw, BTN_H,
-		"Astro Shroom  —  +12 ore yield charges next run  (%d minerals)" % COST_SHROOM,
+		"Astro Shroom  —  +12 ore yield charges next run  (%s)" % GameManager.format_coins(COST_SHROOM),
 		_buy_shroom)
 	by += BTN_GAP
 
 	_btn_sharpen = _make_button(_shop_layer, bx, by, bw, BTN_H,
-		"Claw Whetstone  —  +1 Claw power next run  (%d minerals)" % COST_SHARPENING,
+		"Claw Whetstone  —  +1 Claw power next run  (%s)" % GameManager.format_coins(COST_SHARPENING),
 		_buy_sharpening)
 	by += BTN_GAP
 
@@ -789,10 +789,10 @@ func _close_shop() -> void:
 	_shop_layer.visible = false
 
 func _refresh_minerals() -> void:
-	_minerals_label.text = "Banked Minerals: %d" % GameManager.mineral_currency
+	_minerals_label.text = "Coins: %s" % GameManager.format_coins(GameManager.coins)
 
 func _update_button_states() -> void:
-	var m := GameManager.mineral_currency
+	var m := GameManager.coins
 	_btn_energy.disabled  = m < COST_ENERGY_CACHE
 	_btn_rations.disabled = m < COST_RATIONS
 	_btn_shroom.disabled  = m < COST_SHROOM
@@ -806,9 +806,9 @@ func _set_status(msg: String) -> void:
 # ---------------------------------------------------------------------------
 
 func _buy_energy_cache() -> void:
-	if GameManager.mineral_currency < COST_ENERGY_CACHE:
+	if GameManager.coins < COST_ENERGY_CACHE:
 		return
-	GameManager.mineral_currency -= COST_ENERGY_CACHE
+	GameManager.coins -= COST_ENERGY_CACHE
 	GameManager.settlement_energy_bonus += 50
 	GameManager.save_game()
 	_set_status("+50 energy cell cache ready for next run!")
@@ -816,9 +816,9 @@ func _buy_energy_cache() -> void:
 	_update_button_states()
 
 func _buy_rations() -> void:
-	if GameManager.mineral_currency < COST_RATIONS:
+	if GameManager.coins < COST_RATIONS:
 		return
-	GameManager.mineral_currency -= COST_RATIONS
+	GameManager.coins -= COST_RATIONS
 	GameManager.settlement_forager_bonus += 20
 	GameManager.save_game()
 	_set_status("+20 Scout Cat carry cap next run!")
@@ -826,9 +826,9 @@ func _buy_rations() -> void:
 	_update_button_states()
 
 func _buy_shroom() -> void:
-	if GameManager.mineral_currency < COST_SHROOM:
+	if GameManager.coins < COST_SHROOM:
 		return
-	GameManager.mineral_currency -= COST_SHROOM
+	GameManager.coins -= COST_SHROOM
 	GameManager.settlement_shroom_charges += 12
 	GameManager.save_game()
 	_set_status("+12 Astro Shroom charges next run!")
@@ -836,9 +836,9 @@ func _buy_shroom() -> void:
 	_update_button_states()
 
 func _buy_sharpening() -> void:
-	if GameManager.mineral_currency < COST_SHARPENING:
+	if GameManager.coins < COST_SHARPENING:
 		return
-	GameManager.mineral_currency -= COST_SHARPENING
+	GameManager.coins -= COST_SHARPENING
 	GameManager.settlement_mandible_bonus += 1
 	GameManager.save_game()
 	_set_status("+1 Claw power next run!")

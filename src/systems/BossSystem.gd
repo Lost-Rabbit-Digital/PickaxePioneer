@@ -848,7 +848,7 @@ func _on_boss_defeated() -> void:
 	_clear_boss_state()
 	GameManager.bosses_defeated_total += 1
 	GameManager.add_currency(BOSS_REWARD_BONUS)
-	EventBus.minerals_earned.emit(BOSS_REWARD_BONUS)
+	EventBus.coins_earned.emit(BOSS_REWARD_BONUS)
 	EventBus.ore_mined_popup.emit(BOSS_REWARD_BONUS, "Boss defeated!")
 	SoundManager.play_boss_defeated_sound()
 	_show_banner.call("BOSS DEFEATED!", Color(0.30, 1.00, 0.40))

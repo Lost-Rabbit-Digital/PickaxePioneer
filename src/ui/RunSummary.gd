@@ -37,7 +37,7 @@ var _final_total: int = 0
 var _border: ColorRect = null
 
 func _ready() -> void:
-	_final_total = GameManager.run_mineral_currency
+	_final_total = GameManager.run_coins
 	_build_ui()
 	_play_intro()
 
@@ -113,7 +113,7 @@ func _build_ui() -> void:
 	_add_label(_panel_node, "Count", px + 260.0, py + HEADER_H - ROW_H + 4.0,
 			90.0, ROW_H - 6.0, 13, Color(0.55, 0.55, 0.55),
 			HORIZONTAL_ALIGNMENT_RIGHT)
-	_add_label(_panel_node, "Minerals", px + 356.0, py + HEADER_H - ROW_H + 4.0,
+	_add_label(_panel_node, "Coins", px + 356.0, py + HEADER_H - ROW_H + 4.0,
 			160.0, ROW_H - 6.0, 13, Color(0.55, 0.55, 0.55),
 			HORIZONTAL_ALIGNMENT_RIGHT)
 
@@ -161,8 +161,8 @@ func _build_ui() -> void:
 		row_nodes.append(_add_label(_panel_node, "x%d" % count, px + 260.0, y, 90.0, ROW_H, 16,
 				Color(0.75, 0.75, 0.75), HORIZONTAL_ALIGNMENT_RIGHT))
 
-		# Minerals earned
-		row_nodes.append(_add_label(_panel_node, "+%d" % earned, px + 356.0, y, 160.0, ROW_H, 16,
+		# Coins earned (earned is in copper)
+		row_nodes.append(_add_label(_panel_node, "+%s" % GameManager.format_coins(earned), px + 356.0, y, 160.0, ROW_H, 16,
 				Color(1.00, 0.88, 0.25), HORIZONTAL_ALIGNMENT_RIGHT))
 
 		# Start invisible for stagger animation
@@ -176,7 +176,7 @@ func _build_ui() -> void:
 	_add_separator(_panel_node, px, y + 6.0, PANEL_W)
 
 	_total_label = Label.new()
-	_total_label.text = "Total:  0 Minerals"
+	_total_label.text = "Total:  0c"
 	_total_label.position = Vector2(px, y + 10.0)
 	_total_label.size = Vector2(PANEL_W, 40.0)
 	_total_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -236,10 +236,10 @@ func _play_intro() -> void:
 	if _final_total > 0:
 		count_tween.tween_method(
 			func(v: float) -> void:
-				_total_label.text = "Total:  %d Minerals" % int(v),
-			0.0, float(_final_total), minf(0.6, float(_final_total) * 0.002))
+				_total_label.text = "Total:  %s" % GameManager.format_coins(int(v)),
+			0.0, float(_final_total), minf(0.6, float(_final_total) * 0.00002))
 	else:
-		_total_label.text = "Total:  0 Minerals"
+		_total_label.text = "Total:  0c"
 
 # ---------------------------------------------------------------------------
 # Helpers

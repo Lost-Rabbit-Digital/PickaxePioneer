@@ -126,14 +126,13 @@ const ORE_COLORS: Dictionary = {
 }
 
 func _ready() -> void:
-	EventBus.minerals_changed.connect(_on_minerals_changed)
+	EventBus.coins_changed.connect(_on_coins_changed)
 	EventBus.player_health_changed.connect(_on_health_changed)
 	EventBus.energy_changed.connect(_on_energy_changed)
 	EventBus.ore_mined_popup.connect(_on_ore_mined_popup)
 	EventBus.boss_hint_popup.connect(_on_boss_hint_popup)
 	EventBus.ladder_count_changed.connect(_on_ladder_count_changed)
 	EventBus.depth_changed.connect(_on_depth_changed)
-	EventBus.dollars_changed.connect(_on_dollars_changed)
 
 	# Single combined panel behind all upper-left info labels (Capacity, earnings, Depth, $)
 	info_panel = ColorRect.new()
@@ -191,11 +190,11 @@ func _ready() -> void:
 	depth_label.modulate = Color(0.6, 0.85, 1.0, 1.0)  # Light blue tint
 	$Control.add_child(depth_label)
 
-	# Dollars label — shows the player's persistent dollar balance
+	# Coins label — shows the player's persistent coin wallet
 	dollars_label = Label.new()
 	dollars_label.position = Vector2(12, 106)
 	dollars_label.custom_minimum_size = Vector2(136, 22)
-	dollars_label.text = "%dg" %GameManager.dollars
+	dollars_label.text = GameManager.format_coins(GameManager.coins)
 	dollars_label.modulate = Color(0.30, 1.0, 0.40, 1.0)  # Green tint
 	$Control.add_child(dollars_label)
 
@@ -324,11 +323,9 @@ func _ready() -> void:
 	# Build the bottom-centre hotbar (pickaxe / ladder / empty)
 	_build_hotbar()
 
-func _on_minerals_changed(_amount: int) -> void:
+func _on_coins_changed(_copper: int) -> void:
 	scrap_label.text = "Slots: %d/%d" % [GameManager.get_stacked_slots_used(), GameManager.get_ore_capacity()]
-
-func _on_dollars_changed(amount: int) -> void:
-	dollars_label.text = "%dg" %amount
+	dollars_label.text = GameManager.format_coins(GameManager.coins)
 
 # Called when a tile is mined.
 # Ore pickups (ORE_NAMES + amount > 0) show a rich icon + amount + name popup.
