@@ -79,12 +79,6 @@ var _energy_btn_ladders: Button
 
 var _upgrade_layer: CanvasLayer
 var _upgrade_minerals_label: Label
-var _upgrade_btn_carapace: Button
-var _upgrade_btn_legs: Button
-var _upgrade_btn_mandibles: Button
-var _upgrade_btn_claws: Button
-var _upgrade_btn_ladder_climb_speed: Button
-var _upgrade_btn_mining_reach: Button
 
 var _smeltery_layer: CanvasLayer
 var _smeltery_minerals_label: Label
@@ -280,12 +274,12 @@ func _shop_buy_ladders() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Upgrade Station Shop
+# Upgrade Station — redirects to Perk Tree (upgrades replaced by perk system)
 # ---------------------------------------------------------------------------
 
 func _build_upgrade_station() -> void:
-	const PANEL_W: int = 500
-	const PANEL_H: int = 510
+	const PANEL_W: int = 480
+	const PANEL_H: int = 280
 	const PX: int = (VW - PANEL_W) / 2
 	const PY: int = (VH - PANEL_H) / 2
 
@@ -299,91 +293,74 @@ func _build_upgrade_station() -> void:
 	var border := ColorRect.new()
 	border.position = Vector2(PX - 3, PY - 3)
 	border.size = Vector2(PANEL_W + 6, PANEL_H + 6)
-	border.color = Color(0.30, 0.85, 0.50)
+	border.color = Color(0.45, 0.30, 0.80)
 	_upgrade_layer.add_child(border)
 
 	var panel := ColorRect.new()
 	panel.position = Vector2(PX, PY)
 	panel.size = Vector2(PANEL_W, PANEL_H)
-	panel.color = Color(0.07, 0.12, 0.09, 0.97)
+	panel.color = Color(0.06, 0.04, 0.14, 0.97)
 	_upgrade_layer.add_child(panel)
 
 	var title := Label.new()
 	title.text = "Upgrade Bay"
-	title.position = Vector2(PX, PY + 12)
+	title.position = Vector2(PX, PY + 14)
 	title.size = Vector2(PANEL_W, 30)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 20)
-	title.modulate = Color(0.55, 1.0, 0.70)
+	title.modulate = Color(0.80, 0.60, 1.00)
 	_upgrade_layer.add_child(title)
 
+	var sub := Label.new()
+	sub.text = "Upgrades are now handled through the Perk Tree."
+	sub.position = Vector2(PX + 20, PY + 54)
+	sub.size = Vector2(PANEL_W - 40, 22)
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub.add_theme_font_size_override("font_size", 14)
+	sub.modulate = Color(0.75, 0.70, 0.85)
+	_upgrade_layer.add_child(sub)
+
 	_upgrade_minerals_label = Label.new()
-	_upgrade_minerals_label.position = Vector2(PX, PY + 48)
-	_upgrade_minerals_label.size = Vector2(PANEL_W, 24)
+	_upgrade_minerals_label.position = Vector2(PX + 20, PY + 84)
+	_upgrade_minerals_label.size = Vector2(PANEL_W - 40, 24)
 	_upgrade_minerals_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_upgrade_minerals_label.modulate = Color(1.0, 0.85, 0.2)
+	_upgrade_minerals_label.modulate = Color(1.0, 0.85, 0.20)
 	_upgrade_layer.add_child(_upgrade_minerals_label)
 
-	const BTN_X: int = PX + 25
-	const BTN_W: int = PANEL_W - 50
-	const BTN_H: int = 52
+	var hint := Label.new()
+	hint.text = "Press  [P]  to open the Perk Tree at any time."
+	hint.position = Vector2(PX + 20, PY + 120)
+	hint.size = Vector2(PANEL_W - 40, 24)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_font_size_override("font_size", 15)
+	hint.modulate = Color(0.50, 0.90, 0.55)
+	_upgrade_layer.add_child(hint)
 
-	_upgrade_btn_carapace        = _make_btn(BTN_X, PY + 80, BTN_W, BTN_H, "", _upgrade_buy_carapace)
-	_upgrade_btn_legs            = _make_btn(BTN_X, PY + 140, BTN_W, BTN_H, "", _upgrade_buy_legs)
-	_upgrade_btn_mandibles       = _make_btn(BTN_X, PY + 200, BTN_W, BTN_H, "", _upgrade_buy_mandibles)
-	_upgrade_btn_claws           = _make_btn(BTN_X, PY + 260, BTN_W, BTN_H, "", _upgrade_buy_claws)
-	_upgrade_btn_ladder_climb_speed = _make_btn(BTN_X, PY + 320, BTN_W, BTN_H, "", _upgrade_buy_ladder_climb_speed)
-	_upgrade_btn_mining_reach    = _make_btn(BTN_X, PY + 380, BTN_W, BTN_H, "", _upgrade_buy_mining_reach)
-	_upgrade_layer.add_child(_upgrade_btn_carapace)
-	_upgrade_layer.add_child(_upgrade_btn_legs)
-	_upgrade_layer.add_child(_upgrade_btn_mandibles)
-	_upgrade_layer.add_child(_upgrade_btn_claws)
-	_upgrade_layer.add_child(_upgrade_btn_ladder_climb_speed)
-	_upgrade_layer.add_child(_upgrade_btn_mining_reach)
+	var open_btn := Button.new()
+	open_btn.text = "Open Perk Tree  [P]"
+	open_btn.position = Vector2(PX + (PANEL_W - 220) / 2, PY + 160)
+	open_btn.size = Vector2(220, 44)
+	open_btn.add_theme_font_size_override("font_size", 16)
+	open_btn.pressed.connect(func() -> void:
+		hide_upgrade_station()
+		PerkTreeMenu._open())
+	_upgrade_layer.add_child(open_btn)
 
-	_upgrade_layer.add_child(
-		_make_btn(BTN_X + (BTN_W - 180) / 2, PY + 454, 180, 40, "Close", hide_upgrade_station))
+	var close_btn := Button.new()
+	close_btn.text = "Close"
+	close_btn.position = Vector2(PX + (PANEL_W - 140) / 2, PY + 216)
+	close_btn.size = Vector2(140, 38)
+	close_btn.pressed.connect(hide_upgrade_station)
+	_upgrade_layer.add_child(close_btn)
 
 
 func show_upgrade_station() -> void:
-	_upgrade_minerals_label.text = "Dollars: %dg" % GameManager.dollars
-
-	var carapace_cost := 50 + 25 * GameManager.carapace_level
-	var hp := GameManager.get_max_health()
-	_upgrade_btn_carapace.text = "Reinforce Spacesuit Lv%d — Max HP: %d → %d  (%dg)" % [
-		GameManager.carapace_level, hp, hp + 1, carapace_cost]
-	_upgrade_btn_carapace.disabled = GameManager.dollars < carapace_cost
-
-	var legs_cost := 50 + 25 * GameManager.legs_level
-	var energy_cap := GameManager.get_max_energy()
-	_upgrade_btn_legs.text = "Upgrade Mining Boots Lv%d — Energy Limit: %d → %d  (%dg)" % [
-		GameManager.legs_level, energy_cap, energy_cap + 25, legs_cost]
-	_upgrade_btn_legs.disabled = GameManager.dollars < legs_cost
-
-	var mandibles_cost := 50 + 25 * GameManager.mandibles_level
-	var cap := GameManager.get_ore_capacity()
-	_upgrade_btn_mandibles.text = "Expand Cargo Hold Lv%d — Inventory Slots: %d → %d  (%dg)" % [
-		GameManager.mandibles_level, cap, cap + 2, mandibles_cost]
-	_upgrade_btn_mandibles.disabled = GameManager.dollars < mandibles_cost
-
-	var claws_cost := 50 + 25 * GameManager.claws_level
-	var power := GameManager.get_mandibles_power()
-	_upgrade_btn_claws.text = "Sharpen Claws Lv%d — Mining Power: %d → %d  (%dg)" % [
-		GameManager.claws_level, power, power + 3, claws_cost]
-	_upgrade_btn_claws.disabled = GameManager.dollars < claws_cost
-
-	var ladder_climb_cost := 75 + 25 * GameManager.ladder_climb_speed_level
-	var climb_speed := GameManager.get_ladder_climb_speed()
-	_upgrade_btn_ladder_climb_speed.text = "Boost Ladder Speed Lv%d — Speed: %.0f → %.0f px/s  (g%d)" % [
-		GameManager.ladder_climb_speed_level, climb_speed, climb_speed + 50.0, ladder_climb_cost]
-	_upgrade_btn_ladder_climb_speed.disabled = GameManager.dollars < ladder_climb_cost
-
-	var reach_cost := 75 + 25 * GameManager.mining_reach_level
-	var reach := GameManager.get_mining_reach()
-	_upgrade_btn_mining_reach.text = "Extend Mining Reach Lv%d — Range: %.1f → %.1f tiles  (g%d)" % [
-		GameManager.mining_reach_level, reach, reach + 0.75, reach_cost]
-	_upgrade_btn_mining_reach.disabled = GameManager.dollars < reach_cost
-
+	_upgrade_minerals_label.text = "Level %d  |  %d Perk Point%s  |  %dg" % [
+		GameManager.player_level,
+		GameManager.perk_points,
+		"s" if GameManager.perk_points != 1 else "",
+		GameManager.dollars,
+	]
 	_upgrade_layer.visible = true
 	upgrade_station_visible = true
 
@@ -391,75 +368,6 @@ func show_upgrade_station() -> void:
 func hide_upgrade_station() -> void:
 	_upgrade_layer.visible = false
 	upgrade_station_visible = false
-
-
-func _upgrade_buy_carapace() -> void:
-	var cost := 50 + 25 * GameManager.carapace_level
-	if GameManager.dollars >= cost:
-		GameManager.dollars -= cost
-		EventBus.dollars_changed.emit(GameManager.dollars)
-		GameManager.upgrade_carapace()
-		var player := get_tree().get_first_node_in_group("player")
-		if player:
-			player.health_component.max_health = GameManager.get_max_health()
-			EventBus.player_health_changed.emit(player.health_component.current_health, player.health_component.max_health)
-		SoundManager.play_purchase_confirm_sound()
-		show_upgrade_station()
-
-
-func _upgrade_buy_legs() -> void:
-	var cost := 50 + 25 * GameManager.legs_level
-	if GameManager.dollars >= cost:
-		GameManager.dollars -= cost
-		EventBus.dollars_changed.emit(GameManager.dollars)
-		GameManager.upgrade_legs()
-		EventBus.energy_changed.emit(GameManager.current_energy, GameManager.get_max_energy())
-		SoundManager.play_purchase_confirm_sound()
-		show_upgrade_station()
-
-
-func _upgrade_buy_mandibles() -> void:
-	var cost := 50 + 25 * GameManager.mandibles_level
-	if GameManager.dollars >= cost:
-		GameManager.dollars -= cost
-		EventBus.dollars_changed.emit(GameManager.dollars)
-		GameManager.upgrade_mandibles()
-		SoundManager.play_purchase_confirm_sound()
-		show_upgrade_station()
-
-
-func _upgrade_buy_claws() -> void:
-	var cost := 50 + 25 * GameManager.claws_level
-	if GameManager.dollars >= cost:
-		GameManager.dollars -= cost
-		EventBus.dollars_changed.emit(GameManager.dollars)
-		GameManager.upgrade_claws()
-		SoundManager.play_purchase_confirm_sound()
-		show_upgrade_station()
-
-
-func _upgrade_buy_ladder_climb_speed() -> void:
-	var cost := 75 + 25 * GameManager.ladder_climb_speed_level
-	if GameManager.dollars >= cost:
-		GameManager.dollars -= cost
-		EventBus.dollars_changed.emit(GameManager.dollars)
-		GameManager.upgrade_ladder_climb_speed()
-		if player_node:
-			player_node.ladder_climb_speed = GameManager.get_ladder_climb_speed()
-		SoundManager.play_purchase_confirm_sound()
-		show_upgrade_station()
-
-
-func _upgrade_buy_mining_reach() -> void:
-	var cost := 75 + 25 * GameManager.mining_reach_level
-	if GameManager.dollars >= cost:
-		GameManager.dollars -= cost
-		EventBus.dollars_changed.emit(GameManager.dollars)
-		GameManager.upgrade_mining_reach()
-		if player_node:
-			player_node.mine_range = GameManager.get_mining_reach()
-		SoundManager.play_purchase_confirm_sound()
-		show_upgrade_station()
 
 
 # ---------------------------------------------------------------------------

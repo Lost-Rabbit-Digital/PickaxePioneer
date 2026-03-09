@@ -54,7 +54,7 @@ var sky_color: Color = Color(0.40, 0.65, 0.90)
 var current_energy: int = 100
 
 func get_max_energy() -> int:
-	return 100 + (legs_level * 25) + (25 if legs_gem_socketed else 0)
+	return 100 + perk_ranks.get("paws", 0) * 25
 
 # Settlement carry-over bonuses (applied on next mine entry, then cleared)
 var settlement_energy_bonus: int = 0       # extra starting energy from Energy Cache purchase
@@ -78,7 +78,9 @@ var equipped_ice: bool = false
 # Cat customization — sprite tint color (default white = no tint)
 var cat_color: Color = Color.WHITE
 
-# Upgrade levels
+# Legacy upgrade levels — kept at 0 (stat getters now use perk_ranks instead).
+# These vars remain for save-file backwards-compatibility and multiplayer RPC
+# signatures.  Do not increment them directly; use the perk tree instead.
 var carapace_level: int = 0
 var legs_level: int = 0
 var mandibles_level: int = 0
@@ -86,6 +88,15 @@ var mineral_sense_level: int = 0
 var claws_level: int = 0
 var ladder_climb_speed_level: int = 0
 var mining_reach_level: int = 0
+
+# ---------------------------------------------------------------------------
+# Perk Tree — experience, levels, and perk ranks
+# ---------------------------------------------------------------------------
+var player_xp: int = 0          # XP within the current level (resets on level-up)
+var player_level: int = 1       # Current player level (1-indexed)
+var perk_points: int = 0        # Unspent perk points (1 awarded per level-up)
+## Maps perk id (String) -> current rank (int).  Missing key = rank 0.
+var perk_ranks: Dictionary = {}
 
 # Gem socketing system — gems collected as items, socketed for passive bonuses
 var gem_count: int = 0                       # unspent gems in the colony's stockpile
@@ -164,6 +175,9 @@ func track_ore_chunk_collected_by_type(ore_type: int) -> void:
 	run_ore_chunk_counts[ore_type] = run_ore_chunk_counts.get(ore_type, 0) + 1
 
 func bank_currency() -> void:
+	# Award XP for successfully banking minerals (1 XP per mineral)
+	if run_mineral_currency > 0:
+		add_xp(run_mineral_currency)
 	total_minerals_banked += run_mineral_currency
 	mineral_currency += run_mineral_currency
 	run_mineral_currency = 0
@@ -448,12 +462,12 @@ func upgrade_mining_reach() -> void:
 	print("Mining reach expanded to level ", mining_reach_level)
 
 func get_sonar_ping_radius() -> float:
-	return 4.0 + mineral_sense_level * 3.0 + (3.0 if sense_gem_socketed else 0.0)
+	return 4.0 + perk_ranks.get("whiskers", 0) * 3.0
 
 ## Number of inventory slots available per run (slot-based; each ore chunk uses one slot).
-## Boosted by Cargo Bay spaceship upgrade and Claws (mandibles) upgrades.
+## Boosted by Cargo Bay spaceship upgrade and Cargo Claws perk.
 func get_ore_capacity() -> int:
-	return BASE_INVENTORY_SLOTS + (5 if cargo_bay_built else 0) + (mandibles_level * 2) + (2 if mandibles_gem_socketed else 0)
+	return BASE_INVENTORY_SLOTS + (5 if cargo_bay_built else 0) + perk_ranks.get("cargo", 0) * 2
 
 ## Number of slots currently occupied, counting stacks of up to STACK_SIZE chunks per slot.
 ## Same ore type chunks stack together; one slot holds up to STACK_SIZE of a single type.
@@ -480,22 +494,35 @@ func get_dollar_sell_mult() -> float:
 	return 1.25 if trade_amplifier_built else 1.0
 
 func get_sonar_ping_energy_cost() -> int:
-	return maxi(1, ceili((5 - mineral_sense_level) / 2.0))
+	return maxi(1, 5 - perk_ranks.get("whiskers", 0))
 
 func get_ladder_climb_speed() -> float:
-	return 420.0 + (ladder_climb_speed_level * 50.0)
+	return 420.0 + perk_ranks.get("ladder_mastery", 0) * 50.0
 
 func get_mining_reach() -> float:
-	return 4.5 + (mining_reach_level * 0.75)
+	return 4.5 + perk_ranks.get("reach", 0) * 0.75
 
 func get_max_health() -> int:
-	return 3 + carapace_level + (1 if carapace_gem_socketed else 0)
+	return 3 + perk_ranks.get("pelt", 0) + perk_ranks.get("nine_lives", 0) * 2
 
 func get_max_speed() -> float:
-	return 300.0 + (legs_level * 30.0) + (15.0 if legs_gem_socketed else 0.0)
+	return 300.0 + perk_ranks.get("paws", 0) * 30.0
 
 func get_mandibles_power() -> int:
-	return 5 + claws_level * 3
+	return 5 + perk_ranks.get("claws", 0) * 3
+
+## Bonus lucky strike chance from Deep Veins perk (additive, 0.0–0.25).
+func get_lucky_strike_bonus() -> float:
+	return perk_ranks.get("deep_veins", 0) * 0.05
+
+## Ore mineral yield multiplier from Motherlode perk (1.0 = no bonus).
+func get_ore_yield_mult() -> float:
+	return 1.0 + perk_ranks.get("motherlode", 0) * 0.10
+
+## Boss energy drain multiplier reduction from Iron Hide perk.
+## Returns a value in [0.0, 0.5]; subtract from drain multiplier.
+func get_boss_drain_reduction() -> float:
+	return perk_ranks.get("iron_hide", 0) * 0.10
 
 func consume_energy(amount: int) -> bool:
 	current_energy -= amount
@@ -519,6 +546,36 @@ func reenergy_completely(cost: int) -> bool:
 
 func is_out_of_energy() -> bool:
 	return current_energy <= 0
+
+# ---------------------------------------------------------------------------
+# XP and Perk Tree
+# ---------------------------------------------------------------------------
+
+## Add XP to the player.  Handles level-ups automatically.
+func add_xp(amount: int) -> void:
+	player_xp += amount
+	_process_level_ups()
+	EventBus.xp_changed.emit(player_xp, PerkSystem.xp_for_next_level(player_level))
+
+func _process_level_ups() -> void:
+	var threshold := PerkSystem.xp_for_next_level(player_level)
+	while player_xp >= threshold:
+		player_xp -= threshold
+		player_level += 1
+		perk_points += 1
+		SaveManager.save_active_slot()
+		EventBus.player_leveled_up.emit(player_level, perk_points)
+		threshold = PerkSystem.xp_for_next_level(player_level)
+
+## Spend one perk point on a perk.  Returns true on success.
+func spend_perk_point(perk_id: String) -> bool:
+	if not PerkSystem.can_rank_up(perk_id, perk_ranks, perk_points):
+		return false
+	perk_ranks[perk_id] = perk_ranks.get(perk_id, 0) + 1
+	perk_points -= 1
+	SaveManager.save_active_slot()
+	EventBus.perk_points_changed.emit(perk_points)
+	return true
 
 func mark_tier_completed(node_type: int) -> void:
 	# Record that a specific tier has been completed

@@ -266,9 +266,10 @@ func update(delta: float, player_col: int = -1, player_row: int = -1) -> void:
 func get_energy_drain_mult() -> float:
 	if not boss_active:
 		return 1.0
+	var reduction: float = GameManager.get_boss_drain_reduction()
 	if boss_type == BOSS_TYPE_ANCIENT:
-		return ANCIENT_DRAIN_MULT
-	return BOSS_DRAIN_MULT
+		return maxf(0.5, ANCIENT_DRAIN_MULT - reduction)
+	return maxf(0.25, BOSS_DRAIN_MULT - reduction)
 
 
 # ---------------------------------------------------------------------------
@@ -853,6 +854,8 @@ func _on_boss_defeated() -> void:
 	_show_banner.call("BOSS DEFEATED!", Color(0.30, 1.00, 0.40))
 	GameManager.restore_energy(50)
 	EventBus.ore_mined_popup.emit(50, "Energy restored!")
+	# Award XP for defeating a boss
+	GameManager.add_xp(500)
 	_shake_camera.call(14.0, 0.6)
 
 
