@@ -307,42 +307,42 @@ func _rebuild_content(ore_counts: Dictionary, shroom_charges: int, lucky_compass
 	for child in _content_root.get_children():
 		child.queue_free()
 
-	var content_w: int = PANEL_W - 32
-	var col_w: int = content_w / 2
+	var content_w: int = PANEL_W - 32   # 748
+	var eq_col_w: int = int(content_w * 0.30)   # ~224
+	var col_gap: int = 10
+	var inv_col_x: int = eq_col_w + col_gap
+	var inv_col_w: int = content_w - inv_col_x   # ~514
+
+	# Vertical divider between columns
+	var vdiv := ColorRect.new()
+	vdiv.color = Color(0.50, 0.40, 0.65, 0.30)
+	vdiv.position = Vector2(eq_col_w + 4, 0)
+	vdiv.size = Vector2(1, PANEL_H - 68)
+	_content_root.add_child(vdiv)
 
 	# -----------------------------------------------------------------------
-	# Section 1: Inventory Slot Grid  (full width) — tools + ore
+	# LEFT COLUMN: Equipment stats + Money + Trinkets
 	# -----------------------------------------------------------------------
-	var y: int = 4
-	y = _draw_section_header(_content_root, 0, y, content_w, "Inventory",
-		Color(0.85, 0.65, 0.20))
-	y += 4
-	y = _draw_slot_grid(_content_root, 0, y, content_w, ore_counts)
-
-	# Divider between grid and lower sections
-	var div := ColorRect.new()
-	div.color = Color(0.50, 0.40, 0.65, 0.30)
-	div.position = Vector2(0, y + 6)
-	div.size = Vector2(content_w, 1)
-	_content_root.add_child(div)
-	y += 14
-
-	# -----------------------------------------------------------------------
-	# Lower half: Equipment (left col) | Artifacts (right col)
-	# -----------------------------------------------------------------------
-	var eq_y: int = y
-	eq_y = _draw_section_header(_content_root, 0, eq_y, col_w, "Equipment",
+	var eq_y: int = 4
+	eq_y = _draw_section_header(_content_root, 0, eq_y, eq_col_w, "Equipment",
 		Color(0.35, 0.75, 0.95))
 	eq_y += 4
-	_draw_equipment(_content_root, 0, eq_y, col_w)
-
-	var art_x: int = col_w + 8
-	var art_y: int = y
-	art_y = _draw_section_header(_content_root, art_x, art_y, col_w - 8, "Artifacts",
+	eq_y = _draw_equipment(_content_root, 0, eq_y, eq_col_w)
+	eq_y = _draw_money(_content_root, 0, eq_y + 8, eq_col_w)
+	eq_y = _draw_section_header(_content_root, 0, eq_y + 8, eq_col_w, "Trinkets",
 		Color(0.55, 0.90, 0.45))
-	art_y += 4
-	_draw_artifacts(_content_root, art_x, art_y, col_w - 8,
+	eq_y += 4
+	_draw_artifacts(_content_root, 0, eq_y, eq_col_w,
 		shroom_charges, lucky_compass, ancient_map)
+
+	# -----------------------------------------------------------------------
+	# RIGHT COLUMN: Inventory slot grid — tools + ore
+	# -----------------------------------------------------------------------
+	var inv_y: int = 4
+	inv_y = _draw_section_header(_content_root, inv_col_x, inv_y, inv_col_w, "Inventory",
+		Color(0.85, 0.65, 0.20))
+	inv_y += 4
+	_draw_slot_grid(_content_root, inv_col_x, inv_y, inv_col_w, ore_counts)
 
 # -----------------------------------------------------------------------
 # Slot grid — tool slots first (pickaxe, ladder), then ore stacks.
@@ -361,10 +361,7 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 			stacks.append({"tile": ore["tile"], "count": stack_count, "ore": ore})
 			remaining -= stack_count
 
-	var used_ore_slots: int = stacks.size()
-	var total_used_slots: int = TOOL_SLOT_COUNT + used_ore_slots
-
-	var cols: int = SLOT_COLS
+	var cols: int = int((w + SLOT_GAP) / (SLOT_SIZE + SLOT_GAP))
 	var cell: int = SLOT_SIZE + SLOT_GAP
 	var rows: int = ceili(float(total_display_slots) / float(cols))
 
@@ -524,17 +521,8 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 			hit.gui_input.connect(_on_slot_gui_input.bind(captured))
 			parent.add_child(hit)
 
-	# Slot count label below the grid
 	var grid_h: int = rows * cell
-	var count_lbl := Label.new()
-	count_lbl.text = "%d / %d slots used" % [total_used_slots, total_display_slots]
-	count_lbl.position = Vector2(x, y + grid_h + 2)
-	count_lbl.custom_minimum_size = Vector2(w, 18)
-	count_lbl.add_theme_font_size_override("font_size", 12)
-	count_lbl.modulate = Color(0.65, 0.65, 0.70, 0.90)
-	parent.add_child(count_lbl)
-
-	return y + grid_h + 22
+	return y + grid_h
 
 # Draws icon content inside a tool slot (pickaxe texture or ladder icon)
 func _draw_tool_slot_content(parent: Control, sx: int, sy: int, tool_idx: int, slot_data: Dictionary) -> void:
@@ -883,6 +871,29 @@ func _draw_equipment(parent: Control, x: int, y: int, w: int) -> int:
 		y += ROW_H + 2
 
 	return y
+
+func _draw_money(parent: Control, x: int, y: int, w: int) -> int:
+	var hdiv := ColorRect.new()
+	hdiv.color = Color(0.50, 0.40, 0.65, 0.20)
+	hdiv.position = Vector2(x, y)
+	hdiv.size = Vector2(w, 1)
+	parent.add_child(hdiv)
+
+	var min_lbl := Label.new()
+	min_lbl.text = "Minerals: %d" % GameManager.mineral_currency
+	min_lbl.position = Vector2(x + 2, y + 6)
+	min_lbl.add_theme_font_size_override("font_size", 13)
+	min_lbl.modulate = Color(0.95, 0.85, 0.20)
+	parent.add_child(min_lbl)
+
+	var gem_lbl := Label.new()
+	gem_lbl.text = "Gems: %d" % GameManager.gem_count
+	gem_lbl.position = Vector2(x + 2, y + 24)
+	gem_lbl.add_theme_font_size_override("font_size", 13)
+	gem_lbl.modulate = Color(0.20, 0.90, 0.90)
+	parent.add_child(gem_lbl)
+
+	return y + 46
 
 func _draw_artifacts(parent: Control, x: int, y: int, w: int,
 		shroom_charges: int, lucky_compass: bool, ancient_map: bool) -> int:
