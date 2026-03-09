@@ -37,6 +37,9 @@ const SIZE_SCALE: Dictionary = {"Small": 0.70, "Medium": 1.0, "Large": 1.40}
 # Resolved base scale for this node — set in _update_visuals, used by highlight()
 var _base_scale: float = 1.0
 
+# Store the base colour (before locking) so we can restore it when unlocking
+var _base_modulate: Color = Color.WHITE
+
 # Biome, temperature, and size data keyed by sprite frame index.
 # Sizes: Small <= 13,000 km | Medium 13,001–47,999 km | Large >= 48,000 km
 const PLANET_DATA: Array[Dictionary] = [
@@ -82,17 +85,18 @@ func refresh_visuals() -> void:
 	match node_type:
 		NodeType.MINE:
 			_base_scale = BASE_SCALE_MINE * size_factor
-			sprite.modulate = Color(1.0, 0.75, 0.20)  # warm gold tint for mines
+			_base_modulate = Color(1.0, 0.75, 0.20)  # warm gold tint for mines
 		NodeType.STATION:
 			_base_scale = BASE_SCALE_OTHER * size_factor
-			sprite.modulate = Color.CYAN
+			_base_modulate = Color.CYAN
 		NodeType.SETTLEMENT:
 			_base_scale = BASE_SCALE_OTHER * size_factor
-			sprite.modulate = Color(0.85, 0.60, 1.0)  # soft purple for settlements
+			_base_modulate = Color(0.85, 0.60, 1.0)  # soft purple for settlements
 		NodeType.EMPTY:
 			_base_scale = BASE_SCALE_OTHER * size_factor
-			sprite.modulate = Color.WHITE
+			_base_modulate = Color.WHITE
 
+	sprite.modulate = _base_modulate
 	sprite.scale = Vector2(_base_scale, _base_scale)
 	_update_label_position()
 
@@ -112,6 +116,13 @@ func highlight(active: bool) -> void:
 	sprite.scale = Vector2(highlight_scale, highlight_scale)
 	label.modulate = Color.YELLOW if active else Color.WHITE
 	_update_label_position()
+
+func set_locked(is_locked: bool) -> void:
+	# Apply or remove grey modulation based on lock state
+	if is_locked:
+		sprite.modulate = _base_modulate * Color(0.5, 0.5, 0.5, 1.0)
+	else:
+		sprite.modulate = _base_modulate
 
 func get_average_pixel_color() -> Color:
 	# Sample every non-transparent pixel from the current sprite frame and return

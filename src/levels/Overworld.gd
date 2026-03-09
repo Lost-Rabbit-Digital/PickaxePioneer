@@ -21,6 +21,12 @@ var nodes: Array[MapNode] = []
 var _modal: LevelInfoModal = null
 var _pending_node: MapNode = null
 
+# Animated dashed lines
+var _animation_time: float = 0.0
+const _DASH_LENGTH: float = 10.0
+const _GAP_LENGTH: float = 10.0
+const _ANIMATION_SPEED: float = 80.0  # pixels per second
+
 # Camera control
 var _camera_zoom: float = 1.0
 var _camera_pan_offset: Vector2 = Vector2.ZERO
@@ -109,7 +115,8 @@ func _ready() -> void:
 	_modal.confirmed.connect(_on_modal_confirmed)
 
 	# Arrange nodes - restore saved positions or generate fresh neural network layout
-	if saved_config.has("node_positions") and saved_config["node_positions"].has("MineNode3"):
+	# Check for current layout nodes (MineNode1/MineNode2) instead of legacy MineNode3
+	if saved_config.has("node_positions") and saved_config["node_positions"].has("MineNode1"):
 		_restore_node_positions(saved_config["node_positions"])
 		_save_node_positions()  # Persist sprite frames if missing from a legacy save
 	else:
@@ -119,6 +126,9 @@ func _ready() -> void:
 	# Connect click signals
 	for node in nodes:
 		node.node_clicked.connect(_on_node_clicked)
+
+	# Apply lock visual states based on progression
+	_apply_lock_states()
 
 	# Initialize position
 	if GameManager.last_overworld_node_name != "":
@@ -463,7 +473,7 @@ func _connect_nodes(node_a: MapNode, node_b: MapNode) -> void:
 		node_b.neighbors.append(node_a)
 
 func _draw() -> void:
-	# Draw dotted lines between visible nodes only — hidden nodes (e.g. mine_node_2
+	# Draw animated dotted lines between visible nodes only — hidden nodes (e.g. mine_node_2
 	# when the Long-Range Scanner is inactive) must not produce orphan lines.
 	var visited_pairs = []
 	for node in nodes:
@@ -476,9 +486,38 @@ func _draw() -> void:
 			pair.sort_custom(func(a, b): return a.name < b.name)
 			if not visited_pairs.has(pair):
 				visited_pairs.append(pair)
-				draw_dashed_line(node.position, neighbor.position, Color(1, 1, 1, 0.5), 2.0, 10.0)
+				_draw_animated_dashed_line(node.position, neighbor.position, Color(1, 1, 1, 0.5), 2.0)
+
+func _draw_animated_dashed_line(from: Vector2, to: Vector2, color: Color, width: float) -> void:
+	# Draw an animated dashed line that moves toward the destination node.
+	# The dashes travel from source to destination, continuously looping.
+
+	var direction = to - from
+	var distance = direction.length()
+
+	if distance < 0.1:
+		return
+
+	var unit_dir = direction.normalized()
+	var cycle_length = _DASH_LENGTH + _GAP_LENGTH
+	var offset = fmod(_animation_time * _ANIMATION_SPEED, cycle_length)
+
+	# Draw dashes along the line
+	var current_distance = -offset
+	while current_distance < distance:
+		var dash_start = from + unit_dir * current_distance
+		var dash_end = from + unit_dir * min(current_distance + _DASH_LENGTH, distance)
+
+		# Only draw if the dash is visible on the line
+		if current_distance + _DASH_LENGTH > 0:
+			draw_line(dash_start, dash_end, color, width)
+
+		current_distance += cycle_length
 
 func _process(delta: float) -> void:
+	# Update animation time for dashed lines
+	_animation_time += delta
+
 	if _camera_follow_caravan:
 		camera.global_position = caravan.global_position + _camera_pan_offset
 	_update_camera()
@@ -496,6 +535,7 @@ func _process(delta: float) -> void:
 		_momentum_velocity *= pow(_MOMENTUM_DAMPING, delta * 60.0)
 
 	_update_center_button_visibility()
+	queue_redraw()
 
 func _unhandled_input(event: InputEvent) -> void:
 	# Handle mouse drag panning (right-click drag)
@@ -578,6 +618,9 @@ func _move_selection(direction: Vector2) -> void:
 	var best_dot = -1.0
 
 	for neighbor in current_node.neighbors:
+		# Skip locked nodes during keyboard navigation
+		if _is_node_locked(neighbor):
+			continue
 		var dir_to_neighbor = current_node.position.direction_to(neighbor.position)
 		var dot = dir_to_neighbor.dot(direction)
 
@@ -705,6 +748,12 @@ func _is_node_locked(node: MapNode) -> bool:
 	# All other nodes (City and Mines) are always accessible
 	return false
 
+func _apply_lock_states() -> void:
+	# Apply grey modulation to locked nodes
+	for node in nodes:
+		if _is_node_locked(node):
+			node.set_locked(true)
+
 func _show_lock_message(node: MapNode) -> void:
 	# Show a lock message to the player
 	_modal.show_locked_message(node)
@@ -713,6 +762,9 @@ func _enter_node(node: MapNode) -> void:
 	_modal.show_for_node(node)
 
 func _on_modal_confirmed(node: MapNode) -> void:
+	# Save planet frame state before leaving the overworld
+	_save_node_positions()
+
 	GameManager.last_overworld_node_name = node.location_name
 	GameManager.allowed_ore_types = node.ore_types.duplicate()
 	GameManager.allowed_hazard_types = node.hazard_types.duplicate()
