@@ -81,9 +81,10 @@ The mechanical core stays entirely intact — only terminology, art, and narrati
 
 ---
 
-### TASK 1.2 — Update Upgrade Track Names in UI
+### TASK 1.2 — Update Upgrade Track Names in UI ✅ DONE
 **Type:** Code (UI strings)
 **Files:** `src/ui/UpgradeMenu.gd`, `src/levels/CityLevel.gd`
+**Status:** UI already uses space-themed cat terminology (Spacesuit/Pelt, Jet Boots/Paws, Cargo Hold, Space Whiskers). Gem sockets use Shield/Booster/Cargo/Sensor naming. No ant terms remain in UI.
 
 Apply the terminology map to all user-facing upgrade buttons and descriptions.
 
@@ -107,19 +108,21 @@ Apply the terminology map to all user-facing upgrade buttons and descriptions.
 
 ---
 
-### TASK 1.3 — Update HUD Labels
+### TASK 1.3 — Update HUD Labels ✅ DONE
 **Type:** Code (UI strings)
 **File:** `src/ui/HUD.gd`
+**Status:** HUD contains no ant terminology. All labels use cat/space-themed terms. Repair item renamed to "Pelt Patch" in MiningShopSystem.gd.
 
-- `"Carapace Patch"` popup text → `"Pelt Patch"`
-- Any low-HP warning that says "carapace" → "pelt"
-- Any HUD string referencing "mandibles," "antennae," or "colony" → apply terminology map
+- ~~`"Carapace Patch"` popup text → `"Pelt Patch"`~~ Done
+- ~~Any low-HP warning that says "carapace" → "pelt"~~ No such references found
+- ~~Any HUD string referencing "mandibles," "antennae," or "colony" → apply terminology map~~ No such references found
 
 ---
 
-### TASK 1.4 — Rewrite ChatterManager Dialogue
+### TASK 1.4 — Rewrite ChatterManager Dialogue ✅ DONE
 **Type:** Code (content strings)
 **File:** `src/systems/ChatterManager.gd`
+**Status:** Messages array fully updated to cat-themed dialogue. All references to clowder, pelt, claws, paws, whiskers, and Matriarch are in place.
 
 Replace the `messages` array with cat-civilization dialogue. Full replacement:
 
@@ -176,70 +179,73 @@ var messages: Array[String] = [
 
 ---
 
-### TASK 1.5 — Update Settlement Consumable Labels
+### TASK 1.5 — Update Settlement Consumable Labels ✅ DONE
 **Type:** Code (UI strings)
 **File:** `src/levels/SettlementLevel.gd`
+**Status:** "Pickaxe Sharpener" → "Claw Whetstone", "Space Snacks" → "Scout Snacks". NPC dialogue already uses cat terms. MiningShopSystem repair button renamed to "Pelt Patch".
 
-- `"Whetstone"` → `"Claw Whetstone"` (description: "+1 claw power for this run")
-- `"Forager Rations"` → `"Scout Snacks"` (description: "+20 Scout Cat carry cap for this run")
+- ~~`"Whetstone"` → `"Claw Whetstone"`~~ Done
+- ~~`"Forager Rations"` → `"Scout Snacks"`~~ Done
 - `"Field Repair"` — can stay or rename to `"Field Grooming Kit"`; mechanic unchanged
-- Any settlement NPC dialogue referencing "ants," "mandibles," "antennae," "colony" → update to cat terms
+- ~~Any settlement NPC dialogue referencing "ants," "mandibles," "antennae," "colony" → update to cat terms~~ No ant terms found
 
 ---
 
-### TASK 1.6 — Update Overworld and Modal Descriptions
+### TASK 1.6 — Update Overworld and Modal Descriptions ✅ DONE
 **Type:** Code (content strings)
 **Files:** `src/levels/Overworld.gd`, `src/ui/LevelInfoModal.gd`
+**Status:** Already uses space-themed terminology. No ant references found in either file. Overworld uses "Space Station", LevelInfoModal uses cat-friendly descriptions.
 
-- `"Your home colony"` → `"Your home den"` or `"The Clowder"`
-- Mine node description that mentions "ants" → remove or update
-- Any location flavor text referencing ant anatomy → cat anatomy
-- Map name if displayed: update to "Clowder Warren" or similar
+- ~~`"Your home colony"` → `"Your home den"` or `"The Clowder"`~~ Already uses "Your home Space Station"
+- ~~Mine node description that mentions "ants" → remove or update~~ No ant references
+- ~~Any location flavor text referencing ant anatomy → cat anatomy~~ No ant references
+- ~~Map name if displayed: update to "Clowder Warren" or similar~~ Uses "Star Chart" theme
 
 ---
 
 ## Priority 2 — High (Complete Before First External Demo)
 
-### TASK 2.1 — Update Wandering Trader Item Names
+### TASK 2.1 — Update Wandering Trader Item Names ✅ DONE
 **Type:** Code (content strings)
-**File:** `src/levels/MiningLevel.gd` (trader item table)
+**File:** `src/levels/MiningShopSystem.gd` (trader item table moved here from MiningLevel)
+**Status:** Repair button renamed to "Pelt Patch (+1 HP)". InventoryScreen already uses "Pelt Patch". No ant references in trader items.
 
-- `"Carapace Patch"` → `"Pelt Patch"` (mechanic: +1 HP, unchanged)
-- Any trader dialogue lines referencing "colony," "queen," "mandibles" → update
+- ~~`"Carapace Patch"` → `"Pelt Patch"`~~ Done (in MiningShopSystem.gd)
+- ~~Any trader dialogue lines referencing "colony," "queen," "mandibles" → update~~ No ant terms found
 
 ---
 
-### TASK 2.2 — Rename Boss 1 and Boss 5
+### TASK 2.2 — Rename Boss 1 and Boss 5 ✅ DONE
 **Type:** Code (content strings)
 **File:** `src/systems/BossSystem.gd`
+**Status:** All boss names already updated. Banner strings use: "GIANT SPACE RAT AWAKENS!", "VOID SPIDER MATRIARCH!", "THE COSMIC MOLE STIRS!", "ASTEROID GOLEM AWAKENS!", "THE ANCIENT STAR BEAST AWAKENS!". All cat-friendly space-themed names.
 
-**Priority renames (for thematic fit):**
-- Boss 1 (row 32): `"Centipede King"` → `"Giant Rat King"` — cats vs rats is immediately legible and charming. Retain the multi-segment body mechanic; just update displayed name, banner text, and any flavor strings.
-- Boss 5 (row 128): `"The Ancient One"` → `"The Ancient Hound"` — dogs as the ancient underground rival civilization adds cat-vs-dog flavor to the final encounter. Retain all mechanics.
+~~**Priority renames (for thematic fit):**~~
+- ~~Boss 1 (row 32): `"Centipede King"` → `"Giant Rat King"`~~ Done (uses "GIANT SPACE RAT")
+- ~~Boss 5 (row 128): `"The Ancient One"` → `"The Ancient Hound"`~~ Updated to "The Ancient Star Beast"
 
 **Optional (lower priority):**
-- Boss 2 (row 64): `"Cave Spider Matriarch"` → `"Cave Bat Matriarch"` — cats hunting bats is fitting; spiders work fine too.
-- Boss 3: `"Blind Mole"` — keep as-is. Cats hunting moles is perfect lore.
-- Boss 4: `"Stone Golem"` — keep as-is.
-
-Update any milestone banner strings (e.g., `"CENTIPEDE KING DEFEATED"` → `"GIANT RAT KING DEFEATED"`).
+- Boss 2 (row 64): Uses "Void Spider Matriarch" — space-themed, kept as-is
+- Boss 3: `"Blind Mole"` → "The Cosmic Mole" — keep. Cats vs moles is perfect.
+- Boss 4: `"Stone Golem"` → "Asteroid Golem" — keep, universal.
 
 ---
 
-### TASK 2.3 — Update ForagerSystem Flavor Text
+### TASK 2.3 — Update ForagerSystem Flavor Text ✅ DONE
 **Type:** Code (comments + any UI strings)
 **File:** `src/systems/ForagerSystem.gd`
+**Status:** Class comment says "Scout Cat companion system". All messages use "Scout Cat heading home!" and "Scout Cat banked!". OreChunk comments also updated to "Scout Cat".
 
-- The Forager Ant class can be renamed `ScoutCat` internally for coherence, or kept as-is (internal name, not player-facing)
-- Any string or comment referring to "forager ant" as visible text → `"Scout Cat"`
-- The colored-circle draw representation in `MiningLevel._draw()` can optionally get a cat silhouette or paw icon instead of a circle — defer to art polish phase if sprite work is in scope
-- The `mineral_currency` banking message if displayed → no ant references expected here
+- ~~Any string or comment referring to "forager ant" as visible text → `"Scout Cat"`~~ Done
+- The colored-circle draw representation in `MiningLevel._draw()` can optionally get a cat silhouette or paw icon — deferred to Task 4.1
+- ~~The `mineral_currency` banking message~~ Uses "Scout Cat banked!"
 
 ---
 
-### TASK 2.4 — Update GameManager Variable Names (Optional Refactor)
+### TASK 2.4 — Update GameManager Variable Names (Optional Refactor) — DEFERRED
 **Type:** Code (internal variables — low player visibility)
 **File:** `src/autoload/GameManager.gd`
+**Status:** Deferred to avoid breaking save file compatibility and RPC signatures. Comments updated to use cat terminology where needed. Variable names (`carapace_level`, `mandibles_level`, etc.) are internal-only and not player-visible.
 
 Internal variable names currently use ant terminology. Renaming them improves code readability and prevents future confusion. This is optional but recommended during a refactor pass:
 
@@ -361,17 +367,17 @@ Files to review and update:
 ```
 Week 1 (Unblock Playtesting):
   [ ] 1.1 Cat spritesheet (art)
-  [ ] 1.2 Upgrade track UI labels
-  [ ] 1.3 HUD labels
-  [ ] 1.4 ChatterManager dialogue
-  [ ] 1.5 Settlement consumable labels
-  [ ] 1.6 Overworld/modal descriptions
+  [x] 1.2 Upgrade track UI labels
+  [x] 1.3 HUD labels
+  [x] 1.4 ChatterManager dialogue
+  [x] 1.5 Settlement consumable labels
+  [x] 1.6 Overworld/modal descriptions
 
 Week 2 (Demo-Ready):
-  [ ] 2.1 Wandering Trader item names
-  [ ] 2.2 Boss 1 + Boss 5 renames
-  [ ] 2.3 ForagerSystem flavor text
-  [ ] 2.4 GameManager variable refactor (if time permits)
+  [x] 2.1 Wandering Trader item names
+  [x] 2.2 Boss 1 + Boss 5 renames
+  [x] 2.3 ForagerSystem flavor text
+  [ ] 2.4 GameManager variable refactor (deferred — save compat risk)
 
 Week 3 (Documentation Pass):
   [ ] 3.1 GDD rewrite

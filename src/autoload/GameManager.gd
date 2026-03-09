@@ -60,7 +60,7 @@ func get_max_energy() -> int:
 var settlement_energy_bonus: int = 0       # extra starting energy from Energy Cache purchase
 var settlement_forager_bonus: int = 0    # kept for save compatibility; unused since ForagerSystem removed
 var settlement_shroom_charges: int = 0   # Mining Shroom charges pre-purchased
-var settlement_mandible_bonus: int = 0   # temporary +N mandible power for one run
+var settlement_mandible_bonus: int = 0   # temporary +N claw power for one run (Claw Whetstone)
 
 # Ladder count — persists across sessions; decremented each time player places a ladder
 var ladder_count: int = 10

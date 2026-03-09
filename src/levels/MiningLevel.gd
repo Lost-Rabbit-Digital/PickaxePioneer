@@ -397,7 +397,7 @@ var _shroom_charges: Array = [0]          # [int]  — Mining Shroom remaining c
 var _lucky_compass_active: Array = [false] # [bool] — Lucky Compass active this run
 var _ancient_map_active: Array = [false]   # [bool] — Ancient Map active this run
 
-# Settlement whetstone bonus: temporary +N mandible power for this run only
+# Settlement Claw Whetstone bonus: temporary +N claw power for this run only
 var _settlement_mandible_bonus: int = 0
 
 # Hazard damage cooldown to prevent instant death
