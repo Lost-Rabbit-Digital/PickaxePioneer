@@ -80,3 +80,4 @@ Ideas:
  - What if the settlements gain citizens as you find them in caves and add them? Up to 5 Citizens which have different shops
  - Map Goes Base - 2 Mines - 1 settlement - 2 mines - End planet
  - Cat Society is on brink of collapse within 7 days, the player must complete all mines/settlements to get to the end planet which has a cold fusion artifact
+ - 
