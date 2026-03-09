@@ -10,7 +10,8 @@ const CELL_SIZE: int = 64
 
 # Movement tuning
 var move_speed: float = 280.0
-var jump_velocity: float = -420.0
+const BASE_JUMP_VELOCITY: float = -420.0
+var jump_velocity: float = BASE_JUMP_VELOCITY
 var gravity: float = 980.0
 
 # Ladder climbing speed — will be computed from GameManager upgrade level
@@ -63,8 +64,18 @@ const WEB_SLOW_MULT: float = 0.5          # Move at half speed while slowed
 const WEB_SLOW_DURATION: float = 2.0      # Seconds the slowdown lasts after web contact
 var _web_slow_timer: float = 0.0
 
-# Double jump
+# Double jump and trinket-powered third jump (Jet Boots)
 var _double_jumped: bool = false
+var _jet_boost_used: bool = false
+
+# Trinket effect timers
+var _regen_timer: float = 0.0
+const REGEN_INTERVAL: float = 4.0          # Stone of Regeneration: +1 HP every 4 sec
+var _boots_energy_accum: float = 0.0       # Boots of Sprinting energy regen accumulator
+var _curse_timer: float = 0.0              # Curse of the Core damage interval
+const CURSE_DAMAGE_INTERVAL: float = 8.0  # Seconds between curse damage ticks
+var _cosmic_timer: float = 0.0             # Cosmic Radiation bitflip interval
+const COSMIC_INTERVAL: float = 15.0       # Seconds between cosmic events
 
 # --- Particle system (walking dust + landing poof) ---
 const PARTICLE_FEET_Y: float = 26.0        # Offset below player center to feet
@@ -96,9 +107,7 @@ func _ready() -> void:
 	add_to_group("player")
 	health_component.health_changed.connect(_on_health_changed)
 	health_component.died.connect(_on_died)
-	move_speed = GameManager.get_max_speed()
-	ladder_climb_speed = GameManager.get_ladder_climb_speed()
-	mine_range = GameManager.get_mining_reach()
+	update_trinket_stats()
 	EventBus.player_health_changed.emit(health_component.current_health, health_component.max_health)
 	sprite.play(&"idle")
 	sprite.modulate = GameManager.cat_color
@@ -107,6 +116,13 @@ func _ready() -> void:
 	_particle_layer.z_index = 1
 	add_child(_particle_layer)
 	_particle_layer.draw.connect(_draw_particles_on_layer)
+
+## Refresh cached movement stats from GameManager (called on _ready and when trinkets change).
+func update_trinket_stats() -> void:
+	move_speed = GameManager.get_max_speed()
+	ladder_climb_speed = GameManager.get_ladder_climb_speed()
+	mine_range = GameManager.get_mining_reach()
+	jump_velocity = BASE_JUMP_VELOCITY + (-128.0 if GameManager.trinket_spring_boots else 0.0)
 
 	# Multiplayer: set authority based on peer assignment (0 = not yet assigned / single player)
 	# MiningLevel sets multiplayer_authority after instantiating the second player.
@@ -161,6 +177,7 @@ func _physics_process(delta: float) -> void:
 	_descending_ladder = on_ladder and (Input.is_key_pressed(KEY_S)   or Input.is_key_pressed(KEY_DOWN))
 
 	# Gravity — suppressed when on a ladder; player holds position unless actively climbing.
+	# Paraglider: hold Jump while falling to reduce gravity and glide slowly.
 	if _gripping_ladder:
 		velocity.y = -ladder_climb_speed  # Climb up
 	elif _descending_ladder:
@@ -168,7 +185,10 @@ func _physics_process(delta: float) -> void:
 	elif on_ladder:
 		velocity.y = 0  # Hold still on ladder — no input, no gravity
 	elif not is_on_floor():
-		velocity.y += gravity * delta
+		var grav_mult := 1.0
+		if GameManager.trinket_paraglider and velocity.y > 50.0 and Input.is_action_pressed("jump"):
+			grav_mult = 0.12  # Glide — gravity nearly cancelled while falling with Jump held
+		velocity.y += gravity * grav_mult * delta
 	else:
 		if velocity.y > 0:
 			velocity.y = 0
@@ -187,9 +207,10 @@ func _physics_process(delta: float) -> void:
 	velocity.x = direction * effective_speed
 
 	# Sprint energy drain (only while actually moving and underground).
+	# Sneakers trinket: sprint costs no energy.
 	# Guests route the cost through the host via RPC so it is deducted from the
 	# authoritative shared pool rather than their local (overwritten) copy.
-	if _sprinting and abs(direction) > 0.1 and get_depth_row() > 0:
+	if _sprinting and abs(direction) > 0.1 and get_depth_row() > 0 and not GameManager.trinket_sneakers:
 		_sprint_energy_accum += SPRINT_ENERGY_RATE * delta
 		if _sprint_energy_accum >= 1.0:
 			var to_consume := int(_sprint_energy_accum)
@@ -209,11 +230,13 @@ func _physics_process(delta: float) -> void:
 		_facing_left = true
 		sprite.flip_h = true
 
-	# Reset double jump when grounded or on a ladder
+	# Reset double jump (and jet boost) when grounded or on a ladder
 	if is_on_floor() or on_ladder:
 		_double_jumped = false
+		_jet_boost_used = false
 
 	# Jump from floor or release from ladder — Space jumps/launches in both cases.
+	# Jet Boots trinket: grants a third mid-air boost after the double jump.
 	if Input.is_action_just_pressed("jump"):
 		if is_on_floor():
 			velocity.y = jump_velocity
@@ -226,9 +249,21 @@ func _physics_process(delta: float) -> void:
 			_double_jumped = true
 			_spawn_poof()
 			SoundManager.play_jump_sound()
+		elif GameManager.trinket_jet_boots and not _jet_boost_used and GameManager.current_energy >= 15:
+			velocity.y = -550.0  # Powerful upward boost
+			_jet_boost_used = true
+			GameManager.consume_energy(15)
+			_spawn_poof()
+			SoundManager.play_jump_sound()
 
 	var pre_vel_y := velocity.y
 	move_and_slide()
+
+	# Gecko Gloves — slow descent when pressing against a wall while airborne.
+	if GameManager.trinket_gecko_gloves and not is_on_floor() and not on_ladder and is_on_wall():
+		var dir := Input.get_axis("move_left", "move_right")
+		if abs(dir) > 0.5 and velocity.y > 0.0:
+			velocity.y = minf(velocity.y, 80.0)
 
 	_update_particles(delta, pre_floor, pre_vel_y)
 	_particle_layer.queue_redraw()
@@ -244,6 +279,9 @@ func _physics_process(delta: float) -> void:
 
 	# Update follower trail and animations
 	_update_followers()
+
+	# Tick trinket passive effects
+	_update_trinket_effects(delta)
 
 	# Broadcast transform to the remote peer each frame (unreliable — slight lag is fine)
 	if NetworkManager.is_multiplayer_session:
@@ -434,11 +472,13 @@ func _apply_fall_damage() -> void:
 	if _is_falling:
 		var fall_distance := global_position.y - _fall_start_y
 		if fall_distance > FALL_DAMAGE_THRESHOLD and not on_ladder:
-			var damage := health_component.max_health / 2
-			health_component.damage(damage)
-			var cam := get_viewport().get_camera_2d()
-			if cam is CameraShake:
-				cam.add_trauma(0.85)
+			# Paraglider prevents fall damage entirely
+			if not GameManager.trinket_paraglider:
+				var damage := health_component.max_health / 2
+				health_component.damage(damage)
+				var cam := get_viewport().get_camera_2d()
+				if cam is CameraShake:
+					cam.add_trauma(0.85)
 		_is_falling = false
 
 func _update_followers() -> void:
@@ -465,6 +505,57 @@ func _update_followers() -> void:
 		_leaf_follower.flip_h = sprite.flip_h
 		if _leaf_follower.animation != follower_anim:
 			_leaf_follower.play(follower_anim)
+
+func _update_trinket_effects(delta: float) -> void:
+	# Stone of Regeneration — heal 1 HP every 4 seconds when not at max health.
+	if GameManager.trinket_stone_of_regen:
+		_regen_timer += delta
+		if _regen_timer >= REGEN_INTERVAL:
+			_regen_timer = 0.0
+			if not is_at_max_health():
+				heal(1)
+	else:
+		_regen_timer = 0.0
+
+	# Boots of Sprinting — restore 1 energy per second while walking on the ground.
+	if GameManager.trinket_boots_of_sprinting and is_on_floor() and abs(velocity.x) > 10.0:
+		_boots_energy_accum += delta
+		if _boots_energy_accum >= 1.0:
+			_boots_energy_accum -= 1.0
+			GameManager.restore_energy(1)
+	else:
+		_boots_energy_accum = 0.0
+
+	# Curse of the Core — 1 damage every 8 seconds while underground.
+	if GameManager.trinket_curse_of_core and get_depth_row() > 0:
+		_curse_timer += delta
+		if _curse_timer >= CURSE_DAMAGE_INTERVAL:
+			_curse_timer = 0.0
+			take_damage(1.0)
+	else:
+		_curse_timer = 0.0
+
+	# Cosmic Radiation — random HP/energy bitflip every 15 seconds underground.
+	if GameManager.trinket_cosmic_radiation and get_depth_row() > 0:
+		_cosmic_timer += delta
+		if _cosmic_timer >= COSMIC_INTERVAL:
+			_cosmic_timer = 0.0
+			_trigger_cosmic_bitflip()
+	else:
+		_cosmic_timer = 0.0
+
+func _trigger_cosmic_bitflip() -> void:
+	# Randomly swap a positive or negative effect — represents radiation "bitflips".
+	var roll := randi() % 4
+	match roll:
+		0:
+			heal(2)       # Unexpected cell repair
+		1:
+			take_damage(1.0)  # Radiation burn
+		2:
+			GameManager.restore_energy(20)   # Surge of cosmic energy
+		3:
+			GameManager.consume_energy(20)   # Energy drain
 
 func _draw_particles_on_layer() -> void:
 	for p: Dictionary in _particles:

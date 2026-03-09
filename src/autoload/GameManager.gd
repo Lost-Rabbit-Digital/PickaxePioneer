@@ -79,6 +79,21 @@ var selected_hotbar_slot: int = 0
 var equipped_leaf: bool = false
 var equipped_ice: bool = false
 
+# Equipped trinkets (independent toggles, persistent)
+var trinket_paraglider: bool = false          # Glide + no fall damage
+var trinket_jet_boots: bool = false           # Mid-air boost after double jump
+var trinket_stone_of_regen: bool = false      # +1 HP every 4 seconds
+var trinket_spring_boots: bool = false        # +2m jump height
+var trinket_jumping_bean: bool = false        # +20% mining power
+var trinket_sneakers: bool = false            # Free sprint (no energy cost)
+var trinket_gecko_gloves: bool = false        # Wall slide to slow descent
+var trinket_boots_of_sprinting: bool = false  # +1 energy/sec while walking
+var trinket_cube_of_curing: bool = false      # Immune to plasma burn
+var trinket_scuba_helmet: bool = false        # Immune to gas clouds
+var trinket_magnet: bool = false              # Attract ore within 4 tiles
+var trinket_cosmic_radiation: bool = false    # Random HP/energy bitflips
+var trinket_curse_of_core: bool = false       # -1 HP every 8 sec underground
+
 # Cat customization — sprite tint color (default white = no tint)
 var cat_color: Color = Color.WHITE
 
@@ -541,7 +556,10 @@ func get_max_speed() -> float:
 	return 300.0 + perk_ranks.get("paws", 0) * 30.0
 
 func get_mandibles_power() -> int:
-	return 5 + perk_ranks.get("claws", 0) * 3
+	var base: int = 5 + perk_ranks.get("claws", 0) * 3
+	if trinket_jumping_bean:
+		return int(base * 1.2)
+	return base
 
 ## Bonus lucky strike chance from Deep Veins perk (additive, 0.0–0.25).
 func get_lucky_strike_bonus() -> float:
@@ -555,6 +573,10 @@ func get_ore_yield_mult() -> float:
 ## Returns a value in [0.0, 0.5]; subtract from drain multiplier.
 func get_boss_drain_reduction() -> float:
 	return perk_ranks.get("iron_hide", 0) * 0.10
+
+## Magnet attraction radius in pixels (0 when trinket not equipped).
+func get_magnet_range() -> float:
+	return 256.0 if trinket_magnet else 0.0  # 4 tiles × 64 px
 
 func consume_energy(amount: int) -> bool:
 	current_energy -= amount
@@ -651,6 +673,19 @@ func save_game() -> void:
 		"cat_color": cat_color.to_html(),
 		"has_completed_tier_1_mine": has_completed_tier_1_mine,
 		"has_completed_tier_2_settlement": has_completed_tier_2_settlement,
+		"trinket_paraglider": trinket_paraglider,
+		"trinket_jet_boots": trinket_jet_boots,
+		"trinket_stone_of_regen": trinket_stone_of_regen,
+		"trinket_spring_boots": trinket_spring_boots,
+		"trinket_jumping_bean": trinket_jumping_bean,
+		"trinket_sneakers": trinket_sneakers,
+		"trinket_gecko_gloves": trinket_gecko_gloves,
+		"trinket_boots_of_sprinting": trinket_boots_of_sprinting,
+		"trinket_cube_of_curing": trinket_cube_of_curing,
+		"trinket_scuba_helmet": trinket_scuba_helmet,
+		"trinket_magnet": trinket_magnet,
+		"trinket_cosmic_radiation": trinket_cosmic_radiation,
+		"trinket_curse_of_core": trinket_curse_of_core,
 	}
 
 	SaveManager.save_active_slot()
@@ -715,6 +750,19 @@ func load_game() -> void:
 				cat_color = Color.WHITE
 			has_completed_tier_1_mine = data.get("has_completed_tier_1_mine", false)
 			has_completed_tier_2_settlement = data.get("has_completed_tier_2_settlement", false)
+			trinket_paraglider = data.get("trinket_paraglider", false)
+			trinket_jet_boots = data.get("trinket_jet_boots", false)
+			trinket_stone_of_regen = data.get("trinket_stone_of_regen", false)
+			trinket_spring_boots = data.get("trinket_spring_boots", false)
+			trinket_jumping_bean = data.get("trinket_jumping_bean", false)
+			trinket_sneakers = data.get("trinket_sneakers", false)
+			trinket_gecko_gloves = data.get("trinket_gecko_gloves", false)
+			trinket_boots_of_sprinting = data.get("trinket_boots_of_sprinting", false)
+			trinket_cube_of_curing = data.get("trinket_cube_of_curing", false)
+			trinket_scuba_helmet = data.get("trinket_scuba_helmet", false)
+			trinket_magnet = data.get("trinket_magnet", false)
+			trinket_cosmic_radiation = data.get("trinket_cosmic_radiation", false)
+			trinket_curse_of_core = data.get("trinket_curse_of_core", false)
 			print("Game loaded")
 		else:
 			print("Failed to parse save file")
