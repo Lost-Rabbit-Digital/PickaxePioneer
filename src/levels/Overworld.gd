@@ -490,7 +490,7 @@ func _draw() -> void:
 
 func _draw_animated_dashed_line(from: Vector2, to: Vector2, color: Color, width: float) -> void:
 	# Draw an animated dashed line that moves toward the destination node.
-	# The dashes travel from source to destination, continuously looping.
+	# The dashes travel from destination to source, continuously looping.
 
 	var direction = to - from
 	var distance = direction.length()
@@ -500,7 +500,10 @@ func _draw_animated_dashed_line(from: Vector2, to: Vector2, color: Color, width:
 
 	var unit_dir = direction.normalized()
 	var cycle_length = _DASH_LENGTH + _GAP_LENGTH
-	var offset = fmod(_animation_time * _ANIMATION_SPEED, cycle_length)
+	var offset = fmod(-_animation_time * _ANIMATION_SPEED, cycle_length)
+	# Ensure offset is positive (fmod preserves sign of dividend)
+	if offset < 0:
+		offset += cycle_length
 
 	# Draw dashes along the line
 	var current_distance = -offset
