@@ -20,6 +20,12 @@ var nodes: Array[MapNode] = []
 var _modal: LevelInfoModal = null
 var _pending_node: MapNode = null
 
+# Animated dashed lines
+var _animation_time: float = 0.0
+const _DASH_LENGTH: float = 10.0
+const _GAP_LENGTH: float = 10.0
+const _ANIMATION_SPEED: float = 80.0  # pixels per second
+
 # Camera control
 var _camera_zoom: float = 1.0
 var _camera_pan_offset: Vector2 = Vector2.ZERO
@@ -461,7 +467,7 @@ func _connect_nodes(node_a: MapNode, node_b: MapNode) -> void:
 		node_b.neighbors.append(node_a)
 
 func _draw() -> void:
-	# Draw dotted lines between visible nodes only — hidden nodes (e.g. mine_node_2
+	# Draw animated dotted lines between visible nodes only — hidden nodes (e.g. mine_node_2
 	# when the Long-Range Scanner is inactive) must not produce orphan lines.
 	var visited_pairs = []
 	for node in nodes:
@@ -474,9 +480,38 @@ func _draw() -> void:
 			pair.sort_custom(func(a, b): return a.name < b.name)
 			if not visited_pairs.has(pair):
 				visited_pairs.append(pair)
-				draw_dashed_line(node.position, neighbor.position, Color(1, 1, 1, 0.5), 2.0, 10.0)
+				_draw_animated_dashed_line(node.position, neighbor.position, Color(1, 1, 1, 0.5), 2.0)
+
+func _draw_animated_dashed_line(from: Vector2, to: Vector2, color: Color, width: float) -> void:
+	# Draw an animated dashed line that moves toward the destination node.
+	# The dashes travel from source to destination, continuously looping.
+
+	var direction = to - from
+	var distance = direction.length()
+
+	if distance < 0.1:
+		return
+
+	var unit_dir = direction.normalized()
+	var cycle_length = _DASH_LENGTH + _GAP_LENGTH
+	var offset = fmod(_animation_time * _ANIMATION_SPEED, cycle_length)
+
+	# Draw dashes along the line
+	var current_distance = -offset
+	while current_distance < distance:
+		var dash_start = from + unit_dir * current_distance
+		var dash_end = from + unit_dir * min(current_distance + _DASH_LENGTH, distance)
+
+		# Only draw if the dash is visible on the line
+		if current_distance + _DASH_LENGTH > 0:
+			draw_line(dash_start, dash_end, color, width)
+
+		current_distance += cycle_length
 
 func _process(delta: float) -> void:
+	# Update animation time for dashed lines
+	_animation_time += delta
+
 	if _camera_follow_caravan:
 		camera.global_position = caravan.global_position + _camera_pan_offset
 	_update_camera()
@@ -492,6 +527,8 @@ func _process(delta: float) -> void:
 		# Coast with throw momentum; damp it each frame (frame-rate independent)
 		_camera_pan_offset += _momentum_velocity * delta
 		_momentum_velocity *= pow(_MOMENTUM_DAMPING, delta * 60.0)
+
+	queue_redraw()
 
 func _unhandled_input(event: InputEvent) -> void:
 	# Handle mouse drag panning (right-click drag)
