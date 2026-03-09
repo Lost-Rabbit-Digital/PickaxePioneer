@@ -93,14 +93,14 @@ horizontal_alignment = 1
 
 [node name="CenterButton" type="Button" parent="Camera2D/BackgroundCanvasLayer"]
 z_index = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 8.0
-offset_top = -34.0
-offset_right = 126.0
-offset_bottom = -8.0
-grow_vertical = 0
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -126.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = 34.0
+grow_horizontal = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 14
 theme_override_styles/normal = SubResource("StyleBoxFlat_version")
