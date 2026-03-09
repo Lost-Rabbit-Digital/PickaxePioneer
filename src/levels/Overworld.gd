@@ -14,6 +14,7 @@ extends Control
 @onready var pause_menu = $PauseMenu
 @onready var version_label: Label = $Camera2D/BackgroundCanvasLayer/VersionLabel
 @onready var camera: Camera2D = $Camera2D
+@onready var center_button: Button = $Camera2D/BackgroundCanvasLayer/CenterButton
 
 var current_node: MapNode
 var nodes: Array[MapNode] = []
@@ -167,6 +168,7 @@ func _ready() -> void:
 	camera.global_position = caravan.global_position
 	_camera_zoom = 1.0
 	_update_camera()
+	_update_center_button_visibility()
 
 	# Pan camera to ship when movement starts
 	caravan.movement_started.connect(_on_caravan_movement_started)
@@ -532,6 +534,7 @@ func _process(delta: float) -> void:
 		_camera_pan_offset += _momentum_velocity * delta
 		_momentum_velocity *= pow(_MOMENTUM_DAMPING, delta * 60.0)
 
+	_update_center_button_visibility()
 	queue_redraw()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -579,6 +582,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_camera_follow_caravan = not _camera_follow_caravan
 		_camera_pan_offset = Vector2.ZERO
 		_momentum_velocity = Vector2.ZERO
+		_update_center_button_visibility()
 		get_viewport().set_input_as_handled()
 		return
 
@@ -698,6 +702,7 @@ func _on_caravan_movement_started() -> void:
 	_camera_follow_caravan = true
 	_camera_pan_offset = Vector2.ZERO
 	_momentum_velocity = Vector2.ZERO
+	_update_center_button_visibility()
 
 func _find_path(from_node: MapNode, to_node: MapNode) -> Array[MapNode]:
 	# BFS over visible, connected nodes to find the shortest path.
@@ -780,7 +785,14 @@ func _update_camera() -> void:
 	camera.zoom = Vector2.ONE * _camera_zoom
 
 
+func _update_center_button_visibility() -> void:
+	# Hide button when camera is already centered on the player
+	var is_centered = _camera_follow_caravan and _camera_pan_offset.length_squared() < 0.01
+	center_button.visible = not is_centered
+
+
 func _on_center_button_pressed() -> void:
 	_camera_follow_caravan = true
 	_camera_pan_offset = Vector2.ZERO
 	_momentum_velocity = Vector2.ZERO
+	_update_center_button_visibility()
