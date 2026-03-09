@@ -222,7 +222,7 @@ func show_energy_shop() -> void:
 		GameManager.current_energy, max_e, SHOP_REENERGY_FULL_COST]
 	_energy_btn_half.text = "Rest 50%%  (+%d energy)  — %dg" % [
 		max_e / 2, SHOP_REENERGY_HALF_COST]
-	_energy_btn_repair.text = "+1 Health Bar  — %dg" % SHOP_REPAIR_COST
+	_energy_btn_repair.text = "Pelt Patch (+1 HP)  — %dg" % SHOP_REPAIR_COST
 	_energy_btn_full.disabled   = GameManager.dollars < SHOP_REENERGY_FULL_COST or GameManager.current_energy >= max_e
 	_energy_btn_half.disabled   = GameManager.dollars < SHOP_REENERGY_HALF_COST or GameManager.current_energy >= max_e
 	_energy_btn_repair.disabled = GameManager.dollars < SHOP_REPAIR_COST or (player_node != null and player_node.is_at_max_health())
