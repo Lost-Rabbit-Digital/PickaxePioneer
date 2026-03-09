@@ -126,6 +126,9 @@ func _ready() -> void:
 	for node in nodes:
 		node.node_clicked.connect(_on_node_clicked)
 
+	# Apply lock visual states based on progression
+	_apply_lock_states()
+
 	# Initialize position
 	if GameManager.last_overworld_node_name != "":
 		for node in nodes:
@@ -611,6 +614,9 @@ func _move_selection(direction: Vector2) -> void:
 	var best_dot = -1.0
 
 	for neighbor in current_node.neighbors:
+		# Skip locked nodes during keyboard navigation
+		if _is_node_locked(neighbor):
+			continue
 		var dir_to_neighbor = current_node.position.direction_to(neighbor.position)
 		var dot = dir_to_neighbor.dot(direction)
 
@@ -736,6 +742,12 @@ func _is_node_locked(node: MapNode) -> bool:
 
 	# All other nodes (City and Mines) are always accessible
 	return false
+
+func _apply_lock_states() -> void:
+	# Apply grey modulation to locked nodes
+	for node in nodes:
+		if _is_node_locked(node):
+			node.set_locked(true)
 
 func _show_lock_message(node: MapNode) -> void:
 	# Show a lock message to the player
