@@ -36,7 +36,16 @@ var _total_label: Label = null
 var _final_total: int = 0
 var _border: ColorRect = null
 
+var _narrow_escape: bool = false
+var _escape_bonus: int = 0
+
 func _ready() -> void:
+	# Near-miss escape reward: +10% minerals if exiting with < 10% energy
+	var energy_pct := float(GameManager.current_energy) / float(maxi(1, GameManager.get_max_energy()))
+	if energy_pct < 0.10 and energy_pct > 0.0 and GameManager.run_coins > 0:
+		_narrow_escape = true
+		_escape_bonus = maxi(1, GameManager.run_coins / 10)
+		GameManager.run_coins += _escape_bonus
 	_final_total = GameManager.run_coins
 	_build_ui()
 	_play_intro()
@@ -171,6 +180,17 @@ func _build_ui() -> void:
 
 		_row_groups.append(row_nodes)
 		y += ROW_H
+
+	# Narrow Escape bonus line (if applicable)
+	if _narrow_escape:
+		_add_separator(_panel_node, px, y + 6.0, PANEL_W)
+		y += 12.0
+		var escape_lbl := _add_label(_panel_node, "Narrow Escape!  +%s" % GameManager.format_coins(_escape_bonus),
+				px, y, PANEL_W, 30.0, 18, Color(1.0, 0.6, 0.1),
+				HORIZONTAL_ALIGNMENT_CENTER)
+		escape_lbl.modulate.a = 0.0
+		_row_groups.append([escape_lbl])
+		y += 30.0
 
 	# Total separator + label
 	_add_separator(_panel_node, px, y + 6.0, PANEL_W)

@@ -30,6 +30,8 @@ var earnings_label: Label
 var depth_label: Label
 var dollars_label: Label
 var _earnings_tween: Tween
+var _coins_tween: Tween
+var _prev_run_coins: int = 0
 
 # XP / level display (lower-left of info panel)
 var _xp_bar_bg   : ColorRect
@@ -326,6 +328,19 @@ func _ready() -> void:
 func _on_coins_changed(_copper: int) -> void:
 	scrap_label.text = "Slots: %d/%d" % [GameManager.get_stacked_slots_used(), GameManager.get_ore_capacity()]
 	dollars_label.text = GameManager.format_coins(GameManager.coins)
+
+	# Scale-bounce + color flash when run coins increase
+	if GameManager.run_coins > _prev_run_coins and _prev_run_coins >= 0:
+		if _coins_tween:
+			_coins_tween.kill()
+		dollars_label.scale = Vector2(1.25, 1.25)
+		dollars_label.modulate = Color(1.0, 1.0, 0.3, 1.0)
+		_coins_tween = create_tween()
+		_coins_tween.set_parallel(true)
+		_coins_tween.tween_property(dollars_label, "scale", Vector2.ONE, 0.25) \
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		_coins_tween.tween_property(dollars_label, "modulate", Color(0.30, 1.0, 0.40, 1.0), 0.35)
+	_prev_run_coins = GameManager.run_coins
 
 # Called when a tile is mined.
 # Ore pickups (ORE_NAMES + amount > 0) show a rich icon + amount + name popup.
