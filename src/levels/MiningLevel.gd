@@ -314,6 +314,13 @@ const ENERGY_DRAIN_DEPTH_MULT: float = 0.5 # Extra drain per depth ratio (halved
 var _energy_drain_accum: float = 0.0
 var _energy_low_warned: bool = false
 
+# Tension escalation: screen vignette + heartbeat as energy drops
+var _tension_vignette: ColorRect = null
+var _tension_layer: CanvasLayer = null
+var _heartbeat_timer: float = 0.0
+var _heartbeat_interval: float = 0.0
+var _last_energy_pct: float = 1.0
+
 # ---------------------------------------------------------------------------
 # Boss encounter system (§4) — logic lives in BossSystem.gd
 # ---------------------------------------------------------------------------
@@ -559,6 +566,16 @@ func _ready() -> void:
 
 	if NetworkManager.is_multiplayer_session:
 		add_child(preload("res://src/ui/ChatBox.tscn").instantiate())
+
+	# Tension vignette overlay (screen-space, used for energy escalation)
+	_tension_layer = CanvasLayer.new()
+	_tension_layer.layer = 5
+	add_child(_tension_layer)
+	_tension_vignette = ColorRect.new()
+	_tension_vignette.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_tension_vignette.color = Color(0.6, 0.0, 0.0, 0.0)
+	_tension_vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tension_layer.add_child(_tension_vignette)
 
 	queue_redraw()
 
@@ -1101,6 +1118,7 @@ func _process(delta: float) -> void:
 						_on_out_of_energy()
 					else:
 						var energy_pct := float(GameManager.current_energy) / float(GameManager.get_max_energy())
+						_last_energy_pct = energy_pct
 						if energy_pct <= 0.25 and not _energy_low_warned:
 							_energy_low_warned = true
 							SoundManager.play_energy_low_sound()
@@ -1108,6 +1126,36 @@ func _process(delta: float) -> void:
 							_energy_low_warned = false
 			elif local_p.is_sleeping():
 				_energy_drain_accum = 0.0
+
+	# Tension escalation: vignette + heartbeat based on energy percentage
+	_update_tension_escalation(delta)
+
+func _update_tension_escalation(delta: float) -> void:
+	if not _tension_vignette or _game_over:
+		return
+
+	var energy_pct := _last_energy_pct
+
+	# Vignette: starts at 40% energy, intensifies toward 0%
+	var vignette_alpha := 0.0
+	if energy_pct < 0.40:
+		# Ramp from 0 at 40% to 0.35 at 0%
+		vignette_alpha = (0.40 - energy_pct) / 0.40 * 0.35
+	_tension_vignette.color.a = lerpf(_tension_vignette.color.a, vignette_alpha, delta * 3.0)
+
+	# Heartbeat sound at low energy thresholds
+	if energy_pct < 0.25 and energy_pct > 0.0:
+		# Faster heartbeat as energy gets lower
+		if energy_pct < 0.10:
+			_heartbeat_interval = 0.6
+		else:
+			_heartbeat_interval = 1.2
+		_heartbeat_timer += delta
+		if _heartbeat_timer >= _heartbeat_interval:
+			_heartbeat_timer = 0.0
+			SoundManager.play_energy_low_sound()
+	else:
+		_heartbeat_timer = 0.0
 
 func _is_tile_mineable(tile_type: int) -> bool:
 	"""Check if a tile type can be mined."""
