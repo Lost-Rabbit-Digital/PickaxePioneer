@@ -57,7 +57,7 @@ res://
 | `SettingsManager` | `src/autoload/SettingsManager.gd` | Graphics, audio, controls, accessibility |
 | `SceneTransition` | `src/autoload/SceneTransition.gd` | Animated scene transitions |
 | `SaveManager` | `src/autoload/SaveManager.gd` | Save/load coordination (JSON → `user://save_data.json`) |
-| `QuestManager` | `src/autoload/QuestManager.gd` | Quest stub — not yet active (cleared on mine entry) |
+| `QuestManager` | `src/autoload/QuestManager.gd` | Quest system — used by QuestNPC/QuestItem entities; cleared on mine entry |
 
 ### Key EventBus signals
 
@@ -96,7 +96,7 @@ res://
 ### Input map actions (defined in project.godot)
 
 `move_left` · `move_right` · `jump` · `mine` (left-click) · `sonar_ping` (Q) ·
-`pheromone_marker` (F) · `interact` (E) · `pause` (Esc)
+`interact` (E) · `pause` (Esc)
 
 ---
 
