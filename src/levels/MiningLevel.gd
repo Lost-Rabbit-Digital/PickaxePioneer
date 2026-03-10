@@ -1554,25 +1554,43 @@ func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 				EventBus.ore_mined_popup.emit(minerals, popup_label)
 			# Non-ore tiles (dirt, stone, grass) give no minerals.
 			_check_streak_milestone()
-		# Particle burst on tile destruction
+		# Particle burst on tile destruction — scaled by ore value
 		var tile_world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
 		var burst_color: Color = TILE_PARTICLE_COLORS.get(tile, Color(0.7, 0.6, 0.4))
-		var burst_count := 14 if tile in ORE_TILES else 8
+		var is_high_value := tile in [TileType.ORE_GOLD, TileType.ORE_GOLD_DEEP,
+				TileType.ORE_GEM, TileType.ORE_GEM_DEEP]
+		var burst_count := 8
+		var burst_speed_min := 60.0
+		var burst_speed_max := 200.0
 		if tile == TileType.BOSS_SEGMENT or tile == TileType.BOSS_CORE:
 			burst_count = 20
-		_spawn_mining_particles(tile_world_pos, burst_color, burst_count, 60.0, 200.0)
+		elif is_high_value:
+			burst_count = 22
+			burst_speed_min = 80.0
+			burst_speed_max = 280.0
+		elif tile in ORE_TILES:
+			burst_count = 14
+		_spawn_mining_particles(tile_world_pos, burst_color, burst_count, burst_speed_min, burst_speed_max)
 		SoundManager.play_drill_sound()
+		# Extra feedback for high-value ore: bigger shake + screen flash
+		if is_high_value:
+			_shake_camera(3.5, 0.12)
+			_flash_cells[pos_key] = 1.5
 	else:
 		_tile_damage[pos_key] = new_damage
 		_tile_hits[pos_key] = hits_so_far + 1
 		_tile_last_hit[pos_key] = 0.0
 		var damage_ratio := float(new_damage) / float(tile_hp)
 		_update_breaking_overlay(pos_key, damage_ratio)
-		# Small impact sparks on partial hits
+		# Small impact sparks on partial hits — more for high-value ore
 		var hit_world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
-		_spawn_mining_particles(hit_world_pos, TILE_PARTICLE_COLORS.get(tile, Color(0.8, 0.7, 0.5)), 4, 30.0, 90.0)
+		var is_hit_high_value := tile in [TileType.ORE_GOLD, TileType.ORE_GOLD_DEEP,
+				TileType.ORE_GEM, TileType.ORE_GEM_DEEP]
+		var spark_count := 8 if is_hit_high_value else 4
+		var spark_speed := 120.0 if is_hit_high_value else 90.0
+		_spawn_mining_particles(hit_world_pos, TILE_PARTICLE_COLORS.get(tile, Color(0.8, 0.7, 0.5)), spark_count, 30.0, spark_speed)
 		SoundManager.play_impact_sound()
-		_shake_camera(1.5, 0.07)
+		_shake_camera(2.5 if is_hit_high_value else 1.5, 0.10 if is_hit_high_value else 0.07)
 		# Sync partial damage to guest so their breaking overlay matches
 		if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
 			rpc_tile_hit.rpc_id(NetworkManager.guest_peer_id, pos_key, damage_ratio)
