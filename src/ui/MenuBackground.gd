@@ -304,10 +304,10 @@ func _generate_ore_veins() -> void:
 		for _i in range(spec["count"]):
 			var length := 4 + randi() % 7
 			var row_range := maxi(1, spec["row_max"] - spec["row_min"] - length)
-			var start_row := spec["row_min"] + randi() % row_range
+			var start_row: int = int(spec["row_min"]) + randi() % row_range
 			var center_col := 2 + randi() % (GRID_COLS - 4)
 			for i in range(length):
-				var row := start_row + i
+				var row: int = start_row + i
 				if row >= GRID_ROWS - 1:
 					break
 				var ore_tile: TileType = spec["ore_deep"] if i > length / 2 else spec["ore"]
