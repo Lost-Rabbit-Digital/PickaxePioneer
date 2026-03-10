@@ -94,6 +94,17 @@ var _drag_ghost_bg: ColorRect
 var _drag_ghost_icon_root: Control  # Only this container's children are cleared between drags
 var _is_dragging: bool = false
 var _drag_slot_data: Dictionary = {}
+var _drag_source_idx: int = -1
+
+# Slot arrangement — each entry is {"kind": "tool"/"ore"/"empty", ...}
+# Built on open, persists across rebuilds within a session so swaps are preserved.
+var _slot_order: Array = []
+
+# Cached open() args so _do_slot_swap can trigger a rebuild without MiningLevel.
+var _last_ore_counts: Dictionary = {}
+var _last_shroom_charges: int = 0
+var _last_lucky_compass: bool = false
+var _last_ancient_map: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -280,6 +291,11 @@ func _border_rects(x: int, y: int, w: int, h: int, t: int) -> Array:
 
 # Called by MiningLevel to open the screen and pass current run data.
 func open(ore_counts: Dictionary, shroom_charges: int, lucky_compass: bool, ancient_map: bool) -> void:
+	_last_ore_counts = ore_counts
+	_last_shroom_charges = shroom_charges
+	_last_lucky_compass = lucky_compass
+	_last_ancient_map = ancient_map
+	_slot_order.clear()  # Reset arrangement each fresh open (ore stacks may have changed)
 	_rebuild_content(ore_counts, shroom_charges, lucky_compass, ancient_map)
 	show()
 	get_tree().paused = true
@@ -366,6 +382,16 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 			stacks.append({"tile": ore["tile"], "count": stack_count, "ore": ore})
 			remaining -= stack_count
 
+	# Build slot order on first call; subsequent calls (after swaps) reuse existing order.
+	if _slot_order.is_empty():
+		for i in TOOL_SLOT_COUNT:
+			_slot_order.append({"kind": "tool", "tool_idx": i})
+		for i in stacks.size():
+			_slot_order.append({"kind": "ore", "stack_idx": i})
+		var empty_count: int = ore_capacity - stacks.size()
+		for _i in empty_count:
+			_slot_order.append({"kind": "empty"})
+
 	var cols: int = int((w + SLOT_GAP) / (SLOT_SIZE + SLOT_GAP))
 	var cell: int = SLOT_SIZE + SLOT_GAP
 	var rows: int = ceili(float(total_display_slots) / float(cols))
@@ -382,14 +408,17 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 		var sx: int = x + col * cell
 		var sy: int = y + row * cell
 
-		var is_tool: bool = idx < TOOL_SLOT_COUNT
+		var slot_info: Dictionary = _slot_order[idx] if idx < _slot_order.size() else {"kind": "empty"}
+		var slot_kind: String = slot_info.get("kind", "empty")
+		var is_tool: bool = slot_kind == "tool"
 		var slot_data: Dictionary = {}
 		var is_occupied: bool = false
 
-		if is_tool:
+		if slot_kind == "tool":
 			is_occupied = true
-			var tdef: Dictionary = TOOL_DEFS[idx]
-			if idx == 0:
+			var tool_idx: int = slot_info["tool_idx"]
+			var tdef: Dictionary = TOOL_DEFS[tool_idx]
+			if tool_idx == 0:
 				# Pickaxe tool slot
 				slot_data = {
 					"type": "tool",
@@ -418,11 +447,11 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 					"tex_path": "",
 					"count": GameManager.ladder_count,
 				}
-		else:
-			var ore_idx: int = idx - TOOL_SLOT_COUNT
-			if ore_idx < stacks.size():
+		elif slot_kind == "ore":
+			var stack_idx: int = slot_info["stack_idx"]
+			if stack_idx < stacks.size():
 				is_occupied = true
-				var stack: Dictionary = stacks[ore_idx]
+				var stack: Dictionary = stacks[stack_idx]
 				var ore: Dictionary = stack["ore"]
 				slot_data = {
 					"type": "ore",
@@ -446,7 +475,7 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		parent.add_child(bg)
 
-		# Tool slots get a tinted background tint to distinguish them
+		# Tool slots get a tinted background to distinguish them
 		if is_tool:
 			var bc: Color = slot_data["border_color"]
 			var tint := ColorRect.new()
@@ -474,10 +503,10 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 			parent.add_child(br)
 
 		# Slot icon content
-		if is_tool:
-			_draw_tool_slot_content(parent, sx, sy, idx, slot_data)
+		if slot_kind == "tool":
+			_draw_tool_slot_content(parent, sx, sy, slot_info["tool_idx"], slot_data)
 		elif is_occupied:
-			var stack: Dictionary = stacks[idx - TOOL_SLOT_COUNT]
+			var stack: Dictionary = stacks[slot_info["stack_idx"]]
 			var ore: Dictionary = stack["ore"]
 
 			var fill := ColorRect.new()
@@ -511,19 +540,19 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 			badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			parent.add_child(badge)
 
-		# --- Interactive overlay (hover tooltip + drag) for occupied slots ---
+		# --- Interactive overlay (hover tooltip + drag/drop) for occupied slots ---
 		if is_occupied or is_tool:
 			var hit := Control.new()
 			hit.position = Vector2(sx, sy)
 			hit.size = Vector2(SLOT_SIZE, SLOT_SIZE)
 			hit.mouse_filter = Control.MOUSE_FILTER_STOP
-			# Capture slot data in closure-friendly variable
 			var captured: Dictionary = slot_data.duplicate()
+			var captured_idx: int = idx
 			var slot_gx: int = cr_gx + sx
 			var slot_gy: int = cr_gy + sy
 			hit.mouse_entered.connect(_on_slot_hover_enter.bind(captured, slot_gx, slot_gy))
 			hit.mouse_exited.connect(_on_slot_hover_exit)
-			hit.gui_input.connect(_on_slot_gui_input.bind(captured))
+			hit.gui_input.connect(_on_slot_gui_input.bind(captured, captured_idx))
 			parent.add_child(hit)
 
 	var grid_h: int = rows * cell
@@ -652,11 +681,14 @@ func _hide_tooltip() -> void:
 # Slot interactivity — drag ghost
 # -----------------------------------------------------------------------
 
-func _on_slot_gui_input(event: InputEvent, slot_data: Dictionary) -> void:
+func _on_slot_gui_input(event: InputEvent, slot_data: Dictionary, slot_idx: int) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
+			_drag_source_idx = slot_idx
 			_start_drag(slot_data)
 		else:
+			if _is_dragging and _drag_source_idx >= 0 and _drag_source_idx != slot_idx:
+				_do_slot_swap(_drag_source_idx, slot_idx)
 			_end_drag()
 
 func _start_drag(slot_data: Dictionary) -> void:
@@ -737,10 +769,19 @@ func _start_drag(slot_data: Dictionary) -> void:
 
 func _end_drag() -> void:
 	_is_dragging = false
+	_drag_source_idx = -1
 	_drag_ghost.visible = false
 	# Clear icon content container (bg and border rects stay for next drag)
 	for child in _drag_ghost_icon_root.get_children():
 		child.queue_free()
+
+func _do_slot_swap(from_idx: int, to_idx: int) -> void:
+	if from_idx < 0 or to_idx < 0 or from_idx >= _slot_order.size() or to_idx >= _slot_order.size():
+		return
+	var tmp: Dictionary = _slot_order[from_idx]
+	_slot_order[from_idx] = _slot_order[to_idx]
+	_slot_order[to_idx] = tmp
+	_rebuild_content(_last_ore_counts, _last_shroom_charges, _last_lucky_compass, _last_ancient_map)
 
 func _slot_border_rects(x: int, y: int, w: int, h: int, t: int) -> Array:
 	return [
