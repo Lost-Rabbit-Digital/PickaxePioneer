@@ -153,6 +153,10 @@ var trade_amplifier_built: bool = false  # +25% dollar payout when selling bars
 var has_completed_tier_1_mine: bool = false       # True when player completes any Mine 1/2/3
 var has_completed_tier_2_settlement: bool = false # True when player completes any Settlement 3/4
 
+# Onboarding flags (persisted to save)
+var has_seen_overworld_hint: bool = false  # Suppresses first-visit overworld guidance after first display
+var has_completed_first_run: bool = false  # True after first successful mine exit; gates tutorial hints
+
 # Current node type for the active mine/settlement run (transient, not persisted)
 var current_node_type: int = 0  # MapNode.NodeType value of the node being mined/visited
 
@@ -664,6 +668,8 @@ func save_game() -> void:
 		"cat_color": cat_color.to_html(),
 		"has_completed_tier_1_mine": has_completed_tier_1_mine,
 		"has_completed_tier_2_settlement": has_completed_tier_2_settlement,
+		"has_seen_overworld_hint": has_seen_overworld_hint,
+		"has_completed_first_run": has_completed_first_run,
 		"trinket_paraglider": trinket_paraglider,
 		"trinket_jet_boots": trinket_jet_boots,
 		"trinket_stone_of_regen": trinket_stone_of_regen,
@@ -738,6 +744,8 @@ func load_game() -> void:
 				cat_color = Color.WHITE
 			has_completed_tier_1_mine = data.get("has_completed_tier_1_mine", false)
 			has_completed_tier_2_settlement = data.get("has_completed_tier_2_settlement", false)
+			has_seen_overworld_hint = data.get("has_seen_overworld_hint", false)
+			has_completed_first_run = data.get("has_completed_first_run", false)
 			trinket_paraglider = data.get("trinket_paraglider", false)
 			trinket_jet_boots = data.get("trinket_jet_boots", false)
 			trinket_stone_of_regen = data.get("trinket_stone_of_regen", false)

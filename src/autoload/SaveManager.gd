@@ -197,6 +197,8 @@ func _snapshot_game_manager() -> Dictionary:
 		"cat_color": gm.cat_color.to_html(),
 		"has_completed_tier_1_mine": gm.has_completed_tier_1_mine,
 		"has_completed_tier_2_settlement": gm.has_completed_tier_2_settlement,
+		"has_seen_overworld_hint": gm.has_seen_overworld_hint,
+		"has_completed_first_run": gm.has_completed_first_run,
 		# Perk tree
 		"player_xp": gm.player_xp,
 		"player_level": gm.player_level,
@@ -264,6 +266,8 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 		gm.cat_color = Color.WHITE
 	gm.has_completed_tier_1_mine = data.get("has_completed_tier_1_mine", false)
 	gm.has_completed_tier_2_settlement = data.get("has_completed_tier_2_settlement", false)
+	gm.has_seen_overworld_hint = data.get("has_seen_overworld_hint", false)
+	gm.has_completed_first_run = data.get("has_completed_first_run", false)
 	# Perk tree
 	gm.player_xp = data.get("player_xp", 0)
 	gm.player_level = data.get("player_level", 1)
@@ -326,6 +330,8 @@ func _reset_game_manager() -> void:
 	gm.cat_color = Color.WHITE
 	gm.has_completed_tier_1_mine = false
 	gm.has_completed_tier_2_settlement = false
+	gm.has_seen_overworld_hint = false
+	gm.has_completed_first_run = false
 	# Perk tree
 	gm.player_xp = 0
 	gm.player_level = 1
