@@ -159,7 +159,6 @@ var current_node_type: int = 0  # MapNode.NodeType value of the node being mined
 const SAVE_PATH = "user://save_data.json"
 
 func _ready() -> void:
-	print("GameManager initialized")
 	# Legacy load_game() removed — SaveManager now handles slot-based persistence.
 	# On first boot, SaveManager._migrate_legacy_save() imports the old file.
 	NetworkManager.guest_connected.connect(_on_guest_connected)
@@ -233,7 +232,6 @@ func bank_currency() -> void:
 func change_state(new_state: GameState) -> void:
 	current_state = new_state
 	EventBus.game_state_changed.emit(current_state)
-	print("Game State Changed to: ", new_state)
 
 func start_game() -> void:
 	change_state(GameState.PLAYING)
@@ -475,38 +473,31 @@ func _transition_to_scene(scene_path: String) -> void:
 func upgrade_carapace() -> void:
 	carapace_level += 1
 	save_game()
-	print("Spacesuit reinforced to level ", carapace_level)
 
 func upgrade_legs() -> void:
 	legs_level += 1
 	save_game()
-	print("Jet Boots upgraded to level ", legs_level)
 
 func upgrade_mandibles() -> void:
 	mandibles_level += 1
 	save_game()
 	EventBus.coins_changed.emit(run_coins)
-	print("Cargo hold expanded to level ", mandibles_level)
 
 func upgrade_mineral_sense() -> void:
 	mineral_sense_level += 1
 	save_game()
-	print("Space Whiskers tuned to level ", mineral_sense_level)
 
 func upgrade_claws() -> void:
 	claws_level += 1
 	save_game()
-	print("Claws sharpened to level ", claws_level)
 
 func upgrade_ladder_climb_speed() -> void:
 	ladder_climb_speed_level += 1
 	save_game()
-	print("Ladder climbing speed upgraded to level ", ladder_climb_speed_level)
 
 func upgrade_mining_reach() -> void:
 	mining_reach_level += 1
 	save_game()
-	print("Mining reach expanded to level ", mining_reach_level)
 
 func get_sonar_ping_radius() -> float:
 	return 4.0 + perk_ranks.get("whiskers", 0) * 3.0
@@ -689,17 +680,14 @@ func save_game() -> void:
 	}
 
 	SaveManager.save_active_slot()
-	print("Game saved (slot %d)" % SaveManager.active_slot)
-  
+
 	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(save_data))
 		file.close()
-		print("Game saved")
 
 func load_game() -> void:
 	if not FileAccess.file_exists(SAVE_PATH):
-		print("No save file found")
 		return
 	
 	var file = FileAccess.open(SAVE_PATH, FileAccess.READ)
@@ -763,6 +751,6 @@ func load_game() -> void:
 			trinket_magnet = data.get("trinket_magnet", false)
 			trinket_cosmic_radiation = data.get("trinket_cosmic_radiation", false)
 			trinket_curse_of_core = data.get("trinket_curse_of_core", false)
-			print("Game loaded")
+			pass
 		else:
-			print("Failed to parse save file")
+			push_warning("GameManager: Failed to parse save file")

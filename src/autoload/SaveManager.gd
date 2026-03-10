@@ -157,7 +157,6 @@ func _migrate_legacy_save() -> void:
 	if json.parse(json_string) == OK and json.data is Dictionary:
 		_slots[0] = json.data
 		_persist_all_slots()
-		print("SaveManager: Migrated legacy save to slot 0")
 
 # ---------------------------------------------------------------------------
 # Snapshot / Apply
