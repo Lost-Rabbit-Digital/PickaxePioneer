@@ -1867,9 +1867,7 @@ func _on_player_died() -> void:
 		return
 	_game_over = true
 	SoundManager.play_death_sound()
-	_show_game_over_overlay("LOST IN SPACE", "Run stardust has been lost...")
-	await get_tree().create_timer(2.5).timeout
-	GameManager.lose_run()
+	_show_failure_summary("death")
 
 func _on_out_of_energy() -> void:
 	if _game_over:
@@ -1878,11 +1876,14 @@ func _on_out_of_energy() -> void:
 	if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
 		return
 	_game_over = true
-	_show_game_over_overlay("OUT OF ENERGY", "Run stardust has been lost...")
 	if NetworkManager.is_multiplayer_session and NetworkManager.guest_peer_id > 0:
 		rpc_trigger_game_over.rpc_id(NetworkManager.guest_peer_id)
-	await get_tree().create_timer(2.5).timeout
-	GameManager.lose_run()
+	_show_failure_summary("energy")
+
+func _show_failure_summary(reason: String) -> void:
+	var summary := FailureSummary.new()
+	summary.setup(reason)
+	get_tree().root.add_child(summary)
 
 func _show_game_over_overlay(title: String, subtitle: String) -> void:
 	var layer := CanvasLayer.new()
@@ -2490,9 +2491,7 @@ func rpc_trigger_run_end() -> void:
 func rpc_trigger_game_over() -> void:
 	if not _game_over:
 		_game_over = true
-		_show_game_over_overlay("OUT OF ENERGY", "Run stardust has been lost...")
-		await get_tree().create_timer(2.5).timeout
-		GameManager.lose_run()
+		_show_failure_summary("energy")
 
 ## Host → Guest: deal damage to the guest player (hazard or explosion).
 @rpc("authority", "call_remote", "reliable")
