@@ -62,6 +62,17 @@ var _mp_current_page: String = "menu"
 var _settings_overlay: Control = null
 var _settings_panel: Node = null
 
+# Character customization overlay (built in code, mirrors in-game CustomizationMenu)
+var _customize_overlay: Control = null
+var _customize_preview_sprite: AnimatedSprite2D = null
+var _customize_swatch_buttons: Array[Button] = []
+var _customize_selected_index: int = -1
+var _menu_char_sprite: AnimatedSprite2D = null
+
+const CUSTOMIZE_SWATCHES_PER_ROW := 6
+const CUSTOMIZE_W := 680.0
+const CUSTOMIZE_H := 650.0
+
 func _ready() -> void:
 	$VBoxContainer/SingleplayerButton.pressed.connect(_on_singleplayer_pressed)
 	$VBoxContainer/MultiplayerButton.pressed.connect(_on_multiplayer_pressed)
@@ -93,6 +104,8 @@ func _ready() -> void:
 	_build_delete_confirm_dialog()
 	_build_singleplayer_overlay()
 	_build_multiplayer_overlay()
+	_build_customize_overlay()
+	_setup_menu_char_sprite()
 
 	# If returning from a multiplayer session that ended (e.g. disconnected), clean up
 	if NetworkManager.is_multiplayer_session:
@@ -251,6 +264,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif _mp_overlay != null and _mp_overlay.visible:
 			_on_mp_back_pressed()
 			get_viewport().set_input_as_handled()
+		elif _customize_overlay != null and _customize_overlay.visible:
+			_on_customize_back_pressed()
+			get_viewport().set_input_as_handled()
 		elif _active_submenu != "":
 			_show_main_buttons()
 			get_viewport().set_input_as_handled()
@@ -265,7 +281,257 @@ func _on_credits_close_pressed() -> void:
 
 func _on_customize_character_pressed() -> void:
 	SoundManager.play_ui_click_sound()
-	# TODO: Open character customization screen
+	_customize_selected_index = -1
+	if GameManager.cat_color != Color.WHITE:
+		for i: int in range(CustomizationMenu.PALETTE.size()):
+			if CustomizationMenu.PALETTE[i].is_equal_approx(GameManager.cat_color):
+				_customize_selected_index = i
+				break
+	_customize_update_preview_color()
+	_customize_refresh_borders()
+	_customize_overlay.show()
+
+# ---------------------------------------------------------------------------
+# Character customization overlay — built in code
+# ---------------------------------------------------------------------------
+
+func _setup_menu_char_sprite() -> void:
+	_menu_char_sprite = AnimatedSprite2D.new()
+	_menu_char_sprite.position = Vector2(80.0, 112.0)
+	_menu_char_sprite.scale = Vector2(4, 4)
+	_menu_char_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	$CharacterContainer.add_child(_menu_char_sprite)
+	_load_char_sprite_frames(_menu_char_sprite)
+	_menu_char_sprite.play(&"idle")
+	_menu_char_sprite.modulate = GameManager.cat_color
+
+func _load_char_sprite_frames(target: AnimatedSprite2D) -> void:
+	var player_scene := load("res://src/entities/player/PlayerProbe.tscn") as PackedScene
+	if player_scene:
+		var temp := player_scene.instantiate()
+		var source_sprite: AnimatedSprite2D = temp.get_node("AnimatedSprite2D")
+		if source_sprite:
+			target.sprite_frames = source_sprite.sprite_frames
+		temp.queue_free()
+
+func _build_customize_overlay() -> void:
+	_customize_overlay = Control.new()
+	_customize_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_customize_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_customize_overlay.hide()
+	add_child(_customize_overlay)
+
+	var dimmer := ColorRect.new()
+	dimmer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dimmer.color = Color(0, 0, 0, 0.82)
+	_customize_overlay.add_child(dimmer)
+
+	var px := (1280.0 - CUSTOMIZE_W) / 2.0
+	var py := (720.0 - CUSTOMIZE_H) / 2.0
+
+	# Gold border
+	var border := ColorRect.new()
+	border.position = Vector2(px - 2.0, py - 2.0)
+	border.size = Vector2(CUSTOMIZE_W + 4.0, CUSTOMIZE_H + 4.0)
+	border.color = Color(0.8, 0.62, 0.22, 0.85)
+	_customize_overlay.add_child(border)
+
+	# Panel background
+	var bg := ColorRect.new()
+	bg.position = Vector2(px, py)
+	bg.size = Vector2(CUSTOMIZE_W, CUSTOMIZE_H)
+	bg.color = Color(0.1, 0.09, 0.14, 0.97)
+	_customize_overlay.add_child(bg)
+
+	# Back button — upper left
+	var back_btn := Button.new()
+	back_btn.text = "< BACK"
+	back_btn.position = Vector2(px + 12.0, py + 12.0)
+	back_btn.size = Vector2(90.0, 32.0)
+	back_btn.add_theme_font_size_override("font_size", 14)
+	back_btn.pressed.connect(_on_customize_back_pressed)
+	_customize_overlay.add_child(back_btn)
+
+	# Title
+	var title := Label.new()
+	title.text = "CUSTOMIZATION"
+	title.position = Vector2(px, py + 14.0)
+	title.size = Vector2(CUSTOMIZE_W, 32.0)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.3))
+	_customize_overlay.add_child(title)
+
+	# Separator under title
+	var sep := ColorRect.new()
+	sep.position = Vector2(px + 16.0, py + 52.0)
+	sep.size = Vector2(CUSTOMIZE_W - 32.0, 2.0)
+	sep.color = Color(0.8, 0.62, 0.22, 0.4)
+	_customize_overlay.add_child(sep)
+
+	# Preview background
+	var preview_x := px + (CUSTOMIZE_W - 160.0) / 2.0
+	var preview_border := ColorRect.new()
+	preview_border.position = Vector2(preview_x - 1.0, py + 61.0)
+	preview_border.size = Vector2(162.0, 202.0)
+	preview_border.color = Color(0.28, 0.24, 0.36, 0.6)
+	_customize_overlay.add_child(preview_border)
+
+	var preview_bg := ColorRect.new()
+	preview_bg.position = Vector2(preview_x, py + 62.0)
+	preview_bg.size = Vector2(160.0, 200.0)
+	preview_bg.color = Color(0.07, 0.06, 0.1, 1.0)
+	_customize_overlay.add_child(preview_bg)
+
+	# Animated preview sprite (centered in preview area)
+	_customize_preview_sprite = AnimatedSprite2D.new()
+	_customize_preview_sprite.position = Vector2(px + CUSTOMIZE_W / 2.0, py + 162.0)
+	_customize_preview_sprite.scale = Vector2(5, 5)
+	_customize_preview_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_customize_overlay.add_child(_customize_preview_sprite)
+	_load_char_sprite_frames(_customize_preview_sprite)
+	_customize_preview_sprite.play(&"idle")
+
+	# "Your Cat" label
+	var your_cat_label := Label.new()
+	your_cat_label.text = "Your Cat"
+	your_cat_label.position = Vector2(preview_x, py + 268.0)
+	your_cat_label.size = Vector2(160.0, 22.0)
+	your_cat_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	your_cat_label.add_theme_font_size_override("font_size", 13)
+	your_cat_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75))
+	_customize_overlay.add_child(your_cat_label)
+
+	# Separator between preview and palette
+	var sep2 := ColorRect.new()
+	sep2.position = Vector2(px + 16.0, py + 297.0)
+	sep2.size = Vector2(CUSTOMIZE_W - 32.0, 1.0)
+	sep2.color = Color(0.8, 0.62, 0.22, 0.3)
+	_customize_overlay.add_child(sep2)
+
+	# "COLOUR" section label
+	var colour_label := Label.new()
+	colour_label.text = "COLOUR"
+	colour_label.position = Vector2(px, py + 305.0)
+	colour_label.size = Vector2(CUSTOMIZE_W, 22.0)
+	colour_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	colour_label.add_theme_font_size_override("font_size", 14)
+	colour_label.add_theme_color_override("font_color", Color(0.8, 0.75, 0.9))
+	_customize_overlay.add_child(colour_label)
+
+	# Colour swatches — 6 per row
+	var total_w := float(CUSTOMIZE_SWATCHES_PER_ROW) * (CustomizationMenu.BTN_W + CustomizationMenu.BTN_GAP) - CustomizationMenu.BTN_GAP
+	var sx_start := px + (CUSTOMIZE_W - total_w) / 2.0
+	var sy_start := py + 333.0
+	for i: int in range(CustomizationMenu.PALETTE.size()):
+		var row: int = i / CUSTOMIZE_SWATCHES_PER_ROW
+		var col: int = i % CUSTOMIZE_SWATCHES_PER_ROW
+		var bx := sx_start + col * (CustomizationMenu.BTN_W + CustomizationMenu.BTN_GAP)
+		var by := sy_start + row * (CustomizationMenu.BTN_H + CustomizationMenu.BTN_GAP)
+		_build_customize_swatch(i, bx, by)
+
+	# Reset button
+	var total_rows := int(ceil(float(CustomizationMenu.PALETTE.size()) / float(CUSTOMIZE_SWATCHES_PER_ROW)))
+	var swatch_end_y := sy_start + total_rows * (CustomizationMenu.BTN_H + CustomizationMenu.BTN_GAP)
+	var reset_btn := Button.new()
+	reset_btn.text = "RESET"
+	reset_btn.position = Vector2(px + (CUSTOMIZE_W - 120.0) / 2.0, swatch_end_y + 10.0)
+	reset_btn.size = Vector2(120.0, 34.0)
+	reset_btn.add_theme_font_size_override("font_size", 14)
+	reset_btn.pressed.connect(_on_customize_reset)
+	_customize_overlay.add_child(reset_btn)
+
+func _build_customize_swatch(index: int, bx: float, by: float) -> void:
+	var btn := Button.new()
+	btn.position = Vector2(bx, by)
+	btn.size = Vector2(CustomizationMenu.BTN_W, CustomizationMenu.BTN_H)
+	btn.text = ""
+	btn.clip_contents = true
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.12, 0.11, 0.16, 1.0)
+	style.border_color = Color(0.30, 0.30, 0.35, 0.60)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(2)
+	btn.add_theme_stylebox_override("normal", style)
+
+	var hover_style := style.duplicate() as StyleBoxFlat
+	hover_style.bg_color = Color(0.20, 0.19, 0.26, 1.0)
+	hover_style.border_color = Color(1.0, 1.0, 1.0, 0.60)
+	hover_style.set_border_width_all(2)
+	btn.add_theme_stylebox_override("hover", hover_style)
+
+	var pressed_style := style.duplicate() as StyleBoxFlat
+	pressed_style.bg_color = Color(0.15, 0.14, 0.20, 1.0)
+	pressed_style.border_color = Color(1.0, 0.82, 0.35, 1.0)
+	pressed_style.set_border_width_all(2)
+	btn.add_theme_stylebox_override("pressed", pressed_style)
+	btn.add_theme_stylebox_override("focus", style.duplicate())
+
+	var rtl := RichTextLabel.new()
+	rtl.bbcode_enabled = true
+	var hex: String = CustomizationMenu.PALETTE[index].to_html(false).to_lower()
+	rtl.text = "[center][color=#%s]#%s[/color][/center]" % [hex, hex]
+	rtl.size = Vector2(CustomizationMenu.BTN_W, CustomizationMenu.BTN_H)
+	rtl.position = Vector2(0.0, 4.0)
+	rtl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rtl.scroll_active = false
+	rtl.add_theme_font_size_override("normal_font_size", 12)
+	btn.add_child(rtl)
+
+	btn.pressed.connect(_on_customize_swatch_pressed.bind(index))
+	_customize_overlay.add_child(btn)
+	_customize_swatch_buttons.append(btn)
+
+func _on_customize_swatch_pressed(index: int) -> void:
+	_customize_selected_index = index
+	GameManager.cat_color = CustomizationMenu.PALETTE[index]
+	GameManager.save_game()
+	_customize_update_preview_color()
+	_update_menu_char_sprite_color()
+	_customize_refresh_borders()
+
+func _on_customize_reset() -> void:
+	_customize_selected_index = -1
+	GameManager.cat_color = Color.WHITE
+	GameManager.save_game()
+	_customize_update_preview_color()
+	_update_menu_char_sprite_color()
+	_customize_refresh_borders()
+
+func _customize_update_preview_color() -> void:
+	if _customize_preview_sprite:
+		_customize_preview_sprite.modulate = GameManager.cat_color
+
+func _update_menu_char_sprite_color() -> void:
+	if _menu_char_sprite:
+		_menu_char_sprite.modulate = GameManager.cat_color
+
+func _customize_refresh_borders() -> void:
+	for i: int in range(_customize_swatch_buttons.size()):
+		var btn := _customize_swatch_buttons[i]
+		var is_selected := false
+		if _customize_selected_index >= 0 and i == _customize_selected_index:
+			is_selected = true
+		elif _customize_selected_index < 0 and GameManager.cat_color != Color.WHITE:
+			if CustomizationMenu.PALETTE[i].is_equal_approx(GameManager.cat_color):
+				is_selected = true
+
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.12, 0.11, 0.16, 1.0)
+		style.set_corner_radius_all(2)
+		if is_selected:
+			style.border_color = Color(1.0, 0.82, 0.35, 1.0)
+			style.set_border_width_all(2)
+		else:
+			style.border_color = Color(0.30, 0.30, 0.35, 0.60)
+			style.set_border_width_all(1)
+		btn.add_theme_stylebox_override("normal", style)
+
+func _on_customize_back_pressed() -> void:
+	SoundManager.play_ui_click_sound()
+	_customize_overlay.hide()
 
 # ---------------------------------------------------------------------------
 # Singleplayer overlay — built in code
