@@ -77,6 +77,12 @@ const CURSE_DAMAGE_INTERVAL: float = 8.0  # Seconds between curse damage ticks
 var _cosmic_timer: float = 0.0             # Cosmic Radiation bitflip interval
 const COSMIC_INTERVAL: float = 15.0       # Seconds between cosmic events
 
+# --- Gamepad right-stick aiming ---
+# When the right stick is deflected, warp the mouse cursor so all existing
+# get_global_mouse_position() calls (mining, cursor highlight) work seamlessly.
+const STICK_AIM_RANGE_TILES: float = 3.5  # How far the aim extends from the player
+const STICK_DEADZONE: float = 0.2
+
 # --- Particle system (walking dust + landing poof) ---
 const PARTICLE_FEET_Y: float = 26.0        # Offset below player center to feet
 const PARTICLE_MAX: int = 80               # Max simultaneous particles
@@ -160,6 +166,17 @@ func _physics_process(delta: float) -> void:
 	if not mining_level or mining_level._game_over or mining_level.any_ui_open() or (mining_level.get("_spawning") == true):
 		return
 
+	# Right-stick aiming — warp mouse cursor to aim position so mining/cursor
+	# highlight code works unchanged for both mouse and gamepad players.
+	var rs_x := Input.get_joy_axis(0, JOY_AXIS_RIGHT_X)
+	var rs_y := Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y)
+	if Vector2(rs_x, rs_y).length() > STICK_DEADZONE:
+		var aim_dir := Vector2(rs_x, rs_y).normalized()
+		var aim_world := global_position + aim_dir * STICK_AIM_RANGE_TILES * CELL_SIZE
+		var canvas_xform := get_canvas_transform()
+		var screen_pos := canvas_xform * aim_world
+		get_viewport().warp_mouse(screen_pos)
+
 	var pre_floor := is_on_floor()
 
 	# Track fall start position
@@ -172,9 +189,10 @@ func _physics_process(delta: float) -> void:
 		_is_falling = true
 		_fall_start_y = global_position.y
 
-	# Grip/climb: W or Up held.  Descend: S or Down held.  Neither: freefall.
-	_gripping_ladder   = on_ladder and (Input.is_key_pressed(KEY_W)   or Input.is_key_pressed(KEY_UP))
-	_descending_ladder = on_ladder and (Input.is_key_pressed(KEY_S)   or Input.is_key_pressed(KEY_DOWN))
+	# Grip/climb: W or Up or left-stick-up held.  Descend: S or Down or left-stick-down.
+	var ls_y := Input.get_joy_axis(0, JOY_AXIS_LEFT_Y)
+	_gripping_ladder   = on_ladder and (Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP) or ls_y < -0.3)
+	_descending_ladder = on_ladder and (Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN) or ls_y > 0.3)
 
 	# Gravity — suppressed when on a ladder; player holds position unless actively climbing.
 	# Paraglider: hold Jump while falling to reduce gravity and glide slowly.

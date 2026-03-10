@@ -95,8 +95,21 @@ res://
 
 ### Input map actions (defined in project.godot)
 
-`move_left` · `move_right` · `jump` · `mine` (left-click) · `sonar_ping` (Q) ·
-`interact` (E) · `pause` (Esc)
+`move_left` · `move_right` · `jump` · `mine` (left-click / RT) · `sonar_ping` (Q / LB) ·
+`interact` (E / X) · `pause` (Esc / B)
+
+**Gamepad mappings (Xbox layout):**
+
+| Action | Gamepad |
+|--------|---------|
+| Move | Left stick / D-pad |
+| Jump | A / D-pad up |
+| Mine | Right trigger (RT) — aim with right stick |
+| Sonar | Left bumper (LB) |
+| Sprint | Left trigger (LT) |
+| Interact | X button |
+| Inventory | Back/Select |
+| Perk Tree | Y button |
 
 ---
 
