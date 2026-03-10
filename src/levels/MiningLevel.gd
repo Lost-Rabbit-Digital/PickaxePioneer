@@ -1976,6 +1976,30 @@ func _play_spawn_animation() -> void:
 
 	_spawning = false
 
+	# Trigger first-run tutorial hints after spawn cinematic
+	if not GameManager.has_completed_first_run:
+		_start_tutorial_hints()
+
+# ---------------------------------------------------------------------------
+# First-run tutorial hints
+# ---------------------------------------------------------------------------
+
+func _start_tutorial_hints() -> void:
+	# Stagger hints so they appear one at a time as the player explores
+	var hints: Array[Dictionary] = [
+		{"delay": 1.5, "text": "WASD to move  |  SPACE to jump"},
+		{"delay": 6.0, "text": "Click on blocks to mine  |  Dig down for richer ore"},
+		{"delay": 12.0, "text": "Press Q to ping sonar  |  Reveals nearby ore (costs energy)"},
+		{"delay": 20.0, "text": "Watch your ENERGY bar (top-right)  |  It drains as you dig deeper"},
+		{"delay": 30.0, "text": "Walk RIGHT on the surface to EXIT and bank your minerals"},
+	]
+	for hint in hints:
+		var timer := get_tree().create_timer(hint["delay"])
+		timer.timeout.connect(func() -> void:
+			if not _game_over:
+				EventBus.boss_hint_popup.emit(hint["text"])
+		)
+
 # ---------------------------------------------------------------------------
 # Sonar ping (§3.2) — delegated to SonarSystem
 # ---------------------------------------------------------------------------

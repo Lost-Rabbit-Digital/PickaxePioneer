@@ -334,6 +334,9 @@ func rpc_lose_run_as_guest() -> void:
 	await _transition_to_scene("res://src/levels/Overworld.tscn")
 
 func complete_run() -> void:
+	if not has_completed_first_run:
+		has_completed_first_run = true
+		save_game()
 	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
 		rpc_complete_run_as_guest.rpc_id(NetworkManager.guest_peer_id, run_coins)
 	var summary_scene = load("res://src/ui/RunSummary.tscn")
