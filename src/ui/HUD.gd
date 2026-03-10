@@ -17,8 +17,8 @@ const HEALTH_BAR_W: int = 18
 const HEALTH_BAR_H: int = 60
 
 # Vertical energy bars (same style as health bars)
-const ENERGY_BAR_W: int = 18
-const ENERGY_BAR_H: int = 60
+const ENERGY_BAR_W: int = 22
+const ENERGY_BAR_H: int = 72
 var health_bars: Array[Control] = []
 var health_bar_fills: Array[ColorRect] = []
 var health_bar_highlights: Array[ColorRect] = []

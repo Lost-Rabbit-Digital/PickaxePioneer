@@ -241,14 +241,17 @@ func _physics_process(delta: float) -> void:
 		if is_on_floor():
 			velocity.y = jump_velocity
 			SoundManager.play_jump_sound()
+			_squash_stretch(Vector2(0.8, 1.3))  # Stretch on jump
 		elif on_ladder:
 			velocity.y = jump_velocity  # Jump releases the player from the ladder
 			SoundManager.play_jump_sound()
+			_squash_stretch(Vector2(0.8, 1.3))
 		elif not _double_jumped:
 			velocity.y = jump_velocity  # Double jump
 			_double_jumped = true
 			_spawn_poof()
 			SoundManager.play_jump_sound()
+			_squash_stretch(Vector2(0.75, 1.35))
 		elif GameManager.trinket_jet_boots and not _jet_boost_used and GameManager.current_energy >= 15:
 			velocity.y = -550.0  # Powerful upward boost
 			_jet_boost_used = true
@@ -424,6 +427,7 @@ func _update_particles(delta: float, was_on_floor: bool, vel_y_before_slide: flo
 		_spawn_poof()
 		SoundManager.play_land_sound()
 		_apply_fall_damage()
+		_squash_stretch(Vector2(1.25, 0.75))  # Squash on land
 
 	# Walking dust — emit small squares at feet while moving on the ground
 	if is_on_floor() and abs(velocity.x) > 20.0 and not _gripping_ladder:
@@ -454,6 +458,16 @@ func _spawn_dust() -> void:
 		"max_life": DUST_LIFETIME,
 		"size": DUST_SIZE,
 	})
+
+var _squash_tween: Tween
+
+func _squash_stretch(target_scale: Vector2) -> void:
+	if _squash_tween:
+		_squash_tween.kill()
+	sprite.scale = target_scale
+	_squash_tween = create_tween()
+	_squash_tween.tween_property(sprite, "scale", Vector2.ONE, 0.15) \
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 
 func _spawn_poof() -> void:
 	var count := mini(POOF_COUNT, PARTICLE_MAX - _particles.size())
