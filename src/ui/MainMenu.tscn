@@ -243,6 +243,7 @@ offset_left = -32.0
 offset_top = -32.0
 offset_right = 8.0
 offset_bottom = 8.0
+tooltip_text = "This is your current level, continue playing to unlock more cosmetics!"
 theme = ExtResource("4_dbyr8")
 
 [node name="Label" type="Label" parent="CharacterContainer/CurrentPlayerLevelProgress/Panel"]
