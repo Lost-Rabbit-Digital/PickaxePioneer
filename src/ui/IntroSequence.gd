@@ -86,7 +86,10 @@ func _advance_card() -> void:
 	_tween.tween_property(_label, "modulate:a", 1.0, FADE_IN_TIME)
 	_tween.tween_interval(HOLD_TIME)
 	_tween.tween_property(_label, "modulate:a", 0.0, FADE_OUT_TIME)
-	_tween.tween_callback(func() -> void: _advancing = false)
+	_tween.tween_callback(func() -> void:
+		_advancing = false
+		_advance_card()
+	)
 
 func _skip_all() -> void:
 	if _tween:
