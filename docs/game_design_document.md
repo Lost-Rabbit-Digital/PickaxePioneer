@@ -323,9 +323,13 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 ## 6. Story & Lore
 
 ### 6.1 Premise
-The Clowder drifts between star systems, a proud feline civilization aboard a great space station. Their ships need fuel — rare minerals scavenged from the crusts of dead planets. The Matriarch has sent her best mining cats across the star chart, each one touching down on a different world to dig as deep as their energy allows.
+The Clowder drifts between star systems, a proud feline civilization aboard a great space station. Their ships need fuel — rare minerals scavenged from the crusts of dead planets. For thirty years, your father ran these mining routes: a one-cat operation, a battered ship, and an intimate knowledge of every ore vein on the star chart.
 
-You are one of those cats. Armed with razor-sharp Claws and impossibly sensitive Whiskers, you land on alien rock, dig through layers of stone and ore, and claw your way back out before your energy gives out. The deeper you go, the richer the haul — and the older, stranger, and more dangerous the things buried in the dark.
+Now he's gone. The ship is yours, the routes are yours, and so are the debts.
+
+You are a mining cat keeping a family business alive. Armed with razor-sharp Claws and impossibly sensitive Whiskers, you touch down on alien rock, dig through layers of stone and ore, and claw your way back out before your energy gives out. Every mineral you bank is one more run you can afford, one more upgrade to the ship your father left you. The deeper you go, the richer the haul — and the older, stranger, and more dangerous the things buried in the dark.
+
+The Clowder is counting on the ore. You're counting on something harder to name.
 
 ### 6.2 Fossil Collectibles (50 Total)
 Scattered across all mine depth levels:
