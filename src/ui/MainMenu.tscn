@@ -1,10 +1,15 @@
-[gd_scene load_steps=8 format=3 uid="uid://cbasjhj0dn6w6"]
+[gd_scene load_steps=10 format=3 uid="uid://cbasjhj0dn6w6"]
 
 [ext_resource type="Script" uid="uid://djild5fqk5aii" path="res://src/ui/MainMenu.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://bxak3nvx2p7qd" path="res://src/ui/MenuBackground.gd" id="2_bgscript"]
 [ext_resource type="Script" uid="uid://b2f4ygsyu65y" path="res://src/ui/main_menu/social_buttons.gd" id="3_ihbld"]
 [ext_resource type="Texture2D" uid="uid://bhww7y11pvgal" path="res://assets/social_icons/discord_icon_normal.png" id="4_ihbld"]
 [ext_resource type="Texture2D" uid="uid://dykx02yxii2da" path="res://assets/title_screen_text.png" id="5_u6542"]
+
+[sub_resource type="Theme" id="Theme_u6542"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_u6542"]
+bg_color = Color(0.4509804, 0.6039216, 0.4392157, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
 content_margin_left = 20.0
@@ -46,32 +51,15 @@ script = ExtResource("1_script")
 [node name="Background" type="Node2D" parent="."]
 script = ExtResource("2_bgscript")
 
-[node name="Title" type="Label" parent="."]
-visible = false
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -300.0
-offset_top = 80.0
-offset_right = 300.0
-offset_bottom = 180.0
-grow_horizontal = 2
-theme_override_colors/font_color = Color(0.9, 0.7, 0.3, 1)
-theme_override_font_sizes/font_size = 72
-text = "PICKAXE PIONEER"
-horizontal_alignment = 1
-vertical_alignment = 1
-
 [node name="TextureRect" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -259.0
-offset_top = 33.0
+offset_top = 32.0
 offset_right = 253.0
-offset_bottom = 289.0
+offset_bottom = 288.0
 grow_horizontal = 2
 texture = ExtResource("5_u6542")
 
@@ -220,10 +208,10 @@ layout_mode = 1
 anchors_preset = 4
 anchor_top = 0.5
 anchor_bottom = 0.5
-offset_left = 20.0
-offset_top = -140.0
-offset_right = 180.0
-offset_bottom = 140.0
+offset_left = 123.0
+offset_top = -7.0
+offset_right = 283.0
+offset_bottom = 273.0
 grow_vertical = 2
 
 [node name="CustomizeButton" type="Button" parent="CharacterContainer"]
@@ -236,29 +224,80 @@ tooltip_text = "Customize your Mining Cat."
 theme_override_font_sizes/font_size = 18
 text = "CUSTOMIZE"
 
-[node name="SocialButtons" type="HBoxContainer" parent="."]
+[node name="CurrentPlayerLevelProgress" type="ProgressBar" parent="CharacterContainer"]
 layout_mode = 1
-anchors_preset = 3
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = 40.0
+grow_horizontal = 2
+theme = SubResource("Theme_u6542")
+theme_override_styles/fill = SubResource("StyleBoxFlat_u6542")
+value = 64.62
+show_percentage = false
+
+[node name="Panel" type="Panel" parent="CharacterContainer/CurrentPlayerLevelProgress"]
+layout_mode = 1
+anchors_preset = 1
 anchor_left = 1.0
-anchor_top = 1.0
+anchor_right = 1.0
+offset_left = -178.0
+offset_top = -34.0
+offset_right = -138.0
+offset_bottom = 6.0
+grow_horizontal = 0
+
+[node name="Label" type="Label" parent="CharacterContainer/CurrentPlayerLevelProgress/Panel"]
+layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -72.0
-offset_top = -74.0
-offset_right = -8.0
-offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 24
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SocialButtons" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -296.0
+offset_top = 26.0
+offset_right = -232.0
+offset_bottom = 90.0
 grow_horizontal = 0
-grow_vertical = 0
+grow_vertical = 2
 script = ExtResource("3_ihbld")
 
 [node name="DiscordButton" type="TextureButton" parent="SocialButtons"]
+custom_minimum_size = Vector2(96, 96)
 layout_mode = 2
 tooltip_text = "Join our community!"
 texture_normal = ExtResource("4_ihbld")
+stretch_mode = 0
 
-[node name="DiscordBackground" type="PanelContainer" parent="SocialButtons"]
-visible = false
-layout_mode = 2
+[node name="DiscordLabelButton" type="Button" parent="SocialButtons/DiscordButton"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -75.0
+offset_right = 75.0
+offset_bottom = 44.0
+grow_horizontal = 2
+grow_vertical = 0
+tooltip_text = "Customize your Mining Cat."
+theme_override_font_sizes/font_size = 18
+text = "Join the Discord!"
 
 [node name="CreditsPanel" type="PanelContainer" parent="."]
 visible = false

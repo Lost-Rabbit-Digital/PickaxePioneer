@@ -36,6 +36,13 @@ Add the share a screenshot on our discord with discord link at the end of each r
 
 
 
+Controller compatibility
+
+
+
+
+Tutorial
+
 
 
 Move the version label to the upper left in the main menu
