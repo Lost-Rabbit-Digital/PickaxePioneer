@@ -5,6 +5,7 @@ extends CanvasLayer
 # Displays location name, type, description, and hazards.
 
 signal confirmed(node: MapNode)
+signal travel_confirmed(node: MapNode)
 signal cancelled
 
 @onready var title_label: Label = $Control/Panel/MarginContainer/VBox/TitleLabel
@@ -16,6 +17,7 @@ signal cancelled
 @onready var hsep2: HSeparator = $Control/Panel/MarginContainer/VBox/HSep2
 
 var _current_node: MapNode = null
+var _travel_mode: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -24,6 +26,7 @@ func _ready() -> void:
 
 func show_locked_message(node: MapNode) -> void:
 	# Show a lock message for a node that cannot be accessed yet
+	_travel_mode = false
 	_current_node = null
 	title_label.text = node.location_name + " [LOCKED]"
 	type_label.text = "[ Progression Gate ]"
@@ -43,8 +46,9 @@ func _get_lock_reason_text(node: MapNode) -> String:
 	# Assume it's the final node if it's locked and not a settlement
 	return "The final mining challenge awaits, but only after you've proven yourself in the settlements. Complete a mining run on one of the frontier settlements to unlock this sector."
 
-func show_for_node(node: MapNode) -> void:
+func show_for_node(node: MapNode, travel_mode: bool = false) -> void:
 	_current_node = node
+	_travel_mode = travel_mode
 	title_label.text = node.location_name
 	description_label.text = node.description if node.description != "" else _default_description(node)
 
@@ -85,6 +89,9 @@ func show_for_node(node: MapNode) -> void:
 	if hazards_label.visible:
 		hazards_label.text = "Hazards: " + ", ".join(PackedStringArray(node.hazard_types))
 
+	if _travel_mode:
+		enter_button.text = "Travel"
+
 	show()
 
 func _default_description(node: MapNode) -> String:
@@ -101,7 +108,10 @@ func _on_enter_pressed() -> void:
 	hide()
 	# Only emit confirmed if a node was actually selected (not a lock message)
 	if _current_node != null:
-		confirmed.emit(_current_node)
+		if _travel_mode:
+			travel_confirmed.emit(_current_node)
+		else:
+			confirmed.emit(_current_node)
 
 func _on_cancel_pressed() -> void:
 	hide()
