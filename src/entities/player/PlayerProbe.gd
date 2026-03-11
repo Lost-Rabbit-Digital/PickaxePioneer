@@ -59,10 +59,16 @@ const SPRINT_ENERGY_RATE: float = 1.0     # Energy units consumed per second whi
 var _sprinting: bool = false
 var _sprint_energy_accum: float = 0.0
 
-# Spider web slowdown — applied by MiningLevel when player touches a web
-const WEB_SLOW_MULT: float = 0.5          # Move at half speed while slowed
-const WEB_SLOW_DURATION: float = 2.0      # Seconds the slowdown lasts after web contact
+# Spider web — three-phase effect: freeze → slow → break
+# Phase 1 (freeze): player is held in place, cannot move
+# Phase 2 (slow): player can move at reduced speed while still in web
+# Phase 3 (break): web is destroyed and normal movement resumes
+const WEB_FREEZE_DURATION: float = 0.5   # Seconds player is fully frozen in the web
+const WEB_SLOW_DURATION: float = 0.5     # Seconds of slowed movement before web breaks
+const WEB_SLOW_MULT: float = 0.35        # Speed multiplier during slow phase
+var _web_freeze_timer: float = 0.0
 var _web_slow_timer: float = 0.0
+var _web_tile_key: Vector2i = Vector2i(-1, -1)  # Grid pos of the web being escaped
 
 # Double jump and trinket-powered third jump (Jet Boots)
 var _double_jumped: bool = false
@@ -215,9 +221,19 @@ func _physics_process(delta: float) -> void:
 		if velocity.y > 0:
 			velocity.y = 0
 
-	# Web slowdown timer
+	# Spider web — phase 1: freeze player in place
+	if _web_freeze_timer > 0.0:
+		_web_freeze_timer -= delta
+		velocity = Vector2.ZERO
+		move_and_slide()
+		return
+
+	# Spider web — phase 2: allow slow movement, then break web when timer expires
 	if _web_slow_timer > 0.0:
 		_web_slow_timer -= delta
+		if _web_slow_timer <= 0.0 and mining_level and _web_tile_key != Vector2i(-1, -1):
+			mining_level.break_web(_web_tile_key)
+			_web_tile_key = Vector2i(-1, -1)
 
 	# Sprint — Shift held, burns energy, boosts horizontal speed
 	_sprinting = Input.is_action_pressed("sprint") and GameManager.current_energy > 0
@@ -422,9 +438,13 @@ func set_prompt_position(screen_pos: Vector2) -> void:
 		sz = Vector2(320.0, 32.0)
 	interact_prompt.position = Vector2(screen_pos.x - sz.x * 0.5, screen_pos.y - sz.y - 4.0)
 
-# Spider web — called by MiningLevel when player contacts a web
-func apply_web_slow() -> void:
-	_web_slow_timer = WEB_SLOW_DURATION
+# Spider web — called by MiningLevel when player contacts a web.
+# Starts the freeze phase; slow phase and web break follow automatically.
+func apply_web_effect(web_tile_key: Vector2i) -> void:
+	_web_tile_key = web_tile_key
+	_web_freeze_timer = WEB_FREEZE_DURATION
+	_web_slow_timer = WEB_SLOW_DURATION  # Pre-arm; activated when freeze expires
+	velocity = Vector2.ZERO
 
 # Health
 func take_damage(amount: float) -> void:
