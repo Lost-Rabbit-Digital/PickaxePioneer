@@ -363,6 +363,17 @@ var _current_zone_idx: int = -1
 
 var _game_over: bool = false
 
+# ---------------------------------------------------------------------------
+# Mid-run save system
+# ---------------------------------------------------------------------------
+# Sparse diff of every grid cell changed from the procedurally-generated baseline.
+# Keyed by Vector2i(col, row); value is the current TileType int.
+# Updated in real-time as tiles are mined/placed so the save is always current.
+var _terrain_changes: Dictionary = {}
+
+const AUTOSAVE_INTERVAL: float = 30.0
+var _autosave_timer: float = 0.0
+
 # Per-tile damage/hit tracking for multi-hit mining
 var _tile_damage: Dictionary = {}
 var _tile_hits: Dictionary = {}
@@ -466,6 +477,9 @@ var _pickaxe_texture: Texture2D
 # Spaceship entry animation — player and workers are deposited by the ship at run start
 var _spawning: bool = false
 var _spaceship_sprite: Sprite2D = null
+# True when this level was loaded as a mid-run resume — spawn animation skips
+# the position override so the saved player position is preserved.
+var _is_resume: bool = false
 
 # ---------------------------------------------------------------------------
 # Multiplayer co-op state
@@ -540,6 +554,20 @@ func _ready() -> void:
 
 	_build_shop_protection_zones()
 	_setup_collision_tilemap()
+
+	# Resuming a mid-run save: restore the terrain diff and player state.
+	var is_resume := (
+		not NetworkManager.is_multiplayer_session
+		and GameManager.run_is_in_mining_level
+	)
+	if is_resume and GameManager.run_terrain_changes.size() > 0:
+		# Apply the sparse diff on top of the freshly-seeded grid before syncing
+		# tilemaps — collision/visual sync uses the modified grid automatically.
+		_apply_terrain_resume(GameManager.run_terrain_changes)
+		# Seed the local diff tracker so future mutations append to the restored state.
+		for entry in GameManager.run_terrain_changes:
+			_terrain_changes[Vector2i(entry[0], entry[1])] = entry[2]
+
 	_sync_collision_tilemap()
 	_populate_visual_tilemaplayers()
 	_setup_map_barriers()
@@ -554,16 +582,41 @@ func _ready() -> void:
 	camera.limit_right  = GRID_COLS * CELL_SIZE
 	camera.limit_bottom = GRID_ROWS * CELL_SIZE
 
-	# Place player at spawn (col 2, row 2 on surface)
-	var spawn_col := 2
-	var spawn_row := 2
-	player_node.global_position = Vector2(
-		spawn_col * CELL_SIZE + CELL_SIZE * 0.5,
-		spawn_row * CELL_SIZE + CELL_SIZE * 0.5
-	)
+	if is_resume and GameManager.run_player_pos_x != 0.0:
+		# Restore the saved player position rather than spawning at the surface.
+		player_node.global_position = Vector2(
+			GameManager.run_player_pos_x,
+			GameManager.run_player_pos_y
+		)
+	else:
+		# Place player at spawn (col 2, row 2 on surface)
+		player_node.global_position = Vector2(
+			2 * CELL_SIZE + CELL_SIZE * 0.5,
+			2 * CELL_SIZE + CELL_SIZE * 0.5
+		)
 	player_node.mining_level = self
 
+	# Record whether this is a resume (with a known saved position) so the spawn
+	# animation skips the hardcoded surface-position override.
+	_is_resume = is_resume and GameManager.run_player_pos_x != 0.0
+
+	# Record the mine node name for resume detection on future loads.
+	GameManager.run_node_name = GameManager.last_overworld_node_name
+
+	# Connect to the window-close capture signal so we can flush terrain state
+	# into GameManager immediately before the slot snapshot is taken.
+	EventBus.mining_state_capture_requested.connect(_push_run_state_to_game_manager)
+
 	EventBus.player_died.connect(_on_player_died)
+
+	# Restore player health from the saved mid-run state.  HealthComponent._ready()
+	# has already run (resetting to max), so override it here for resumes.
+	# Only restore if the saved health is partial (full health needs no override).
+	if is_resume and GameManager.run_player_health > 0.0:
+		var max_hp: int = player_node.health_component.max_health
+		var restored_hp: float = minf(GameManager.run_player_health, float(max_hp))
+		player_node.health_component.current_health = restored_hp
+		EventBus.player_health_changed.emit(restored_hp, max_hp)
 
 	QuestManager.clear_quest()
 	_setup_farm_animals()
@@ -1047,6 +1100,13 @@ func _process(delta: float) -> void:
 	queue_redraw()
 	if _terrain_overlay:
 		_terrain_overlay.queue_redraw()
+
+	# Auto-save every AUTOSAVE_INTERVAL seconds while the player is in the mine.
+	if not _game_over and not _spawning:
+		_autosave_timer += delta
+		if _autosave_timer >= AUTOSAVE_INTERVAL:
+			_autosave_timer = 0.0
+			_do_autosave()
 
 	# Fade impact flashes
 	if _flash_cells.size() > 0:
@@ -1779,6 +1839,8 @@ func _process_gravity(delta: float) -> void:
 		# Move the tile down one row.
 		grid[col][below_row] = tile
 		grid[col][row] = TileType.EMPTY
+		_record_terrain_change(col, below_row, tile)
+		_record_terrain_change(col, row, TileType.EMPTY)
 		_set_tile_collision(col, row, false)
 		_set_tile_collision(col, below_row, true)
 		_set_visual_cell(col, row)
@@ -1843,6 +1905,7 @@ func _process_stalactites(delta: float) -> void:
 
 func _mine_cell(col: int, row: int) -> void:
 	grid[col][row] = TileType.EMPTY
+	_record_terrain_change(col, row, TileType.EMPTY)
 	_set_tile_collision(col, row, false)
 	_set_visual_cell(col, row)
 	# A newly-empty cell may leave a gravity tile unsupported above it.
@@ -1851,6 +1914,53 @@ func _mine_cell(col: int, row: int) -> void:
 	_remove_cave_plant_above(col, row)
 	# Trigger any stalactite hanging below this tile to fall (stalactite hangs one row below).
 	_trigger_stalactite_below(col, row)
+
+## Records a single grid-cell change into the terrain diff for mid-run saving.
+## Called whenever a tile is set to a new type (mining, explosions, gravity, ladders).
+## The full diff is pushed to GameManager on the 30-second auto-save tick and on
+## the mining_state_capture_requested signal (window-close path).
+func _record_terrain_change(col: int, row: int, tile: int) -> void:
+	_terrain_changes[Vector2i(col, row)] = tile
+
+## Pushes the current run state into GameManager so SaveManager can snapshot it.
+## Called by the 30-second auto-save timer and by the mining_state_capture_requested
+## signal (fired by GameManager just before a window-close save).
+func _push_run_state_to_game_manager() -> void:
+	var local_p := _get_local_player()
+	if local_p:
+		GameManager.run_player_pos_x = local_p.global_position.x
+		GameManager.run_player_pos_y = local_p.global_position.y
+		GameManager.run_player_health = local_p.health_component.current_health
+	GameManager.run_is_in_mining_level = true
+	# Convert the local terrain-change dict into the packed [[col,row,tile],...] array
+	# that the save system uses for JSON serialisation.
+	var changes: Array = []
+	for key: Vector2i in _terrain_changes:
+		changes.append([key.x, key.y, _terrain_changes[key]])
+	GameManager.run_terrain_changes = changes
+
+## Auto-save: push run state to GameManager then persist the active slot.
+func _do_autosave() -> void:
+	if _game_over:
+		return
+	_push_run_state_to_game_manager()
+	SaveManager.save_active_slot()
+
+## Applies saved terrain changes on top of the freshly-generated grid so a
+## resumed run sees exactly the same mine state the player left behind.
+## `changes` is an Array of [col, row, tile_type] triples.
+## Collision and visuals are left to _sync_collision_tilemap / _populate_visual_tilemaplayers
+## which run immediately after this call.
+func _apply_terrain_resume(changes: Array) -> void:
+	for entry in changes:
+		if not (entry is Array) or entry.size() < 3:
+			continue
+		var col: int = entry[0]
+		var row: int = entry[1]
+		var tile: int = entry[2]
+		if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
+			continue
+		grid[col][row] = tile
 
 # Cave plants grow upward from a solid floor; erase one if its support tile is removed.
 func _remove_cave_plant_above(col: int, row: int) -> void:
@@ -1924,6 +2034,7 @@ func _explode_area(center_col: int, center_row: int, chain_depth: int = 0) -> vo
 					_spawn_ore_chunks(tile, minerals, world_pos)
 					GameManager.track_ore_mined(tile, minerals)
 				grid[nc][nr] = TileType.EMPTY
+				_record_terrain_change(nc, nr, TileType.EMPTY)
 				_set_tile_collision(nc, nr, false)
 				_set_visual_cell(nc, nr)
 				_remove_breaking_overlay(Vector2i(nc, nr))
@@ -2083,9 +2194,10 @@ func _play_spawn_animation() -> void:
 	# Brief hover — ship "deposits" the player and any hired cats
 	await get_tree().create_timer(0.55).timeout
 
-	# Reveal player at spawn position
+	# Reveal player — on a resume keep the saved position rather than snapping to spawn.
 	if player_node:
-		player_node.global_position = spawn_px
+		if not _is_resume:
+			player_node.global_position = spawn_px
 		player_node.visible = true
 
 	# Tiny camera shake as players hits the surface
@@ -2480,6 +2592,7 @@ func _try_place_ladder_at(gp: Vector2i) -> void:
 		EventBus.ore_mined_popup.emit(0, "Can only place ladders in open space.")
 		return
 	grid[gp.x][gp.y] = TileType.LADDER
+	_record_terrain_change(gp.x, gp.y, TileType.LADDER)
 	_set_visual_cell(gp.x, gp.y)
 	GameManager.ladder_count -= 1
 	GameManager.save_game()
@@ -2535,6 +2648,7 @@ func _try_remove_ladder_at(gp: Vector2i) -> void:
 		EventBus.ore_mined_popup.emit(0, "Too far — move closer to retrieve that ladder.")
 		return
 	grid[gp.x][gp.y] = TileType.EMPTY
+	_record_terrain_change(gp.x, gp.y, TileType.EMPTY)
 	_set_visual_cell(gp.x, gp.y)
 	GameManager.ladder_count += 1
 	GameManager.save_game()

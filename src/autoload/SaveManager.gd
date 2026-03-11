@@ -104,7 +104,7 @@ func get_planet_config() -> Dictionary:
 		return {}
 	return slot.get("planet_config", {})
 
-## Clear the active save slot (called on player death).
+## Clear the active save slot's run data (called on player death or run complete).
 func clear_active_slot_run_data() -> void:
 	if active_slot < 0 or active_slot >= MAX_SLOTS:
 		return
@@ -112,6 +112,17 @@ func clear_active_slot_run_data() -> void:
 		# Clear planet config so overworld re-randomizes next run
 		_slots[active_slot].erase("planet_config")
 		_slots[active_slot]["last_overworld_node_name"] = ""
+		# Clear mid-run save state so no stale terrain diff survives a death
+		_slots[active_slot]["run_is_in_mining_level"] = false
+		_slots[active_slot]["run_node_name"] = ""
+		_slots[active_slot]["run_player_pos_x"] = 0.0
+		_slots[active_slot]["run_player_pos_y"] = 0.0
+		_slots[active_slot]["run_player_health"] = 0.0
+		_slots[active_slot]["run_terrain_seed"] = 0
+		_slots[active_slot]["run_current_energy"] = 0
+		_slots[active_slot]["run_coins"] = 0
+		_slots[active_slot]["run_ore_chunk_counts"] = {}
+		_slots[active_slot]["run_terrain_changes"] = []
 		# Save the updated slot (upgrades persist, but run state resets)
 		_persist_all_slots()
 
@@ -226,6 +237,17 @@ func _snapshot_game_manager() -> Dictionary:
 		var existing_config = _slots[active_slot].get("planet_config", {})
 		if existing_config.size() > 0:
 			data["planet_config"] = existing_config
+	# Mid-run state — allows seamless resume after quitting mid-mine
+	data["run_is_in_mining_level"] = gm.run_is_in_mining_level
+	data["run_node_name"] = gm.run_node_name
+	data["run_player_pos_x"] = gm.run_player_pos_x
+	data["run_player_pos_y"] = gm.run_player_pos_y
+	data["run_player_health"] = gm.run_player_health
+	data["run_terrain_seed"] = gm.terrain_seed
+	data["run_current_energy"] = gm.current_energy
+	data["run_coins"] = gm.run_coins
+	data["run_ore_chunk_counts"] = gm.run_ore_chunk_counts.duplicate()
+	data["run_terrain_changes"] = gm.run_terrain_changes.duplicate()
 	return data
 
 func _apply_to_game_manager(data: Dictionary) -> void:
@@ -297,6 +319,22 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 	gm.trinket_magnet = data.get("trinket_magnet", false)
 	gm.trinket_cosmic_radiation = data.get("trinket_cosmic_radiation", false)
 	gm.trinket_curse_of_core = data.get("trinket_curse_of_core", false)
+	# Mid-run state
+	gm.run_is_in_mining_level = data.get("run_is_in_mining_level", false)
+	gm.run_node_name = data.get("run_node_name", "")
+	gm.run_player_pos_x = data.get("run_player_pos_x", 0.0)
+	gm.run_player_pos_y = data.get("run_player_pos_y", 0.0)
+	gm.run_player_health = data.get("run_player_health", 0.0)
+	if gm.run_is_in_mining_level:
+		# Restore the exact terrain seed, energy, currency, and inventory from the
+		# saved mid-run state so load_mining_level() can resume rather than reset.
+		gm.terrain_seed = data.get("run_terrain_seed", 0)
+		gm.current_energy = data.get("run_current_energy", gm.get_max_energy())
+		gm.run_coins = data.get("run_coins", 0)
+		var saved_ore_chunks: Variant = data.get("run_ore_chunk_counts", {})
+		gm.run_ore_chunk_counts = saved_ore_chunks if saved_ore_chunks is Dictionary else {}
+		var saved_changes: Variant = data.get("run_terrain_changes", [])
+		gm.run_terrain_changes = saved_changes if saved_changes is Array else []
 
 func _reset_game_manager() -> void:
 	var gm = GameManager
@@ -362,3 +400,10 @@ func _reset_game_manager() -> void:
 	gm.trinket_magnet = false
 	gm.trinket_cosmic_radiation = false
 	gm.trinket_curse_of_core = false
+	# Mid-run state
+	gm.run_is_in_mining_level = false
+	gm.run_node_name = ""
+	gm.run_player_pos_x = 0.0
+	gm.run_player_pos_y = 0.0
+	gm.run_player_health = 0.0
+	gm.run_terrain_changes = []

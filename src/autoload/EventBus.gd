@@ -47,3 +47,8 @@ signal perk_points_changed(perk_points: int)            # Emitted when points ar
 
 # Trinket Signals
 signal trinket_equipped(trinket_id: String)  # Emitted when a trinket is equipped or unequipped
+
+# Save Signals
+## Emitted by GameManager just before a save so MiningLevel can flush its current
+## terrain state into GameManager before the snapshot is taken.
+signal mining_state_capture_requested
