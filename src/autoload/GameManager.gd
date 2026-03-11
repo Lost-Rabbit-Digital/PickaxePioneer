@@ -721,6 +721,18 @@ func spend_perk_point(perk_id: String) -> bool:
 	EventBus.perk_points_changed.emit(perk_points)
 	return true
 
+## Purchase one rank of a perk using coins (minerals).  Returns true on success.
+func purchase_perk(perk_id: String) -> bool:
+	if not PerkSystem.can_purchase(perk_id, perk_ranks, coins):
+		return false
+	var p := PerkSystem.get_perk(perk_id)
+	var cost: int = p.get("mineral_cost", 0)
+	perk_ranks[perk_id] = perk_ranks.get(perk_id, 0) + 1
+	coins -= cost
+	SaveManager.save_active_slot()
+	EventBus.coins_changed.emit(coins)
+	return true
+
 func mark_tier_completed(node_type: int) -> void:
 	# Record that a specific tier has been completed
 	if node_type == 1:  # MapNode.NodeType.MINE

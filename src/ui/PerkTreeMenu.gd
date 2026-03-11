@@ -1,49 +1,77 @@
 extends CanvasLayer
 
-## Perk Tree Menu — Diablo-2-style skill tree overlay.
-## Registered as an autoload so it is accessible via the P key from any scene.
-## Three vertical branch columns connected by drawn lines, mimicking COAL LLC /
-## Diablo 2 layout.  Each node shows icon, name, rank/max, and description on
-## hover.  Perk points are spent by clicking an available node.
+## Perk Tree Menu — dark space theme, pannable node graph.
+## Perks are purchased with coins (minerals) via GameManager.purchase_perk().
+## WASD pans the canvas. Right-click drag also pans.
+## Hovering a perk node shows a tooltip above it.
+## Square nodes are connected by lit/unlit lines based on unlock state.
 
 # ---------------------------------------------------------------------------
 # Layout constants
 # ---------------------------------------------------------------------------
 
-const SCREEN_W : int = 1280
-const SCREEN_H : int = 720
-
-const NODE_SIZE     : int = 88   # perk icon square (px)
-const NODE_GAP      : int = 56   # vertical gap between tier rows
-const BRANCH_GAP    : int = 80   # horizontal gap between branch columns
-const CONNECTOR_W   : int = 4    # connector line width (px)
+const SCREEN_W   : int   = 1280
+const SCREEN_H   : int   = 720
+const BOTTOM_H   : int   = 64          # bottom control bar height
+const NODE_SIZE  : int   = 64          # perk square side length (px)
+const COL_STRIDE : int   = 174         # horizontal distance between branch starts
+const ROW_STRIDE : int   = 140         # vertical distance between tier starts
+const HEADER_H   : int   = 26          # space above tier-0 for branch name labels
+const LINE_W     : float = 3.0         # connector line width
+const PAN_SPEED  : float = 280.0       # canvas pan speed via WASD (px/s)
+const TIP_W      : int   = 218         # tooltip width
+const TIP_HDR_H  : int   = 28          # tooltip header bar height
+const TIP_BODY_H : int   = 90          # tooltip body height
 
 # Colours
-const COL_BG        : Color = Color(0.03, 0.03, 0.08, 0.95)
-const COL_HEADER_BG : Color = Color(0.06, 0.04, 0.14, 1.00)
-const COL_BORDER    : Color = Color(0.45, 0.30, 0.70, 1.00)
-const COL_LOCKED    : Color = Color(0.18, 0.18, 0.22, 1.00)
-const COL_AVAILABLE : Color = Color(0.25, 0.25, 0.30, 1.00)
-const COL_MAXED     : Color = Color(0.80, 0.70, 0.10, 1.00)
-const COL_TEXT_DIM  : Color = Color(0.50, 0.50, 0.55, 1.00)
-const COL_TEXT      : Color = Color(0.92, 0.88, 1.00, 1.00)
-const COL_TEXT_GOLD : Color = Color(1.00, 0.88, 0.20, 1.00)
-const COL_CONNECTOR : Color = Color(0.40, 0.30, 0.60, 1.00)
-const COL_CONN_LIT  : Color = Color(0.70, 0.55, 1.00, 1.00)
+const COL_BG           := Color(0.06, 0.06, 0.10, 0.97)
+const COL_NODE_LOCKED  := Color(0.14, 0.14, 0.18)
+const COL_NODE_AVAIL   := Color(0.17, 0.19, 0.26)
+const COL_NODE_CAN_BUY := Color(0.11, 0.20, 0.14)
+const COL_NODE_MAXED   := Color(0.19, 0.15, 0.05)
+const COL_BRD_LOCKED   := Color(0.27, 0.27, 0.32)
+const COL_BRD_AVAIL    := Color(0.36, 0.42, 0.58)
+const COL_BRD_CAN_BUY  := Color(0.30, 0.80, 0.37)
+const COL_BRD_MAXED    := Color(0.80, 0.68, 0.14)
+const COL_LINE         := Color(0.22, 0.22, 0.26)
+const COL_LINE_LIT     := Color(0.36, 0.72, 0.42)
+const COL_BOT_BG       := Color(0.04, 0.04, 0.08, 0.98)
+const COL_BOT_BORDER   := Color(0.20, 0.20, 0.24)
+const COL_TIP_BG       := Color(0.07, 0.09, 0.14, 0.98)
+const COL_TIP_HDR      := Color(0.20, 0.47, 0.25, 1.00)
+const COL_TIP_BORDER   := Color(0.30, 0.30, 0.36, 1.00)
+const COL_TEXT         := Color(0.90, 0.87, 0.95)
+const COL_TEXT_DIM     := Color(0.47, 0.47, 0.53)
+const COL_TEXT_GOLD    := Color(1.00, 0.85, 0.18)
+const COL_TEXT_GREEN   := Color(0.40, 0.88, 0.46)
+const COL_TEXT_RED     := Color(0.80, 0.38, 0.33)
 
 # ---------------------------------------------------------------------------
-# Inner class — single perk node button
+# ConnectorLayer — draws lines between vertically adjacent perk nodes
+# ---------------------------------------------------------------------------
+
+class ConnectorLayer extends Control:
+	## Each entry: { "from": Vector2, "to": Vector2, "lit": bool }
+	var lines: Array[Dictionary] = []
+
+	func _draw() -> void:
+		for ln: Dictionary in lines:
+			var col: Color = COL_LINE_LIT if ln.get("lit", false) else COL_LINE
+			draw_line(ln["from"], ln["to"], col, LINE_W, true)
+
+# ---------------------------------------------------------------------------
+# PerkNodeControl — individual perk square button
 # ---------------------------------------------------------------------------
 
 class PerkNodeControl extends Control:
 	var perk_id  : String
-	var menu_ref : Node   # back-ref to PerkTreeMenu for spending points
+	var menu_ref : Node
 
-	var _bg         : ColorRect
-	var _icon       : ColorRect
-	var _name_lbl   : Label
-	var _rank_lbl   : Label
-	var _locked_ovl : ColorRect  # grey overlay when locked
+	var _border   : ColorRect
+	var _bg       : ColorRect
+	var _icon     : ColorRect
+	var _lock_lbl : Label
+	var _rank_lbl : Label
 
 	func _init(p_id: String, ref: Node) -> void:
 		perk_id  = p_id
@@ -51,127 +79,126 @@ class PerkNodeControl extends Control:
 
 	func setup() -> void:
 		custom_minimum_size = Vector2(NODE_SIZE, NODE_SIZE)
-		mouse_filter = MOUSE_FILTER_STOP
+		size                = Vector2(NODE_SIZE, NODE_SIZE)
+		mouse_filter        = MOUSE_FILTER_STOP
 
 		# Outer border
-		var border := ColorRect.new()
-		border.color = Color(0.50, 0.38, 0.75, 1.00)
-		border.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
-		border.mouse_filter = MOUSE_FILTER_IGNORE
-		add_child(border)
+		_border = ColorRect.new()
+		_border.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+		_border.mouse_filter = MOUSE_FILTER_IGNORE
+		add_child(_border)
 
-		# Background fill
+		# Inner background (2 px inset from border)
 		_bg = ColorRect.new()
-		_bg.color = COL_AVAILABLE
-		_bg.position = Vector2(2, 2)
-		_bg.size = Vector2(NODE_SIZE - 4, NODE_SIZE - 4)
+		_bg.position     = Vector2(2, 2)
+		_bg.size         = Vector2(NODE_SIZE - 4, NODE_SIZE - 4)
 		_bg.mouse_filter = MOUSE_FILTER_IGNORE
 		add_child(_bg)
 
-		# Icon colour swatch (top half)
+		# Icon colour swatch (centred, 26×26, shifted slightly up)
 		var p := PerkSystem.get_perk(perk_id)
-		_icon = ColorRect.new()
-		_icon.color = p.get("icon_color", Color.WHITE)
-		_icon.position = Vector2((NODE_SIZE - 40) / 2, 6)
-		_icon.size = Vector2(40, 40)
+		_icon          = ColorRect.new()
+		_icon.position = Vector2((NODE_SIZE - 26) / 2, (NODE_SIZE - 26) / 2 - 6)
+		_icon.size     = Vector2(26, 26)
+		_icon.color    = p.get("icon_color", Color.WHITE)
 		_icon.mouse_filter = MOUSE_FILTER_IGNORE
 		add_child(_icon)
 
-		# Perk name label
-		_name_lbl = Label.new()
-		_name_lbl.text = p.get("name", "?")
-		_name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_name_lbl.position = Vector2(2, 50)
-		_name_lbl.size = Vector2(NODE_SIZE - 4, 18)
-		_name_lbl.add_theme_font_size_override("font_size", 11)
-		_name_lbl.add_theme_color_override("font_color", COL_TEXT)
-		_name_lbl.mouse_filter = MOUSE_FILTER_IGNORE
-		add_child(_name_lbl)
-
-		# Rank label (e.g. "2/5")
+		# Rank label at bottom
 		_rank_lbl = Label.new()
+		_rank_lbl.position = Vector2(2, NODE_SIZE - 17)
+		_rank_lbl.size     = Vector2(NODE_SIZE - 4, 15)
 		_rank_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_rank_lbl.position = Vector2(2, 66)
-		_rank_lbl.size = Vector2(NODE_SIZE - 4, 16)
-		_rank_lbl.add_theme_font_size_override("font_size", 10)
+		_rank_lbl.add_theme_font_size_override("font_size", 9)
 		_rank_lbl.mouse_filter = MOUSE_FILTER_IGNORE
 		add_child(_rank_lbl)
 
-		# Locked overlay (drawn last so it covers everything)
-		_locked_ovl = ColorRect.new()
-		_locked_ovl.color = Color(0.0, 0.0, 0.0, 0.68)
-		_locked_ovl.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
-		_locked_ovl.mouse_filter = MOUSE_FILTER_IGNORE
-		add_child(_locked_ovl)
+		# Lock label — shown when prerequisites not met
+		_lock_lbl = Label.new()
+		_lock_lbl.text = "⚿"
+		_lock_lbl.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+		_lock_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_lock_lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
+		_lock_lbl.add_theme_font_size_override("font_size", 22)
+		_lock_lbl.add_theme_color_override("font_color", Color(0.42, 0.42, 0.47))
+		_lock_lbl.mouse_filter = MOUSE_FILTER_IGNORE
+		add_child(_lock_lbl)
 
 		refresh()
 
 	func refresh() -> void:
-		var p    := PerkSystem.get_perk(perk_id)
-		var rank : int = GameManager.perk_ranks.get(perk_id, 0)
-		var max_r: int = p.get("max_rank", 5)
-		var unlocked := PerkSystem.is_unlocked(perk_id, GameManager.perk_ranks)
-		var can_up   := PerkSystem.can_rank_up(perk_id, GameManager.perk_ranks, GameManager.perk_points)
-		var maxed    := rank >= max_r
+		var p        := PerkSystem.get_perk(perk_id)
+		var rank     : int  = GameManager.perk_ranks.get(perk_id, 0)
+		var max_r    : int  = p.get("max_rank", 5)
+		var unlocked : bool = PerkSystem.is_unlocked(perk_id, GameManager.perk_ranks)
+		var can_buy  : bool = PerkSystem.can_purchase(perk_id, GameManager.perk_ranks, GameManager.coins)
+		var maxed    : bool = rank >= max_r
 
-		# Background colour encodes state
 		if maxed:
-			_bg.color = Color(0.15, 0.13, 0.06)
-		elif can_up:
-			_bg.color = Color(0.10, 0.14, 0.18)
+			_bg.color     = COL_NODE_MAXED
+			_border.color = COL_BRD_MAXED
+		elif can_buy:
+			_bg.color     = COL_NODE_CAN_BUY
+			_border.color = COL_BRD_CAN_BUY
 		elif unlocked:
-			_bg.color = Color(0.08, 0.08, 0.12)
+			_bg.color     = COL_NODE_AVAIL
+			_border.color = COL_BRD_AVAIL
 		else:
-			_bg.color = COL_LOCKED
+			_bg.color     = COL_NODE_LOCKED
+			_border.color = COL_BRD_LOCKED
 
-		# Icon brightness
-		_icon.modulate = Color(1, 1, 1, 1) if unlocked else Color(0.4, 0.4, 0.4, 1)
+		_icon.visible  = unlocked
+		_icon.modulate = Color(1, 1, 1, 1.0 if (maxed or can_buy) else 0.50)
+		_lock_lbl.visible = not unlocked
 
-		# Border colour
-		var border_col: Color
 		if maxed:
-			border_col = COL_MAXED
-		elif can_up:
-			border_col = Color(0.55, 0.90, 0.55, 1.00)
+			_rank_lbl.text = "MAX"
+			_rank_lbl.add_theme_color_override("font_color", COL_TEXT_GOLD)
 		elif unlocked:
-			border_col = COL_BORDER
+			_rank_lbl.text = "%d/%d" % [rank, max_r]
+			_rank_lbl.add_theme_color_override("font_color",
+				COL_TEXT_GREEN if can_buy else COL_TEXT_DIM)
 		else:
-			border_col = Color(0.25, 0.22, 0.30, 1.00)
-		get_child(0).color = border_col  # border rect
-
-		# Rank label colour and text
-		var rank_col: Color = COL_TEXT_GOLD if maxed else (Color(0.60, 1.00, 0.60) if can_up else COL_TEXT_DIM)
-		_rank_lbl.add_theme_color_override("font_color", rank_col)
-		_rank_lbl.text = "%d / %d" % [rank, max_r]
-
-		_locked_ovl.visible = not unlocked
+			_rank_lbl.text = ""
 
 	func _gui_input(event: InputEvent) -> void:
-		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			if GameManager.spend_perk_point(perk_id):
+		if event is InputEventMouseButton and event.pressed \
+				and event.button_index == MOUSE_BUTTON_LEFT:
+			if GameManager.purchase_perk(perk_id):
 				menu_ref.refresh_all_nodes()
-				menu_ref._update_info_panel(perk_id)
+				menu_ref._show_tooltip(perk_id, global_position)
 
 	func _mouse_entered() -> void:
-		menu_ref._update_info_panel(perk_id)
+		menu_ref._show_tooltip(perk_id, global_position)
+
+	func _mouse_exited() -> void:
+		menu_ref._hide_tooltip()
 
 # ---------------------------------------------------------------------------
-# PerkTreeMenu fields
+# Fields
 # ---------------------------------------------------------------------------
 
-var _root_panel   : ColorRect
-var _points_label : Label
-var _level_label  : Label
-var _xp_fill      : ColorRect
-var _xp_label     : Label
-var _info_name    : Label
-var _info_desc    : Label
-var _info_stats   : Label
+var _root_panel    : ColorRect
+var _tree_clip     : Control         # clips tree canvas to exclude bottom bar
+var _canvas        : Control         # panning container
+var _connector_lyr : ConnectorLayer
 
-# node_controls[perk_id] = PerkNodeControl
+var _tip_panel     : ColorRect
+var _tip_hdr_bg    : ColorRect
+var _tip_name_lbl  : Label
+var _tip_body_lbl  : Label
+var _tip_cost_lbl  : Label
+
+var _coins_label   : Label
+
+## node_controls[perk_id] = PerkNodeControl
 var _node_controls : Dictionary = {}
-# Connector ColorRects keyed by "from_id:to_id"
-var _connectors    : Dictionary = {}
+
+# Pan / drag state
+var _drag_active       : bool    = false
+var _drag_start_mouse  : Vector2 = Vector2.ZERO
+var _drag_start_canvas : Vector2 = Vector2.ZERO
+var _canvas_default    : Vector2 = Vector2.ZERO
 
 var _built : bool = false
 
@@ -186,30 +213,64 @@ func _ready() -> void:
 	hide()
 	EventBus.player_leveled_up.connect(_on_leveled_up)
 	EventBus.perk_points_changed.connect(_on_perk_points_changed)
-	EventBus.xp_changed.connect(_on_xp_changed)
+	EventBus.coins_changed.connect(_on_coins_changed)
+
+func _process(delta: float) -> void:
+	if not visible:
+		return
+	var pan := Vector2.ZERO
+	if Input.is_physical_key_pressed(KEY_W):
+		pan.y -= 1.0
+	if Input.is_physical_key_pressed(KEY_S):
+		pan.y += 1.0
+	if Input.is_physical_key_pressed(KEY_A):
+		pan.x -= 1.0
+	if Input.is_physical_key_pressed(KEY_D):
+		pan.x += 1.0
+	if pan != Vector2.ZERO:
+		_canvas.position += pan * PAN_SPEED * delta
+		_clamp_canvas()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_P:
-			if visible:
-				_close()
-			else:
-				_open()
+			if visible: _close() else: _open()
+			get_viewport().set_input_as_handled()
+		if visible and event.keycode == KEY_SPACE:
+			_close()
 			get_viewport().set_input_as_handled()
 	if visible and event.is_action_pressed("ui_cancel"):
 		_close()
 		get_viewport().set_input_as_handled()
+
+func _input(event: InputEvent) -> void:
+	if not visible:
+		return
+	# Right-click drag to pan canvas
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
+		if event.pressed:
+			_drag_active       = true
+			_drag_start_mouse  = event.global_position
+			_drag_start_canvas = _canvas.position
+		else:
+			_drag_active = false
+	elif event is InputEventMouseMotion and _drag_active:
+		_canvas.position = _drag_start_canvas + (event.global_position - _drag_start_mouse)
+		_clamp_canvas()
 
 # ---------------------------------------------------------------------------
 # Open / Close
 # ---------------------------------------------------------------------------
 
 func _open() -> void:
-	_refresh_header()
+	_canvas.position = _canvas_default
+	_refresh_coins_label()
 	refresh_all_nodes()
 	show()
 
 func _close() -> void:
+	_hide_tooltip()
+	_drag_active = false
 	hide()
 
 # ---------------------------------------------------------------------------
@@ -224,169 +285,277 @@ func _build_ui() -> void:
 	_root_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_root_panel)
 
-	# Header bar
-	var header := ColorRect.new()
-	header.color = COL_HEADER_BG
-	header.position = Vector2(0, 0)
-	header.size = Vector2(SCREEN_W, 52)
-	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root_panel.add_child(header)
+	# Clipping region for the panning canvas (excludes bottom bar)
+	_tree_clip = Control.new()
+	_tree_clip.position      = Vector2(0, 0)
+	_tree_clip.size          = Vector2(SCREEN_W, SCREEN_H - BOTTOM_H)
+	_tree_clip.clip_contents = true
+	_tree_clip.mouse_filter  = Control.MOUSE_FILTER_IGNORE
+	_root_panel.add_child(_tree_clip)
 
-	# Title
-	var title := Label.new()
-	title.text = "PERK TREE"
-	title.position = Vector2(SCREEN_W / 2 - 120, 8)
-	title.custom_minimum_size = Vector2(240, 36)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 28)
-	title.add_theme_color_override("font_color", Color(0.80, 0.60, 1.00))
-	_root_panel.add_child(title)
+	# Panning canvas
+	_canvas = Control.new()
+	_canvas.size         = Vector2(2000, 2000)
+	_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tree_clip.add_child(_canvas)
 
-	# Level label (left side of header)
-	_level_label = Label.new()
-	_level_label.position = Vector2(16, 10)
-	_level_label.custom_minimum_size = Vector2(200, 32)
-	_level_label.add_theme_font_size_override("font_size", 18)
-	_level_label.add_theme_color_override("font_color", COL_TEXT_GOLD)
-	_root_panel.add_child(_level_label)
+	# Connector layer (drawn behind nodes)
+	_connector_lyr = ConnectorLayer.new()
+	_connector_lyr.size         = Vector2(2000, 2000)
+	_connector_lyr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.add_child(_connector_lyr)
 
-	# Points label (right side of header)
-	_points_label = Label.new()
-	_points_label.position = Vector2(SCREEN_W - 280, 10)
-	_points_label.custom_minimum_size = Vector2(264, 32)
-	_points_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_points_label.add_theme_font_size_override("font_size", 18)
-	_points_label.add_theme_color_override("font_color", Color(0.50, 1.00, 0.55))
-	_root_panel.add_child(_points_label)
+	# Build branch labels + perk nodes inside canvas
+	_build_canvas_nodes()
 
-	# Close button
-	var close_btn := Button.new()
-	close_btn.text = "Close  [P]"
-	close_btn.position = Vector2(SCREEN_W - 140, 8)
-	close_btn.custom_minimum_size = Vector2(132, 36)
-	close_btn.add_theme_font_size_override("font_size", 14)
-	close_btn.pressed.connect(_close)
-	_root_panel.add_child(close_btn)
+	# Bottom bar (built before tooltip so tooltip renders on top)
+	_build_bottom_bar()
 
-	# XP bar background
-	var xp_bg := ColorRect.new()
-	xp_bg.color = Color(0.10, 0.08, 0.20, 1.00)
-	xp_bg.position = Vector2(16, 36)
-	xp_bg.size = Vector2(SCREEN_W - 32, 12)
-	xp_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root_panel.add_child(xp_bg)
-
-	_xp_fill = ColorRect.new()
-	_xp_fill.color = Color(0.45, 0.25, 0.90, 1.00)
-	_xp_fill.position = Vector2(16, 36)
-	_xp_fill.size = Vector2(0, 12)
-	_xp_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root_panel.add_child(_xp_fill)
-
-	_xp_label = Label.new()
-	_xp_label.position = Vector2(SCREEN_W / 2 - 100, 34)
-	_xp_label.custom_minimum_size = Vector2(200, 14)
-	_xp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_xp_label.add_theme_font_size_override("font_size", 10)
-	_xp_label.add_theme_color_override("font_color", Color(0.80, 0.70, 1.00))
-	_root_panel.add_child(_xp_label)
-
-	# Branch column headers + perk nodes
-	var num_branches  : int = 3
-	var branch_width  : int = NODE_SIZE
-	var total_tree_w  : int = num_branches * branch_width + (num_branches - 1) * BRANCH_GAP
-	var tree_x_start  : int = (SCREEN_W - total_tree_w) / 2
-	var tree_y_start  : int = 68
-
-	for b in range(num_branches):
-		var bx : int = tree_x_start + b * (branch_width + BRANCH_GAP)
-
-		# Branch name header
-		var branch_lbl := Label.new()
-		branch_lbl.text = PerkSystem.BRANCH_NAMES[b]
-		branch_lbl.position = Vector2(bx, tree_y_start)
-		branch_lbl.custom_minimum_size = Vector2(branch_width, 24)
-		branch_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		branch_lbl.add_theme_font_size_override("font_size", 14)
-		branch_lbl.add_theme_color_override("font_color", PerkSystem.BRANCH_COLORS[b])
-		_root_panel.add_child(branch_lbl)
-
-		# Build perk nodes for this branch
-		var perks_in_branch := PerkSystem.get_branch_perks(b)
-		var prev_node_bottom : int = tree_y_start + 28  # y just below the branch header
-		var prev_node_mid_x  : int = bx + NODE_SIZE / 2
-
-		for i in range(perks_in_branch.size()):
-			var p    := perks_in_branch[i]
-			var p_id : String = p["id"]
-			var ny   : int = prev_node_bottom + (NODE_GAP if i > 0 else 4)
-
-			# Draw connector line between tiers (vertical bar)
-			if i > 0:
-				var conn_key := "%s:%s" % [perks_in_branch[i - 1]["id"], p_id]
-				var conn := ColorRect.new()
-				conn.color = COL_CONNECTOR
-				var conn_top    : int = prev_node_bottom
-				var conn_bottom : int = ny
-				conn.position = Vector2(prev_node_mid_x - CONNECTOR_W / 2, conn_top)
-				conn.size = Vector2(CONNECTOR_W, conn_bottom - conn_top)
-				conn.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				_root_panel.add_child(conn)
-				_connectors[conn_key] = conn
-
-			# Perk node
-			var node := PerkNodeControl.new(p_id, self)
-			_root_panel.add_child(node)
-			node.setup()
-			node.position = Vector2(bx, ny)
-			_node_controls[p_id] = node
-
-			prev_node_bottom = ny + NODE_SIZE
-			prev_node_mid_x  = bx + NODE_SIZE / 2
-
-	# Info panel at the bottom
-	var info_bg := ColorRect.new()
-	info_bg.color = Color(0.04, 0.03, 0.10, 0.96)
-	info_bg.position = Vector2(0, SCREEN_H - 96)
-	info_bg.size = Vector2(SCREEN_W, 96)
-	info_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root_panel.add_child(info_bg)
-
-	var info_border := ColorRect.new()
-	info_border.color = COL_BORDER
-	info_border.position = Vector2(0, SCREEN_H - 96)
-	info_border.size = Vector2(SCREEN_W, 2)
-	info_border.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root_panel.add_child(info_border)
-
-	_info_name = Label.new()
-	_info_name.position = Vector2(20, SCREEN_H - 90)
-	_info_name.custom_minimum_size = Vector2(400, 24)
-	_info_name.add_theme_font_size_override("font_size", 18)
-	_info_name.add_theme_color_override("font_color", COL_TEXT_GOLD)
-	_root_panel.add_child(_info_name)
-
-	_info_desc = Label.new()
-	_info_desc.position = Vector2(20, SCREEN_H - 66)
-	_info_desc.custom_minimum_size = Vector2(900, 22)
-	_info_desc.add_theme_font_size_override("font_size", 14)
-	_info_desc.add_theme_color_override("font_color", COL_TEXT)
-	_root_panel.add_child(_info_desc)
-
-	_info_stats = Label.new()
-	_info_stats.position = Vector2(20, SCREEN_H - 44)
-	_info_stats.custom_minimum_size = Vector2(900, 22)
-	_info_stats.add_theme_font_size_override("font_size", 13)
-	_info_stats.add_theme_color_override("font_color", Color(0.65, 0.85, 0.65))
-	_root_panel.add_child(_info_stats)
-
-	# Default info text
-	_info_name.text = "Hover a perk to see details"
-	_info_desc.text = "Spend perk points to unlock and upgrade perks.  Press P to close."
-	_info_stats.text = "You gain 1 perk point each time you level up.  Mine blocks and defeat bosses to earn XP."
+	# Tooltip (added last so it draws on top of everything)
+	_build_tooltip()
 
 	_built = true
-	_refresh_header()
+
+func _build_canvas_nodes() -> void:
+	# Compute canvas default position to centre tree in the usable area
+	var tree_w         : int = 2 * COL_STRIDE + NODE_SIZE
+	var canvas_h_need  : int = HEADER_H + ROW_STRIDE * 3 + NODE_SIZE
+	_canvas_default = Vector2(
+		(SCREEN_W - tree_w) / 2.0,
+		(SCREEN_H - BOTTOM_H - canvas_h_need) / 2.0
+	)
+	_canvas.position = _canvas_default
+
+	for b in range(3):
+		var bx : int = b * COL_STRIDE
+
+		# Branch column header label
+		var hdr_lbl := Label.new()
+		hdr_lbl.text                = PerkSystem.BRANCH_NAMES[b]
+		hdr_lbl.position            = Vector2(bx, 0)
+		hdr_lbl.custom_minimum_size = Vector2(NODE_SIZE, HEADER_H)
+		hdr_lbl.size                = Vector2(NODE_SIZE, HEADER_H)
+		hdr_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		hdr_lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
+		hdr_lbl.add_theme_font_size_override("font_size", 12)
+		hdr_lbl.add_theme_color_override("font_color", PerkSystem.BRANCH_COLORS[b])
+		hdr_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_canvas.add_child(hdr_lbl)
+
+		# Perk nodes for this branch (tier 0 at top, tier 3 at bottom)
+		var perks := PerkSystem.get_branch_perks(b)
+		for i in range(perks.size()):
+			var p    := perks[i]
+			var p_id : String = p["id"]
+			var nx   : int = bx
+			var ny   : int = HEADER_H + i * ROW_STRIDE
+
+			var node := PerkNodeControl.new(p_id, self)
+			_canvas.add_child(node)
+			node.setup()
+			node.position = Vector2(nx, ny)
+			_node_controls[p_id] = node
+
+	_rebuild_connector_lines()
+
+func _rebuild_connector_lines() -> void:
+	_connector_lyr.lines.clear()
+	for b in range(3):
+		var perks := PerkSystem.get_branch_perks(b)
+		for i in range(1, perks.size()):
+			var top_id   : String = perks[i - 1]["id"]
+			var bot_id   : String = perks[i]["id"]
+			var top_node := _node_controls.get(top_id) as PerkNodeControl
+			var bot_node := _node_controls.get(bot_id) as PerkNodeControl
+			if top_node == null or bot_node == null:
+				continue
+			var from_pt := top_node.position + Vector2(NODE_SIZE / 2.0, NODE_SIZE)
+			var to_pt   := bot_node.position + Vector2(NODE_SIZE / 2.0, 0.0)
+			var lit     : bool = GameManager.perk_ranks.get(top_id, 0) > 0
+			_connector_lyr.lines.append({"from": from_pt, "to": to_pt, "lit": lit})
+	_connector_lyr.queue_redraw()
+
+func _build_tooltip() -> void:
+	var tip_h : int = TIP_HDR_H + TIP_BODY_H
+
+	# Outer panel (border colour)
+	_tip_panel = ColorRect.new()
+	_tip_panel.color       = COL_TIP_BORDER
+	_tip_panel.size        = Vector2(TIP_W, tip_h)
+	_tip_panel.visible     = false
+	_tip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root_panel.add_child(_tip_panel)
+
+	# Inner background (1 px inset)
+	var tip_inner := ColorRect.new()
+	tip_inner.color       = COL_TIP_BG
+	tip_inner.position    = Vector2(1, 1)
+	tip_inner.size        = Vector2(TIP_W - 2, tip_h - 2)
+	tip_inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip_panel.add_child(tip_inner)
+
+	# Header bar (green)
+	_tip_hdr_bg = ColorRect.new()
+	_tip_hdr_bg.color       = COL_TIP_HDR
+	_tip_hdr_bg.position    = Vector2(1, 1)
+	_tip_hdr_bg.size        = Vector2(TIP_W - 2, TIP_HDR_H - 1)
+	_tip_hdr_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip_panel.add_child(_tip_hdr_bg)
+
+	# Perk name (in header)
+	_tip_name_lbl = Label.new()
+	_tip_name_lbl.position = Vector2(7, 5)
+	_tip_name_lbl.size     = Vector2(TIP_W - 14, TIP_HDR_H - 6)
+	_tip_name_lbl.add_theme_font_size_override("font_size", 13)
+	_tip_name_lbl.add_theme_color_override("font_color", COL_TEXT)
+	_tip_name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip_panel.add_child(_tip_name_lbl)
+
+	# Description + rank body
+	_tip_body_lbl = Label.new()
+	_tip_body_lbl.position    = Vector2(7, TIP_HDR_H + 7)
+	_tip_body_lbl.size        = Vector2(TIP_W - 14, TIP_BODY_H - 28)
+	_tip_body_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tip_body_lbl.add_theme_font_size_override("font_size", 11)
+	_tip_body_lbl.add_theme_color_override("font_color", COL_TEXT_DIM)
+	_tip_body_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip_panel.add_child(_tip_body_lbl)
+
+	# Cost / status at bottom of tooltip
+	_tip_cost_lbl = Label.new()
+	_tip_cost_lbl.position = Vector2(7, TIP_HDR_H + TIP_BODY_H - 20)
+	_tip_cost_lbl.size     = Vector2(TIP_W - 14, 18)
+	_tip_cost_lbl.add_theme_font_size_override("font_size", 13)
+	_tip_cost_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip_panel.add_child(_tip_cost_lbl)
+
+func _build_bottom_bar() -> void:
+	# Background
+	var bar := ColorRect.new()
+	bar.color        = COL_BOT_BG
+	bar.position     = Vector2(0, SCREEN_H - BOTTOM_H)
+	bar.size         = Vector2(SCREEN_W, BOTTOM_H)
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root_panel.add_child(bar)
+
+	# Top border line
+	var border_line := ColorRect.new()
+	border_line.color        = COL_BOT_BORDER
+	border_line.position     = Vector2(0, SCREEN_H - BOTTOM_H)
+	border_line.size         = Vector2(SCREEN_W, 1)
+	border_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root_panel.add_child(border_line)
+
+	# Control hints — left side
+	var hints : Array[Array] = [
+		["[W A S D]", "Pan Tree"],
+		["[Right Drag]", "Drag Tree"],
+		["[Click]", "Buy Upgrade"],
+	]
+	var hx : int = 18
+	for hint: Array in hints:
+		var key_lbl := Label.new()
+		key_lbl.text        = hint[0] as String
+		key_lbl.position    = Vector2(hx, SCREEN_H - BOTTOM_H + 8)
+		key_lbl.add_theme_font_size_override("font_size", 11)
+		key_lbl.add_theme_color_override("font_color", COL_TEXT)
+		key_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_root_panel.add_child(key_lbl)
+
+		var act_lbl := Label.new()
+		act_lbl.text        = hint[1] as String
+		act_lbl.position    = Vector2(hx, SCREEN_H - BOTTOM_H + 26)
+		act_lbl.add_theme_font_size_override("font_size", 11)
+		act_lbl.add_theme_color_override("font_color", COL_TEXT_DIM)
+		act_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_root_panel.add_child(act_lbl)
+
+		hx += 118
+
+	# Coin balance — centred
+	_coins_label = Label.new()
+	_coins_label.position             = Vector2(SCREEN_W / 2 - 90, SCREEN_H - BOTTOM_H + 12)
+	_coins_label.custom_minimum_size  = Vector2(180, 40)
+	_coins_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_coins_label.add_theme_font_size_override("font_size", 26)
+	_coins_label.add_theme_color_override("font_color", COL_TEXT_GREEN)
+	_coins_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root_panel.add_child(_coins_label)
+
+	# [SPACE] hint to the left of the Continue button
+	var space_lbl := Label.new()
+	space_lbl.text        = "[SPACE]"
+	space_lbl.position    = Vector2(SCREEN_W - 230, SCREEN_H - BOTTOM_H + 22)
+	space_lbl.add_theme_font_size_override("font_size", 11)
+	space_lbl.add_theme_color_override("font_color", COL_TEXT_DIM)
+	space_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root_panel.add_child(space_lbl)
+
+	# Continue button — right side
+	var cont_btn := Button.new()
+	cont_btn.text                = "Continue"
+	cont_btn.position            = Vector2(SCREEN_W - 190, SCREEN_H - BOTTOM_H + 8)
+	cont_btn.custom_minimum_size = Vector2(176, BOTTOM_H - 16)
+	cont_btn.add_theme_font_size_override("font_size", 18)
+	cont_btn.pressed.connect(_close)
+	_root_panel.add_child(cont_btn)
+
+	_refresh_coins_label()
+
+# ---------------------------------------------------------------------------
+# Tooltip helpers
+# ---------------------------------------------------------------------------
+
+func _show_tooltip(perk_id: String, node_global_pos: Vector2) -> void:
+	var p := PerkSystem.get_perk(perk_id)
+	if p.is_empty():
+		return
+
+	var rank     : int  = GameManager.perk_ranks.get(perk_id, 0)
+	var max_r    : int  = p.get("max_rank", 5)
+	var unlocked : bool = PerkSystem.is_unlocked(perk_id, GameManager.perk_ranks)
+	var can_buy  : bool = PerkSystem.can_purchase(perk_id, GameManager.perk_ranks, GameManager.coins)
+	var maxed    : bool = rank >= max_r
+	var cost     : int  = p.get("mineral_cost", 0)
+
+	_tip_name_lbl.text = (p.get("name", "") as String).to_upper()
+
+	var body : String = p.get("desc", "")
+	body += "\nRank: %d / %d" % [rank, max_r]
+	_tip_body_lbl.text = body
+
+	if maxed:
+		_tip_cost_lbl.text = "MAXED"
+		_tip_cost_lbl.add_theme_color_override("font_color", COL_TEXT_GOLD)
+	elif not unlocked:
+		var prereq_id  : String = p.get("prereq_id", "")
+		var prereq_perk := PerkSystem.get_perk(prereq_id)
+		_tip_cost_lbl.text = "Locked — needs %s rank %d" % [
+			prereq_perk.get("name", prereq_id),
+			p.get("prereq_rank", 1)
+		]
+		_tip_cost_lbl.add_theme_color_override("font_color", COL_TEXT_DIM)
+	elif not can_buy:
+		_tip_cost_lbl.text = "Cost: %s  (need more)" % GameManager.format_coins(cost)
+		_tip_cost_lbl.add_theme_color_override("font_color", COL_TEXT_RED)
+	else:
+		_tip_cost_lbl.text = "Cost: %s" % GameManager.format_coins(cost)
+		_tip_cost_lbl.add_theme_color_override("font_color", COL_TEXT_GREEN)
+
+	# Position above node; flip below if too close to top edge
+	var tip_h   : int   = TIP_HDR_H + TIP_BODY_H
+	var tip_x   : float = node_global_pos.x + NODE_SIZE / 2.0 - TIP_W / 2.0
+	var tip_y   : float = node_global_pos.y - tip_h - 10.0
+	if tip_y < 6.0:
+		tip_y = node_global_pos.y + NODE_SIZE + 10.0
+	tip_x = clampf(tip_x, 6.0, SCREEN_W - TIP_W - 6.0)
+	tip_y = clampf(tip_y, 6.0, SCREEN_H - BOTTOM_H - tip_h - 6.0)
+
+	_tip_panel.position = Vector2(tip_x, tip_y)
+	_tip_panel.visible  = true
+
+func _hide_tooltip() -> void:
+	_tip_panel.visible = false
 
 # ---------------------------------------------------------------------------
 # Refresh helpers
@@ -395,51 +564,26 @@ func _build_ui() -> void:
 func refresh_all_nodes() -> void:
 	for ctrl: PerkNodeControl in _node_controls.values():
 		ctrl.refresh()
-	_refresh_connectors()
-	_refresh_header()
+	_rebuild_connector_lines()
+	_refresh_coins_label()
 
-func _refresh_header() -> void:
-	_level_label.text = "Lv. %d" % GameManager.player_level
-	var pts : int = GameManager.perk_points
-	_points_label.text = "%d Perk Point%s" % [pts, "s" if pts != 1 else ""]
-	_points_label.add_theme_color_override("font_color",
-		Color(0.50, 1.00, 0.55) if pts > 0 else COL_TEXT_DIM)
-	# XP bar
-	var xp       : int   = GameManager.player_xp
-	var xp_max   : int   = PerkSystem.xp_for_next_level(GameManager.player_level)
-	var bar_w    : float = float(SCREEN_W - 32) * float(xp) / float(maxi(1, xp_max))
-	_xp_fill.size.x = bar_w
-	_xp_label.text = "XP  %d / %d" % [xp, xp_max]
+func _refresh_coins_label() -> void:
+	if _coins_label != null:
+		_coins_label.text = GameManager.format_coins(GameManager.coins)
 
-func _refresh_connectors() -> void:
-	for key: String in _connectors.keys():
-		var parts  := key.split(":")
-		var top_id := parts[0]
-		var bot_id := parts[1]
-		var rank   : int = GameManager.perk_ranks.get(top_id, 0)
-		_connectors[key].color = COL_CONN_LIT if rank > 0 else COL_CONNECTOR
-
-func _update_info_panel(perk_id: String) -> void:
-	var p    := PerkSystem.get_perk(perk_id)
-	if p.is_empty():
-		return
-	var rank : int = GameManager.perk_ranks.get(perk_id, 0)
-	var max_r: int = p.get("max_rank", 5)
-	_info_name.text = "%s  [%d / %d]" % [p.get("name", ""), rank, max_r]
-	_info_desc.text = p.get("desc", "")
-
-	var prereq_id : String = p.get("prereq_id", "")
-	var status_str : String
-	if rank >= max_r:
-		status_str = "MAXED"
-	elif PerkSystem.can_rank_up(perk_id, GameManager.perk_ranks, GameManager.perk_points):
-		status_str = "Click to upgrade  (costs 1 point)"
-	elif not PerkSystem.is_unlocked(perk_id, GameManager.perk_ranks):
-		var prereq_perk := PerkSystem.get_perk(prereq_id)
-		status_str = "Locked — requires %s rank %d" % [prereq_perk.get("name", prereq_id), p.get("prereq_rank", 1)]
-	else:
-		status_str = "No perk points available"
-	_info_stats.text = status_str
+func _clamp_canvas() -> void:
+	# Allow panning up to 300 px away from the default centred position
+	var margin : float = 300.0
+	_canvas.position.x = clampf(
+		_canvas.position.x,
+		_canvas_default.x - margin,
+		_canvas_default.x + margin
+	)
+	_canvas.position.y = clampf(
+		_canvas.position.y,
+		_canvas_default.y - margin,
+		_canvas_default.y + margin
+	)
 
 # ---------------------------------------------------------------------------
 # EventBus callbacks
@@ -453,6 +597,7 @@ func _on_perk_points_changed(_pts: int) -> void:
 	if visible:
 		refresh_all_nodes()
 
-func _on_xp_changed(_xp: int, _xp_next: int) -> void:
+func _on_coins_changed(_copper: int) -> void:
 	if visible:
-		_refresh_header()
+		_refresh_coins_label()
+		refresh_all_nodes()
