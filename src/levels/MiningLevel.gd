@@ -1129,7 +1129,7 @@ func _process(delta: float) -> void:
 			rpc_sync_resources.rpc_id(NetworkManager.guest_peer_id,
 				GameManager.run_coins, GameManager.current_energy)
 
-	if _game_over or shop_system.any_shop_open():
+	if _game_over or (shop_system != null and shop_system.any_shop_open()):
 		return
 
 	# Update cursor highlight
@@ -1287,7 +1287,7 @@ func _check_exit_zone() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if _game_over:
 		return
-	if shop_system.any_shop_open():
+	if shop_system != null and shop_system.any_shop_open():
 		if event.is_action_pressed("ui_cancel") and shop_system.any_shop_open():
 			shop_system.close_active_shop()
 			get_viewport().set_input_as_handled()
@@ -2200,11 +2200,15 @@ func _show_zone_banner(zone_name: String, color: Color, depth_row: int = -1) -> 
 	var layer := CanvasLayer.new()
 	layer.layer = 15
 	add_child(layer)
+	# CanvasLayer has no modulate; use a Control container so we can tween its modulate.
+	var container := Control.new()
+	container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(container)
 	var banner := ColorRect.new()
 	banner.size = Vector2(VW, banner_h)
 	banner.position = Vector2(0, VH * 2 / 3 - banner_h / 2)
 	banner.color = Color(0.0, 0.0, 0.0, 0.78)
-	layer.add_child(banner)
+	container.add_child(banner)
 	var label := Label.new()
 	label.text = zone_name.to_upper()
 	var name_h: int = 42 if depth_row >= 0 else banner_h
@@ -2214,7 +2218,7 @@ func _show_zone_banner(zone_name: String, color: Color, depth_row: int = -1) -> 
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 26)
 	label.modulate = color
-	layer.add_child(label)
+	container.add_child(label)
 	if depth_row >= 0:
 		var depth_label := Label.new()
 		depth_label.text = "Depth: %d m" % (depth_row * 50)
@@ -2224,10 +2228,10 @@ func _show_zone_banner(zone_name: String, color: Color, depth_row: int = -1) -> 
 		depth_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		depth_label.add_theme_font_size_override("font_size", 14)
 		depth_label.modulate = Color(color.r, color.g, color.b, 0.75)
-		layer.add_child(depth_label)
+		container.add_child(depth_label)
 	var tween := create_tween()
 	tween.tween_interval(1.6)
-	tween.tween_property(layer, "modulate:a", 0.0, 0.7)
+	tween.tween_property(container, "modulate:a", 0.0, 0.7)
 	tween.tween_callback(layer.queue_free)
 
 # ---------------------------------------------------------------------------
