@@ -510,7 +510,7 @@ func _ready() -> void:
 		if _atlas_source:
 			var _atlas_tex := AtlasTexture.new()
 			_atlas_tex.atlas = _atlas_source.texture
-			_atlas_tex.region = Rect2i(0 * 16, 10 * 16, 16, 16)
+			_atlas_tex.region = Rect2i(0 * 64, 10 * 64, 64, 64)
 			_pickaxe_texture = _atlas_tex
 
 
@@ -1429,12 +1429,12 @@ func _spawn_pickaxe_effect(from: Vector2, to: Vector2) -> void:
 	var sprite := Sprite2D.new()
 	sprite.texture = _pickaxe_texture
 	sprite.position = from
-	sprite.scale = Vector2(2.5, 2.5)
+	sprite.scale = Vector2(0.75, 0.75)
 	sprite.rotation = from.angle_to_point(to) + PI * 0.25
 	sprite.texture_filter = TEXTURE_FILTER_NEAREST
 	add_child(sprite)
 	var dist := from.distance_to(to)
-	var duration := clampf(dist / 800.0, 0.06, 0.18)
+	var duration := clampf(dist / 400.0, 0.06, 0.18)
 	var tween := create_tween()
 	tween.tween_property(sprite, "position", to, duration)
 	tween.tween_callback(sprite.queue_free)
