@@ -18,15 +18,11 @@ If in the overworld and the camera is idle for 10 seconds and not centers then s
 
 
 
-
-
 sync companions with the host and client
 
 
 
 Make the first background layer of the terrain the same as the first layer tile used in the mine able terrain layer map
-
-
 
 
 
@@ -47,11 +43,7 @@ Controller compatibility
 
 
 
-Make eyes in discord button see-thru
-
-
-
-Add limit to terrain gen on y-level in main menu so it doesn't repeat up but only down, sky upwards
+Simplify all currencies to "coins", no minerals or copper/gold/silver
 
 
 
@@ -59,22 +51,14 @@ New bomb texture
 
 
 
-When the user clicks on a planet center the camera on it and then zoom in to default zoom in the overworld scene
 
 
-Update wallet in inventory to just show total instead of this run and display it like copper: NUM, silver: NUM, gold: NUM
-
-
-Reduce exp gain by 70%
 
 
 Remove the coin display from the upper left in mining level scene
 
 
 Do not modulate/tint the different ore types
-
-
-Reduce ore types to Coal, iron, copper, diamond, gold
 
 
 
