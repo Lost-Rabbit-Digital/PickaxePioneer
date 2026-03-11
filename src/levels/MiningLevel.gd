@@ -1613,7 +1613,7 @@ func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 		_remove_breaking_overlay(pos_key)
 		_mine_cell(col, row)
 		# Grant XP for breaking a block — ore tiles worth more than stone/dirt
-		GameManager.add_xp(5 if tile in ORE_TILES else 2)
+		GameManager.add_xp(2 if tile in ORE_TILES else 1)
 		# Sync tile break to guest
 		if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
 			var rpc_burst := TILE_PARTICLE_COLORS.get(tile, Color(0.7, 0.6, 0.4)) as Color
