@@ -94,7 +94,7 @@ const HOTBAR_SLOT_SIZE: int = 48
 const HOTBAR_SLOT_GAP: int = 4
 const ITEMS_TILESET_PATH: String = "res://assets/db32_rpg_items/items_tileset.tres"
 const PICKAXE_ATLAS_COORD: Vector2i = Vector2i(0, 10)
-const TILE_SIZE: int = 16
+const TILE_SIZE: int = 64
 var _hotbar_slots: Array[PanelContainer] = []
 var _hotbar_styles: Array[StyleBoxFlat] = []  # One StyleBoxFlat per slot for border recolouring
 var _hotbar_ladder_icon: Control       # Ladder slot content — shown/hidden based on ladder count
