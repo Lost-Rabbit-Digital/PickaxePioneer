@@ -697,7 +697,7 @@ func is_out_of_energy() -> bool:
 
 ## Add XP to the player.  Handles level-ups automatically.
 func add_xp(amount: int) -> void:
-	player_xp += amount
+	player_xp += maxi(1, roundi(amount * 0.3))
 	_process_level_ups()
 	EventBus.xp_changed.emit(player_xp, PerkSystem.xp_for_next_level(player_level))
 
