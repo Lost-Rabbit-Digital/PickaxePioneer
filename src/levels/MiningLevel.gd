@@ -346,6 +346,14 @@ var shop_system: MiningShopSystem = null
 # Terrain generation — extracted to MiningTerrainGenerator.gd
 var _terrain_generator: MiningTerrainGenerator = MiningTerrainGenerator.new()
 
+## Thread-safe wrapper: runs terrain generation off the main thread.
+func _thread_generate(args: Dictionary) -> void:
+	_terrain_generator.generate(
+		args["grid"], args["cols"], args["rows"],
+		args["surface_rows"], args["exit_cols"],
+		args["zone_rows"], args["ore_types"],
+		args["hazard_types"], args["seed"])
+
 # Boss visual rendering — extracted to BossRenderer.gd
 var _boss_renderer: BossRenderer = BossRenderer.new()
 
@@ -489,16 +497,46 @@ func _ready() -> void:
 			_atlas_tex.atlas = _atlas_source.texture
 			_atlas_tex.region = Rect2i(0 * 16, 10 * 16, 16, 16)
 			_pickaxe_texture = _atlas_tex
-	
+
 
 	texture_filter = TEXTURE_FILTER_NEAREST
 
-	_terrain_generator.generate(
-		grid, GRID_COLS, GRID_ROWS, SURFACE_ROWS, EXIT_COLS,
-		DEPTH_ZONE_ROWS,
-		GameManager.allowed_ore_types,
-		GameManager.allowed_hazard_types,
-		GameManager.terrain_seed)
+	# Show loading overlay while terrain generates on a background thread
+	var loading_layer := CanvasLayer.new()
+	loading_layer.layer = 50
+	add_child(loading_layer)
+	var loading_bg := ColorRect.new()
+	loading_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	loading_bg.color = Color(0.02, 0.02, 0.06, 1.0)
+	loading_layer.add_child(loading_bg)
+	var loading_label := Label.new()
+	loading_label.text = "Generating terrain..."
+	loading_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	loading_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	loading_label.grow_vertical = Control.GROW_DIRECTION_BOTH
+	loading_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	loading_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	loading_label.add_theme_font_size_override("font_size", 22)
+	loading_label.add_theme_color_override("font_color", Color(0.7, 0.6, 0.4))
+	loading_layer.add_child(loading_label)
+
+	# Run terrain generation on a background thread (only touches plain Arrays)
+	var gen_thread := Thread.new()
+	var gen_args := {
+		"grid": grid, "cols": GRID_COLS, "rows": GRID_ROWS,
+		"surface_rows": SURFACE_ROWS, "exit_cols": EXIT_COLS,
+		"zone_rows": DEPTH_ZONE_ROWS,
+		"ore_types": GameManager.allowed_ore_types,
+		"hazard_types": GameManager.allowed_hazard_types,
+		"seed": GameManager.terrain_seed,
+	}
+	gen_thread.start(_thread_generate.bind(gen_args))
+	# Yield frames so the loading label renders
+	while gen_thread.is_alive():
+		await get_tree().process_frame
+	gen_thread.wait_to_finish()
+	loading_layer.queue_free()
+
 	_build_shop_protection_zones()
 	_setup_collision_tilemap()
 	_sync_collision_tilemap()
