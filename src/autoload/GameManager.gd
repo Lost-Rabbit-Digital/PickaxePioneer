@@ -163,6 +163,27 @@ var has_completed_first_run: bool = false  # True after first successful mine ex
 # Current node type for the active mine/settlement run (transient, not persisted)
 var current_node_type: int = 0  # MapNode.NodeType value of the node being mined/visited
 
+# ---------------------------------------------------------------------------
+# Mid-run save state — allows seamless resume after quitting mid-mine.
+# All fields are persisted to the active slot and cleared on run end or death.
+# ---------------------------------------------------------------------------
+## True while the player is inside a mining level run.
+## SaveManager uses this to know whether to offer/auto-apply a mid-run restore.
+var run_is_in_mining_level: bool = false
+## The overworld node name that started this run — used to match the saved run
+## against the node the player clicks when resuming (prevents accidental resume
+## if they click a different mine).
+var run_node_name: String = ""
+## Player world-space position captured at the last auto-save tick.
+var run_player_pos_x: float = 0.0
+var run_player_pos_y: float = 0.0
+## Player health captured at the last auto-save tick.
+var run_player_health: float = 0.0
+## Sparse diff of every grid cell that changed from the procedurally-generated
+## baseline.  Stored as Array of [col: int, row: int, tile_type: int] triples.
+## Applied on top of a freshly-seeded terrain to recreate the exact mine state.
+var run_terrain_changes: Array = []
+
 const SAVE_PATH = "user://save_data.json"
 
 func _ready() -> void:
@@ -173,6 +194,11 @@ func _ready() -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		# Ask MiningLevel (if active) to flush its current terrain state into
+		# GameManager before we snapshot — ensures the save reflects the exact
+		# moment the player quit rather than the last 30-second auto-save tick.
+		if run_is_in_mining_level:
+			EventBus.mining_state_capture_requested.emit()
 		if SaveManager.active_slot >= 0:
 			SaveManager.save_active_slot()
 		get_tree().quit()
@@ -343,6 +369,13 @@ func lose_run() -> void:
 	run_ore_earnings.clear()
 	run_ore_chunk_count = 0
 	run_ore_chunk_counts.clear()
+	# Clear mid-run save state so the player starts fresh on their next mine entry.
+	run_is_in_mining_level = false
+	run_terrain_changes.clear()
+	run_node_name = ""
+	run_player_pos_x = 0.0
+	run_player_pos_y = 0.0
+	run_player_health = 0.0
 	EventBus.coins_changed.emit(0)
 	# Clear planet config so the overworld re-randomizes on next visit
 	if not NetworkManager.is_multiplayer_session or NetworkManager.is_host:
@@ -362,6 +395,13 @@ func rpc_lose_run_as_guest() -> void:
 	await _transition_to_scene("res://src/levels/Overworld.tscn")
 
 func complete_run() -> void:
+	# Run completed — clear the mid-run save state so a fresh run starts next time.
+	run_is_in_mining_level = false
+	run_terrain_changes.clear()
+	run_node_name = ""
+	run_player_pos_x = 0.0
+	run_player_pos_y = 0.0
+	run_player_health = 0.0
 	if not has_completed_first_run:
 		has_completed_first_run = true
 		save_game()
@@ -381,30 +421,54 @@ func rpc_complete_run_as_guest(final_coins: int) -> void:
 	get_tree().root.add_child(summary)
 
 func load_mining_level(scene_path: String = "") -> void:
-	run_coins = 0 # Reset run currency on entry
-	run_ore_counts.clear()
-	run_ore_earnings.clear()
-	run_ore_chunk_count = 0
-	run_ore_chunk_counts.clear()
-	current_energy = get_max_energy() # Reset energy on entry
-
-	# Apply settlement carry-over bonuses then clear them
-	if settlement_energy_bonus > 0:
-		current_energy = mini(current_energy + settlement_energy_bonus, get_max_energy() + settlement_energy_bonus)
-		settlement_energy_bonus = 0
-	# shroom / mandible / forager bonuses are consumed by MiningLevel on entry
-
-	EventBus.coins_changed.emit(0)
-	EventBus.energy_changed.emit(current_energy, get_max_energy())
 	var path := scene_path if scene_path != "" else "res://src/levels/MiningLevel.tscn"
-	# Host generates the terrain seed and animal type so both can be synced to the guest.
-	if NetworkManager.is_multiplayer_session and NetworkManager.is_host:
-		var _types := ["Chicken", "Sheep", "Pig"]
-		planet_animal_type = _types[randi() % _types.size()]
-		terrain_seed = randi()
-	elif not NetworkManager.is_multiplayer_session:
-		terrain_seed = randi()
-	# In multiplayer, tell guest to load the same mine with the same starting state
+
+	# Resume detection (single-player only): if we have a saved mid-run state for
+	# this exact overworld node, skip resetting run currency / energy so MiningLevel
+	# can restore the terrain diff and player position on top of the seeded terrain.
+	var is_resume := (
+		not NetworkManager.is_multiplayer_session
+		and run_is_in_mining_level
+		and run_node_name != ""
+		and run_node_name == last_overworld_node_name
+	)
+
+	if not is_resume:
+		# Fresh run — reset all per-run state.
+		run_is_in_mining_level = false
+		run_terrain_changes.clear()
+		run_node_name = ""
+		run_player_pos_x = 0.0
+		run_player_pos_y = 0.0
+		run_player_health = 0.0
+		run_coins = 0
+		run_ore_counts.clear()
+		run_ore_earnings.clear()
+		run_ore_chunk_count = 0
+		run_ore_chunk_counts.clear()
+		current_energy = get_max_energy()
+
+		# Apply settlement carry-over bonuses then clear them
+		if settlement_energy_bonus > 0:
+			current_energy = mini(current_energy + settlement_energy_bonus, get_max_energy() + settlement_energy_bonus)
+			settlement_energy_bonus = 0
+		# shroom / mandible / forager bonuses are consumed by MiningLevel on entry
+
+		# Generate a fresh terrain seed for this run.
+		if NetworkManager.is_multiplayer_session and NetworkManager.is_host:
+			var _types := ["Chicken", "Sheep", "Pig"]
+			planet_animal_type = _types[randi() % _types.size()]
+			terrain_seed = randi()
+		elif not NetworkManager.is_multiplayer_session:
+			terrain_seed = randi()
+	# else (resume): terrain_seed, current_energy, run_coins, run_ore_chunk_counts,
+	# and run_terrain_changes are all already set from the loaded save data.
+
+	EventBus.coins_changed.emit(run_coins)
+	EventBus.energy_changed.emit(current_energy, get_max_energy())
+
+	# In multiplayer, tell guest to load the same mine with the same starting state.
+	# Resuming mid-run is not supported in co-op; guests always get a fresh run state.
 	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
 		rpc_load_mine_as_guest.rpc_id(NetworkManager.guest_peer_id, path,
 			current_energy, sky_color.r, sky_color.g, sky_color.b,
