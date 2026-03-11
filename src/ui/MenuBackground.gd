@@ -520,6 +520,9 @@ func _draw() -> void:
 				break
 			var tile_col: int = (start_col + screen_col) % GRID_COLS
 
+			# Draw background tile (sky/dirt/stone layer behind foreground)
+			_draw_bg_tile(_bg_atlas_for_row(tile_row), x, y, effective_cell)
+
 			# Draw terrain tile
 			var tile: int = tile_grid[tile_row][tile_col]
 			if tile != TileType.EMPTY:
@@ -539,6 +542,28 @@ func _draw_tile(tile: int, x: float, y: float, size: float) -> void:
 		draw_texture_rect_region(_blocks_atlas, tile_rect, src)
 	else:
 		draw_rect(tile_rect, TILE_COLORS.get(tile, Color(0.5, 0.5, 0.5)))
+
+## Return the background atlas coord for a given tile_row.
+## Rows 0..(SURFACE_ROWS-1): sky atlas (6, 7).
+## Rows SURFACE_ROWS..(SURFACE_ROWS+9): dirt atlas (1, 2).
+## Rows (SURFACE_ROWS+10)..end: stone atlas (7, 7).
+func _bg_atlas_for_row(tile_row: int) -> Vector2i:
+	const BG_DIRT_DEPTH: int = 10
+	if tile_row < SURFACE_ROWS:
+		return Vector2i(6, 7)
+	elif tile_row < SURFACE_ROWS + BG_DIRT_DEPTH:
+		return Vector2i(1, 2)
+	else:
+		return Vector2i(7, 7)
+
+## Draw a background tile from blocks_atlas.png at reduced brightness (matching
+## the 0.344 modulate on BackgroundTileMapLayer in MiningLevel).
+func _draw_bg_tile(atlas_coord: Vector2i, x: float, y: float, size: float) -> void:
+	if not _blocks_atlas:
+		return
+	var tile_rect := Rect2(x, y, size, size)
+	var src := Rect2(atlas_coord.x * ATLAS_TILE_SIZE, atlas_coord.y * ATLAS_TILE_SIZE, ATLAS_TILE_SIZE, ATLAS_TILE_SIZE)
+	draw_texture_rect_region(_blocks_atlas, tile_rect, src, false, Color(0.344, 0.344, 0.344))
 
 ## Draw a single foliage tile sampled from foliage_atlas.png.
 func _draw_foliage_tile(atlas_coord: Vector2i, x: float, y: float, size: float) -> void:
