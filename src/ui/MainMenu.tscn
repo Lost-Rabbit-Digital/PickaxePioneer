@@ -397,3 +397,4 @@ text = "v0.1.0"
 horizontal_alignment = 1
 
 [connection signal="pressed" from="SocialButtons/DiscordButton" to="SocialButtons" method="_on_discord_button_pressed"]
+[connection signal="pressed" from="SocialButtons/DiscordButton/DiscordLabelButton" to="SocialButtons" method="_on_discord_label_button_pressed"]
