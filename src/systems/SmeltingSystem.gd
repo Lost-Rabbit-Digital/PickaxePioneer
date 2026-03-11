@@ -9,20 +9,23 @@ extends RefCounted
 
 # Chain bonuses at 3 consecutive same-group mines: [bonus_pct, popup_label]
 const CHAIN_BONUSES: Dictionary = {
-	"copper": [0.50, "Bronze Ingot"],
-	"iron":   [0.50, "Steel Ingot"],
-	"gold":   [0.75, "Pure Gold"],
-	"gem":    [1.00, "Faceted Gem"],
+	"coal":    [0.25, "Coal Dust"],
+	"copper":  [0.50, "Copper Ingot"],
+	"iron":    [0.50, "Steel Ingot"],
+	"gold":    [0.75, "Pure Gold"],
+	"diamond": [1.00, "Brilliant Diamond"],
 }
 
 # Two-ore cross-combos: "first+second" -> [bonus_pct, popup_label]
 const COMBOS: Dictionary = {
-	"copper+iron": [1.00, "Alloy Ore"],
-	"iron+copper": [1.00, "Alloy Ore"],
-	"iron+gold":   [2.00, "Gilded Steel"],
-	"gold+iron":   [2.00, "Gilded Steel"],
-	"copper+gold": [1.50, "Fool's Gold"],
-	"gold+copper": [1.50, "Fool's Gold"],
+	"copper+iron":  [1.00, "Alloy Ore"],
+	"iron+copper":  [1.00, "Alloy Ore"],
+	"iron+gold":    [2.00, "Gilded Steel"],
+	"gold+iron":    [2.00, "Gilded Steel"],
+	"copper+gold":  [1.50, "Fool's Gold"],
+	"gold+copper":  [1.50, "Fool's Gold"],
+	"gold+diamond": [2.50, "Jeweled Gold"],
+	"diamond+gold": [2.50, "Jeweled Gold"],
 }
 
 ## The ore group last fed into this system.

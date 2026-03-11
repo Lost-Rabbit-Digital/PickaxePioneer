@@ -59,14 +59,11 @@ enum TileType {
 	EMPTY            = 0,
 	DIRT             = 1,
 	DIRT_DARK        = 2,
-	ORE_COPPER       = 3,
-	ORE_COPPER_DEEP  = 4,
+	ORE_COAL         = 3,
+	ORE_COPPER       = 4,
 	ORE_IRON         = 5,
-	ORE_IRON_DEEP    = 6,
-	ORE_GOLD         = 7,
-	ORE_GOLD_DEEP    = 8,
-	ORE_GEM          = 9,
-	ORE_GEM_DEEP     = 10,
+	ORE_GOLD         = 6,
+	ORE_DIAMOND      = 7,
 	STONE            = 11,
 	STONE_DARK       = 12,
 	EXPLOSIVE        = 13,
@@ -84,14 +81,11 @@ const TILE_ATLAS_COORDS: Dictionary = {
 	TileType.DIRT_DARK:        Vector2i(9, 4),   # mud.png
 	TileType.STONE:            Vector2i(7, 7),   # stone_generic.png
 	TileType.STONE_DARK:       Vector2i(4, 3),   # gravel.png
+	TileType.ORE_COAL:         Vector2i(9, 4),   # mud.png (dark, coal-like)
 	TileType.ORE_COPPER:       Vector2i(0, 8),   # stone_ore_copper.png
-	TileType.ORE_COPPER_DEEP:  Vector2i(0, 8),
 	TileType.ORE_IRON:         Vector2i(2, 8),   # stone_ore_iron.png
-	TileType.ORE_IRON_DEEP:    Vector2i(2, 8),
 	TileType.ORE_GOLD:         Vector2i(1, 8),   # stone_ore_gold.png
-	TileType.ORE_GOLD_DEEP:    Vector2i(1, 8),
-	TileType.ORE_GEM:          Vector2i(8, 7),   # stone_generic_ore_crystalline.png
-	TileType.ORE_GEM_DEEP:     Vector2i(8, 7),
+	TileType.ORE_DIAMOND:      Vector2i(8, 7),   # stone_generic_ore_crystalline.png
 	TileType.EXPLOSIVE:        Vector2i(5, 8),
 	TileType.EXPLOSIVE_ARMED:  Vector2i(5, 8),
 	TileType.LAVA:             Vector2i(5, 6),   # sand_ugly_3.png
@@ -104,10 +98,11 @@ const TILE_ATLAS_COORDS: Dictionary = {
 const TILE_COLORS: Dictionary = {
 	TileType.DIRT:          Color(0.45, 0.28, 0.12),
 	TileType.DIRT_DARK:     Color(0.35, 0.20, 0.08),
+	TileType.ORE_COAL:      Color(0.25, 0.25, 0.28),
 	TileType.ORE_COPPER:    Color(0.80, 0.50, 0.20),
 	TileType.ORE_IRON:      Color(0.65, 0.65, 0.72),
 	TileType.ORE_GOLD:      Color(1.00, 0.85, 0.10),
-	TileType.ORE_GEM:       Color(0.15, 0.85, 0.75),
+	TileType.ORE_DIAMOND:   Color(0.60, 0.90, 1.00),
 	TileType.STONE:         Color(0.50, 0.50, 0.50),
 	TileType.STONE_DARK:    Color(0.40, 0.40, 0.40),
 	TileType.EXPLOSIVE:     Color(0.90, 0.10, 0.10),
@@ -300,10 +295,11 @@ func _generate_lava_lakes() -> void:
 ## at a smaller scale (shorter veins, fewer per type).
 func _generate_ore_veins() -> void:
 	var specs: Array = [
-		{"ore": TileType.ORE_COPPER, "ore_deep": TileType.ORE_COPPER_DEEP, "count": 3, "row_min": SURFACE_ROWS + 1, "row_max": GRID_ROWS - 4},
-		{"ore": TileType.ORE_IRON,   "ore_deep": TileType.ORE_IRON_DEEP,   "count": 3, "row_min": SURFACE_ROWS + 2, "row_max": GRID_ROWS - 3},
-		{"ore": TileType.ORE_GOLD,   "ore_deep": TileType.ORE_GOLD_DEEP,   "count": 2, "row_min": SURFACE_ROWS + 4, "row_max": GRID_ROWS - 2},
-		{"ore": TileType.ORE_GEM,    "ore_deep": TileType.ORE_GEM_DEEP,    "count": 2, "row_min": SURFACE_ROWS + 7, "row_max": GRID_ROWS - 1},
+		{"ore": TileType.ORE_COAL,    "count": 3, "row_min": SURFACE_ROWS + 1, "row_max": GRID_ROWS - 6},
+		{"ore": TileType.ORE_COPPER,  "count": 3, "row_min": SURFACE_ROWS + 2, "row_max": GRID_ROWS - 5},
+		{"ore": TileType.ORE_IRON,    "count": 3, "row_min": SURFACE_ROWS + 4, "row_max": GRID_ROWS - 4},
+		{"ore": TileType.ORE_GOLD,    "count": 2, "row_min": SURFACE_ROWS + 6, "row_max": GRID_ROWS - 2},
+		{"ore": TileType.ORE_DIAMOND, "count": 2, "row_min": SURFACE_ROWS + 9, "row_max": GRID_ROWS - 1},
 	]
 	for spec in specs:
 		for _i in range(spec["count"]):
@@ -315,11 +311,10 @@ func _generate_ore_veins() -> void:
 				var row: int = start_row + i
 				if row >= GRID_ROWS - 1:
 					break
-				var ore_tile: TileType = spec["ore_deep"] if i > length / 2 else spec["ore"]
 				if randf() < 0.35:
 					center_col = clampi(center_col + (randi() % 3) - 1, 1, GRID_COLS - 2)
 				if tile_grid[row][center_col] in [TileType.DIRT, TileType.DIRT_DARK, TileType.STONE, TileType.STONE_DARK]:
-					tile_grid[row][center_col] = ore_tile
+					tile_grid[row][center_col] = spec["ore"]
 
 ## Irregular cave pockets.
 func _carve_caves() -> void:

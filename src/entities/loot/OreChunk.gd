@@ -15,16 +15,13 @@ const SETTLE_SPEED_THRESHOLD: float = 5.0
 # Settled chunks join this layer so in-flight chunks can land on top of them.
 const SETTLED_LAYER: int = 8
 
-# Ore type → chunk colour (mirrors MiningLevel.TILE_COLORS)
+# Ore type → chunk colour (mirrors MiningLevel.TILE_PARTICLE_COLORS)
 const CHUNK_COLORS: Dictionary = {
-	3:  Color(0.80, 0.50, 0.20),   # ORE_COPPER
-	4:  Color(0.70, 0.40, 0.10),   # ORE_COPPER_DEEP
-	5:  Color(0.65, 0.65, 0.72),   # ORE_IRON
-	6:  Color(0.55, 0.55, 0.65),   # ORE_IRON_DEEP
-	7:  Color(1.00, 0.85, 0.10),   # ORE_GOLD
-	8:  Color(0.90, 0.75, 0.05),   # ORE_GOLD_DEEP
-	9:  Color(0.15, 0.85, 0.75),   # ORE_GEM
-	10: Color(0.10, 0.75, 0.65),   # ORE_GEM_DEEP
+	3: Color(0.25, 0.25, 0.28),   # ORE_COAL
+	4: Color(0.78, 0.44, 0.20),   # ORE_COPPER
+	5: Color(0.65, 0.68, 0.75),   # ORE_IRON
+	6: Color(1.00, 0.80, 0.10),   # ORE_GOLD
+	7: Color(0.60, 0.90, 1.00),   # ORE_DIAMOND
 }
 
 ## Set by MiningLevel before adding to the scene tree.
