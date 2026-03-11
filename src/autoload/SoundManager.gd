@@ -49,9 +49,9 @@ func stop_rocket_engine_sound() -> void:
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_pop_sounds = [
-		load("res://assets/sound_effects/pops/pop1.ogg"),
-		load("res://assets/sound_effects/pops/pop2.ogg"),
-		load("res://assets/sound_effects/pops/pop3.ogg"),
+		load("res://assets/sound_effects/pops/pop_1.ogg"),
+		load("res://assets/sound_effects/pops/pop_2.ogg"),
+		load("res://assets/sound_effects/pops/pop_3.ogg"),
 	]
 	# Load Suno-generated SFX (graceful null if file not yet added)
 	_mining_hit_sound = _try_load("res://assets/sound_effects/mining_hit.mp3")
