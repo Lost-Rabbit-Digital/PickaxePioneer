@@ -446,6 +446,7 @@ const FOLIAGE_WEB_ATLAS_COORD: Vector2i = Vector2i(7, 4)
 
 @onready var player_node := $PlayerProbe as PlayerProbe
 @onready var pause_menu = $PauseMenu
+@onready var _background_layer  := $TileMapLayers/BackgroundTileMapLayer as TileMapLayer
 @onready var _mineable_layer    := $TileMapLayers/MineAbleTileMapLayer as TileMapLayer
 @onready var _nonmineable_layer := $TileMapLayers/NonMineAbleTileMapLayer as TileMapLayer
 @onready var _foliage_layer     := $TileMapLayers/FoliageTileMapLayer as TileMapLayer
@@ -852,9 +853,31 @@ const _SKIP_VISUAL_TILES: Array = [
 func _populate_visual_tilemaplayers() -> void:
 	_mineable_layer.clear()
 	_nonmineable_layer.clear()
+	_populate_background_tilemaplayer()
 	for col in range(GRID_COLS):
 		for row in range(GRID_ROWS):
 			_set_visual_cell(col, row)
+
+## Fill the BackgroundTileMapLayer with sky, dirt, and stone tiles.
+## Rows 0..(SURFACE_ROWS-1): sky tile atlas (6, 7).
+## Rows SURFACE_ROWS..(SURFACE_ROWS+9): dirt background atlas (1, 2).
+## Rows (SURFACE_ROWS+10)..end: stone background atlas (7, 7).
+func _populate_background_tilemaplayer() -> void:
+	_background_layer.clear()
+	const BG_SKY_ATLAS   := Vector2i(6, 7)
+	const BG_DIRT_ATLAS  := Vector2i(1, 2)
+	const BG_STONE_ATLAS := Vector2i(7, 7)
+	const DIRT_DEPTH: int = 10
+	for col in range(GRID_COLS):
+		for row in range(GRID_ROWS):
+			var atlas: Vector2i
+			if row < SURFACE_ROWS:
+				atlas = BG_SKY_ATLAS
+			elif row < SURFACE_ROWS + DIRT_DEPTH:
+				atlas = BG_DIRT_ATLAS
+			else:
+				atlas = BG_STONE_ATLAS
+			_background_layer.set_cell(Vector2i(col, row), 0, atlas)
 
 ## Update the visual TileMapLayer cell at (col, row) to match grid[col][row].
 ## Call this whenever grid[col][row] is written.
