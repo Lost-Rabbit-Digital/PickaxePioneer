@@ -72,6 +72,7 @@ func generate(
 	_generate_tile_patches()
 	_generate_lava_lakes()
 	_generate_ore_veins()
+	_seed_shallow_ore()
 	_generate_cave_rooms()
 	_carve_tunnels()
 
@@ -144,6 +145,54 @@ func _random_tile(_col: int, row: int) -> int:
 	elif r2 < stone_chance:          return T_STONE
 	elif r2 < stone_chance + 0.10:   return T_DIRT_DARK
 	else:                             return T_DIRT
+
+# ---------------------------------------------------------------------------
+# Shallow ore seeding — guarantee early rewards in the first 15 rows
+# ---------------------------------------------------------------------------
+
+## Ensures copper ore appears within the first few rows below surface so new
+## players find meaningful rewards within 60 seconds of digging.  Places
+## small scattered copper clusters (3-5 tiles each) between rows 5-15 below
+## surface, plus a guaranteed 2-tile copper pocket at rows 4-5 near the
+## player's spawn column.
+func _seed_shallow_ore() -> void:
+	var copper_ok := _allowed_ore.is_empty() or _allowed_ore.has("Copper")
+	if not copper_ok:
+		return
+
+	var shallow_start := _surface_rows + 4
+	var shallow_end   := _surface_rows + 15
+
+	# Guaranteed starter pocket near centre (where the player spawns)
+	var spawn_col := _cols / 2
+	for dc in range(-1, 2):
+		for dr in range(0, 2):
+			var c := clampi(spawn_col + dc, 1, _cols - 2)
+			var r := clampi(shallow_start + dr, _surface_rows + 3, shallow_end)
+			if _grid[c][r] in [T_DIRT, T_DIRT_DARK, T_STONE, T_STONE_DARK]:
+				_grid[c][r] = T_ORE_COPPER
+
+	# Scatter 6-9 small copper clusters across the shallow band
+	var num_clusters := _rng.randi_range(6, 9)
+	for _i in range(num_clusters):
+		var center_col := _rng.randi_range(5, _cols - 6)
+		var center_row := _rng.randi_range(shallow_start, shallow_end)
+		var cluster_size := _rng.randi_range(3, 5)
+		for _j in range(cluster_size):
+			var oc := center_col + _rng.randi_range(-1, 1)
+			var or_ := center_row + _rng.randi_range(-1, 1)
+			oc = clampi(oc, 1, _cols - 2)
+			or_ = clampi(or_, _surface_rows + 3, _rows - 2)
+			if _grid[oc][or_] in [T_DIRT, T_DIRT_DARK, T_STONE, T_STONE_DARK]:
+				_grid[oc][or_] = T_ORE_COPPER if _rng.randf() < 0.7 else T_ORE_COPPER_DEEP
+
+	# Sprinkle a few energy nodes in the shallow band for new player safety
+	var num_energy := _rng.randi_range(2, 4)
+	for _i in range(num_energy):
+		var ec := _rng.randi_range(5, _cols - 6)
+		var er := _rng.randi_range(shallow_start + 2, shallow_end)
+		if _grid[ec][er] in [T_DIRT, T_DIRT_DARK]:
+			_grid[ec][er] = T_ENERGY_NODE_FULL
 
 # ---------------------------------------------------------------------------
 # Cave rooms

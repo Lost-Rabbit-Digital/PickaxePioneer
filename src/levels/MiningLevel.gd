@@ -314,6 +314,13 @@ const ENERGY_DRAIN_DEPTH_MULT: float = 0.5 # Extra drain per depth ratio (halved
 var _energy_drain_accum: float = 0.0
 var _energy_low_warned: bool = false
 
+# Tension escalation: screen vignette + heartbeat as energy drops
+var _tension_vignette: ColorRect = null
+var _tension_layer: CanvasLayer = null
+var _heartbeat_timer: float = 0.0
+var _heartbeat_interval: float = 0.0
+var _last_energy_pct: float = 1.0
+
 # ---------------------------------------------------------------------------
 # Boss encounter system (§4) — logic lives in BossSystem.gd
 # ---------------------------------------------------------------------------
@@ -338,6 +345,14 @@ var shop_system: MiningShopSystem = null
 
 # Terrain generation — extracted to MiningTerrainGenerator.gd
 var _terrain_generator: MiningTerrainGenerator = MiningTerrainGenerator.new()
+
+## Thread-safe wrapper: runs terrain generation off the main thread.
+func _thread_generate(args: Dictionary) -> void:
+	_terrain_generator.generate(
+		args["grid"], args["cols"], args["rows"],
+		args["surface_rows"], args["exit_cols"],
+		args["zone_rows"], args["ore_types"],
+		args["hazard_types"], args["seed"])
 
 # Boss visual rendering — extracted to BossRenderer.gd
 var _boss_renderer: BossRenderer = BossRenderer.new()
@@ -482,16 +497,46 @@ func _ready() -> void:
 			_atlas_tex.atlas = _atlas_source.texture
 			_atlas_tex.region = Rect2i(0 * 16, 10 * 16, 16, 16)
 			_pickaxe_texture = _atlas_tex
-	
+
 
 	texture_filter = TEXTURE_FILTER_NEAREST
 
-	_terrain_generator.generate(
-		grid, GRID_COLS, GRID_ROWS, SURFACE_ROWS, EXIT_COLS,
-		DEPTH_ZONE_ROWS,
-		GameManager.allowed_ore_types,
-		GameManager.allowed_hazard_types,
-		GameManager.terrain_seed)
+	# Show loading overlay while terrain generates on a background thread
+	var loading_layer := CanvasLayer.new()
+	loading_layer.layer = 50
+	add_child(loading_layer)
+	var loading_bg := ColorRect.new()
+	loading_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	loading_bg.color = Color(0.02, 0.02, 0.06, 1.0)
+	loading_layer.add_child(loading_bg)
+	var loading_label := Label.new()
+	loading_label.text = "Generating terrain..."
+	loading_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	loading_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	loading_label.grow_vertical = Control.GROW_DIRECTION_BOTH
+	loading_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	loading_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	loading_label.add_theme_font_size_override("font_size", 22)
+	loading_label.add_theme_color_override("font_color", Color(0.7, 0.6, 0.4))
+	loading_layer.add_child(loading_label)
+
+	# Run terrain generation on a background thread (only touches plain Arrays)
+	var gen_thread := Thread.new()
+	var gen_args := {
+		"grid": grid, "cols": GRID_COLS, "rows": GRID_ROWS,
+		"surface_rows": SURFACE_ROWS, "exit_cols": EXIT_COLS,
+		"zone_rows": DEPTH_ZONE_ROWS,
+		"ore_types": GameManager.allowed_ore_types,
+		"hazard_types": GameManager.allowed_hazard_types,
+		"seed": GameManager.terrain_seed,
+	}
+	gen_thread.start(_thread_generate.bind(gen_args))
+	# Yield frames so the loading label renders
+	while gen_thread.is_alive():
+		await get_tree().process_frame
+	gen_thread.wait_to_finish()
+	loading_layer.queue_free()
+
 	_build_shop_protection_zones()
 	_setup_collision_tilemap()
 	_sync_collision_tilemap()
@@ -559,6 +604,16 @@ func _ready() -> void:
 
 	if NetworkManager.is_multiplayer_session:
 		add_child(preload("res://src/ui/ChatBox.tscn").instantiate())
+
+	# Tension vignette overlay (screen-space, used for energy escalation)
+	_tension_layer = CanvasLayer.new()
+	_tension_layer.layer = 5
+	add_child(_tension_layer)
+	_tension_vignette = ColorRect.new()
+	_tension_vignette.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_tension_vignette.color = Color(0.6, 0.0, 0.0, 0.0)
+	_tension_vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tension_layer.add_child(_tension_vignette)
 
 	queue_redraw()
 
@@ -1101,6 +1156,7 @@ func _process(delta: float) -> void:
 						_on_out_of_energy()
 					else:
 						var energy_pct := float(GameManager.current_energy) / float(GameManager.get_max_energy())
+						_last_energy_pct = energy_pct
 						if energy_pct <= 0.25 and not _energy_low_warned:
 							_energy_low_warned = true
 							SoundManager.play_energy_low_sound()
@@ -1108,6 +1164,36 @@ func _process(delta: float) -> void:
 							_energy_low_warned = false
 			elif local_p.is_sleeping():
 				_energy_drain_accum = 0.0
+
+	# Tension escalation: vignette + heartbeat based on energy percentage
+	_update_tension_escalation(delta)
+
+func _update_tension_escalation(delta: float) -> void:
+	if not _tension_vignette or _game_over:
+		return
+
+	var energy_pct := _last_energy_pct
+
+	# Vignette: starts at 40% energy, intensifies toward 0%
+	var vignette_alpha := 0.0
+	if energy_pct < 0.40:
+		# Ramp from 0 at 40% to 0.35 at 0%
+		vignette_alpha = (0.40 - energy_pct) / 0.40 * 0.35
+	_tension_vignette.color.a = lerpf(_tension_vignette.color.a, vignette_alpha, delta * 3.0)
+
+	# Heartbeat sound at low energy thresholds
+	if energy_pct < 0.25 and energy_pct > 0.0:
+		# Faster heartbeat as energy gets lower
+		if energy_pct < 0.10:
+			_heartbeat_interval = 0.6
+		else:
+			_heartbeat_interval = 1.2
+		_heartbeat_timer += delta
+		if _heartbeat_timer >= _heartbeat_interval:
+			_heartbeat_timer = 0.0
+			SoundManager.play_energy_low_sound()
+	else:
+		_heartbeat_timer = 0.0
 
 func _is_tile_mineable(tile_type: int) -> bool:
 	"""Check if a tile type can be mined."""
@@ -1506,25 +1592,43 @@ func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 				EventBus.ore_mined_popup.emit(minerals, popup_label)
 			# Non-ore tiles (dirt, stone, grass) give no minerals.
 			_check_streak_milestone()
-		# Particle burst on tile destruction
+		# Particle burst on tile destruction — scaled by ore value
 		var tile_world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
 		var burst_color: Color = TILE_PARTICLE_COLORS.get(tile, Color(0.7, 0.6, 0.4))
-		var burst_count := 14 if tile in ORE_TILES else 8
+		var is_high_value := tile in [TileType.ORE_GOLD, TileType.ORE_GOLD_DEEP,
+				TileType.ORE_GEM, TileType.ORE_GEM_DEEP]
+		var burst_count := 8
+		var burst_speed_min := 60.0
+		var burst_speed_max := 200.0
 		if tile == TileType.BOSS_SEGMENT or tile == TileType.BOSS_CORE:
 			burst_count = 20
-		_spawn_mining_particles(tile_world_pos, burst_color, burst_count, 60.0, 200.0)
+		elif is_high_value:
+			burst_count = 22
+			burst_speed_min = 80.0
+			burst_speed_max = 280.0
+		elif tile in ORE_TILES:
+			burst_count = 14
+		_spawn_mining_particles(tile_world_pos, burst_color, burst_count, burst_speed_min, burst_speed_max)
 		SoundManager.play_drill_sound()
+		# Extra feedback for high-value ore: bigger shake + screen flash
+		if is_high_value:
+			_shake_camera(3.5, 0.12)
+			_flash_cells[pos_key] = 1.5
 	else:
 		_tile_damage[pos_key] = new_damage
 		_tile_hits[pos_key] = hits_so_far + 1
 		_tile_last_hit[pos_key] = 0.0
 		var damage_ratio := float(new_damage) / float(tile_hp)
 		_update_breaking_overlay(pos_key, damage_ratio)
-		# Small impact sparks on partial hits
+		# Small impact sparks on partial hits — more for high-value ore
 		var hit_world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
-		_spawn_mining_particles(hit_world_pos, TILE_PARTICLE_COLORS.get(tile, Color(0.8, 0.7, 0.5)), 4, 30.0, 90.0)
+		var is_hit_high_value := tile in [TileType.ORE_GOLD, TileType.ORE_GOLD_DEEP,
+				TileType.ORE_GEM, TileType.ORE_GEM_DEEP]
+		var spark_count := 8 if is_hit_high_value else 4
+		var spark_speed := 120.0 if is_hit_high_value else 90.0
+		_spawn_mining_particles(hit_world_pos, TILE_PARTICLE_COLORS.get(tile, Color(0.8, 0.7, 0.5)), spark_count, 30.0, spark_speed)
 		SoundManager.play_impact_sound()
-		_shake_camera(1.5, 0.07)
+		_shake_camera(2.5 if is_hit_high_value else 1.5, 0.10 if is_hit_high_value else 0.07)
 		# Sync partial damage to guest so their breaking overlay matches
 		if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
 			rpc_tile_hit.rpc_id(NetworkManager.guest_peer_id, pos_key, damage_ratio)
@@ -1867,9 +1971,7 @@ func _on_player_died() -> void:
 		return
 	_game_over = true
 	SoundManager.play_death_sound()
-	_show_game_over_overlay("LOST IN SPACE", "Run stardust has been lost...")
-	await get_tree().create_timer(2.5).timeout
-	GameManager.lose_run()
+	_show_failure_summary("death")
 
 func _on_out_of_energy() -> void:
 	if _game_over:
@@ -1878,11 +1980,14 @@ func _on_out_of_energy() -> void:
 	if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
 		return
 	_game_over = true
-	_show_game_over_overlay("OUT OF ENERGY", "Run stardust has been lost...")
 	if NetworkManager.is_multiplayer_session and NetworkManager.guest_peer_id > 0:
 		rpc_trigger_game_over.rpc_id(NetworkManager.guest_peer_id)
-	await get_tree().create_timer(2.5).timeout
-	GameManager.lose_run()
+	_show_failure_summary("energy")
+
+func _show_failure_summary(reason: String) -> void:
+	var summary := FailureSummary.new()
+	summary.setup(reason)
+	get_tree().root.add_child(summary)
 
 func _show_game_over_overlay(title: String, subtitle: String) -> void:
 	var layer := CanvasLayer.new()
@@ -1975,6 +2080,30 @@ func _play_spawn_animation() -> void:
 
 	_spawning = false
 
+	# Trigger first-run tutorial hints after spawn cinematic
+	if not GameManager.has_completed_first_run:
+		_start_tutorial_hints()
+
+# ---------------------------------------------------------------------------
+# First-run tutorial hints
+# ---------------------------------------------------------------------------
+
+func _start_tutorial_hints() -> void:
+	# Stagger hints so they appear one at a time as the player explores
+	var hints: Array[Dictionary] = [
+		{"delay": 1.5, "text": "WASD to move  |  SPACE to jump"},
+		{"delay": 6.0, "text": "Click on blocks to mine  |  Dig down for richer ore"},
+		{"delay": 12.0, "text": "Press Q to ping sonar  |  Reveals nearby ore (costs energy)"},
+		{"delay": 20.0, "text": "Watch your ENERGY bar (top-right)  |  It drains as you dig deeper"},
+		{"delay": 30.0, "text": "Walk RIGHT on the surface to EXIT and bank your minerals"},
+	]
+	for hint in hints:
+		var timer := get_tree().create_timer(hint["delay"])
+		timer.timeout.connect(func() -> void:
+			if not _game_over:
+				EventBus.boss_hint_popup.emit(hint["text"])
+		)
+
 # ---------------------------------------------------------------------------
 # Sonar ping (§3.2) — delegated to SonarSystem
 # ---------------------------------------------------------------------------
@@ -2013,7 +2142,13 @@ func _update_depth() -> void:
 			_queue_boss_hints(_boss_hints)
 		# Track deepest row for Colony Chamber unlock condition
 		if depth > GameManager.deepest_row_reached:
+			var prev_record := GameManager.deepest_row_reached
 			GameManager.deepest_row_reached = depth
+			# Celebrate new depth records at meaningful intervals (every 8 rows)
+			if depth >= 8 and (prev_record < 8 or depth / 8 > prev_record / 8):
+				var depth_m := depth * 2  # approximate meters
+				EventBus.boss_hint_popup.emit("NEW DEPTH RECORD!  %dm" % depth_m)
+				_shake_camera(2.0, 0.15)
 		# Reset mine streak when surfacing
 		if depth <= 0:
 			_mine_streak = 0
@@ -2490,9 +2625,7 @@ func rpc_trigger_run_end() -> void:
 func rpc_trigger_game_over() -> void:
 	if not _game_over:
 		_game_over = true
-		_show_game_over_overlay("OUT OF ENERGY", "Run stardust has been lost...")
-		await get_tree().create_timer(2.5).timeout
-		GameManager.lose_run()
+		_show_failure_summary("energy")
 
 ## Host → Guest: deal damage to the guest player (hazard or explosion).
 @rpc("authority", "call_remote", "reliable")
