@@ -99,8 +99,10 @@ func _skip_all() -> void:
 func _finish() -> void:
 	if _tween:
 		_tween.kill()
+	# Fade out only the text; keep _bg opaque so the screen stays black.
+	# GameManager will take over with SceneTransition and fade from black.
 	_tween = create_tween()
-	_tween.tween_property(_bg, "modulate:a", 0.0, 0.4)
+	_tween.tween_property(_label, "modulate:a", 0.0, 0.3)
 	_tween.tween_callback(func() -> void:
 		finished.emit()
 		queue_free()

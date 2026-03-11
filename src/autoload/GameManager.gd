@@ -254,9 +254,26 @@ func start_game() -> void:
 			warp_drive_built, cargo_bay_built, long_scanner_built, gem_refinery_built, trade_amplifier_built)
 	# Show narrative intro on first new game (singleplayer only)
 	if not has_completed_first_run and not has_seen_overworld_hint and not NetworkManager.is_multiplayer_session:
+		# Pre-load the overworld in the background while the intro is playing
+		# so there is no delay or flash when switching scenes afterwards.
+		const OVERWORLD := "res://src/levels/Overworld.tscn"
+		ResourceLoader.load_threaded_request(OVERWORLD)
 		var intro := IntroSequence.new()
 		get_tree().root.add_child(intro)
 		await intro.finished
+		# The intro leaves a solid black background on screen; take it over with
+		# SceneTransition before the intro node is freed so there is no flash.
+		SceneTransition.color_rect.modulate.a = 1.0
+		SceneTransition.is_transitioning = true
+		# Block until the background load is done (almost always instant by now).
+		while ResourceLoader.load_threaded_get_status(OVERWORLD) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			await get_tree().process_frame
+		var packed: PackedScene = ResourceLoader.load_threaded_get(OVERWORLD)
+		current_scene_path = OVERWORLD
+		get_tree().change_scene_to_packed(packed)
+		await get_tree().create_timer(0.1).timeout
+		await SceneTransition.fade_from_black(0.5)
+		return
 	load_overworld()
 
 ## Called on guest by host to apply kit/upgrade state before the game starts.
