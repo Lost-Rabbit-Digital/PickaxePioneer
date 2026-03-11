@@ -2142,14 +2142,8 @@ func _update_depth() -> void:
 			_queue_boss_hints(_boss_hints)
 		# Track deepest row for Colony Chamber unlock condition
 		if depth > GameManager.deepest_row_reached:
-			var prev_record := GameManager.deepest_row_reached
-			GameManager.deepest_row_reached = depth
-			# Celebrate new depth records at meaningful intervals (every 8 rows)
-			if depth >= 8 and (prev_record < 8 or depth / 8 > prev_record / 8):
-				var depth_m := depth * 2  # approximate meters
-				EventBus.boss_hint_popup.emit("NEW DEPTH RECORD!  %dm" % depth_m)
-				_shake_camera(2.0, 0.15)
-		# Reset mine streak when surfacing
+				GameManager.deepest_row_reached = depth
+			# Reset mine streak when surfacing
 		if depth <= 0:
 			_mine_streak = 0
 
