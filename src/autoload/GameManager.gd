@@ -96,8 +96,9 @@ var trinket_magnet: bool = false              # Attract ore within 4 tiles
 var trinket_cosmic_radiation: bool = false    # Random HP/energy bitflips
 var trinket_curse_of_core: bool = false       # -1 HP every 8 sec underground
 
-# Cat customization — sprite tint color (default white = no tint)
+# Cat customization — base tint (white = no tint) and outline colour (default dark #2B222A)
 var cat_color: Color = Color.WHITE
+var cat_outline_color: Color = Color("2b222a")
 
 # Legacy upgrade levels — kept at 0 (stat getters now use perk_ranks instead).
 # These vars remain for save-file backwards-compatibility and multiplayer RPC
@@ -677,6 +678,7 @@ func save_game() -> void:
 		"equipped_ice": equipped_ice,
 		"equipped_companions": equipped_companions,
 		"cat_color": cat_color.to_html(),
+		"cat_outline_color": cat_outline_color.to_html(),
 		"has_completed_tier_1_mine": has_completed_tier_1_mine,
 		"has_completed_tier_2_settlement": has_completed_tier_2_settlement,
 		"has_seen_overworld_hint": has_seen_overworld_hint,
@@ -755,6 +757,11 @@ func load_game() -> void:
 				cat_color = Color.from_string(color_html, Color.WHITE)
 			else:
 				cat_color = Color.WHITE
+			var outline_html: String = data.get("cat_outline_color", "")
+			if outline_html != "":
+				cat_outline_color = Color.from_string(outline_html, Color("2b222a"))
+			else:
+				cat_outline_color = Color("2b222a")
 			has_completed_tier_1_mine = data.get("has_completed_tier_1_mine", false)
 			has_completed_tier_2_settlement = data.get("has_completed_tier_2_settlement", false)
 			has_seen_overworld_hint = data.get("has_seen_overworld_hint", false)

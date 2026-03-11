@@ -116,7 +116,11 @@ func _ready() -> void:
 	update_trinket_stats()
 	EventBus.player_health_changed.emit(health_component.current_health, health_component.max_health)
 	sprite.play(&"idle")
-	sprite.modulate = GameManager.cat_color
+	var _cat_shader_mat := ShaderMaterial.new()
+	_cat_shader_mat.shader = preload("res://assets/shaders/cat_color.gdshader")
+	_cat_shader_mat.set_shader_parameter("base_color", GameManager.cat_color)
+	_cat_shader_mat.set_shader_parameter("outline_color", GameManager.cat_outline_color)
+	sprite.material = _cat_shader_mat
 	_init_followers()
 	_particle_layer = Node2D.new()
 	_particle_layer.z_index = 1
