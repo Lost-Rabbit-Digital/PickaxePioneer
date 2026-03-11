@@ -22,6 +22,7 @@ const PERKS: Array[Dictionary] = [
 		"max_rank": 5,
 		"prereq_id": "",
 		"prereq_rank": 0,
+		"mineral_cost": 300,
 		"icon_color": Color(0.90, 0.25, 0.25),
 		"desc": "Reinforced pelt. +1 Max HP per rank.",
 	},
@@ -33,6 +34,7 @@ const PERKS: Array[Dictionary] = [
 		"max_rank": 5,
 		"prereq_id": "pelt",
 		"prereq_rank": 1,
+		"mineral_cost": 600,
 		"icon_color": Color(0.95, 0.55, 0.10),
 		"desc": "Enhanced paws. +25 Max Energy and +30 Move Speed per rank.",
 	},
@@ -44,6 +46,7 @@ const PERKS: Array[Dictionary] = [
 		"max_rank": 5,
 		"prereq_id": "paws",
 		"prereq_rank": 2,
+		"mineral_cost": 1200,
 		"icon_color": Color(0.60, 0.65, 0.85),
 		"desc": "Hardened hide. Reduces boss energy drain by 10% per rank.",
 	},
@@ -55,6 +58,7 @@ const PERKS: Array[Dictionary] = [
 		"max_rank": 3,
 		"prereq_id": "iron_hide",
 		"prereq_rank": 3,
+		"mineral_cost": 2500,
 		"icon_color": Color(1.00, 0.85, 0.10),
 		"desc": "Legendary resilience. +2 Max HP per rank.",
 	},
@@ -68,6 +72,7 @@ const PERKS: Array[Dictionary] = [
 		"max_rank": 5,
 		"prereq_id": "",
 		"prereq_rank": 0,
+		"mineral_cost": 300,
 		"icon_color": Color(0.20, 0.85, 0.35),
 		"desc": "Razor-sharp claws. +3 Mining Power per rank.",
 	},
@@ -79,6 +84,7 @@ const PERKS: Array[Dictionary] = [
 		"max_rank": 5,
 		"prereq_id": "claws",
 		"prereq_rank": 1,
+		"mineral_cost": 600,
 		"icon_color": Color(0.20, 0.70, 0.55),
 		"desc": "Extended reach. +0.75 Mining Range tiles per rank.",
 	},
@@ -90,6 +96,7 @@ const PERKS: Array[Dictionary] = [
 		"max_rank": 5,
 		"prereq_id": "reach",
 		"prereq_rank": 2,
+		"mineral_cost": 1200,
 		"icon_color": Color(0.10, 0.60, 0.95),
 		"desc": "Vein sense. +5% Lucky Strike chance per rank.",
 	},
@@ -101,6 +108,7 @@ const PERKS: Array[Dictionary] = [
 		"max_rank": 3,
 		"prereq_id": "deep_veins",
 		"prereq_rank": 3,
+		"mineral_cost": 2500,
 		"icon_color": Color(1.00, 0.80, 0.00),
 		"desc": "Elite instinct. +10% ore mineral yield per rank.",
 	},
@@ -114,6 +122,7 @@ const PERKS: Array[Dictionary] = [
 		"max_rank": 5,
 		"prereq_id": "",
 		"prereq_rank": 0,
+		"mineral_cost": 300,
 		"icon_color": Color(0.65, 0.30, 0.95),
 		"desc": "Tuned whiskers. +3 Sonar Radius and -1 ping energy cost per rank.",
 	},
@@ -125,6 +134,7 @@ const PERKS: Array[Dictionary] = [
 		"max_rank": 5,
 		"prereq_id": "whiskers",
 		"prereq_rank": 1,
+		"mineral_cost": 600,
 		"icon_color": Color(0.55, 0.45, 0.85),
 		"desc": "Extra cargo capacity. +2 Ore Slots per rank.",
 	},
@@ -136,6 +146,7 @@ const PERKS: Array[Dictionary] = [
 		"max_rank": 5,
 		"prereq_id": "cargo",
 		"prereq_rank": 2,
+		"mineral_cost": 1200,
 		"icon_color": Color(0.85, 0.55, 0.20),
 		"desc": "Rapid climbing. +50 Ladder Climb Speed per rank.",
 	},
@@ -147,6 +158,7 @@ const PERKS: Array[Dictionary] = [
 		"max_rank": 3,
 		"prereq_id": "ladder_mastery",
 		"prereq_rank": 3,
+		"mineral_cost": 2500,
 		"icon_color": Color(0.90, 0.90, 0.30),
 		"desc": "Elite scavenging. +10% Fossil find rate per rank.",
 	},
@@ -198,6 +210,17 @@ static func can_rank_up(id: String, perk_ranks: Dictionary, perk_points: int) ->
 	if perk_ranks.get(id, 0) >= p["max_rank"]:
 		return false
 	return is_unlocked(id, perk_ranks)
+
+## Returns true when the player has enough coins to purchase one rank of this perk.
+static func can_purchase(id: String, perk_ranks: Dictionary, coins: int) -> bool:
+	var p := get_perk(id)
+	if p.is_empty():
+		return false
+	if perk_ranks.get(id, 0) >= p["max_rank"]:
+		return false
+	if not is_unlocked(id, perk_ranks):
+		return false
+	return coins >= p.get("mineral_cost", 0)
 
 ## Returns all perks belonging to a given branch, sorted by tier.
 static func get_branch_perks(branch: int) -> Array[Dictionary]:
