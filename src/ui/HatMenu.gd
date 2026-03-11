@@ -28,120 +28,140 @@ const COMPANIONS: Array = [
 		"name": "Leaf Elemental",
 		"desc": "A curious forest sprite that drifts through the mines beside you.",
 		"sheet": "res://assets/elemental_followers/leaf_elemental_spritesheet.png",
+		"unlock_level": 1,
 	},
 	{
 		"id": "ice",
 		"name": "Ice Elemental",
 		"desc": "A frosty companion born from deep-mine cold. Cool and determined.",
 		"sheet": "res://assets/elemental_followers/ice_elemental_spritesheet.png",
+		"unlock_level": 1,
 	},
 	{
 		"id": "baby_observer",
 		"name": "Baby Observer",
 		"desc": "A tiny floating eye that watches everything with boundless curiosity.",
 		"sheet": "",
+		"unlock_level": 2,
 	},
 	{
 		"id": "magic_book",
 		"name": "Magic Book",
 		"desc": "An enchanted tome that levitates faithfully at your side.",
 		"sheet": "",
+		"unlock_level": 2,
 	},
 	{
 		"id": "bulldog",
 		"name": "Bulldog",
 		"desc": "A stout and loyal hound who refuses to leave your side.",
 		"sheet": "",
+		"unlock_level": 3,
 	},
 	{
 		"id": "living_cactus",
 		"name": "Living Cactus",
 		"desc": "A prickly desert companion with a surprisingly gentle heart.",
 		"sheet": "",
+		"unlock_level": 3,
 	},
 	{
 		"id": "goblin_carrier",
 		"name": "Goblin Carrier",
 		"desc": "A resourceful goblin who happily hauls your extra gear.",
 		"sheet": "",
+		"unlock_level": 4,
 	},
 	{
 		"id": "cherub",
 		"name": "Cherub",
 		"desc": "A chubby winged cherub who blesses your every mining strike.",
 		"sheet": "",
+		"unlock_level": 4,
 	},
 	{
 		"id": "dog_chest",
 		"name": "Dog-like Chest",
 		"desc": "A mysterious chest that trots along on a pair of stubby legs.",
 		"sheet": "",
+		"unlock_level": 5,
 	},
 	{
 		"id": "magic_cloud",
 		"name": "Magic Cloud",
 		"desc": "A small storm cloud that crackles with restless arcane energy.",
 		"sheet": "",
+		"unlock_level": 5,
 	},
 	{
 		"id": "draco",
 		"name": "Draco",
 		"desc": "A young dragon hatchling brimming with fiery spirit.",
 		"sheet": "",
+		"unlock_level": 6,
 	},
 	{
 		"id": "doppelganger_egg",
 		"name": "Doppelganger Egg",
 		"desc": "An eerie egg that subtly mirrors your every movement.",
 		"sheet": "",
+		"unlock_level": 6,
 	},
 	{
 		"id": "hive_bees",
 		"name": "Hive and Bees",
 		"desc": "A mobile hive with its loyal swarm buzzing protectively around you.",
 		"sheet": "",
+		"unlock_level": 7,
 	},
 	{
 		"id": "stubby_lizard",
 		"name": "Stubby Lizard",
 		"desc": "A short-legged lizard who scrambles valiantly to keep up.",
 		"sheet": "",
+		"unlock_level": 7,
 	},
 	{
 		"id": "elemental_orbs",
 		"name": "Elemental Orbs",
 		"desc": "Orbiting spheres of pure elemental energy that hum softly as they circle.",
 		"sheet": "",
+		"unlock_level": 8,
 	},
 	{
 		"id": "rolling_stone",
 		"name": "Rolling Stone",
 		"desc": "A sentient boulder that rolls wherever you lead it.",
 		"sheet": "",
+		"unlock_level": 8,
 	},
 	{
 		"id": "shadow",
 		"name": "Shadow",
 		"desc": "A detached shadow that follows you silently through the darkness.",
 		"sheet": "",
+		"unlock_level": 9,
 	},
 	{
 		"id": "flying_skull",
 		"name": "Flying Skull",
 		"desc": "A cheerful skull that bobs and floats gleefully behind you.",
 		"sheet": "",
+		"unlock_level": 9,
 	},
 	{
 		"id": "sprite",
 		"name": "Sprite",
 		"desc": "A shimmering fairy-like creature full of mischief and warmth.",
 		"sheet": "",
+		"unlock_level": 10,
 	},
 	{
 		"id": "enchanted_sword",
 		"name": "Enchanted Sword",
 		"desc": "A floating blade bound by ancient magic to protect its chosen companion.",
 		"sheet": "",
+		"unlock_level": 10,
 	},
 ]
 # ----------------------------------------------------------------------------
@@ -312,15 +332,17 @@ func _build_page(page: int) -> void:
 func _build_companion_card(data: Dictionary, cx: int, cy: int, w: int, h: int) -> void:
 	var id: String = data["id"]
 	var has_sheet: bool = data["sheet"] != ""
+	var unlock_level: int = data.get("unlock_level", 1)
+	var is_locked: bool = GameManager.player_level < unlock_level
 
 	# Card background
 	var card := ColorRect.new()
-	card.color = Color(0.13, 0.11, 0.17, 1.0)
+	card.color = Color(0.13, 0.11, 0.17, 1.0) if not is_locked else Color(0.08, 0.07, 0.10, 1.0)
 	card.position = Vector2(cx, cy)
 	card.size = Vector2(w, h)
 	_cards_root.add_child(card)
 
-	# Card border (colour reflects equip state)
+	# Card border (colour reflects equip/lock state)
 	var border := ColorRect.new()
 	border.position = Vector2(cx - 1, cy - 1)
 	border.size = Vector2(w + 2, h + 2)
@@ -346,6 +368,8 @@ func _build_companion_card(data: Dictionary, cx: int, cy: int, w: int, h: int) -
 	else:
 		preview.texture = _stub_tex
 		preview.modulate = Color(1.0, 1.0, 1.0, 0.55)
+	if is_locked:
+		preview.modulate = Color(0.3, 0.3, 0.3, 0.5)
 	_cards_root.add_child(preview)
 
 	# Name
@@ -354,27 +378,31 @@ func _build_companion_card(data: Dictionary, cx: int, cy: int, w: int, h: int) -
 	name_lbl.position = Vector2(cx + 4, cy + ICON_SIZE + 14)
 	name_lbl.custom_minimum_size = Vector2(w - 8, 20)
 	name_lbl.add_theme_font_size_override("font_size", 13)
-	name_lbl.modulate = Color(1.0, 0.82, 0.35)
+	name_lbl.modulate = Color(1.0, 0.82, 0.35) if not is_locked else Color(0.45, 0.40, 0.50)
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_lbl.clip_text = true
 	_cards_root.add_child(name_lbl)
 
-	# Description
+	# Description or unlock hint
 	var desc_lbl := Label.new()
-	desc_lbl.text = data["desc"]
+	desc_lbl.text = data["desc"] if not is_locked else ("Reach Lv. %d to unlock" % unlock_level)
 	desc_lbl.position = Vector2(cx + 4, cy + ICON_SIZE + 36)
 	desc_lbl.custom_minimum_size = Vector2(w - 8, 46)
 	desc_lbl.add_theme_font_size_override("font_size", 10)
-	desc_lbl.modulate = Color(0.70, 0.70, 0.75)
+	desc_lbl.modulate = Color(0.70, 0.70, 0.75) if not is_locked else Color(0.50, 0.45, 0.55)
 	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_cards_root.add_child(desc_lbl)
 
-	# Toggle button
+	# Toggle button (disabled when locked)
 	var toggle_btn := Button.new()
 	toggle_btn.position = Vector2(cx + (w - 100) / 2, cy + h - 36)
 	toggle_btn.size = Vector2(100, 28)
 	toggle_btn.add_theme_font_size_override("font_size", 12)
-	toggle_btn.pressed.connect(_on_toggle_companion.bind(id))
+	if is_locked:
+		toggle_btn.text = "Lv. %d" % unlock_level
+		toggle_btn.disabled = true
+	else:
+		toggle_btn.pressed.connect(_on_toggle_companion.bind(id))
 	_cards_root.add_child(toggle_btn)
 	_toggle_buttons[id] = toggle_btn
 
@@ -421,6 +449,16 @@ func _on_next_page() -> void:
 
 func _refresh_card(id: String) -> void:
 	if not _toggle_buttons.has(id):
+		return
+	# Find unlock level for this companion
+	var unlock_level: int = 1
+	for c in COMPANIONS:
+		if c["id"] == id:
+			unlock_level = c.get("unlock_level", 1)
+			break
+	var is_locked: bool = GameManager.player_level < unlock_level
+	if is_locked:
+		_card_borders[id].color = Color(0.20, 0.18, 0.24, 0.60)
 		return
 	var equipped: bool = _is_equipped(id)
 	_toggle_buttons[id].text = "UNEQUIP" if equipped else "EQUIP"
