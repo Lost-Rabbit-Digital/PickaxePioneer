@@ -78,6 +78,8 @@ var selected_hotbar_slot: int = 0
 # Equipped followers (independent toggles)
 var equipped_leaf: bool = false
 var equipped_ice: bool = false
+# Stub companion equipped states — keyed by companion id (see HatMenu.COMPANIONS)
+var equipped_companions: Dictionary = {}
 
 # Equipped trinkets (independent toggles, persistent)
 var trinket_paraglider: bool = false          # Glide + no fall damage
@@ -670,6 +672,7 @@ func save_game() -> void:
 		"ladder_count": ladder_count,
 		"equipped_leaf": equipped_leaf,
 		"equipped_ice": equipped_ice,
+		"equipped_companions": equipped_companions,
 		"cat_color": cat_color.to_html(),
 		"has_completed_tier_1_mine": has_completed_tier_1_mine,
 		"has_completed_tier_2_settlement": has_completed_tier_2_settlement,
@@ -743,6 +746,8 @@ func load_game() -> void:
 			ladder_count = data.get("ladder_count", 0)
 			equipped_leaf = data.get("equipped_leaf", false)
 			equipped_ice = data.get("equipped_ice", false)
+			var saved_companions: Variant = data.get("equipped_companions", {})
+			equipped_companions = saved_companions if saved_companions is Dictionary else {}
 			var color_html: String = data.get("cat_color", "")
 			if color_html != "":
 				cat_color = Color.from_string(color_html, Color.WHITE)

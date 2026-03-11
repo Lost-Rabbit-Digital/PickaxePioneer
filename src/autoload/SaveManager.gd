@@ -195,6 +195,7 @@ func _snapshot_game_manager() -> Dictionary:
 		"ladder_count": gm.ladder_count,
 		"equipped_leaf": gm.equipped_leaf,
 		"equipped_ice": gm.equipped_ice,
+		"equipped_companions": gm.equipped_companions,
 		"cat_color": gm.cat_color.to_html(),
 		"has_completed_tier_1_mine": gm.has_completed_tier_1_mine,
 		"has_completed_tier_2_settlement": gm.has_completed_tier_2_settlement,
@@ -258,6 +259,8 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 	gm.ladder_count = data.get("ladder_count", 10)
 	gm.equipped_leaf = data.get("equipped_leaf", false)
 	gm.equipped_ice = data.get("equipped_ice", false)
+	var saved_companions: Variant = data.get("equipped_companions", {})
+	gm.equipped_companions = saved_companions if saved_companions is Dictionary else {}
 	var color_html: String = data.get("cat_color", "")
 	if color_html != "":
 		gm.cat_color = Color.from_string(color_html, Color.WHITE)
@@ -324,6 +327,7 @@ func _reset_game_manager() -> void:
 	gm.ladder_count = 10
 	gm.equipped_leaf = false
 	gm.equipped_ice = false
+	gm.equipped_companions = {}
 	gm.cat_color = Color.WHITE
 	gm.has_completed_tier_1_mine = false
 	gm.has_completed_tier_2_settlement = false
