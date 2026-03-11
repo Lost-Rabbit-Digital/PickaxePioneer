@@ -76,7 +76,7 @@ func _physics_process(delta: float) -> void:
 		var magnet_range := GameManager.get_magnet_range()
 		if magnet_range > 0.0 and dist_to_player < magnet_range:
 			if not GameManager.is_inventory_full():
-				var dir := (players[0].global_position - global_position).normalized()
+				var dir: Vector2 = (players[0].global_position - global_position).normalized()
 				velocity = dir * MAGNET_SPEED
 				is_settled = false
 				collision_layer = 4
