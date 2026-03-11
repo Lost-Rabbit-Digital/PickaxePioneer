@@ -29,26 +29,28 @@ const CAT_MAX_MINING: int = 3
 const CAT_MAX_COLLECTING: int = 3
 
 # Smeltery constants (kept here as they're only used by this system)
-const SMELTERY_ORE_GROUPS_ORDER: Array = ["copper", "iron", "gold", "gem"]
+const SMELTERY_ORE_GROUPS_ORDER: Array = ["coal", "copper", "iron", "gold", "diamond"]
 const SMELTERY_ORE_GROUP_TILES: Dictionary = {
-	"copper": [3, 4],   # ORE_COPPER, ORE_COPPER_DEEP
-	"iron":   [5, 6],
-	"gold":   [7, 8],
-	"gem":    [9, 10],
+	"coal":    [3],   # ORE_COAL
+	"copper":  [4],   # ORE_COPPER
+	"iron":    [5],   # ORE_IRON
+	"gold":    [6],   # ORE_GOLD
+	"diamond": [7],   # ORE_DIAMOND
 }
 const SMELTERY_ORES_PER_BAR: int = 3
-## Bar sell values in copper (1500c = 15s, 3000c = 30s, 5000c = 50s, 7500c = 75s).
+## Bar sell values in minerals.
 const SMELTERY_BAR_SELL_VALUES: Dictionary = {
-	"copper": 1500, "iron": 3000, "gold": 5000, "gem": 7500,
+	"coal": 500, "copper": 1500, "iron": 3000, "gold": 5000, "diamond": 8000,
 }
 const SMELTERY_BAR_NAMES: Dictionary = {
-	"copper": "Lunar Bar", "iron": "Meteor Bar", "gold": "Star Bar", "gem": "Cosmic Bar",
+	"coal": "Coal Brick", "copper": "Lunar Bar", "iron": "Meteor Bar", "gold": "Star Bar", "diamond": "Cosmic Bar",
 }
 const SMELTERY_GROUP_COLORS: Dictionary = {
-	"copper": Color(0.90, 0.60, 0.25),
-	"iron":   Color(0.90, 0.45, 0.70),
-	"gold":   Color(0.85, 0.80, 1.00),
-	"gem":    Color(0.20, 0.90, 0.95),
+	"coal":    Color(0.25, 0.25, 0.28),
+	"copper":  Color(0.90, 0.60, 0.25),
+	"iron":    Color(0.65, 0.68, 0.75),
+	"gold":    Color(1.00, 0.80, 0.10),
+	"diamond": Color(0.60, 0.90, 1.00),
 }
 
 const VW: int = 1280

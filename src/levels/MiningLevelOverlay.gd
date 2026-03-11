@@ -18,14 +18,11 @@ const _T_UPGRADE_STATION  = 25
 const _T_SMELTERY_STATION = 26
 const _T_CAT_TAVERN       = 28
 const _T_LADDER           = 27
-const _T_ORE_COPPER       = 3
-const _T_ORE_COPPER_DEEP  = 4
+const _T_ORE_COAL         = 3
+const _T_ORE_COPPER       = 4
 const _T_ORE_IRON         = 5
-const _T_ORE_IRON_DEEP    = 6
-const _T_ORE_GOLD         = 7
-const _T_ORE_GOLD_DEEP    = 8
-const _T_ORE_GEM          = 9
-const _T_ORE_GEM_DEEP     = 10
+const _T_ORE_GOLD         = 6
+const _T_ORE_DIAMOND      = 7
 const _T_ENERGY_NODE      = 17
 const _T_ENERGY_NODE_FULL = 18
 
@@ -188,10 +185,10 @@ func _draw() -> void:
 		for sc in range(maxi(min_col, cx - scan_r), mini(max_col + 1, cx + scan_r + 1)):
 			for sr in range(maxi(min_row, cy - scan_r), mini(max_row + 1, cy + scan_r + 1)):
 				var stile: int = grid[sc][sr]
-				if stile != _T_ORE_COPPER and stile != _T_ORE_COPPER_DEEP \
-				and stile != _T_ORE_IRON and stile != _T_ORE_IRON_DEEP \
-				and stile != _T_ORE_GOLD and stile != _T_ORE_GOLD_DEEP \
-				and stile != _T_ORE_GEM and stile != _T_ORE_GEM_DEEP \
+				if stile != _T_ORE_COAL and stile != _T_ORE_COPPER \
+				and stile != _T_ORE_IRON \
+				and stile != _T_ORE_GOLD \
+				and stile != _T_ORE_DIAMOND \
 				and stile != _T_ENERGY_NODE and stile != _T_ENERGY_NODE_FULL:
 					continue
 				var dist := Vector2(sc - cx, sr - cy).length()
@@ -203,12 +200,14 @@ func _draw() -> void:
 					continue
 				var glow_color := Color(0.20, 1.0, 0.40, glow_alpha)
 				if GameManager.mineral_sense_level >= 2:
-					if stile == _T_ORE_GEM or stile == _T_ORE_GEM_DEEP:
+					if stile == _T_ORE_DIAMOND:
 						glow_color = Color(0.10, 0.90, 1.00, glow_alpha)
-					elif stile == _T_ORE_GOLD or stile == _T_ORE_GOLD_DEEP:
+					elif stile == _T_ORE_GOLD:
 						glow_color = Color(1.00, 0.85, 0.10, glow_alpha)
-					elif stile == _T_ORE_IRON or stile == _T_ORE_IRON_DEEP:
+					elif stile == _T_ORE_IRON:
 						glow_color = Color(0.65, 0.65, 1.00, glow_alpha)
+					elif stile == _T_ORE_COPPER:
+						glow_color = Color(0.90, 0.60, 0.25, glow_alpha)
 					elif stile == _T_ENERGY_NODE or stile == _T_ENERGY_NODE_FULL:
 						glow_color = Color(0.30, 1.00, 0.30, glow_alpha)
 				draw_rect(Rect2(sc * CELL_SIZE, sr * CELL_SIZE, CELL_SIZE, CELL_SIZE), glow_color)
