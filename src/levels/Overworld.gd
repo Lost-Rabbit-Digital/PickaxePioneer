@@ -113,6 +113,8 @@ func _ready() -> void:
 	_modal = preload("res://src/ui/LevelInfoModal.tscn").instantiate()
 	add_child(_modal)
 	_modal.confirmed.connect(_on_modal_confirmed)
+	_modal.travel_confirmed.connect(_on_modal_travel_confirmed)
+	_modal.cancelled.connect(_on_modal_cancelled)
 
 	# Arrange nodes - restore saved positions or generate fresh neural network layout
 	# Check for current layout nodes (MineNode1/MineNode2) instead of legacy MineNode3
@@ -671,20 +673,35 @@ func _on_node_clicked(node: MapNode) -> void:
 		caravan.arrived.disconnect(_on_caravan_arrived)
 
 	if node == current_node:
+		# Clear any pending travel selection highlight before showing enter modal
+		if _pending_node and _pending_node != current_node:
+			_pending_node.highlight(false)
+		_pending_node = null
 		_enter_node(node)
 		return
 
-	# Hide the modal while the caravan is in transit
-	_modal.hide()
+	# Show travel modal — caravan only moves after the player confirms "Travel"
+	_pending_node = node
+	node.highlight(true)
+	_modal.show_for_node(node, true)
 
-	# Find shortest path through the graph so the caravan walks each segment
+func _on_caravan_arrived() -> void:
+	caravan.set_map_node(current_node)
+	if _pending_node:
+		_enter_node(_pending_node)
+		_pending_node = null
+
+func _on_modal_travel_confirmed(node: MapNode) -> void:
+	# Player confirmed "Travel" — start caravan movement toward the selected node
+	if caravan.arrived.is_connected(_on_caravan_arrived):
+		caravan.arrived.disconnect(_on_caravan_arrived)
+
 	var path := _find_path(current_node, node)
 
 	current_node.highlight(false)
 	current_node = node
-	current_node.highlight(true)
+	# node is already highlighted from the selection step in _on_node_clicked
 
-	# Skip the first node (caravan is already there); collect waypoint positions
 	var waypoints: Array[Vector2] = []
 	for i in range(1, path.size()):
 		waypoints.append(path[i].position)
@@ -701,11 +718,11 @@ func _on_node_clicked(node: MapNode) -> void:
 		rpc_sync_ship_travel.rpc_id(NetworkManager.guest_peer_id,
 				caravan.position.x, caravan.position.y, flat, node.name)
 
-func _on_caravan_arrived() -> void:
-	caravan.set_map_node(current_node)
-	if _pending_node:
-		_enter_node(_pending_node)
-		_pending_node = null
+func _on_modal_cancelled() -> void:
+	# Player dismissed the travel modal — remove the selection highlight
+	if _pending_node and _pending_node != current_node:
+		_pending_node.highlight(false)
+	_pending_node = null
 
 func _on_caravan_movement_started() -> void:
 	_camera_follow_caravan = true
