@@ -2,10 +2,9 @@ class_name InventoryScreen
 extends CanvasLayer
 
 # Inventory overlay — toggled with I key during a mining run.
-# Shows three sections:
+# Shows two sections:
 #   1. Inventory Slot Grid  — tool items (pickaxe, ladder) + mined ore, with tooltips and drag
 #   2. Equipment            — pelt / paws / claws / whiskers upgrade levels
-#   3. Artifacts            — active run-buff items from the Wandering Trader
 
 # Ore display order (matches terrain depth: shallow → deep)
 # Textures and colors must match MiningLevel.TILE_TEXTURE_PATHS and TILE_COLORS exactly.
@@ -23,15 +22,6 @@ const ORE_ORDER: Array = [
 	{"tile": 9,  "name": "Cosmic Gem",        "tex": "res://assets/blocks/stone_generic_ore_crystalline.png","color": Color(0.20, 0.90, 0.95)},
 	{"tile": 10, "name": "Deep Cosmic Gem",   "tex": "res://assets/blocks/stone_generic_ore_crystalline.png","color": Color(0.10, 0.80, 0.85)},
 ]
-
-# Artifact plant icons: one distinct plant per trader item key
-const ARTIFACT_DEFS: Dictionary = {
-	"energy":    {"label": "Energy Cache",     "desc": "+50 Energy",               "plant": "res://assets/blocks/plants/cattail.png",       "color": Color(0.20, 0.90, 0.20)},
-	"repair":  {"label": "Pelt Patch",     "desc": "Restored 1 HP",          "plant": "res://assets/blocks/plants/aloe.png",           "color": Color(0.85, 0.08, 0.08)},
-	"shroom":  {"label": "Mining Shroom",  "desc": "x2 Ore Yield",           "plant": "res://assets/blocks/plants/mushroom_brown.png", "color": Color(0.50, 0.90, 0.20)},
-	"compass": {"label": "Lucky Compass",  "desc": "x2 Lucky Strike",        "plant": "res://assets/blocks/plants/dandelion.png",      "color": Color(1.00, 0.90, 0.10)},
-	"map":     {"label": "Ancient Map",    "desc": "x2 Sonar Radius",        "plant": "res://assets/blocks/plants/fern.png",           "color": Color(0.20, 0.90, 1.00)},
-}
 
 # Tool items that occupy dedicated slots at the front of the inventory grid.
 # These are always present; the pickaxe is a usable tool and the ladder is a placeable tool.
@@ -102,9 +92,6 @@ var _slot_order: Array = []
 
 # Cached open() args so _do_slot_swap can trigger a rebuild without MiningLevel.
 var _last_ore_counts: Dictionary = {}
-var _last_shroom_charges: int = 0
-var _last_lucky_compass: bool = false
-var _last_ancient_map: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -290,13 +277,10 @@ func _border_rects(x: int, y: int, w: int, h: int, t: int) -> Array:
 	]
 
 # Called by MiningLevel to open the screen and pass current run data.
-func open(ore_counts: Dictionary, shroom_charges: int, lucky_compass: bool, ancient_map: bool) -> void:
+func open(ore_counts: Dictionary) -> void:
 	_last_ore_counts = ore_counts
-	_last_shroom_charges = shroom_charges
-	_last_lucky_compass = lucky_compass
-	_last_ancient_map = ancient_map
 	_slot_order.clear()  # Reset arrangement each fresh open (ore stacks may have changed)
-	_rebuild_content(ore_counts, shroom_charges, lucky_compass, ancient_map)
+	_rebuild_content(ore_counts)
 	show()
 	get_tree().paused = true
 
@@ -315,7 +299,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 			_end_drag()
 
-func _rebuild_content(ore_counts: Dictionary, shroom_charges: int, lucky_compass: bool, ancient_map: bool) -> void:
+func _rebuild_content(ore_counts: Dictionary) -> void:
 	_hide_tooltip()
 	_end_drag()
 
@@ -345,11 +329,6 @@ func _rebuild_content(ore_counts: Dictionary, shroom_charges: int, lucky_compass
 	eq_y += 4
 	eq_y = _draw_equipment(_content_root, 0, eq_y, eq_col_w)
 	eq_y = _draw_money(_content_root, 0, eq_y + 8, eq_col_w)
-	eq_y = _draw_section_header(_content_root, 0, eq_y + 8, eq_col_w, "Run Buffs",
-		Color(0.55, 0.90, 0.45))
-	eq_y += 4
-	eq_y = _draw_artifacts(_content_root, 0, eq_y, eq_col_w,
-		shroom_charges, lucky_compass, ancient_map)
 
 	eq_y = _draw_section_header(_content_root, 0, eq_y + 8, eq_col_w, "Trinkets",
 		Color(0.80, 0.55, 1.00))
@@ -781,7 +760,7 @@ func _do_slot_swap(from_idx: int, to_idx: int) -> void:
 	var tmp: Dictionary = _slot_order[from_idx]
 	_slot_order[from_idx] = _slot_order[to_idx]
 	_slot_order[to_idx] = tmp
-	_rebuild_content(_last_ore_counts, _last_shroom_charges, _last_lucky_compass, _last_ancient_map)
+	_rebuild_content(_last_ore_counts)
 
 func _slot_border_rects(x: int, y: int, w: int, h: int, t: int) -> Array:
 	return [
@@ -939,69 +918,7 @@ func _draw_money(parent: Control, x: int, y: int, w: int) -> int:
 	run_lbl.modulate = Color(0.75, 0.70, 0.45)
 	parent.add_child(run_lbl)
 
-	var gem_lbl := Label.new()
-	gem_lbl.text = "Gems: %d" % GameManager.gem_count
-	gem_lbl.position = Vector2(x + 2, y + 42)
-	gem_lbl.add_theme_font_size_override("font_size", 13)
-	gem_lbl.modulate = Color(0.20, 0.90, 0.90)
-	parent.add_child(gem_lbl)
-
-	return y + 62
-
-func _draw_artifacts(parent: Control, x: int, y: int, w: int,
-		shroom_charges: int, lucky_compass: bool, ancient_map: bool) -> int:
-
-	# Build list of currently active artifacts
-	var active: Array = []
-	if shroom_charges > 0:
-		var def := ARTIFACT_DEFS["shroom"].duplicate()
-		def["desc"] = "%d ores left" % shroom_charges
-		active.append(def)
-	if lucky_compass:
-		active.append(ARTIFACT_DEFS["compass"])
-	if ancient_map:
-		active.append(ARTIFACT_DEFS["map"])
-
-	if active.is_empty():
-		var none_lbl := Label.new()
-		none_lbl.text = "No active artifacts"
-		none_lbl.position = Vector2(x + 2, y)
-		none_lbl.add_theme_font_size_override("font_size", 12)
-		none_lbl.modulate = Color(0.50, 0.50, 0.55, 0.80)
-		parent.add_child(none_lbl)
-		return y + 22
-
-	for art in active:
-		var tex: Texture2D = load(art["plant"]) as Texture2D
-		if tex:
-			var icon := TextureRect.new()
-			icon.texture = tex
-			icon.position = Vector2(x + 2, y + 2)
-			icon.size = Vector2(ICON_SZ, ICON_SZ)
-			icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-			parent.add_child(icon)
-
-		var name_lbl := Label.new()
-		name_lbl.text = art["label"]
-		name_lbl.position = Vector2(x + ICON_SZ + 8, y + 2)
-		name_lbl.custom_minimum_size = Vector2(w - ICON_SZ - 10, 20)
-		name_lbl.add_theme_font_size_override("font_size", 13)
-		name_lbl.modulate = art["color"]
-		parent.add_child(name_lbl)
-
-		var desc_lbl := Label.new()
-		desc_lbl.text = art["desc"]
-		desc_lbl.position = Vector2(x + ICON_SZ + 8, y + 22)
-		desc_lbl.custom_minimum_size = Vector2(w - ICON_SZ - 10, 18)
-		desc_lbl.add_theme_font_size_override("font_size", 11)
-		desc_lbl.modulate = Color(0.75, 0.75, 0.80)
-		parent.add_child(desc_lbl)
-
-		y += ROW_H + 2
-
-	return y
+	return y + 42
 
 func _draw_trinkets(parent: Control, x: int, y: int, w: int) -> int:
 	var equipped := TrinketSystem.get_equipped_ids()
