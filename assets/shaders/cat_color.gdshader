@@ -14,14 +14,14 @@ void fragment() {
 	vec4 tex = texture(TEXTURE, UV);
 	if (tex.a < 0.01) {
 		COLOR = vec4(0.0);
-		return;
-	}
-	float dist = length(tex.rgb - OUTLINE_SOURCE);
-	if (dist < OUTLINE_THRESHOLD) {
-		// Outline pixel: replace with chosen outline colour, preserve sprite alpha
-		COLOR = vec4(outline_color.rgb, tex.a * outline_color.a);
 	} else {
-		// Non-outline pixel: multiply tint (same as modulate)
-		COLOR = tex * base_color;
+		float dist = length(tex.rgb - OUTLINE_SOURCE);
+		if (dist < OUTLINE_THRESHOLD) {
+			// Outline pixel: replace with chosen outline colour, preserve sprite alpha
+			COLOR = vec4(outline_color.rgb, tex.a * outline_color.a);
+		} else {
+			// Non-outline pixel: multiply tint (same as modulate)
+			COLOR = tex * base_color;
+		}
 	}
 }
