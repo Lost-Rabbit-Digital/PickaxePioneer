@@ -56,32 +56,23 @@ const SLOT_GAP: int   = 4    # gap between cells
 const SLOT_COLS: int  = 10   # columns in the slot grid
 const TOOL_SLOT_COUNT: int = 2  # Pickaxe slot + Ladder slot
 
-var _bg: ColorRect
-var _title: Label
-var _close_hint: Label
-
-# Sections rebuilt each time the screen opens
-var _content_root: Control
+# Scene node references (defined in InventoryScreen.tscn)
+@onready var _content_root: Control = $ContentRoot
+@onready var _tooltip_root: Control = $Tooltip
+@onready var _tooltip_name_lbl: Label = $Tooltip/TooltipName
+@onready var _tooltip_type_lbl: Label = $Tooltip/TooltipType
+@onready var _tooltip_stat_lbl: Label = $Tooltip/TooltipStat
+@onready var _tooltip_desc_lbl: Label = $Tooltip/TooltipDesc
+@onready var _drag_ghost: Control = $DragGhost
+@onready var _drag_ghost_bg: ColorRect = $DragGhost/DragGhostBg
+@onready var _drag_ghost_icon_root: Control = $DragGhost/DragGhostIconRoot
 
 # Reference set by MiningLevel when it instantiates this screen
 var mining_level: Node = null
 
 # -------------------------------------------------------------------
-# Tooltip — floating info panel shown when hovering a slot
-# -------------------------------------------------------------------
-var _tooltip_root: Control
-var _tooltip_bg: ColorRect
-var _tooltip_name_lbl: Label
-var _tooltip_type_lbl: Label
-var _tooltip_stat_lbl: Label
-var _tooltip_desc_lbl: Label
-
-# -------------------------------------------------------------------
 # Drag ghost — semi-transparent item copy that follows the cursor
 # -------------------------------------------------------------------
-var _drag_ghost: Control
-var _drag_ghost_bg: ColorRect
-var _drag_ghost_icon_root: Control  # Only this container's children are cleared between drags
 var _is_dragging: bool = false
 var _drag_slot_data: Dictionary = {}
 var _drag_source_idx: int = -1
@@ -96,9 +87,6 @@ var _last_ore_counts: Dictionary = {}
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	hide()
-	_build_frame()
-	_build_tooltip()
-	_build_drag_ghost()
 
 func _get_pickaxe_texture() -> Texture2D:
 	var tileset = load(ITEMS_TILESET_PATH) as TileSet
@@ -121,160 +109,6 @@ func _process(_delta: float) -> void:
 	if _is_dragging and _drag_ghost.visible:
 		var mp: Vector2 = get_viewport().get_mouse_position()
 		_drag_ghost.position = mp + Vector2(10, 10)
-
-func _build_frame() -> void:
-	var vp_w: int = 1280
-	var vp_h: int = 720
-	var px: int = (vp_w - PANEL_W) / 2
-	var py: int = (vp_h - PANEL_H) / 2
-
-	# Dark semi-transparent backdrop
-	var backdrop := ColorRect.new()
-	backdrop.color = Color(0.0, 0.0, 0.0, 0.65)
-	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(backdrop)
-
-	# Main panel
-	_bg = ColorRect.new()
-	_bg.color = Color(0.10, 0.09, 0.12, 0.96)
-	_bg.position = Vector2(px, py)
-	_bg.size = Vector2(PANEL_W, PANEL_H)
-	add_child(_bg)
-
-	# Panel border (drawn as 4 thin rects)
-	var border_color := Color(0.50, 0.40, 0.65, 0.80)
-	for side in _border_rects(px, py, PANEL_W, PANEL_H, 2):
-		var br := ColorRect.new()
-		br.color = border_color
-		br.position = side[0]
-		br.size = side[1]
-		add_child(br)
-
-	# Title
-	_title = Label.new()
-	_title.text = "INVENTORY"
-	_title.position = Vector2(px + 20, py + 12)
-	_title.custom_minimum_size = Vector2(PANEL_W - 40, 28)
-	_title.add_theme_font_size_override("font_size", 20)
-	_title.modulate = Color(0.85, 0.70, 1.00)
-	add_child(_title)
-
-	# Separator under title
-	var sep := ColorRect.new()
-	sep.color = Color(0.50, 0.40, 0.65, 0.50)
-	sep.position = Vector2(px + 16, py + 44)
-	sep.size = Vector2(PANEL_W - 32, 1)
-	add_child(sep)
-
-	# Close hint
-	_close_hint = Label.new()
-	_close_hint.text = "[I] Close"
-	_close_hint.position = Vector2(px + PANEL_W - 100, py + 14)
-	_close_hint.add_theme_font_size_override("font_size", 13)
-	_close_hint.modulate = Color(0.55, 0.55, 0.65, 0.90)
-	add_child(_close_hint)
-
-	# Scrollable content area
-	_content_root = Control.new()
-	_content_root.position = Vector2(px + 16, py + 52)
-	_content_root.size = Vector2(PANEL_W - 32, PANEL_H - 68)
-	_content_root.clip_contents = true
-	add_child(_content_root)
-
-func _build_tooltip() -> void:
-	_tooltip_root = Control.new()
-	_tooltip_root.visible = false
-	_tooltip_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_tooltip_root)
-
-	# Background
-	_tooltip_bg = ColorRect.new()
-	_tooltip_bg.color = Color(0.07, 0.06, 0.11, 0.97)
-	_tooltip_bg.size = Vector2(230, 108)
-	_tooltip_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_tooltip_root.add_child(_tooltip_bg)
-
-	# Border around tooltip
-	var bc := Color(0.60, 0.50, 0.75, 0.80)
-	for side in _border_rects(0, 0, 230, 108, 2):
-		var br := ColorRect.new()
-		br.color = bc
-		br.position = side[0]
-		br.size = side[1]
-		br.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_tooltip_root.add_child(br)
-
-	_tooltip_name_lbl = Label.new()
-	_tooltip_name_lbl.position = Vector2(10, 7)
-	_tooltip_name_lbl.custom_minimum_size = Vector2(210, 20)
-	_tooltip_name_lbl.add_theme_font_size_override("font_size", 14)
-	_tooltip_name_lbl.modulate = Color(1.0, 0.95, 0.70)
-	_tooltip_name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_tooltip_root.add_child(_tooltip_name_lbl)
-
-	_tooltip_type_lbl = Label.new()
-	_tooltip_type_lbl.position = Vector2(10, 26)
-	_tooltip_type_lbl.custom_minimum_size = Vector2(210, 16)
-	_tooltip_type_lbl.add_theme_font_size_override("font_size", 11)
-	_tooltip_type_lbl.modulate = Color(0.55, 0.85, 0.55)
-	_tooltip_type_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_tooltip_root.add_child(_tooltip_type_lbl)
-
-	_tooltip_stat_lbl = Label.new()
-	_tooltip_stat_lbl.position = Vector2(10, 44)
-	_tooltip_stat_lbl.custom_minimum_size = Vector2(210, 18)
-	_tooltip_stat_lbl.add_theme_font_size_override("font_size", 12)
-	_tooltip_stat_lbl.modulate = Color(0.90, 0.85, 0.75)
-	_tooltip_stat_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_tooltip_root.add_child(_tooltip_stat_lbl)
-
-	_tooltip_desc_lbl = Label.new()
-	_tooltip_desc_lbl.position = Vector2(10, 63)
-	_tooltip_desc_lbl.custom_minimum_size = Vector2(210, 40)
-	_tooltip_desc_lbl.add_theme_font_size_override("font_size", 10)
-	_tooltip_desc_lbl.modulate = Color(0.60, 0.60, 0.68)
-	_tooltip_desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_tooltip_desc_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_tooltip_root.add_child(_tooltip_desc_lbl)
-
-func _build_drag_ghost() -> void:
-	_drag_ghost = Control.new()
-	_drag_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_drag_ghost.visible = false
-	_drag_ghost.size = Vector2(SLOT_SIZE, SLOT_SIZE)
-	add_child(_drag_ghost)
-
-	_drag_ghost_bg = ColorRect.new()
-	_drag_ghost_bg.color = Color(0.20, 0.18, 0.26, 0.80)
-	_drag_ghost_bg.position = Vector2.ZERO
-	_drag_ghost_bg.size = Vector2(SLOT_SIZE, SLOT_SIZE)
-	_drag_ghost_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_drag_ghost.add_child(_drag_ghost_bg)
-
-	# Ghost border (permanent frame, not cleared between drags)
-	for side in _slot_border_rects(0, 0, SLOT_SIZE, SLOT_SIZE, 2):
-		var br := ColorRect.new()
-		br.color = Color(0.85, 0.80, 0.40, 0.70)
-		br.position = side[0]
-		br.size = side[1]
-		br.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_drag_ghost.add_child(br)
-
-	# Dedicated container for icon content — cleared on each new drag
-	_drag_ghost_icon_root = Control.new()
-	_drag_ghost_icon_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_drag_ghost_icon_root.position = Vector2.ZERO
-	_drag_ghost_icon_root.size = Vector2(SLOT_SIZE, SLOT_SIZE)
-	_drag_ghost.add_child(_drag_ghost_icon_root)
-
-func _border_rects(x: int, y: int, w: int, h: int, t: int) -> Array:
-	return [
-		[Vector2(x, y),             Vector2(w, t)],      # top
-		[Vector2(x, y + h - t),     Vector2(w, t)],      # bottom
-		[Vector2(x, y),             Vector2(t, h)],      # left
-		[Vector2(x + w - t, y),     Vector2(t, h)],      # right
-	]
 
 # Called by MiningLevel to open the screen and pass current run data.
 func open(ore_counts: Dictionary) -> void:
