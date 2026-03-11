@@ -16,6 +16,24 @@ const ITEM_H: int = 50
 const ITEM_GAP: int = 4
 const ICON_SZ: int = 32
 
+# Minimum player level required to equip each trinket.
+# Trinkets not listed here default to level 1 (always available).
+const UNLOCK_LEVELS: Dictionary = {
+	"paraglider":          1,
+	"jet_boots":           1,
+	"stone_of_regen":      1,
+	"spring_boots":        2,
+	"jumping_bean":        2,
+	"sneakers":            2,
+	"gecko_gloves":        3,
+	"boots_of_sprinting":  3,
+	"cube_of_curing":      4,
+	"scuba_helmet":        4,
+	"magnet":              4,
+	"cosmic_radiation":    5,
+	"curse_of_core":       5,
+}
+
 # Set by MiningLevel after instantiation
 var player: PlayerProbe = null
 
@@ -102,15 +120,17 @@ func _build_ui() -> void:
 
 func _build_trinket_row(id: String, rx: int, ry: int, rw: int) -> void:
 	var def: Dictionary = TrinketSystem.TRINKETS[id]
+	var unlock_level: int = UNLOCK_LEVELS.get(id, 1)
+	var is_locked: bool = GameManager.player_level < unlock_level
 
 	# Row background
 	var row_bg := ColorRect.new()
-	row_bg.color = Color(0.13, 0.11, 0.17, 1.0)
+	row_bg.color = Color(0.13, 0.11, 0.17, 1.0) if not is_locked else Color(0.08, 0.07, 0.10, 1.0)
 	row_bg.position = Vector2(rx, ry)
 	row_bg.size = Vector2(rw, ITEM_H)
 	add_child(row_bg)
 
-	# Row border (colored when equipped)
+	# Row border (colored when equipped, dimmed when locked)
 	var row_border := ColorRect.new()
 	row_border.position = Vector2(rx - 1, ry - 1)
 	row_border.size = Vector2(rw + 2, ITEM_H + 2)
@@ -119,15 +139,16 @@ func _build_trinket_row(id: String, rx: int, ry: int, rw: int) -> void:
 	_row_borders[id] = row_border
 
 	# Colored icon square
+	var icon_color: Color = def["color"] if not is_locked else def["color"].darkened(0.60)
 	var icon := ColorRect.new()
-	icon.color = def["color"]
+	icon.color = icon_color
 	icon.position = Vector2(rx + 6, ry + (ITEM_H - ICON_SZ) / 2)
 	icon.size = Vector2(ICON_SZ, ICON_SZ)
 	add_child(icon)
 
 	# Icon inner highlight
 	var icon_hi := ColorRect.new()
-	icon_hi.color = def["color"].lightened(0.40)
+	icon_hi.color = icon_color.lightened(0.40)
 	icon_hi.position = Vector2(rx + 6, ry + (ITEM_H - ICON_SZ) / 2)
 	icon_hi.size = Vector2(ICON_SZ * 0.4, ICON_SZ * 0.4)
 	add_child(icon_hi)
@@ -138,25 +159,29 @@ func _build_trinket_row(id: String, rx: int, ry: int, rw: int) -> void:
 	name_lbl.position = Vector2(rx + ICON_SZ + 14, ry + 5)
 	name_lbl.custom_minimum_size = Vector2(rw - ICON_SZ - 104, 18)
 	name_lbl.add_theme_font_size_override("font_size", 13)
-	name_lbl.modulate = Color(1.0, 0.90, 0.70)
+	name_lbl.modulate = Color(1.0, 0.90, 0.70) if not is_locked else Color(0.45, 0.40, 0.48)
 	add_child(name_lbl)
 
-	# Description label
+	# Description or unlock hint
 	var desc_lbl := Label.new()
-	desc_lbl.text = def["desc"]
+	desc_lbl.text = def["desc"] if not is_locked else ("Reach Lv. %d to unlock" % unlock_level)
 	desc_lbl.position = Vector2(rx + ICON_SZ + 14, ry + 26)
 	desc_lbl.custom_minimum_size = Vector2(rw - ICON_SZ - 104, 18)
 	desc_lbl.add_theme_font_size_override("font_size", 10)
-	desc_lbl.modulate = Color(0.60, 0.60, 0.68)
+	desc_lbl.modulate = Color(0.60, 0.60, 0.68) if not is_locked else Color(0.45, 0.42, 0.50)
 	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(desc_lbl)
 
-	# Toggle button
+	# Toggle button (disabled when locked)
 	var btn := Button.new()
 	btn.position = Vector2(rx + rw - 86, ry + (ITEM_H - 30) / 2)
 	btn.size = Vector2(82, 30)
 	btn.add_theme_font_size_override("font_size", 12)
-	btn.pressed.connect(_on_toggle_trinket.bind(id))
+	if is_locked:
+		btn.text = "Lv. %d" % unlock_level
+		btn.disabled = true
+	else:
+		btn.pressed.connect(_on_toggle_trinket.bind(id))
 	add_child(btn)
 	_toggle_btns[id] = btn
 
@@ -173,8 +198,15 @@ func _on_toggle_trinket(id: String) -> void:
 func _refresh_rows() -> void:
 	var equipped_color := Color(0.25, 0.55, 0.25, 0.90)
 	var unequipped_color := Color(0.28, 0.24, 0.36, 0.55)
+	var locked_color := Color(0.20, 0.18, 0.24, 0.55)
 
 	for id in TrinketSystem.TRINKETS:
+		var unlock_level: int = UNLOCK_LEVELS.get(id, 1)
+		var is_locked: bool = GameManager.player_level < unlock_level
+		if is_locked:
+			if _row_borders.has(id):
+				_row_borders[id].color = locked_color
+			continue
 		var is_eq: bool = TrinketSystem.is_equipped(id)
 		if _toggle_btns.has(id):
 			_toggle_btns[id].text = "UNEQUIP" if is_eq else "EQUIP"

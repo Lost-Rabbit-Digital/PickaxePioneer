@@ -235,6 +235,9 @@ func bank_currency() -> void:
 	coins += run_coins
 	run_coins = 0
 	EventBus.coins_changed.emit(0)
+	# Always persist XP after banking — level-up saves already fire inside
+	# add_xp(), but sub-level progress would otherwise be lost until next load.
+	SaveManager.save_active_slot()
 
 func change_state(new_state: GameState) -> void:
 	current_state = new_state

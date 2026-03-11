@@ -27,17 +27,23 @@ const VH := 720.0
 const PANEL_W := 540.0
 const ROW_H := 38.0
 const HEADER_H := 68.0
-const FOOTER_H := 96.0
+const FOOTER_H := 132.0
 
 # Animation state
 var _panel_node: Control = null
 var _row_groups: Array = []     # Array of Arrays — each inner array holds Control nodes for one row
 var _total_label: Label = null
+var _xp_label: Label = null
 var _final_total: int = 0
 var _border: ColorRect = null
 
 var _narrow_escape: bool = false
 var _escape_bonus: int = 0
+
+# XP preview — computed before bank_currency() is called so we can display it
+var _pending_xp: int = 0
+var _pending_levels: int = 0
+var _level_before: int = 1
 
 func _ready() -> void:
 	# Near-miss escape reward: +10% minerals if exiting with < 10% energy
@@ -47,6 +53,16 @@ func _ready() -> void:
 		_escape_bonus = maxi(1, GameManager.run_coins / 10)
 		GameManager.run_coins += _escape_bonus
 	_final_total = GameManager.run_coins
+	# Compute XP that will be earned when the player banks these minerals
+	_level_before = GameManager.player_level
+	_pending_xp = _final_total / 100
+	if _pending_xp > 0:
+		var sim_xp: int = GameManager.player_xp + _pending_xp
+		var sim_level: int = GameManager.player_level
+		while sim_xp >= PerkSystem.xp_for_next_level(sim_level):
+			sim_xp -= PerkSystem.xp_for_next_level(sim_level)
+			sim_level += 1
+		_pending_levels = sim_level - GameManager.player_level
 	_build_ui()
 	_play_intro()
 
@@ -206,6 +222,28 @@ func _build_ui() -> void:
 	_total_label.modulate.a = 0.0
 	_panel_node.add_child(_total_label)
 
+	# XP earned line
+	_xp_label = Label.new()
+	var xp_text: String = ""
+	if _pending_xp > 0:
+		xp_text = "+%d XP  (Lv. %d" % [_pending_xp, _level_before]
+		if _pending_levels > 0:
+			xp_text += " → Lv. %d  Level Up!" % (_level_before + _pending_levels)
+		else:
+			xp_text += ")"
+	else:
+		xp_text = "No minerals banked — no XP earned"
+	_xp_label.text = xp_text
+	_xp_label.position = Vector2(px, y + 50.0)
+	_xp_label.size = Vector2(PANEL_W, 28.0)
+	_xp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_xp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_xp_label.add_theme_font_size_override("font_size", 15)
+	var xp_color := Color(0.45, 0.90, 0.55) if _pending_levels > 0 else Color(0.60, 0.80, 1.00)
+	_xp_label.add_theme_color_override("font_color", xp_color)
+	_xp_label.modulate.a = 0.0
+	_panel_node.add_child(_xp_label)
+
 	# Two buttons: Dive Again (left) + Return to Base (right)
 	var btn_y := py + panel_h - 52.0
 	var btn_w := 200.0
@@ -260,6 +298,11 @@ func _play_intro() -> void:
 			0.0, float(_final_total), minf(0.6, float(_final_total) * 0.00002))
 	else:
 		_total_label.text = "Total:  0c"
+
+	# 5. Fade in XP line shortly after total
+	var xp_tween := create_tween()
+	xp_tween.tween_interval(count_delay + 0.35)
+	xp_tween.tween_property(_xp_label, "modulate:a", 1.0, 0.20)
 
 # ---------------------------------------------------------------------------
 # Helpers
