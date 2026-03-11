@@ -32,6 +32,9 @@ const SWATCH_FONT_SIZE: int = 12
 
 const DEFAULT_OUTLINE: Color = Color("2b222a")
 
+# Emitted after any colour change so external scenes (e.g. MainMenu) can react
+signal color_changed
+
 # Set by MiningLevel after the scene is ready
 var player: PlayerProbe = null
 
@@ -125,6 +128,7 @@ func _on_base_swatch_pressed(index: int) -> void:
 	_update_preview_shader()
 	_apply_to_player()
 	_refresh_swatch_borders(_base_swatch_buttons, _selected_base_index)
+	color_changed.emit()
 
 func _on_outline_swatch_pressed(index: int) -> void:
 	_selected_outline_index = index
@@ -133,6 +137,7 @@ func _on_outline_swatch_pressed(index: int) -> void:
 	_update_preview_shader()
 	_apply_to_player()
 	_refresh_swatch_borders(_outline_swatch_buttons, _selected_outline_index)
+	color_changed.emit()
 
 func _on_reset() -> void:
 	_selected_base_index = -1
@@ -144,6 +149,7 @@ func _on_reset() -> void:
 	_apply_to_player()
 	_refresh_swatch_borders(_base_swatch_buttons, _selected_base_index)
 	_refresh_swatch_borders(_outline_swatch_buttons, _selected_outline_index)
+	color_changed.emit()
 
 func _update_preview_shader() -> void:
 	if _preview_sprite and _preview_sprite.material is ShaderMaterial:
