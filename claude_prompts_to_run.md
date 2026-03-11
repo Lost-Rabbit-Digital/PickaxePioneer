@@ -34,6 +34,8 @@ Make the background layer random voronoi patterns of dirt and stone and other ti
 Tink sound when you cannot mine a block
 
 
+Fix mixels on chest
+
 
 
 Add the share a screenshot on our discord with discord link at the end of each run

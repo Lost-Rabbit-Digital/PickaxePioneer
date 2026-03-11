@@ -859,12 +859,12 @@ func _populate_visual_tilemaplayers() -> void:
 			_set_visual_cell(col, row)
 
 ## Fill the BackgroundTileMapLayer with sky, dirt, and stone tiles.
-## Rows 0..(SURFACE_ROWS-1): sky tile atlas (6, 7).
+## Rows 0..(SURFACE_ROWS-1): sky tile atlas (9, 8).
 ## Rows SURFACE_ROWS..(SURFACE_ROWS+9): dirt background atlas (1, 2).
 ## Rows (SURFACE_ROWS+10)..end: stone background atlas (7, 7).
 func _populate_background_tilemaplayer() -> void:
 	_background_layer.clear()
-	const BG_SKY_ATLAS   := Vector2i(6, 7)
+	const BG_SKY_ATLAS   := Vector2i(9, 8)
 	const BG_DIRT_ATLAS  := Vector2i(1, 2)
 	const BG_STONE_ATLAS := Vector2i(7, 7)
 	const DIRT_DEPTH: int = 10
