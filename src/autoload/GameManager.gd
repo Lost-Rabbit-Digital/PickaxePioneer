@@ -246,6 +246,11 @@ func start_game() -> void:
 			ladder_climb_speed_level, mining_reach_level,
 			carapace_gem_socketed, legs_gem_socketed, mandibles_gem_socketed, sense_gem_socketed,
 			warp_drive_built, cargo_bay_built, long_scanner_built, gem_refinery_built, trade_amplifier_built)
+	# Show narrative intro on first new game (singleplayer only)
+	if not has_completed_first_run and not has_seen_overworld_hint and not NetworkManager.is_multiplayer_session:
+		var intro := IntroSequence.new()
+		get_tree().root.add_child(intro)
+		await intro.finished
 	load_overworld()
 
 ## Called on guest by host to apply kit/upgrade state before the game starts.
