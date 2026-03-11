@@ -144,6 +144,7 @@ const FOLIAGE_WEB_ATLAS_COORD: Vector2i = Vector2i(7, 4)
 
 var _blocks_atlas: Texture2D = null
 var _foliage_atlas: Texture2D = null
+var _noise: FastNoiseLite = null
 
 # 2D tile grid (row-major): tile_grid[row][col] = TileType int
 var tile_grid: Array = []
@@ -171,6 +172,10 @@ func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_blocks_atlas  = load("res://assets/blocks/blocks_atlas.png") as Texture2D
 	_foliage_atlas = load("res://assets/blocks/plants/foliage_atlas.png") as Texture2D
+	_noise = FastNoiseLite.new()
+	_noise.seed = randi()
+	_noise.noise_type = FastNoiseLite.TYPE_VALUE
+	_noise.frequency = 0.08
 	_init_tile_grid()
 	_pick_random_direction()
 
@@ -474,10 +479,12 @@ func _apply_zoom(delta_zoom: float) -> void:
 	scroll_offset += vp_center * (1.0 / old_zoom - 1.0 / zoom_level)
 
 func _wrap_scroll() -> void:
+	# Wrap horizontally only — vertical is unclamped so sky above and
+	# terrain below extend infinitely without visible seams.
 	var gw: float = float(GRID_COLS * CELL_SIZE)
-	var gh: float = float(GRID_ROWS * CELL_SIZE)
 	scroll_offset.x = fmod(scroll_offset.x, gw)
-	scroll_offset.y = fmod(scroll_offset.y, gh)
+	if scroll_offset.x < 0.0:
+		scroll_offset.x += gw
 
 # ---------------------------------------------------------------------------
 # Rendering
@@ -490,20 +497,18 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, vp_size), Color(0.08, 0.06, 0.04))
 
 	var gw: float = float(GRID_COLS * CELL_SIZE)
-	var gh: float = float(GRID_ROWS * CELL_SIZE)
-
 	var effective_cell: float = float(CELL_SIZE) * zoom_level
 
+	# Horizontal wraps; vertical does NOT wrap — sky above, infinite terrain below.
 	var off_x: float = fmod(scroll_offset.x, gw)
-	var off_y: float = fmod(scroll_offset.y, gh)
 	if off_x < 0.0: off_x += gw
-	if off_y < 0.0: off_y += gh
 
-	var start_col: int = int(off_x / CELL_SIZE)
-	var start_row: int = int(off_y / CELL_SIZE)
+	var start_col: int = int(off_x / float(CELL_SIZE))
+	# Use floor() so negative scroll_offset.y (above the grid) works correctly.
+	var start_row: int = int(floor(scroll_offset.y / float(CELL_SIZE)))
 
 	var pixel_off_x: float = fmod(off_x, float(CELL_SIZE)) * zoom_level
-	var pixel_off_y: float = fmod(off_y, float(CELL_SIZE)) * zoom_level
+	var pixel_off_y: float = (scroll_offset.y - float(start_row) * float(CELL_SIZE)) * zoom_level
 
 	var cols_to_draw: int = int(vp_size.x / effective_cell) + 2
 	var rows_to_draw: int = int(vp_size.y / effective_cell) + 2
@@ -512,7 +517,7 @@ func _draw() -> void:
 		var y: float = screen_row * effective_cell - pixel_off_y
 		if y >= vp_size.y:
 			break
-		var tile_row: int = (start_row + screen_row) % GRID_ROWS
+		var world_row: int = start_row + screen_row
 
 		for screen_col in range(cols_to_draw):
 			var x: float = screen_col * effective_cell - pixel_off_x
@@ -520,18 +525,24 @@ func _draw() -> void:
 				break
 			var tile_col: int = (start_col + screen_col) % GRID_COLS
 
-			# Draw background tile (sky/dirt/stone layer behind foreground)
-			_draw_bg_tile(_bg_atlas_for_row(tile_row), x, y, effective_cell)
+			# Background layer — sky atlas above grass, dirt/stone below.
+			_draw_bg_tile(_bg_atlas_for_world_row(world_row), x, y, effective_cell)
 
-			# Draw terrain tile
-			var tile: int = tile_grid[tile_row][tile_col]
-			if tile != TileType.EMPTY:
-				_draw_tile(tile, x, y, effective_cell)
+			# Terrain tiles only below the surface row.
+			if world_row >= SURFACE_ROWS:
+				var tile: int
+				if world_row < GRID_ROWS:
+					tile = tile_grid[world_row][tile_col]
+				else:
+					tile = _get_infinite_tile(world_row, tile_col)
+				if tile != TileType.EMPTY:
+					_draw_tile(tile, x, y, effective_cell)
 
-			# Draw foliage overlay on top of (or instead of) terrain
-			var fkey := Vector2i(tile_col, tile_row)
-			if foliage_dict.has(fkey):
-				_draw_foliage_tile(foliage_dict[fkey], x, y, effective_cell)
+			# Foliage only for the pre-generated grid rows.
+			if world_row >= 0 and world_row < GRID_ROWS:
+				var fkey := Vector2i(tile_col, world_row)
+				if foliage_dict.has(fkey):
+					_draw_foliage_tile(foliage_dict[fkey], x, y, effective_cell)
 
 ## Draw a single terrain tile sampled from blocks_atlas.png.
 func _draw_tile(tile: int, x: float, y: float, size: float) -> void:
@@ -543,18 +554,35 @@ func _draw_tile(tile: int, x: float, y: float, size: float) -> void:
 	else:
 		draw_rect(tile_rect, TILE_COLORS.get(tile, Color(0.5, 0.5, 0.5)))
 
-## Return the background atlas coord for a given tile_row.
-## Rows 0..(SURFACE_ROWS-1): sky atlas (9, 8).
+## Return the background atlas coord for a given world row.
+## Rows below SURFACE_ROWS (including negative): sky atlas (9, 8).
 ## Rows SURFACE_ROWS..(SURFACE_ROWS+9): dirt atlas (1, 2).
-## Rows (SURFACE_ROWS+10)..end: stone atlas (7, 7).
-func _bg_atlas_for_row(tile_row: int) -> Vector2i:
+## Rows (SURFACE_ROWS+10) and beyond: stone atlas (7, 7).
+func _bg_atlas_for_world_row(world_row: int) -> Vector2i:
 	const BG_DIRT_DEPTH: int = 10
-	if tile_row < SURFACE_ROWS:
+	if world_row < SURFACE_ROWS:
 		return Vector2i(9, 8)
-	elif tile_row < SURFACE_ROWS + BG_DIRT_DEPTH:
+	elif world_row < SURFACE_ROWS + BG_DIRT_DEPTH:
 		return Vector2i(1, 2)
 	else:
 		return Vector2i(7, 7)
+
+## Generate a deterministic underground tile for rows beyond the pre-generated
+## grid using FastNoiseLite — extends terrain infinitely without vertical seams.
+func _get_infinite_tile(world_row: int, col: int) -> int:
+	var r1: float = (_noise.get_noise_2d(float(col) * 0.7, float(world_row) * 0.7) + 1.0) * 0.5
+	var r2: float = (_noise.get_noise_2d(float(col) * 1.4 + 57.3, float(world_row) * 1.4 + 57.3) + 1.0) * 0.5
+	# Depth continues to increase beyond the pre-generated grid.
+	var depth: float = minf(2.0, 1.0 + float(world_row - GRID_ROWS) / float(GRID_ROWS - SURFACE_ROWS))
+	var explosive_bias := (0.04 + depth * 0.10) * 0.45
+	if r1 < explosive_bias * (2.0 / 3.0): return TileType.EXPLOSIVE
+	elif r1 < explosive_bias:              return TileType.EXPLOSIVE_ARMED
+	elif r1 < explosive_bias + 0.015:      return TileType.ENERGY_NODE
+	var stone_chance := 0.10 + depth * 0.50
+	if   r2 < stone_chance * 0.6:  return TileType.STONE_DARK
+	elif r2 < stone_chance:         return TileType.STONE
+	elif r2 < stone_chance + 0.10:  return TileType.DIRT_DARK
+	else:                            return TileType.DIRT
 
 ## Draw a background tile from blocks_atlas.png at reduced brightness (matching
 ## the 0.344 modulate on BackgroundTileMapLayer in MiningLevel).
