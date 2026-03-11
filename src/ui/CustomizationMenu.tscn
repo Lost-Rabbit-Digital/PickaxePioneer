@@ -20,9 +20,9 @@ mouse_filter = 2
 
 [node name="Panel" type="ColorRect" parent="."]
 layout_mode = 0
-offset_left = 330.0
+offset_left = 190.0
 offset_top = 90.0
-offset_right = 950.0
+offset_right = 1090.0
 offset_bottom = 630.0
 color = Color(0.1, 0.09, 0.14, 0.97)
 
@@ -30,7 +30,7 @@ color = Color(0.1, 0.09, 0.14, 0.97)
 layout_mode = 0
 offset_left = 0.0
 offset_top = 0.0
-offset_right = 620.0
+offset_right = 900.0
 offset_bottom = 2.0
 color = Color(0.8, 0.62, 0.22, 0.85)
 
@@ -38,7 +38,7 @@ color = Color(0.8, 0.62, 0.22, 0.85)
 layout_mode = 0
 offset_left = 0.0
 offset_top = 538.0
-offset_right = 620.0
+offset_right = 900.0
 offset_bottom = 540.0
 color = Color(0.8, 0.62, 0.22, 0.85)
 
@@ -52,9 +52,9 @@ color = Color(0.8, 0.62, 0.22, 0.85)
 
 [node name="BorderRight" type="ColorRect" parent="Panel"]
 layout_mode = 0
-offset_left = 618.0
+offset_left = 898.0
 offset_top = 0.0
-offset_right = 620.0
+offset_right = 900.0
 offset_bottom = 540.0
 color = Color(0.8, 0.62, 0.22, 0.85)
 
@@ -70,9 +70,9 @@ modulate = Color(1, 0.82, 0.35, 1)
 
 [node name="CloseHint" type="Label" parent="Panel"]
 layout_mode = 0
-offset_left = 520.0
+offset_left = 790.0
 offset_top = 14.0
-offset_right = 610.0
+offset_right = 892.0
 offset_bottom = 36.0
 text = "[X] Close"
 theme_override_font_sizes/font_size = 13
@@ -82,7 +82,7 @@ modulate = Color(0.55, 0.55, 0.65, 0.9)
 layout_mode = 0
 offset_left = 16.0
 offset_top = 44.0
-offset_right = 604.0
+offset_right = 884.0
 offset_bottom = 45.0
 color = Color(0.8, 0.62, 0.22, 0.4)
 
@@ -119,37 +119,54 @@ text = "Your Cat"
 theme_override_font_sizes/font_size = 13
 modulate = Color(0.7, 0.7, 0.75, 1)
 
-[node name="PaletteLabel" type="Label" parent="Panel"]
+[node name="BasePaletteLabel" type="Label" parent="Panel"]
 layout_mode = 0
 offset_left = 220.0
 offset_top = 58.0
 offset_right = 400.0
 offset_bottom = 80.0
-text = "COLOUR"
+text = "BASE"
 theme_override_font_sizes/font_size = 14
 modulate = Color(0.8, 0.75, 0.9, 1)
 
-[node name="SwatchContainer" type="Control" parent="Panel"]
+[node name="BaseSwatchContainer" type="Control" parent="Panel"]
 layout_mode = 0
 offset_left = 220.0
 offset_top = 84.0
-offset_right = 604.0
+offset_right = 544.0
+offset_bottom = 435.0
+
+[node name="OutlinePaletteLabel" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 560.0
+offset_top = 58.0
+offset_right = 760.0
+offset_bottom = 80.0
+text = "OUTLINE"
+theme_override_font_sizes/font_size = 14
+modulate = Color(0.8, 0.75, 0.9, 1)
+
+[node name="OutlineSwatchContainer" type="Control" parent="Panel"]
+layout_mode = 0
+offset_left = 560.0
+offset_top = 84.0
+offset_right = 884.0
 offset_bottom = 435.0
 
 [node name="ResetButton" type="Button" parent="Panel"]
 layout_mode = 0
-offset_left = 220.0
+offset_left = 390.0
 offset_top = 447.0
-offset_right = 310.0
+offset_right = 510.0
 offset_bottom = 477.0
 text = "RESET"
 theme_override_font_sizes/font_size = 13
 
 [node name="CloseButton" type="Button" parent="Panel"]
 layout_mode = 0
-offset_left = 265.0
+offset_left = 390.0
 offset_top = 494.0
-offset_right = 355.0
+offset_right = 510.0
 offset_bottom = 526.0
 text = "CLOSE"
 theme_override_font_sizes/font_size = 14

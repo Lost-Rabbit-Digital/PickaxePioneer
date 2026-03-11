@@ -196,6 +196,7 @@ func _snapshot_game_manager() -> Dictionary:
 		"equipped_leaf": gm.equipped_leaf,
 		"equipped_ice": gm.equipped_ice,
 		"cat_color": gm.cat_color.to_html(),
+		"cat_outline_color": gm.cat_outline_color.to_html(),
 		"has_completed_tier_1_mine": gm.has_completed_tier_1_mine,
 		"has_completed_tier_2_settlement": gm.has_completed_tier_2_settlement,
 		# Perk tree
@@ -263,6 +264,11 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 		gm.cat_color = Color.from_string(color_html, Color.WHITE)
 	else:
 		gm.cat_color = Color.WHITE
+	var outline_html: String = data.get("cat_outline_color", "")
+	if outline_html != "":
+		gm.cat_outline_color = Color.from_string(outline_html, Color("2b222a"))
+	else:
+		gm.cat_outline_color = Color("2b222a")
 	gm.has_completed_tier_1_mine = data.get("has_completed_tier_1_mine", false)
 	gm.has_completed_tier_2_settlement = data.get("has_completed_tier_2_settlement", false)
 	# Perk tree
@@ -325,6 +331,7 @@ func _reset_game_manager() -> void:
 	gm.equipped_leaf = false
 	gm.equipped_ice = false
 	gm.cat_color = Color.WHITE
+	gm.cat_outline_color = Color("2b222a")
 	gm.has_completed_tier_1_mine = false
 	gm.has_completed_tier_2_settlement = false
 	# Perk tree

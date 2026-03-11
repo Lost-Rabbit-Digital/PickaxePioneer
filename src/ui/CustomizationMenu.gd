@@ -4,7 +4,9 @@ extends Control
 # Customization Menu — toggle with X key during a mining run.
 # Static UI structure lives in CustomizationMenu.tscn (edit it directly in the Godot editor).
 # The colour palette swatches are built dynamically in _ready() from PALETTE.
-# Selecting a colour tints the player sprite via modulate and persists via GameManager.
+# BASE row: tints non-outline pixels (multiply, like modulate).
+# OUTLINE row: replaces the #2B222A outline pixels with the chosen colour.
+# Both values are persisted via GameManager and applied via cat_color.gdshader.
 
 const PALETTE: Array[Color] = [
 	Color("3f4328"), Color("5f7132"), Color("94ad39"), Color("c2d64f"),
@@ -28,20 +30,26 @@ const BTN_GAP: int = 3
 const SWATCHES_PER_ROW: int = 4
 const SWATCH_FONT_SIZE: int = 12
 
+const DEFAULT_OUTLINE: Color = Color("2b222a")
+
 # Set by MiningLevel after the scene is ready
 var player: PlayerProbe = null
 
 @onready var _preview_sprite: AnimatedSprite2D = $Panel/PreviewSprite
-@onready var _swatch_container: Control = $Panel/SwatchContainer
+@onready var _base_swatch_container: Control = $Panel/BaseSwatchContainer
+@onready var _outline_swatch_container: Control = $Panel/OutlineSwatchContainer
 
-var _selected_index: int = -1
-var _swatch_buttons: Array[Button] = []
+var _selected_base_index: int = -1
+var _selected_outline_index: int = -1
+var _base_swatch_buttons: Array[Button] = []
+var _outline_swatch_buttons: Array[Button] = []
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	hide()
 	_load_preview_frames()
-	_build_swatches()
+	_build_swatches(_base_swatch_container, _base_swatch_buttons, _on_base_swatch_pressed)
+	_build_swatches(_outline_swatch_container, _outline_swatch_buttons, _on_outline_swatch_pressed)
 	$Panel/CloseButton.pressed.connect(close)
 	$Panel/ResetButton.pressed.connect(_on_reset)
 
@@ -54,23 +62,26 @@ func _load_preview_frames() -> void:
 			_preview_sprite.sprite_frames = source_sprite.sprite_frames
 		temp.queue_free()
 	_preview_sprite.play(&"idle")
+	# Apply shader to preview sprite
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://assets/shaders/cat_color.gdshader")
+	_preview_sprite.material = mat
 
-func _build_swatches() -> void:
+func _build_swatches(container: Control, buttons: Array[Button], callback: Callable) -> void:
 	for i in range(PALETTE.size()):
 		var row: int = i / SWATCHES_PER_ROW
 		var col: int = i % SWATCHES_PER_ROW
 		var sx: int = col * (BTN_W + BTN_GAP)
 		var sy: int = row * (BTN_H + BTN_GAP)
-		_create_swatch(i, sx, sy)
+		_create_swatch(i, sx, sy, container, buttons, callback)
 
-func _create_swatch(index: int, sx: int, sy: int) -> void:
+func _create_swatch(index: int, sx: int, sy: int, container: Control, buttons: Array[Button], callback: Callable) -> void:
 	var btn := Button.new()
 	btn.position = Vector2(sx, sy)
 	btn.size = Vector2(BTN_W, BTN_H)
 	btn.text = ""
 	btn.clip_contents = true
 
-	# Normal style: dark neutral background
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.12, 0.11, 0.16, 1.0)
 	style.border_color = Color(0.30, 0.30, 0.35, 0.60)
@@ -92,7 +103,6 @@ func _create_swatch(index: int, sx: int, sy: int) -> void:
 
 	btn.add_theme_stylebox_override("focus", style.duplicate())
 
-	# RichTextLabel with BBCode: hex code text rendered in its own colour
 	var rtl := RichTextLabel.new()
 	rtl.bbcode_enabled = true
 	var hex: String = PALETTE[index].to_html(false).to_lower()
@@ -104,44 +114,53 @@ func _create_swatch(index: int, sx: int, sy: int) -> void:
 	rtl.add_theme_font_size_override("normal_font_size", SWATCH_FONT_SIZE)
 	btn.add_child(rtl)
 
-	btn.pressed.connect(_on_swatch_pressed.bind(index))
-	_swatch_container.add_child(btn)
-	_swatch_buttons.append(btn)
+	btn.pressed.connect(callback.bind(index))
+	container.add_child(btn)
+	buttons.append(btn)
 
-func _on_swatch_pressed(index: int) -> void:
-	_selected_index = index
-	var color := PALETTE[index]
-	GameManager.cat_color = color
+func _on_base_swatch_pressed(index: int) -> void:
+	_selected_base_index = index
+	GameManager.cat_color = PALETTE[index]
 	GameManager.save_game()
-	_update_preview_color()
+	_update_preview_shader()
 	_apply_to_player()
-	_refresh_swatch_borders()
+	_refresh_swatch_borders(_base_swatch_buttons, _selected_base_index)
+
+func _on_outline_swatch_pressed(index: int) -> void:
+	_selected_outline_index = index
+	GameManager.cat_outline_color = PALETTE[index]
+	GameManager.save_game()
+	_update_preview_shader()
+	_apply_to_player()
+	_refresh_swatch_borders(_outline_swatch_buttons, _selected_outline_index)
 
 func _on_reset() -> void:
-	_selected_index = -1
+	_selected_base_index = -1
+	_selected_outline_index = -1
 	GameManager.cat_color = Color.WHITE
+	GameManager.cat_outline_color = DEFAULT_OUTLINE
 	GameManager.save_game()
-	_update_preview_color()
+	_update_preview_shader()
 	_apply_to_player()
-	_refresh_swatch_borders()
+	_refresh_swatch_borders(_base_swatch_buttons, _selected_base_index)
+	_refresh_swatch_borders(_outline_swatch_buttons, _selected_outline_index)
 
-func _update_preview_color() -> void:
-	if _preview_sprite:
-		_preview_sprite.modulate = GameManager.cat_color
+func _update_preview_shader() -> void:
+	if _preview_sprite and _preview_sprite.material is ShaderMaterial:
+		var mat := _preview_sprite.material as ShaderMaterial
+		mat.set_shader_parameter("base_color", GameManager.cat_color)
+		mat.set_shader_parameter("outline_color", GameManager.cat_outline_color)
 
 func _apply_to_player() -> void:
-	if player and player.sprite:
-		player.sprite.modulate = GameManager.cat_color
+	if player and player.sprite and player.sprite.material is ShaderMaterial:
+		var mat := player.sprite.material as ShaderMaterial
+		mat.set_shader_parameter("base_color", GameManager.cat_color)
+		mat.set_shader_parameter("outline_color", GameManager.cat_outline_color)
 
-func _refresh_swatch_borders() -> void:
-	for i in range(_swatch_buttons.size()):
-		var btn := _swatch_buttons[i]
-		var is_selected := false
-		if _selected_index >= 0 and i == _selected_index:
-			is_selected = true
-		elif _selected_index < 0 and GameManager.cat_color != Color.WHITE:
-			if PALETTE[i].is_equal_approx(GameManager.cat_color):
-				is_selected = true
+func _refresh_swatch_borders(buttons: Array[Button], selected_index: int) -> void:
+	for i in range(buttons.size()):
+		var btn := buttons[i]
+		var is_selected := (selected_index >= 0 and i == selected_index)
 
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color(0.12, 0.11, 0.16, 1.0)
@@ -155,9 +174,10 @@ func _refresh_swatch_borders() -> void:
 		btn.add_theme_stylebox_override("normal", style)
 
 func open() -> void:
-	_find_selected_index()
-	_refresh_swatch_borders()
-	_update_preview_color()
+	_find_selected_indices()
+	_refresh_swatch_borders(_base_swatch_buttons, _selected_base_index)
+	_refresh_swatch_borders(_outline_swatch_buttons, _selected_outline_index)
+	_update_preview_shader()
 	show()
 	get_tree().paused = true
 
@@ -165,14 +185,20 @@ func close() -> void:
 	hide()
 	get_tree().paused = false
 
-func _find_selected_index() -> void:
-	_selected_index = -1
-	if GameManager.cat_color == Color.WHITE:
-		return
-	for i in range(PALETTE.size()):
-		if PALETTE[i].is_equal_approx(GameManager.cat_color):
-			_selected_index = i
-			return
+func _find_selected_indices() -> void:
+	_selected_base_index = -1
+	if GameManager.cat_color != Color.WHITE:
+		for i in range(PALETTE.size()):
+			if PALETTE[i].is_equal_approx(GameManager.cat_color):
+				_selected_base_index = i
+				break
+
+	_selected_outline_index = -1
+	if not GameManager.cat_outline_color.is_equal_approx(DEFAULT_OUTLINE):
+		for i in range(PALETTE.size()):
+			if PALETTE[i].is_equal_approx(GameManager.cat_outline_color):
+				_selected_outline_index = i
+				break
 
 func _unhandled_input(event: InputEvent) -> void:
 	if visible and event.is_action_pressed("toggle_customization_menu"):
