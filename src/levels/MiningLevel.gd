@@ -1274,8 +1274,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			if _inventory_screen.visible:
 				_inventory_screen.close()
 			else:
-				_inventory_screen.open(GameManager.run_ore_chunk_counts, _shroom_charges[0],
-					_lucky_compass_active[0], _ancient_map_active[0])
+				_inventory_screen.open(GameManager.run_ore_chunk_counts)
 		return
 	if event.is_action_pressed("toggle_companions_menu"):
 		if _hat_menu:
