@@ -239,11 +239,11 @@ const FOSSIL_TYPES: Dictionary = {
 	TileType.DIRT_DARK:       {"name": "Stellar Kitten",  "minerals": 30},
 	TileType.STONE:           {"name": "Nebula Cat",      "minerals": 50},
 	TileType.STONE_DARK:      {"name": "Void Cat",        "minerals": 60},
-	TileType.ORE_COPPER:      {"name": "Comet Cat",       "minerals": 40},
-	TileType.ORE_COPPER_DEEP: {"name": "Meteor Cat",      "minerals": 50},
+	TileType.ORE_COAL:        {"name": "Comet Cat",       "minerals": 30},
+	TileType.ORE_COPPER:      {"name": "Meteor Cat",      "minerals": 45},
 	TileType.ORE_IRON:        {"name": "Pulsar Cat",      "minerals": 65},
 	TileType.ORE_GOLD:        {"name": "Supernova Cat",   "minerals": 100},
-	TileType.ORE_GEM:         {"name": "Quantum Cat",     "minerals": 120},
+	TileType.ORE_DIAMOND:     {"name": "Quantum Cat",     "minerals": 150},
 }
 
 # ---------------------------------------------------------------------------
@@ -260,10 +260,11 @@ const PlayerProbeScene: PackedScene = preload("res://src/entities/player/PlayerP
 const SOLID_TILES: Array = [
 	TileType.DIRT, TileType.DIRT_DARK,
 	TileType.STONE, TileType.STONE_DARK,
-	TileType.ORE_COPPER, TileType.ORE_COPPER_DEEP,
-	TileType.ORE_IRON, TileType.ORE_IRON_DEEP,
-	TileType.ORE_GOLD, TileType.ORE_GOLD_DEEP,
-	TileType.ORE_GEM, TileType.ORE_GEM_DEEP,
+	TileType.ORE_COAL,
+	TileType.ORE_COPPER,
+	TileType.ORE_IRON,
+	TileType.ORE_GOLD,
+	TileType.ORE_DIAMOND,
 	TileType.EXPLOSIVE, TileType.EXPLOSIVE_ARMED,
 	TileType.LAVA, TileType.LAVA_FLOW,
 	TileType.ENERGY_NODE, TileType.ENERGY_NODE_FULL,
@@ -1620,12 +1621,12 @@ func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 		# Boss tile tracking — delegated to BossSystem
 		if tile == TileType.BOSS_SEGMENT or tile == TileType.BOSS_CORE:
 			boss_system.on_tile_mined(col, row, tile)
-		# Gem tile: award a gem item immediately on mining (primary value)
-		if tile == TileType.ORE_GEM or tile == TileType.ORE_GEM_DEEP:
-			var gems_gained := (2 if tile == TileType.ORE_GEM_DEEP else 1) + GameManager.get_gem_mine_bonus()
+		# Diamond tile: award a gem item immediately on mining (primary value)
+		if tile == TileType.ORE_DIAMOND:
+			var gems_gained := 1 + GameManager.get_gem_mine_bonus()
 			GameManager.gem_count += gems_gained
 			GameManager.save_game()
-			EventBus.ore_mined_popup.emit(gems_gained, "Gem collected!")
+			EventBus.ore_mined_popup.emit(gems_gained, "Diamond collected!")
 		if tile in MINEABLE_TILES:
 			var minerals: int = TILE_MINERALS.get(tile, 1)
 			_mine_streak += 1
@@ -1658,8 +1659,7 @@ func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 		# Particle burst on tile destruction — scaled by ore value
 		var tile_world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
 		var burst_color: Color = TILE_PARTICLE_COLORS.get(tile, Color(0.7, 0.6, 0.4))
-		var is_high_value := tile in [TileType.ORE_GOLD, TileType.ORE_GOLD_DEEP,
-				TileType.ORE_GEM, TileType.ORE_GEM_DEEP]
+		var is_high_value := tile in [TileType.ORE_GOLD, TileType.ORE_DIAMOND]
 		var burst_count := 8
 		var burst_speed_min := 60.0
 		var burst_speed_max := 200.0
@@ -1685,8 +1685,7 @@ func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 		_update_breaking_overlay(pos_key, damage_ratio)
 		# Small impact sparks on partial hits — more for high-value ore
 		var hit_world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
-		var is_hit_high_value := tile in [TileType.ORE_GOLD, TileType.ORE_GOLD_DEEP,
-				TileType.ORE_GEM, TileType.ORE_GEM_DEEP]
+		var is_hit_high_value := tile in [TileType.ORE_GOLD, TileType.ORE_DIAMOND]
 		var spark_count := 8 if is_hit_high_value else 4
 		var spark_speed := 120.0 if is_hit_high_value else 90.0
 		_spawn_mining_particles(hit_world_pos, TILE_PARTICLE_COLORS.get(tile, Color(0.8, 0.7, 0.5)), spark_count, 30.0, spark_speed)

@@ -282,7 +282,7 @@ func _find_nearest_ore(anchor: Vector2, radius_tiles: int) -> Vector2i:
 
 func _is_ore_tile(tile: int) -> bool:
 	# matches ORE_TILES in MiningLevel
-	return tile in [3, 4, 5, 6, 7, 8, 9, 10]  # ORE_COPPER..ORE_GEM_DEEP
+	return tile in [3, 4, 5, 6, 7]  # ORE_COAL..ORE_DIAMOND
 
 
 func _is_valid_ore(pos: Vector2i) -> bool:
