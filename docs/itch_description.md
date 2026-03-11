@@ -10,7 +10,7 @@
 ## Short Description (tagline field — 160 chars)
 
 ```
-A cozy cat mining roguelite, the richest ores are always below you, and the exit is far above.
+Your father's ship. His routes. His debts. Now yours. Keep the family mining business alive — one planet at a time.
 ```
 
 ---
@@ -19,9 +19,15 @@ A cozy cat mining roguelite, the richest ores are always below you, and the exit
 
 ```html
 <p>
-  Pickaxe Pioneer is a cozy 2D mining roguelite about a colony of cats, the Clowder,
-  scratching their way deeper into the earth in search of rare ores, buried fossils, and enough
-  riches to keep the colony alive. Your energy is finite. The ore is richest at the bottom.
+  Your father ran these mining routes for thirty years — a one-cat operation, a battered ship,
+  and a reputation for always coming back up alive. Then he didn't.
+</p>
+<p>
+  Now his ship is yours, his routes are yours, and so are his debts to the Clowder.
+  Pickaxe Pioneer is a 2D mining roguelite about keeping a family business alive one planet at a time.
+  Dig deep into procedurally generated alien worlds, bank your ore before your energy gives out,
+  and spend your haul on upgrades that let you go a little deeper next run.
+  The Clowder needs minerals to fuel its next jump. You need to prove you're the cat your father was.
 </p>
 <p>
   

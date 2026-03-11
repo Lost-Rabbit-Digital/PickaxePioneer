@@ -54,6 +54,13 @@ var messages: Array[String] = [
 	"My paws were made for digging.",
 	"Ancient tunnels... something old lives down here.",
 	"The Matriarch's whiskers never lie.",
+	"Your father's routes were the best in the fleet.",
+	"I knew your father. Best claws in the Clowder.",
+	"Keeping the family ship running isn't easy. Keep at it.",
+	"Your old man would be proud of that haul.",
+	"The family business lives on. One run at a time.",
+	"Your father mapped half these routes himself.",
+	"Heard you inherited the old ship. She's a good one.",
 ]
 
 func _ready() -> void:

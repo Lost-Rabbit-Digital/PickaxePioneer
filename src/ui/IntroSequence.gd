@@ -8,9 +8,9 @@ extends CanvasLayer
 signal finished
 
 const CARDS: Array[String] = [
-	"The Clowder drifts between dying stars...\nA feline civilization aboard a wandering space station.",
-	"Your ship needs fuel — rare minerals\nburied deep beneath alien worlds.",
-	"You are a mining cat.\nDig deep. Bank your ore. Survive.",
+	"The Clowder drifts between dying stars...\nA feline civilization keeping the lights on, one ore haul at a time.",
+	"Your father ran these mining routes for thirty years.\nHis ship. His routes. His debts.\nNow they're yours.",
+	"You are a mining cat.\nKeep the family business alive — dig deep, bank your ore, keep flying.",
 	"The deeper you go, the richer the reward...\nbut your energy won't last forever.",
 ]
 
