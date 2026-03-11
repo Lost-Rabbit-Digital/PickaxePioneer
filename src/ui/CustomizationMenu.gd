@@ -188,6 +188,7 @@ func open() -> void:
 	get_tree().paused = true
 
 func close() -> void:
+	SoundManager.play_ui_close_sound()
 	hide()
 	get_tree().paused = false
 

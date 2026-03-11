@@ -137,6 +137,7 @@ func _hide_main_buttons() -> void:
 	$VBoxContainer/QuitButton.hide()
 
 func _show_main_buttons() -> void:
+	SoundManager.play_ui_close_sound()
 	_active_submenu = ""
 	$VBoxContainer/SingleplayerButton.show()
 	$VBoxContainer/MultiplayerButton.show()
@@ -185,6 +186,7 @@ func _on_inline_join_pressed() -> void:
 	_mp_overlay.show()
 
 func _on_lan_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	_mp_host_method = "lan"
 	_active_submenu = "host_save"
 	_lan_btn.hide()
@@ -196,7 +198,7 @@ func _on_lan_pressed() -> void:
 	_host_save_back_btn.show()
 
 func _on_hosting_back_pressed() -> void:
-	SoundManager.play_ui_click_sound()
+	SoundManager.play_ui_close_sound()
 	_active_submenu = "mp"
 	_lan_btn.hide()
 	_steam_btn.hide()
@@ -207,6 +209,7 @@ func _on_hosting_back_pressed() -> void:
 	_mp_back_btn.show()
 
 func _on_inline_host_save_back_pressed() -> void:
+	SoundManager.play_ui_close_sound()
 	_active_submenu = "hosting"
 	_host_save_continue_btn.hide()
 	_host_save_new_game_btn.hide()
@@ -217,19 +220,22 @@ func _on_inline_host_save_back_pressed() -> void:
 	_hosting_back_btn.show()
 
 func _on_inline_host_save_continue_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	_mp_host_pending = true
 	_popup_mode = "continue"
 	_refresh_popup()
 	_save_popup.show()
 
 func _on_inline_host_save_new_game_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	_mp_host_pending = true
 	_popup_mode = "new_game"
 	_refresh_popup()
 	_save_popup.show()
 
 func _on_quit_pressed() -> void:
-	SoundManager.play_ui_click_sound()
+	SoundManager.play_ui_close_sound()
+	OS.delay_msec(250)
 	get_tree().quit()
 
 func _on_settings_pressed() -> void:
@@ -238,6 +244,7 @@ func _on_settings_pressed() -> void:
 	_settings_overlay.show()
 
 func _on_wishlist_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	OS.shell_open(WISHLIST_URL)
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -269,7 +276,7 @@ func _on_credits_pressed() -> void:
 	credits_panel.show()
 
 func _on_credits_close_pressed() -> void:
-	SoundManager.play_ui_click_sound()
+	SoundManager.play_ui_close_sound()
 	credits_panel.hide()
 
 func _on_customize_character_pressed() -> void:
@@ -409,7 +416,7 @@ func _on_sp_continue_pressed() -> void:
 	_save_popup.show()
 
 func _on_sp_back_pressed() -> void:
-	SoundManager.play_ui_click_sound()
+	SoundManager.play_ui_close_sound()
 	_sp_overlay.hide()
 
 # ---------------------------------------------------------------------------
@@ -694,12 +701,15 @@ func _on_mp_back_pressed() -> void:
 		"menu":
 			if NetworkManager.is_multiplayer_session:
 				NetworkManager.disconnect_session()
+			SoundManager.play_ui_close_sound()
 			_mp_overlay.hide()
 		"host_type":
+			SoundManager.play_ui_close_sound()
 			_mp_overlay.hide()
 		"lobby":
 			if NetworkManager.is_multiplayer_session:
 				NetworkManager.disconnect_session()
+			SoundManager.play_ui_close_sound()
 			_mp_lobby_start_btn.visible = false
 			_mp_overlay.hide()
 			_active_submenu = "host_save"
@@ -710,6 +720,7 @@ func _on_mp_back_pressed() -> void:
 		"join":
 			if NetworkManager.is_multiplayer_session:
 				NetworkManager.disconnect_session()
+			SoundManager.play_ui_close_sound()
 			_mp_overlay.hide()
 
 func _start_mp_hosting() -> void:
@@ -817,6 +828,7 @@ func _build_settings_overlay() -> void:
 	outer_vbox.add_child(close_btn)
 
 func _on_settings_close() -> void:
+	SoundManager.play_ui_close_sound()
 	_settings_panel.close_settings()
 	_settings_overlay.hide()
 
@@ -999,10 +1011,12 @@ func _on_slot_selected(index: int) -> void:
 	GameManager.start_game()
 
 func _on_slot_delete(index: int) -> void:
+	SoundManager.play_ui_close_sound()
 	_pending_delete_index = index
 	_delete_confirm_dialog.show()
 
 func _on_popup_close() -> void:
+	SoundManager.play_ui_close_sound()
 	_save_popup.hide()
 	_mp_host_pending = false
 

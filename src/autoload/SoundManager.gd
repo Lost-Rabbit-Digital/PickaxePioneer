@@ -16,6 +16,7 @@ var _player_jump_sound: AudioStream = null
 var _player_land_sound: AudioStream = null
 var _player_death_sound: AudioStream = null
 var _ui_click_sound: AudioStream = null
+var _ui_close_sound: AudioStream = null
 var _purchase_confirm_sound: AudioStream = null
 var _boss_warning_sound: AudioStream = null
 var _boss_defeated_sound: AudioStream = null
@@ -61,7 +62,8 @@ func _ready() -> void:
 	_player_jump_sound = _try_load("res://assets/sound_effects/player_jump.mp3")
 	_player_land_sound = _try_load("res://assets/sound_effects/player_land.mp3")
 	_player_death_sound = _try_load("res://assets/sound_effects/player_death.mp3")
-	_ui_click_sound = _try_load("res://assets/sound_effects/ui_click.mp3")
+	_ui_click_sound = _try_load("res://assets/sound_effects/clicks/click_1.ogg")
+	_ui_close_sound = _try_load("res://assets/sound_effects/pops/pop_4.ogg")
 	_purchase_confirm_sound = _try_load("res://assets/sound_effects/purchase_confirm.mp3")
 	_boss_warning_sound = _try_load("res://assets/sound_effects/boss_warning.mp3")
 	_boss_defeated_sound = _try_load("res://assets/sound_effects/boss_defeated.mp3")
@@ -210,6 +212,11 @@ func play_death_sound() -> void:
 func play_ui_click_sound() -> void:
 	if _ui_click_sound:
 		_play_sample(_ui_click_sound, -8.0)
+
+func play_ui_close_sound() -> void:
+	if _ui_close_sound:
+		_play_sample(_ui_close_sound, -8.0)
+
 
 func play_purchase_confirm_sound() -> void:
 	if _purchase_confirm_sound:
