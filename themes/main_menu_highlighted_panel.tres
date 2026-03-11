@@ -1,3 +1,66 @@
-[gd_resource type="Theme" format=3 uid="uid://bqraki0ecnavw"]
+[gd_resource type="Theme" load_steps=5 format=3 uid="uid://bqraki0ecnavw"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_brwy4"]
+bg_color = Color(0.23921569, 0.5019608, 0.6392157, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.13333334, 0.1254902, 0.20392157, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0.3882353, 0.76862746, 0.8, 1)
+shadow_size = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2j5gq"]
+bg_color = Color(0.23921569, 0.5019608, 0.6392157, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.13333334, 0.1254902, 0.20392157, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0.3882353, 0.76862746, 0.8, 1)
+shadow_size = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dw30p"]
+bg_color = Color(0.18431373, 0.29803923, 0.42352942, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.13333334, 0.1254902, 0.20392157, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0.23921569, 0.5019608, 0.6392157, 1)
+shadow_size = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_f82tg"]
+bg_color = Color(0.23921569, 0.5019608, 0.6392157, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.13333334, 0.1254902, 0.20392157, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0.3882353, 0.76862746, 0.8, 1)
+shadow_size = 8
 
 [resource]
+Button/colors/font_color = Color(0.13333334, 0.1254902, 0.20392157, 1)
+Button/styles/hover = SubResource("StyleBoxFlat_brwy4")
+Button/styles/normal = SubResource("StyleBoxFlat_2j5gq")
+Button/styles/pressed = SubResource("StyleBoxFlat_dw30p")
+Label/colors/font_color = Color(0.13333334, 0.1254902, 0.20392157, 1)
+Label/font_sizes/font_size = 24
+Panel/styles/panel = SubResource("StyleBoxFlat_f82tg")

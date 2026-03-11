@@ -14,6 +14,11 @@ Add a radial emote menu with emotes above the character and also sending them to
 
 
 
+If in the overworld and the camera is idle for 10 seconds and not centers then slowly re-center the camera automatically
+
+
+
+
 
 sync companions with the host and client
 
@@ -34,6 +39,7 @@ Tink sound when you cannot mine a block
 Add the share a screenshot on our discord with discord link at the end of each run
 
 
+update terrain generator to work in-editor so i can see how it functions without running the game, i want a generate and clear terrain button in editor and maintain full function in-game, allow me to set the seed i generate in-editor, clear it out once the game starts and clear out any terrain i left in editor once game starts, ask any questions
 
 
 Controller compatibility
@@ -44,8 +50,6 @@ Controller compatibility
 Tutorial
 
 
-
-Move the version label to the upper left in the main menu
 
 
 
@@ -58,9 +62,6 @@ Character experience that is tied to steam user so they can unlock more cosmetic
 
 Add a pop-up in the upper left with an icon/amount/name of the item you picked up, ore only
 
-
-
-Settlements are less common
 
 
 
