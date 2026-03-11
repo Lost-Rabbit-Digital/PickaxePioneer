@@ -4,23 +4,20 @@ extends CanvasLayer
 # Ore display info: tile_type_id -> { name, color, tex }
 # IDs match MiningLevel.TileType enum values.
 const ORE_INFO: Dictionary = {
-	21: {"name": "Space Dust",        "color": Color(0.10, 0.20, 0.35), "tex": "res://assets/blocks/grass_side.png"},
-	1:  {"name": "Moon Rock",         "color": Color(0.30, 0.30, 0.38), "tex": "res://assets/blocks/dirt.png"},
-	2:  {"name": "Dense Moon Rock",   "color": Color(0.22, 0.22, 0.30), "tex": "res://assets/blocks/mud.png"},
-	11: {"name": "Asteroid",          "color": Color(0.35, 0.25, 0.55), "tex": "res://assets/blocks/stone_generic.png"},
-	12: {"name": "Dark Asteroid",     "color": Color(0.25, 0.18, 0.45), "tex": "res://assets/blocks/gravel.png"},
-	3:  {"name": "Lunar Copper",      "color": Color(0.90, 0.60, 0.25), "tex": "res://assets/blocks/stone_generic_ore_nuggets.png"},
-	4:  {"name": "Deep Lunar Copper", "color": Color(0.80, 0.50, 0.15), "tex": "res://assets/blocks/stone_generic_ore_crystalline.png"},
-	5:  {"name": "Meteor Iron",       "color": Color(0.90, 0.45, 0.70), "tex": "res://assets/blocks/gabbro.png"},
-	6:  {"name": "Deep Meteor Iron",  "color": Color(0.75, 0.35, 0.60), "tex": "res://assets/blocks/schist.png"},
-	7:  {"name": "Star Gold",         "color": Color(0.85, 0.80, 1.00), "tex": "res://assets/blocks/sandstone.png"},
-	8:  {"name": "Deep Star Gold",    "color": Color(0.70, 0.65, 0.90), "tex": "res://assets/blocks/granite.png"},
-	9:  {"name": "Cosmic Gem",        "color": Color(0.20, 0.90, 0.95), "tex": "res://assets/blocks/amethyst.png"},
-	10: {"name": "Deep Cosmic Gem",   "color": Color(0.10, 0.80, 0.85), "tex": "res://assets/blocks/obsidian.png"},
+	21: {"name": "Space Dust",      "color": Color(0.10, 0.20, 0.35), "tex": "res://assets/blocks/grass_side.png"},
+	1:  {"name": "Moon Rock",       "color": Color(0.30, 0.30, 0.38), "tex": "res://assets/blocks/dirt.png"},
+	2:  {"name": "Dense Moon Rock", "color": Color(0.22, 0.22, 0.30), "tex": "res://assets/blocks/mud.png"},
+	11: {"name": "Asteroid",        "color": Color(0.35, 0.25, 0.55), "tex": "res://assets/blocks/stone_generic.png"},
+	12: {"name": "Dark Asteroid",   "color": Color(0.25, 0.18, 0.45), "tex": "res://assets/blocks/gravel.png"},
+	3:  {"name": "Space Coal",      "color": Color(0.25, 0.25, 0.28), "tex": "res://assets/blocks/mud.png"},
+	4:  {"name": "Lunar Copper",    "color": Color(0.90, 0.60, 0.25), "tex": "res://assets/blocks/stone_ore_copper.png"},
+	5:  {"name": "Meteor Iron",     "color": Color(0.65, 0.68, 0.75), "tex": "res://assets/blocks/stone_ore_iron.png"},
+	6:  {"name": "Star Gold",       "color": Color(1.00, 0.80, 0.10), "tex": "res://assets/blocks/stone_ore_gold.png"},
+	7:  {"name": "Cosmic Diamond",  "color": Color(0.60, 0.90, 1.00), "tex": "res://assets/blocks/stone_generic_ore_crystalline.png"},
 }
 
 # Display order: highest-value ores first, then common materials
-const DISPLAY_ORDER: Array = [10, 9, 8, 7, 6, 5, 4, 3, 12, 11, 2, 1, 21]
+const DISPLAY_ORDER: Array = [7, 6, 5, 4, 3, 12, 11, 2, 1, 21]
 
 const VW := 1280.0
 const VH := 720.0

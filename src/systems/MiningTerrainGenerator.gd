@@ -11,14 +11,11 @@ var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 const T_EMPTY            = 0
 const T_DIRT             = 1
 const T_DIRT_DARK        = 2
-const T_ORE_COPPER       = 3
-const T_ORE_COPPER_DEEP  = 4
+const T_ORE_COAL         = 3
+const T_ORE_COPPER       = 4
 const T_ORE_IRON         = 5
-const T_ORE_IRON_DEEP    = 6
-const T_ORE_GOLD         = 7
-const T_ORE_GOLD_DEEP    = 8
-const T_ORE_GEM          = 9
-const T_ORE_GEM_DEEP     = 10
+const T_ORE_GOLD         = 6
+const T_ORE_DIAMOND      = 7
 const T_STONE            = 11
 const T_STONE_DARK       = 12
 const T_EXPLOSIVE        = 13
@@ -150,14 +147,14 @@ func _random_tile(_col: int, row: int) -> int:
 # Shallow ore seeding — guarantee early rewards in the first 15 rows
 # ---------------------------------------------------------------------------
 
-## Ensures copper ore appears within the first few rows below surface so new
+## Ensures coal ore appears within the first few rows below surface so new
 ## players find meaningful rewards within 60 seconds of digging.  Places
-## small scattered copper clusters (3-5 tiles each) between rows 5-15 below
-## surface, plus a guaranteed 2-tile copper pocket at rows 4-5 near the
+## small scattered coal clusters (3-5 tiles each) between rows 5-15 below
+## surface, plus a guaranteed 2-tile coal pocket at rows 4-5 near the
 ## player's spawn column.
 func _seed_shallow_ore() -> void:
-	var copper_ok := _allowed_ore.is_empty() or _allowed_ore.has("Copper")
-	if not copper_ok:
+	var coal_ok := _allowed_ore.is_empty() or _allowed_ore.has("Coal")
+	if not coal_ok:
 		return
 
 	var shallow_start := _surface_rows + 4
@@ -170,9 +167,9 @@ func _seed_shallow_ore() -> void:
 			var c := clampi(spawn_col + dc, 1, _cols - 2)
 			var r := clampi(shallow_start + dr, _surface_rows + 3, shallow_end)
 			if _grid[c][r] in [T_DIRT, T_DIRT_DARK, T_STONE, T_STONE_DARK]:
-				_grid[c][r] = T_ORE_COPPER
+				_grid[c][r] = T_ORE_COAL
 
-	# Scatter 6-9 small copper clusters across the shallow band
+	# Scatter 6-9 small coal clusters across the shallow band
 	var num_clusters := _rng.randi_range(6, 9)
 	for _i in range(num_clusters):
 		var center_col := _rng.randi_range(5, _cols - 6)
@@ -184,7 +181,7 @@ func _seed_shallow_ore() -> void:
 			oc = clampi(oc, 1, _cols - 2)
 			or_ = clampi(or_, _surface_rows + 3, _rows - 2)
 			if _grid[oc][or_] in [T_DIRT, T_DIRT_DARK, T_STONE, T_STONE_DARK]:
-				_grid[oc][or_] = T_ORE_COPPER if _rng.randf() < 0.7 else T_ORE_COPPER_DEEP
+				_grid[oc][or_] = T_ORE_COAL
 
 	# Sprinkle a few energy nodes in the shallow band for new player safety
 	var num_energy := _rng.randi_range(2, 4)
@@ -386,32 +383,34 @@ func _generate_lava_lakes() -> void:
 func _generate_ore_veins() -> void:
 	var specs := [
 		{
-			"ore": T_ORE_COPPER, "ore_deep": T_ORE_COPPER_DEEP,
-			"cap": -1, "cap_len": [0, 0],
-			"zone":   [_surface_rows + 2, _depth_zone_rows[2]],
+			"ore": T_ORE_COAL,
+			"zone":   [_surface_rows + 2, _depth_zone_rows[1]],
 			"count":  [7, 10], "length": [14, 26], "width": [1, 2],
+			"key": "Coal",
+		},
+		{
+			"ore": T_ORE_COPPER,
+			"zone":   [_depth_zone_rows[0], _depth_zone_rows[2]],
+			"count":  [6, 9], "length": [16, 28], "width": [1, 2],
 			"key": "Copper",
 		},
 		{
-			"ore": T_ORE_IRON, "ore_deep": T_ORE_IRON_DEEP,
-			"cap": T_ORE_COPPER_DEEP, "cap_len": [7, 14],
-			"zone":   [_depth_zone_rows[0], _depth_zone_rows[3]],
+			"ore": T_ORE_IRON,
+			"zone":   [_depth_zone_rows[1], _depth_zone_rows[3]],
 			"count":  [5, 8], "length": [18, 32], "width": [1, 2],
 			"key": "Iron",
 		},
 		{
-			"ore": T_ORE_GOLD, "ore_deep": T_ORE_GOLD_DEEP,
-			"cap": T_ORE_IRON_DEEP, "cap_len": [8, 16],
-			"zone":   [_depth_zone_rows[1], _depth_zone_rows[4]],
+			"ore": T_ORE_GOLD,
+			"zone":   [_depth_zone_rows[2], _depth_zone_rows[4]],
 			"count":  [4, 6], "length": [18, 32], "width": [1, 2],
 			"key": "Gold",
 		},
 		{
-			"ore": T_ORE_GEM, "ore_deep": T_ORE_GEM_DEEP,
-			"cap": T_ORE_GOLD_DEEP, "cap_len": [10, 20],
-			"zone":   [_depth_zone_rows[2], _rows - 2],
+			"ore": T_ORE_DIAMOND,
+			"zone":   [_depth_zone_rows[3], _rows - 2],
 			"count":  [3, 5], "length": [14, 24], "width": [1, 2],
-			"key": "Gem",
+			"key": "Diamond",
 		},
 	]
 
@@ -432,22 +431,10 @@ func _place_ore_vein(spec: Dictionary) -> void:
 	var start_row  := _rng.randi_range(zone_start, max_start)
 	var center_col := _rng.randi_range(3, _cols - 4)
 
-	var cap_len: int = 0
-	if spec["cap"] != -1:
-		cap_len = _rng.randi_range(spec["cap_len"][0], spec["cap_len"][1])
-		cap_len = mini(cap_len, length - 4)
-
 	for i in range(length):
 		var row := start_row + i
 		if row < _surface_rows + 1 or row >= _rows - 1:
 			continue
-
-		var ore_tile: int
-		if i < cap_len:
-			ore_tile = spec["cap"]
-		else:
-			var primary_t := float(i - cap_len) / float(maxi(1, length - cap_len))
-			ore_tile = spec["ore_deep"] if primary_t > 0.5 else spec["ore"]
 
 		if _rng.randf() < VEIN_MEANDER_CHANCE:
 			center_col += _rng.randi_range(-1, 1)
@@ -459,7 +446,7 @@ func _place_ore_vein(spec: Dictionary) -> void:
 				continue
 			var current: int = _grid[place_col][row]
 			if current in [T_DIRT, T_DIRT_DARK, T_STONE, T_STONE_DARK]:
-				_grid[place_col][row] = ore_tile
+				_grid[place_col][row] = spec["ore"]
 
 # ---------------------------------------------------------------------------
 # Decoration placement — call after generate() to get decoration positions.
@@ -523,17 +510,15 @@ func _is_decoration_solid(tile: int) -> bool:
 func _depth_scaled_ore(depth: float) -> int:
 	var tiers: Array = []
 	if depth > 0.65:
-		if _allowed_ore.is_empty() or _allowed_ore.has("Gem"):    tiers.append(T_ORE_GEM_DEEP)
-		if _allowed_ore.is_empty() or _allowed_ore.has("Gold"):   tiers.append(T_ORE_GOLD_DEEP)
-		if _allowed_ore.is_empty() or _allowed_ore.has("Iron"):   tiers.append(T_ORE_IRON_DEEP)
+		if _allowed_ore.is_empty() or _allowed_ore.has("Diamond"): tiers.append(T_ORE_DIAMOND)
+		if _allowed_ore.is_empty() or _allowed_ore.has("Gold"):     tiers.append(T_ORE_GOLD)
 	elif depth > 0.35:
-		if _allowed_ore.is_empty() or _allowed_ore.has("Gold"):   tiers.append(T_ORE_GOLD)
-		if _allowed_ore.is_empty() or _allowed_ore.has("Iron"):   tiers.append(T_ORE_IRON_DEEP)
-		if _allowed_ore.is_empty() or _allowed_ore.has("Copper"): tiers.append(T_ORE_COPPER_DEEP)
+		if _allowed_ore.is_empty() or _allowed_ore.has("Gold"):     tiers.append(T_ORE_GOLD)
+		if _allowed_ore.is_empty() or _allowed_ore.has("Iron"):     tiers.append(T_ORE_IRON)
 	else:
-		if _allowed_ore.is_empty() or _allowed_ore.has("Iron"):   tiers.append(T_ORE_IRON)
-		if _allowed_ore.is_empty() or _allowed_ore.has("Copper"): tiers.append(T_ORE_COPPER_DEEP)
-		if _allowed_ore.is_empty() or _allowed_ore.has("Copper"): tiers.append(T_ORE_COPPER)
+		if _allowed_ore.is_empty() or _allowed_ore.has("Iron"):     tiers.append(T_ORE_IRON)
+		if _allowed_ore.is_empty() or _allowed_ore.has("Copper"):   tiers.append(T_ORE_COPPER)
+		if _allowed_ore.is_empty() or _allowed_ore.has("Coal"):     tiers.append(T_ORE_COAL)
 	if tiers.is_empty():
 		return T_EMPTY
 	return tiers[_rng.randi() % tiers.size()]

@@ -21,14 +21,11 @@ enum TileType {
 	EMPTY            = 0,
 	DIRT             = 1,
 	DIRT_DARK        = 2,
-	ORE_COPPER       = 3,
-	ORE_COPPER_DEEP  = 4,
+	ORE_COAL         = 3,
+	ORE_COPPER       = 4,
 	ORE_IRON         = 5,
-	ORE_IRON_DEEP    = 6,
-	ORE_GOLD         = 7,
-	ORE_GOLD_DEEP    = 8,
-	ORE_GEM          = 9,
-	ORE_GEM_DEEP     = 10,
+	ORE_GOLD         = 6,
+	ORE_DIAMOND      = 7,
 	STONE            = 11,
 	STONE_DARK       = 12,
 	EXPLOSIVE        = 13,
@@ -55,14 +52,11 @@ const TILE_NAMES: Dictionary = {
 	TileType.DIRT_DARK:       "Dense Moon Rock",
 	TileType.STONE:           "Asteroid",
 	TileType.STONE_DARK:      "Dark Asteroid",
+	TileType.ORE_COAL:        "Space Coal",
 	TileType.ORE_COPPER:      "Lunar Copper",
-	TileType.ORE_COPPER_DEEP: "Deep Lunar Copper",
 	TileType.ORE_IRON:        "Meteor Iron",
-	TileType.ORE_IRON_DEEP:   "Deep Meteor Iron",
 	TileType.ORE_GOLD:        "Star Gold",
-	TileType.ORE_GOLD_DEEP:   "Deep Star Gold",
-	TileType.ORE_GEM:         "Cosmic Gem",
-	TileType.ORE_GEM_DEEP:    "Deep Cosmic Gem",
+	TileType.ORE_DIAMOND:     "Cosmic Diamond",
 	TileType.ENERGY_NODE:       "Energy Cell",
 	TileType.ENERGY_NODE_FULL:  "Energy Cell",
 	TileType.EXPLOSIVE:       "Space Mine",
@@ -88,14 +82,11 @@ const TILE_PARTICLE_COLORS: Dictionary = {
 	TileType.DIRT_DARK:        Color(0.50, 0.35, 0.20),  # dark brown dense rock
 	TileType.STONE:            Color(0.58, 0.58, 0.62),  # cool grey asteroid
 	TileType.STONE_DARK:       Color(0.38, 0.38, 0.42),  # dark grey asteroid
+	TileType.ORE_COAL:         Color(0.25, 0.25, 0.28),  # dark charcoal
 	TileType.ORE_COPPER:       Color(0.78, 0.44, 0.20),  # copper orange
-	TileType.ORE_COPPER_DEEP:  Color(0.65, 0.32, 0.12),  # deeper copper
 	TileType.ORE_IRON:         Color(0.65, 0.68, 0.75),  # steel grey-blue
-	TileType.ORE_IRON_DEEP:    Color(0.45, 0.48, 0.58),  # darker iron
 	TileType.ORE_GOLD:         Color(1.00, 0.80, 0.10),  # bright gold
-	TileType.ORE_GOLD_DEEP:    Color(0.85, 0.60, 0.05),  # deep gold
-	TileType.ORE_GEM:          Color(0.20, 0.80, 0.90),  # cyan crystal
-	TileType.ORE_GEM_DEEP:     Color(0.15, 0.55, 0.85),  # deep gem blue
+	TileType.ORE_DIAMOND:      Color(0.60, 0.90, 1.00),  # brilliant blue
 	TileType.ENERGY_NODE:      Color(0.20, 0.60, 1.00),  # electric blue
 	TileType.ENERGY_NODE_FULL: Color(0.30, 0.90, 1.00),  # bright cyan
 	TileType.EXPLOSIVE:        Color(1.00, 0.55, 0.05),  # danger orange
@@ -110,10 +101,11 @@ const MINEABLE_TILES: Array = [
 	TileType.SURFACE_GRASS,
 	TileType.DIRT, TileType.DIRT_DARK,
 	TileType.STONE, TileType.STONE_DARK,
-	TileType.ORE_COPPER, TileType.ORE_COPPER_DEEP,
-	TileType.ORE_IRON, TileType.ORE_IRON_DEEP,
-	TileType.ORE_GOLD, TileType.ORE_GOLD_DEEP,
-	TileType.ORE_GEM, TileType.ORE_GEM_DEEP,
+	TileType.ORE_COAL,
+	TileType.ORE_COPPER,
+	TileType.ORE_IRON,
+	TileType.ORE_GOLD,
+	TileType.ORE_DIAMOND,
 	TileType.BOSS_SEGMENT, TileType.BOSS_CORE,
 	TileType.LAVA, TileType.LAVA_FLOW,
 ]
@@ -125,14 +117,11 @@ const TILE_ATLAS_COORDS: Dictionary = {
 	TileType.DIRT_DARK:        Vector2i(9, 4),   # mud.png
 	TileType.STONE:            Vector2i(7, 7),   # stone_generic.png
 	TileType.STONE_DARK:       Vector2i(4, 3),   # gravel.png
+	TileType.ORE_COAL:         Vector2i(9, 4),   # mud.png (dark, coal-like)
 	TileType.ORE_COPPER:       Vector2i(0, 8),   # stone_ore_copper.png
-	TileType.ORE_COPPER_DEEP:  Vector2i(0, 8),
 	TileType.ORE_IRON:         Vector2i(2, 8),   # stone_ore_iron.png
-	TileType.ORE_IRON_DEEP:    Vector2i(2, 8),
 	TileType.ORE_GOLD:         Vector2i(1, 8),   # stone_ore_gold.png
-	TileType.ORE_GOLD_DEEP:    Vector2i(1, 8),
-	TileType.ORE_GEM:          Vector2i(8, 7),   # stone_generic_ore_crystalline.png
-	TileType.ORE_GEM_DEEP:     Vector2i(8, 7),
+	TileType.ORE_DIAMOND:      Vector2i(8, 7),   # stone_generic_ore_crystalline.png
 	TileType.EXPLOSIVE:        Vector2i(5, 8),
 	TileType.EXPLOSIVE_ARMED:  Vector2i(5, 8),
 	TileType.LAVA:             Vector2i(5, 6),   # sand_ugly_3.png
@@ -152,14 +141,11 @@ const TILE_HP: Dictionary = {
 	TileType.DIRT_DARK:       5,
 	TileType.STONE:           9,
 	TileType.STONE_DARK:      11,
-	TileType.ORE_COPPER:      12,
-	TileType.ORE_COPPER_DEEP: 14,
-	TileType.ORE_IRON:        15,
-	TileType.ORE_IRON_DEEP:   18,
-	TileType.ORE_GOLD:        21,
-	TileType.ORE_GOLD_DEEP:   24,
-	TileType.ORE_GEM:         30,
-	TileType.ORE_GEM_DEEP:    33,
+	TileType.ORE_COAL:        10,
+	TileType.ORE_COPPER:      13,
+	TileType.ORE_IRON:        16,
+	TileType.ORE_GOLD:        20,
+	TileType.ORE_DIAMOND:     28,
 	TileType.BOSS_SEGMENT:    15,
 	TileType.BOSS_CORE:       29,
 	TileType.LAVA:            7,
@@ -172,14 +158,11 @@ const TILE_MIN_HITS: Dictionary = {
 	TileType.DIRT_DARK:       2,
 	TileType.STONE:           2,
 	TileType.STONE_DARK:      2,
+	TileType.ORE_COAL:        2,
 	TileType.ORE_COPPER:      3,
-	TileType.ORE_COPPER_DEEP: 3,
 	TileType.ORE_IRON:        3,
-	TileType.ORE_IRON_DEEP:   4,
 	TileType.ORE_GOLD:        4,
-	TileType.ORE_GOLD_DEEP:   5,
-	TileType.ORE_GEM:         6,
-	TileType.ORE_GEM_DEEP:    7,
+	TileType.ORE_DIAMOND:     5,
 	TileType.BOSS_SEGMENT:    3,
 	TileType.BOSS_CORE:       5,
 	TileType.LAVA:            2,
@@ -192,23 +175,21 @@ const TILE_MINERALS: Dictionary = {
 	TileType.DIRT_DARK:       1,
 	TileType.STONE:           2,
 	TileType.STONE_DARK:      2,
-	TileType.ORE_COPPER:      3,
-	TileType.ORE_COPPER_DEEP: 5,
-	TileType.ORE_IRON:        5,
-	TileType.ORE_IRON_DEEP:   8,
-	TileType.ORE_GOLD:        10,
-	TileType.ORE_GOLD_DEEP:   15,
-	TileType.ORE_GEM:         5,   # primary value now comes as a gem item
-	TileType.ORE_GEM_DEEP:    8,   # primary value now comes as a gem item
+	TileType.ORE_COAL:        2,
+	TileType.ORE_COPPER:      5,
+	TileType.ORE_IRON:        8,
+	TileType.ORE_GOLD:        15,
+	TileType.ORE_DIAMOND:     25,
 	TileType.BOSS_SEGMENT:    10,
 	TileType.BOSS_CORE:       75,
 }
 
 const ORE_TILES: Array = [
-	TileType.ORE_COPPER, TileType.ORE_COPPER_DEEP,
-	TileType.ORE_IRON, TileType.ORE_IRON_DEEP,
-	TileType.ORE_GOLD, TileType.ORE_GOLD_DEEP,
-	TileType.ORE_GEM, TileType.ORE_GEM_DEEP,
+	TileType.ORE_COAL,
+	TileType.ORE_COPPER,
+	TileType.ORE_IRON,
+	TileType.ORE_GOLD,
+	TileType.ORE_DIAMOND,
 ]
 
 const LUCKY_STRIKE_CHANCE := 0.08
@@ -219,30 +200,30 @@ const SURFACE_ROWS: int = 3
 # ---------------------------------------------------------------------------
 # Ore group tags used to identify chain membership
 const SMELT_ORE_GROUPS: Dictionary = {
-	TileType.ORE_COPPER:      "copper",
-	TileType.ORE_COPPER_DEEP: "copper",
-	TileType.ORE_IRON:        "iron",
-	TileType.ORE_IRON_DEEP:   "iron",
-	TileType.ORE_GOLD:        "gold",
-	TileType.ORE_GOLD_DEEP:   "gold",
-	TileType.ORE_GEM:         "gem",
-	TileType.ORE_GEM_DEEP:    "gem",
+	TileType.ORE_COAL:    "coal",
+	TileType.ORE_COPPER:  "copper",
+	TileType.ORE_IRON:    "iron",
+	TileType.ORE_GOLD:    "gold",
+	TileType.ORE_DIAMOND: "diamond",
 }
 # Chain bonus at 3 consecutive: [bonus_pct, popup_label]
 const SMELT_CHAIN_BONUSES: Dictionary = {
-	"copper": [0.50, "Lunar Alloy"],
-	"iron":   [0.50, "Meteor Steel"],
-	"gold":   [0.75, "Star Ingot"],
-	"gem":    [1.00, "Nova Crystal"],
+	"coal":    [0.25, "Coal Dust"],
+	"copper":  [0.50, "Copper Ingot"],
+	"iron":    [0.50, "Meteor Steel"],
+	"gold":    [0.75, "Star Ingot"],
+	"diamond": [1.00, "Brilliant Diamond"],
 }
 # Two-ore cross-combos: "first+second" -> [bonus_pct, popup_label]
 const SMELT_COMBOS: Dictionary = {
-	"copper+iron": [1.00, "Astro Alloy"],
-	"iron+copper": [1.00, "Astro Alloy"],
-	"iron+gold":   [2.00, "Cosmic Steel"],
-	"gold+iron":   [2.00, "Cosmic Steel"],
-	"copper+gold": [1.50, "Stardust Blend"],
-	"gold+copper": [1.50, "Stardust Blend"],
+	"copper+iron":   [1.00, "Astro Alloy"],
+	"iron+copper":   [1.00, "Astro Alloy"],
+	"iron+gold":     [2.00, "Cosmic Steel"],
+	"gold+iron":     [2.00, "Cosmic Steel"],
+	"copper+gold":   [1.50, "Stardust Blend"],
+	"gold+copper":   [1.50, "Stardust Blend"],
+	"gold+diamond":  [2.50, "Jeweled Gold"],
+	"diamond+gold":  [2.50, "Jeweled Gold"],
 }
 
 # Space Forge constants live in MiningShopSystem.gd
@@ -1741,12 +1722,17 @@ func check_player_hazard(col: int, row: int, source_player: PlayerProbe = null) 
 				rpc_explode_area.rpc_id(NetworkManager.guest_peer_id, Vector2i(col, row))
 		_hazard_cooldown = HAZARD_COOLDOWN_TIME
 
-	# Spider web — slow this specific player on contact, then destroy the web
+	# Spider web — freeze player on contact; web breaks after slow phase ends
 	var web_key := Vector2i(col, row)
 	if _web_sprites.has(web_key):
+		# Remove from hazard registry immediately so re-entry doesn't re-trigger,
+		# but keep the foliage tile visible until break_web() is called.
 		_web_sprites.erase(web_key)
-		_foliage_layer.erase_cell(web_key)
-		target_player.apply_web_slow()
+		target_player.apply_web_effect(web_key)
+
+# Called by PlayerProbe after the slow phase expires to remove the web visual.
+func break_web(web_key: Vector2i) -> void:
+	_foliage_layer.erase_cell(web_key)
 
 # ---------------------------------------------------------------------------
 # Terrain decorations — plants, coral, spider webs

@@ -13,14 +13,11 @@ const PICKAXE_ATLAS_COORD: Vector2i = Vector2i(0, 10)
 const TILE_SIZE: int = 64
 
 const ORE_ORDER: Array = [
-	{"tile": 3,  "name": "Lunar Copper",      "tex": "res://assets/blocks/stone_ore_copper.png",             "color": Color(0.90, 0.60, 0.25)},
-	{"tile": 4,  "name": "Deep Lunar Copper", "tex": "res://assets/blocks/stone_ore_copper.png",             "color": Color(0.80, 0.50, 0.15)},
-	{"tile": 5,  "name": "Meteor Iron",       "tex": "res://assets/blocks/stone_ore_iron.png",               "color": Color(0.90, 0.45, 0.70)},
-	{"tile": 6,  "name": "Deep Meteor Iron",  "tex": "res://assets/blocks/stone_ore_iron.png",               "color": Color(0.75, 0.35, 0.60)},
-	{"tile": 7,  "name": "Star Gold",         "tex": "res://assets/blocks/stone_ore_gold.png",               "color": Color(0.85, 0.80, 1.00)},
-	{"tile": 8,  "name": "Deep Star Gold",    "tex": "res://assets/blocks/stone_ore_gold.png",               "color": Color(0.70, 0.65, 0.90)},
-	{"tile": 9,  "name": "Cosmic Gem",        "tex": "res://assets/blocks/stone_generic_ore_crystalline.png","color": Color(0.20, 0.90, 0.95)},
-	{"tile": 10, "name": "Deep Cosmic Gem",   "tex": "res://assets/blocks/stone_generic_ore_crystalline.png","color": Color(0.10, 0.80, 0.85)},
+	{"tile": 3, "name": "Space Coal",     "tex": "res://assets/blocks/mud.png"},
+	{"tile": 4, "name": "Lunar Copper",   "tex": "res://assets/blocks/stone_ore_copper.png"},
+	{"tile": 5, "name": "Meteor Iron",    "tex": "res://assets/blocks/stone_ore_iron.png"},
+	{"tile": 6, "name": "Star Gold",      "tex": "res://assets/blocks/stone_ore_gold.png"},
+	{"tile": 7, "name": "Cosmic Diamond", "tex": "res://assets/blocks/stone_generic_ore_crystalline.png"},
 ]
 
 # Tool items that occupy dedicated slots at the front of the inventory grid.
@@ -270,7 +267,7 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 					"type": "ore",
 					"name": ore["name"],
 					"slot_type": "Ore",
-					"color": ore["color"],
+					"color": Color(0.85, 0.85, 0.85),
 					"border_color": Color(0.60, 0.50, 0.75, 0.70),
 					"desc": "Mine ore and bank it at the surface station for minerals.",
 					"stat": "×%d chunks" % stack["count"],
@@ -322,13 +319,6 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 			var stack: Dictionary = stacks[slot_info["stack_idx"]]
 			var ore: Dictionary = stack["ore"]
 
-			var fill := ColorRect.new()
-			fill.color = Color(ore["color"].r * 0.35, ore["color"].g * 0.35, ore["color"].b * 0.35, 1.0)
-			fill.position = Vector2(sx + 2, sy + 2)
-			fill.size = Vector2(SLOT_SIZE - 4, SLOT_SIZE - 4)
-			fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			parent.add_child(fill)
-
 			var tex: Texture2D = load(ore["tex"]) as Texture2D
 			if tex:
 				var icon := TextureRect.new()
@@ -338,7 +328,6 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 				icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 				icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 				icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-				icon.modulate = ore["color"]
 				icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 				parent.add_child(icon)
 
@@ -558,12 +547,6 @@ func _start_drag(slot_data: Dictionary) -> void:
 		var tex_path: String = slot_data.get("tex_path", "")
 		var tex: Texture2D = load(tex_path) as Texture2D if tex_path != "" else null
 		if tex:
-			var fill := ColorRect.new()
-			fill.color = Color(item_color.r * 0.35, item_color.g * 0.35, item_color.b * 0.35, 0.80)
-			fill.position = Vector2(2, 2)
-			fill.size = Vector2(SLOT_SIZE - 4, SLOT_SIZE - 4)
-			fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			_drag_ghost_icon_root.add_child(fill)
 			var icon := TextureRect.new()
 			icon.texture = tex
 			icon.position = Vector2(4, 4)
@@ -571,7 +554,7 @@ func _start_drag(slot_data: Dictionary) -> void:
 			icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-			icon.modulate = Color(item_color.r, item_color.g, item_color.b, 0.80)
+			icon.modulate = Color(1.0, 1.0, 1.0, 0.80)
 			icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			_drag_ghost_icon_root.add_child(icon)
 
@@ -641,7 +624,6 @@ func _draw_ore_row(parent: Control, x: int, y: int, w: int, ore: Dictionary, cou
 	name_lbl.position = Vector2(x + ICON_SZ + 8, y + 4)
 	name_lbl.custom_minimum_size = Vector2(w - ICON_SZ - 50, 20)
 	name_lbl.add_theme_font_size_override("font_size", 13)
-	name_lbl.modulate = ore["color"]
 	parent.add_child(name_lbl)
 
 	var count_lbl := Label.new()
