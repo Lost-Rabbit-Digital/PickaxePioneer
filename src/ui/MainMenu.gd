@@ -133,6 +133,7 @@ func _on_multiplayer_pressed() -> void:
 func _hide_main_buttons() -> void:
 	$VBoxContainer/SingleplayerButton.hide()
 	$VBoxContainer/MultiplayerButton.hide()
+	$VBoxContainer/WishlistButton.hide()
 	$VBoxContainer/SettingsButton.hide()
 	$VBoxContainer/QuitButton.hide()
 
@@ -141,6 +142,7 @@ func _show_main_buttons() -> void:
 	_active_submenu = ""
 	$VBoxContainer/SingleplayerButton.show()
 	$VBoxContainer/MultiplayerButton.show()
+	$VBoxContainer/WishlistButton.show()
 	$VBoxContainer/SettingsButton.show()
 	$VBoxContainer/QuitButton.show()
 	_menu_title_label.hide()
