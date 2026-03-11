@@ -1741,12 +1741,17 @@ func check_player_hazard(col: int, row: int, source_player: PlayerProbe = null) 
 				rpc_explode_area.rpc_id(NetworkManager.guest_peer_id, Vector2i(col, row))
 		_hazard_cooldown = HAZARD_COOLDOWN_TIME
 
-	# Spider web — slow this specific player on contact, then destroy the web
+	# Spider web — freeze player on contact; web breaks after slow phase ends
 	var web_key := Vector2i(col, row)
 	if _web_sprites.has(web_key):
+		# Remove from hazard registry immediately so re-entry doesn't re-trigger,
+		# but keep the foliage tile visible until break_web() is called.
 		_web_sprites.erase(web_key)
-		_foliage_layer.erase_cell(web_key)
-		target_player.apply_web_slow()
+		target_player.apply_web_effect(web_key)
+
+# Called by PlayerProbe after the slow phase expires to remove the web visual.
+func break_web(web_key: Vector2i) -> void:
+	_foliage_layer.erase_cell(web_key)
 
 # ---------------------------------------------------------------------------
 # Terrain decorations — plants, coral, spider webs
