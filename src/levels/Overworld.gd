@@ -173,6 +173,12 @@ func _ready() -> void:
 	# Pan camera to ship when movement starts
 	caravan.movement_started.connect(_on_caravan_movement_started)
 
+	# First-visit guidance: show a hint and pulse the recommended mine
+	if not GameManager.has_seen_overworld_hint:
+		_show_first_visit_hint()
+		GameManager.has_seen_overworld_hint = true
+		GameManager.save_game()
+
 	queue_redraw()
 
 ## Guest → Host: request the current star chart config.  Called from the guest's
@@ -799,3 +805,44 @@ func _on_center_button_pressed() -> void:
 	_camera_pan_offset = Vector2.ZERO
 	_momentum_velocity = Vector2.ZERO
 	_update_center_button_visibility()
+
+# ---------------------------------------------------------------------------
+# First-visit overworld guidance
+# ---------------------------------------------------------------------------
+
+func _show_first_visit_hint() -> void:
+	# Floating hint label
+	var layer := CanvasLayer.new()
+	layer.layer = 15
+	add_child(layer)
+
+	var hint := Label.new()
+	hint.text = "Click a planet to begin your mining expedition!"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hint.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	hint.offset_top = 40.0
+	hint.add_theme_font_size_override("font_size", 22)
+	hint.add_theme_color_override("font_color", Color(1.0, 0.9, 0.5))
+	hint.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	hint.add_theme_constant_override("shadow_offset_x", 2)
+	hint.add_theme_constant_override("shadow_offset_y", 2)
+	layer.add_child(hint)
+
+	# Gentle float-in and fade-out after 6 seconds
+	hint.modulate.a = 0.0
+	var tween := create_tween()
+	tween.tween_property(hint, "modulate:a", 1.0, 0.5)
+	tween.tween_interval(5.5)
+	tween.tween_property(hint, "modulate:a", 0.0, 1.0)
+	tween.tween_callback(layer.queue_free)
+
+	# Pulse the first mine node to draw attention
+	_pulse_node(mine_node_1)
+
+func _pulse_node(node: MapNode) -> void:
+	var base_scale := node.scale
+	var pulse_tween := create_tween()
+	pulse_tween.set_loops(4)
+	pulse_tween.tween_property(node, "scale", base_scale * 1.15, 0.4).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	pulse_tween.tween_property(node, "scale", base_scale, 0.4).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)

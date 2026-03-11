@@ -6,5 +6,4 @@ func _ready() -> void:
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player"):
-		print("Player reached extraction! Run Complete!")
 		GameManager.complete_run()

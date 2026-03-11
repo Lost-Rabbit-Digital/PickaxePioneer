@@ -78,6 +78,8 @@ var selected_hotbar_slot: int = 0
 # Equipped followers (independent toggles)
 var equipped_leaf: bool = false
 var equipped_ice: bool = false
+# Stub companion equipped states — keyed by companion id (see HatMenu.COMPANIONS)
+var equipped_companions: Dictionary = {}
 
 # Equipped trinkets (independent toggles, persistent)
 var trinket_paraglider: bool = false          # Glide + no fall damage
@@ -153,13 +155,16 @@ var trade_amplifier_built: bool = false  # +25% dollar payout when selling bars
 var has_completed_tier_1_mine: bool = false       # True when player completes any Mine 1/2/3
 var has_completed_tier_2_settlement: bool = false # True when player completes any Settlement 3/4
 
+# Onboarding flags (persisted to save)
+var has_seen_overworld_hint: bool = false  # Suppresses first-visit overworld guidance after first display
+var has_completed_first_run: bool = false  # True after first successful mine exit; gates tutorial hints
+
 # Current node type for the active mine/settlement run (transient, not persisted)
 var current_node_type: int = 0  # MapNode.NodeType value of the node being mined/visited
 
 const SAVE_PATH = "user://save_data.json"
 
 func _ready() -> void:
-	print("GameManager initialized")
 	# Legacy load_game() removed — SaveManager now handles slot-based persistence.
 	# On first boot, SaveManager._migrate_legacy_save() imports the old file.
 	NetworkManager.guest_connected.connect(_on_guest_connected)
@@ -233,7 +238,6 @@ func bank_currency() -> void:
 func change_state(new_state: GameState) -> void:
 	current_state = new_state
 	EventBus.game_state_changed.emit(current_state)
-	print("Game State Changed to: ", new_state)
 
 func start_game() -> void:
 	change_state(GameState.PLAYING)
@@ -244,6 +248,11 @@ func start_game() -> void:
 			ladder_climb_speed_level, mining_reach_level,
 			carapace_gem_socketed, legs_gem_socketed, mandibles_gem_socketed, sense_gem_socketed,
 			warp_drive_built, cargo_bay_built, long_scanner_built, gem_refinery_built, trade_amplifier_built)
+	# Show narrative intro on first new game (singleplayer only)
+	if not has_completed_first_run and not has_seen_overworld_hint and not NetworkManager.is_multiplayer_session:
+		var intro := IntroSequence.new()
+		get_tree().root.add_child(intro)
+		await intro.finished
 	load_overworld()
 
 ## Called on guest by host to apply kit/upgrade state before the game starts.
@@ -332,6 +341,9 @@ func rpc_lose_run_as_guest() -> void:
 	await _transition_to_scene("res://src/levels/Overworld.tscn")
 
 func complete_run() -> void:
+	if not has_completed_first_run:
+		has_completed_first_run = true
+		save_game()
 	if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
 		rpc_complete_run_as_guest.rpc_id(NetworkManager.guest_peer_id, run_coins)
 	var summary_scene = load("res://src/ui/RunSummary.tscn")
@@ -475,38 +487,31 @@ func _transition_to_scene(scene_path: String) -> void:
 func upgrade_carapace() -> void:
 	carapace_level += 1
 	save_game()
-	print("Spacesuit reinforced to level ", carapace_level)
 
 func upgrade_legs() -> void:
 	legs_level += 1
 	save_game()
-	print("Jet Boots upgraded to level ", legs_level)
 
 func upgrade_mandibles() -> void:
 	mandibles_level += 1
 	save_game()
 	EventBus.coins_changed.emit(run_coins)
-	print("Cargo hold expanded to level ", mandibles_level)
 
 func upgrade_mineral_sense() -> void:
 	mineral_sense_level += 1
 	save_game()
-	print("Space Whiskers tuned to level ", mineral_sense_level)
 
 func upgrade_claws() -> void:
 	claws_level += 1
 	save_game()
-	print("Claws sharpened to level ", claws_level)
 
 func upgrade_ladder_climb_speed() -> void:
 	ladder_climb_speed_level += 1
 	save_game()
-	print("Ladder climbing speed upgraded to level ", ladder_climb_speed_level)
 
 func upgrade_mining_reach() -> void:
 	mining_reach_level += 1
 	save_game()
-	print("Mining reach expanded to level ", mining_reach_level)
 
 func get_sonar_ping_radius() -> float:
 	return 4.0 + perk_ranks.get("whiskers", 0) * 3.0
@@ -670,9 +675,12 @@ func save_game() -> void:
 		"ladder_count": ladder_count,
 		"equipped_leaf": equipped_leaf,
 		"equipped_ice": equipped_ice,
+		"equipped_companions": equipped_companions,
 		"cat_color": cat_color.to_html(),
 		"has_completed_tier_1_mine": has_completed_tier_1_mine,
 		"has_completed_tier_2_settlement": has_completed_tier_2_settlement,
+		"has_seen_overworld_hint": has_seen_overworld_hint,
+		"has_completed_first_run": has_completed_first_run,
 		"trinket_paraglider": trinket_paraglider,
 		"trinket_jet_boots": trinket_jet_boots,
 		"trinket_stone_of_regen": trinket_stone_of_regen,
@@ -689,17 +697,14 @@ func save_game() -> void:
 	}
 
 	SaveManager.save_active_slot()
-	print("Game saved (slot %d)" % SaveManager.active_slot)
-  
+
 	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(save_data))
 		file.close()
-		print("Game saved")
 
 func load_game() -> void:
 	if not FileAccess.file_exists(SAVE_PATH):
-		print("No save file found")
 		return
 	
 	var file = FileAccess.open(SAVE_PATH, FileAccess.READ)
@@ -743,6 +748,8 @@ func load_game() -> void:
 			ladder_count = data.get("ladder_count", 0)
 			equipped_leaf = data.get("equipped_leaf", false)
 			equipped_ice = data.get("equipped_ice", false)
+			var saved_companions: Variant = data.get("equipped_companions", {})
+			equipped_companions = saved_companions if saved_companions is Dictionary else {}
 			var color_html: String = data.get("cat_color", "")
 			if color_html != "":
 				cat_color = Color.from_string(color_html, Color.WHITE)
@@ -750,6 +757,8 @@ func load_game() -> void:
 				cat_color = Color.WHITE
 			has_completed_tier_1_mine = data.get("has_completed_tier_1_mine", false)
 			has_completed_tier_2_settlement = data.get("has_completed_tier_2_settlement", false)
+			has_seen_overworld_hint = data.get("has_seen_overworld_hint", false)
+			has_completed_first_run = data.get("has_completed_first_run", false)
 			trinket_paraglider = data.get("trinket_paraglider", false)
 			trinket_jet_boots = data.get("trinket_jet_boots", false)
 			trinket_stone_of_regen = data.get("trinket_stone_of_regen", false)
@@ -763,6 +772,6 @@ func load_game() -> void:
 			trinket_magnet = data.get("trinket_magnet", false)
 			trinket_cosmic_radiation = data.get("trinket_cosmic_radiation", false)
 			trinket_curse_of_core = data.get("trinket_curse_of_core", false)
-			print("Game loaded")
+			pass
 		else:
-			print("Failed to parse save file")
+			push_warning("GameManager: Failed to parse save file")

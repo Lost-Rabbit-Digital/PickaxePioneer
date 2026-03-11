@@ -157,7 +157,6 @@ func _migrate_legacy_save() -> void:
 	if json.parse(json_string) == OK and json.data is Dictionary:
 		_slots[0] = json.data
 		_persist_all_slots()
-		print("SaveManager: Migrated legacy save to slot 0")
 
 # ---------------------------------------------------------------------------
 # Snapshot / Apply
@@ -195,9 +194,12 @@ func _snapshot_game_manager() -> Dictionary:
 		"ladder_count": gm.ladder_count,
 		"equipped_leaf": gm.equipped_leaf,
 		"equipped_ice": gm.equipped_ice,
+		"equipped_companions": gm.equipped_companions,
 		"cat_color": gm.cat_color.to_html(),
 		"has_completed_tier_1_mine": gm.has_completed_tier_1_mine,
 		"has_completed_tier_2_settlement": gm.has_completed_tier_2_settlement,
+		"has_seen_overworld_hint": gm.has_seen_overworld_hint,
+		"has_completed_first_run": gm.has_completed_first_run,
 		# Perk tree
 		"player_xp": gm.player_xp,
 		"player_level": gm.player_level,
@@ -258,6 +260,8 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 	gm.ladder_count = data.get("ladder_count", 10)
 	gm.equipped_leaf = data.get("equipped_leaf", false)
 	gm.equipped_ice = data.get("equipped_ice", false)
+	var saved_companions: Variant = data.get("equipped_companions", {})
+	gm.equipped_companions = saved_companions if saved_companions is Dictionary else {}
 	var color_html: String = data.get("cat_color", "")
 	if color_html != "":
 		gm.cat_color = Color.from_string(color_html, Color.WHITE)
@@ -265,6 +269,8 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 		gm.cat_color = Color.WHITE
 	gm.has_completed_tier_1_mine = data.get("has_completed_tier_1_mine", false)
 	gm.has_completed_tier_2_settlement = data.get("has_completed_tier_2_settlement", false)
+	gm.has_seen_overworld_hint = data.get("has_seen_overworld_hint", false)
+	gm.has_completed_first_run = data.get("has_completed_first_run", false)
 	# Perk tree
 	gm.player_xp = data.get("player_xp", 0)
 	gm.player_level = data.get("player_level", 1)
@@ -324,9 +330,12 @@ func _reset_game_manager() -> void:
 	gm.ladder_count = 10
 	gm.equipped_leaf = false
 	gm.equipped_ice = false
+	gm.equipped_companions = {}
 	gm.cat_color = Color.WHITE
 	gm.has_completed_tier_1_mine = false
 	gm.has_completed_tier_2_settlement = false
+	gm.has_seen_overworld_hint = false
+	gm.has_completed_first_run = false
 	# Perk tree
 	gm.player_xp = 0
 	gm.player_level = 1

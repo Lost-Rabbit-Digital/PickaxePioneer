@@ -56,9 +56,6 @@ func _play_next() -> void:
 	_crossfade_to(_tracks[_order[_index]])
 
 func _crossfade_to(stream: AudioStream) -> void:
-	var track_name := stream.resource_path.get_file().get_basename()
-	print("[MusicManager] Now playing: ", track_name)
-
 	var new_player := AudioStreamPlayer.new()
 	new_player.stream = stream
 	new_player.bus = &"Music"
@@ -93,7 +90,6 @@ func prev_song() -> void:
 	if current_player and current_player.get_playback_position() > 3.0:
 		current_player.stream_paused = false
 		current_player.seek(0.0)
-		print("[MusicManager] Restarting current track")
 		return
 	_index = ((_index - 1 + _order.size()) % _order.size()) - 1
 	_play_next()
@@ -109,7 +105,6 @@ func toggle_pause() -> void:
 		return
 	_paused = not _paused
 	current_player.stream_paused = _paused
-	print("[MusicManager] ", "Paused" if _paused else "Resumed")
 
 func _on_song_finished(player: AudioStreamPlayer) -> void:
 	if player == current_player:

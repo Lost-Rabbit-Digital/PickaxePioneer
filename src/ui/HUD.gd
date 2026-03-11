@@ -17,8 +17,8 @@ const HEALTH_BAR_W: int = 18
 const HEALTH_BAR_H: int = 60
 
 # Vertical energy bars (same style as health bars)
-const ENERGY_BAR_W: int = 18
-const ENERGY_BAR_H: int = 60
+const ENERGY_BAR_W: int = 22
+const ENERGY_BAR_H: int = 72
 var health_bars: Array[Control] = []
 var health_bar_fills: Array[ColorRect] = []
 var health_bar_highlights: Array[ColorRect] = []
@@ -30,6 +30,8 @@ var earnings_label: Label
 var depth_label: Label
 var dollars_label: Label
 var _earnings_tween: Tween
+var _coins_tween: Tween
+var _prev_run_coins: int = 0
 
 # XP / level display (lower-left of info panel)
 var _xp_bar_bg   : ColorRect
@@ -67,6 +69,16 @@ var _low_energy_tween: Tween
 var _milestone_label: Label
 var _milestone_tween: Tween
 var _next_milestone: int = 20
+
+# Depth sidebar — vertical indicator showing player depth relative to zones
+var _depth_sidebar_bg: ColorRect
+var _depth_sidebar_marker: ColorRect
+var _depth_sidebar_zones: Array[ColorRect] = []
+const DEPTH_SIDEBAR_X := 4.0
+const DEPTH_SIDEBAR_W := 8.0
+const DEPTH_SIDEBAR_TOP := 180.0
+const DEPTH_SIDEBAR_H := 400.0
+const TOTAL_DEPTH_ROWS := 128  # matches GRID_ROWS
 
 # Surface exit hint — bottom-right, pulses when player is on surface
 var _exit_hint_label: Label
@@ -320,12 +332,72 @@ func _ready() -> void:
 	# Initialize energy display after all UI elements are created
 	_on_energy_changed(GameManager.current_energy, GameManager.get_max_energy())
 
+	# Build the depth sidebar — vertical bar on left edge showing player depth
+	_build_depth_sidebar()
+
 	# Build the bottom-centre hotbar (pickaxe / ladder / empty)
 	_build_hotbar()
+
+func _build_depth_sidebar() -> void:
+	# Background track
+	_depth_sidebar_bg = ColorRect.new()
+	_depth_sidebar_bg.position = Vector2(DEPTH_SIDEBAR_X, DEPTH_SIDEBAR_TOP)
+	_depth_sidebar_bg.size = Vector2(DEPTH_SIDEBAR_W, DEPTH_SIDEBAR_H)
+	_depth_sidebar_bg.color = Color(0.1, 0.1, 0.15, 0.6)
+	$Control.add_child(_depth_sidebar_bg)
+
+	# Depth zone color bands
+	var zone_rows := [0, 16, 41, 71, 101, TOTAL_DEPTH_ROWS]
+	var zone_colors := [
+		Color(0.72, 0.56, 0.36, 0.5),  # The Crust
+		Color(0.80, 0.40, 0.15, 0.5),  # The Mantle
+		Color(0.90, 0.22, 0.08, 0.5),  # The Outer Core
+		Color(1.00, 0.70, 0.10, 0.5),  # The Inner Core
+		Color(0.70, 0.10, 0.85, 0.5),  # The Primordial Forge
+	]
+	for i in range(mini(zone_colors.size(), zone_rows.size() - 1)):
+		var y_start := DEPTH_SIDEBAR_TOP + (float(zone_rows[i]) / float(TOTAL_DEPTH_ROWS)) * DEPTH_SIDEBAR_H
+		var y_end := DEPTH_SIDEBAR_TOP + (float(zone_rows[i + 1]) / float(TOTAL_DEPTH_ROWS)) * DEPTH_SIDEBAR_H
+		var zone_rect := ColorRect.new()
+		zone_rect.position = Vector2(DEPTH_SIDEBAR_X, y_start)
+		zone_rect.size = Vector2(DEPTH_SIDEBAR_W, y_end - y_start)
+		zone_rect.color = zone_colors[i]
+		$Control.add_child(zone_rect)
+		_depth_sidebar_zones.append(zone_rect)
+
+	# Boss row markers (thin white lines)
+	var boss_rows := [32, 64, 96, 112, 128]
+	for br in boss_rows:
+		var by := DEPTH_SIDEBAR_TOP + (float(br) / float(TOTAL_DEPTH_ROWS)) * DEPTH_SIDEBAR_H
+		var boss_mark := ColorRect.new()
+		boss_mark.position = Vector2(DEPTH_SIDEBAR_X - 2, by - 0.5)
+		boss_mark.size = Vector2(DEPTH_SIDEBAR_W + 4, 1.0)
+		boss_mark.color = Color(1.0, 0.3, 0.2, 0.7)
+		$Control.add_child(boss_mark)
+
+	# Player depth marker (bright, wider)
+	_depth_sidebar_marker = ColorRect.new()
+	_depth_sidebar_marker.position = Vector2(DEPTH_SIDEBAR_X - 3, DEPTH_SIDEBAR_TOP)
+	_depth_sidebar_marker.size = Vector2(DEPTH_SIDEBAR_W + 6, 3.0)
+	_depth_sidebar_marker.color = Color(1.0, 1.0, 1.0, 0.9)
+	$Control.add_child(_depth_sidebar_marker)
 
 func _on_coins_changed(_copper: int) -> void:
 	scrap_label.text = "Slots: %d/%d" % [GameManager.get_stacked_slots_used(), GameManager.get_ore_capacity()]
 	dollars_label.text = GameManager.format_coins(GameManager.coins)
+
+	# Scale-bounce + color flash when run coins increase
+	if GameManager.run_coins > _prev_run_coins and _prev_run_coins >= 0:
+		if _coins_tween:
+			_coins_tween.kill()
+		dollars_label.scale = Vector2(1.25, 1.25)
+		dollars_label.modulate = Color(1.0, 1.0, 0.3, 1.0)
+		_coins_tween = create_tween()
+		_coins_tween.set_parallel(true)
+		_coins_tween.tween_property(dollars_label, "scale", Vector2.ONE, 0.25) \
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		_coins_tween.tween_property(dollars_label, "modulate", Color(0.30, 1.0, 0.40, 1.0), 0.35)
+	_prev_run_coins = GameManager.run_coins
 
 # Called when a tile is mined.
 # Ore pickups (ORE_NAMES + amount > 0) show a rich icon + amount + name popup.
@@ -461,6 +533,12 @@ func _on_health_changed(current: float, max_hp: int) -> void:
 		_low_hp_warning.modulate.a = 0.0
 
 func _on_depth_changed(depth_rows: int) -> void:
+	# Update depth sidebar marker position
+	if _depth_sidebar_marker:
+		var clamped := clampi(depth_rows, 0, TOTAL_DEPTH_ROWS)
+		var marker_y := DEPTH_SIDEBAR_TOP + (float(clamped) / float(TOTAL_DEPTH_ROWS)) * DEPTH_SIDEBAR_H
+		_depth_sidebar_marker.position.y = marker_y - 1.5
+
 	if depth_rows <= 0:
 		depth_label.text = "Orbit"
 		depth_label.modulate = Color(0.6, 0.85, 1.0, 1.0)

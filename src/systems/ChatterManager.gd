@@ -60,9 +60,6 @@ func _ready() -> void:
 	if spawn_area.size == Vector2.ZERO:
 		var vp_size = get_viewport().get_visible_rect().size
 		spawn_area = Rect2(50, 50, vp_size.x - 100, vp_size.y - 100)
-		print("ChatterManager: Spawn area was empty, defaulted to: ", spawn_area)
-	else:
-		print("ChatterManager: Spawn area initialized to: ", spawn_area)
 
 	timer = Timer.new()
 	add_child(timer)
