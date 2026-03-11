@@ -34,8 +34,7 @@ func show_locked_message(node: MapNode) -> void:
 	description_label.text = _get_lock_reason_text(node)
 	hazards_label.visible = false
 	hsep2.visible = true
-	enter_button.text = "OK"
-	enter_button.disabled = true
+	enter_button.visible = false
 	planet_info_label.visible = false
 	show()
 
@@ -49,6 +48,7 @@ func _get_lock_reason_text(node: MapNode) -> String:
 func show_for_node(node: MapNode, travel_mode: bool = false) -> void:
 	_current_node = node
 	_travel_mode = travel_mode
+	enter_button.visible = true
 	title_label.text = node.location_name
 	description_label.text = node.description if node.description != "" else _default_description(node)
 
