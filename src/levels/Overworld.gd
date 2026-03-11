@@ -34,6 +34,7 @@ var _camera_min_zoom: float = 0.5
 var _camera_max_zoom: float = 3.0
 var _camera_zoom_speed: float = 0.1
 var _camera_follow_caravan: bool = true
+var _camera_tween: Tween = null
 
 # Mouse drag panning
 var _is_dragging: bool = false
@@ -667,6 +668,17 @@ func _on_node_clicked(node: MapNode) -> void:
 	if _is_node_locked(node):
 		_show_lock_message(node)
 		return
+
+	# Pan camera to planet and zoom to default
+	_camera_follow_caravan = false
+	_camera_pan_offset = Vector2.ZERO
+	_momentum_velocity = Vector2.ZERO
+	if _camera_tween:
+		_camera_tween.kill()
+	_camera_tween = create_tween().set_parallel(true).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	_camera_tween.tween_property(camera, "global_position", node.global_position, 0.4)
+	_camera_tween.tween_property(self, "_camera_zoom", 1.0, 0.4)
+	_update_center_button_visibility()
 
 	# Cancel any in-progress travel
 	if caravan.arrived.is_connected(_on_caravan_arrived):
