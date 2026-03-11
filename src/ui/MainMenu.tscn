@@ -85,19 +85,18 @@ layout_mode = 2
 theme = ExtResource("4_fqh1q")
 text = "Multiplayer"
 
+[node name="WishlistButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Tell the galaxy you want this game."
+theme = ExtResource("4_fqh1q")
+theme_override_font_sizes/font_size = 32
+text = "Wishlist on Steam!"
+
 [node name="SettingsButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 tooltip_text = "Fiddle with the cosmic dials."
 theme = ExtResource("4_fqh1q")
 text = "Settings"
-
-[node name="WishlistButton" type="Button" parent="VBoxContainer"]
-visible = false
-layout_mode = 2
-tooltip_text = "Tell the galaxy you want this game."
-theme = ExtResource("4_fqh1q")
-theme_override_font_sizes/font_size = 32
-text = "WISHLIST NOW"
 
 [node name="QuitButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
