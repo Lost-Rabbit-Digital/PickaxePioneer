@@ -488,7 +488,7 @@ func _squash_stretch(target_scale: Vector2) -> void:
 		_squash_tween.kill()
 	sprite.scale = target_scale
 	_squash_tween = create_tween()
-	_squash_tween.tween_property(sprite, "scale", Vector2.ONE, 0.15) \
+	_squash_tween.tween_property(sprite, "scale", Vector2(4.0, 4.0), 0.15) \
 		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 
 func _spawn_poof() -> void:
