@@ -234,7 +234,10 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_P:
-			if visible: _close() else: _open()
+			if visible:
+				_close()
+			else:
+				_open()
 			get_viewport().set_input_as_handled()
 		if visible and event.keycode == KEY_SPACE:
 			_close()
