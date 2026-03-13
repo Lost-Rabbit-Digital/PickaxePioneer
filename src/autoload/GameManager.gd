@@ -9,9 +9,8 @@ enum GameState {
 
 var current_state: GameState = GameState.MENU
 ## Unified coin wallet (persistent). Stored as total copper units.
-## 100 copper = 1 silver (s), 100 silver = 1 gold (g).
-## Use format_coins() to display, add_currency() / add_dollars() to earn,
-## and bank_currency() at run end to transfer run_coins here.
+## 100 copper = 1g. Use format_coins() to display, add_currency() / add_dollars()
+## to earn, and bank_currency() at run end to transfer run_coins here.
 var coins: int = 0
 ## Run-scoped coin wallet (lost on death, banked on completion).
 var run_coins: int = 0
@@ -145,8 +144,8 @@ var sense_gem_socketed: bool = false         # +3 sonar ping radius
 
 # Spaceship Upgrade system — permanent ship upgrades unlocked by milestone conditions.
 # Unlock conditions are checked at runtime; build costs are spent from dollars.
-## Spaceship upgrade costs in copper (1 silver = 100 copper).
-## 20000 copper = 2g, 15000 = 1g 50s, 30000 = 3g, 25000 = 2g 50s.
+## Spaceship upgrade costs in copper (100 copper = 1g).
+## 20000 copper = 200g, 15000 = 150g, 30000 = 300g, 25000 = 250g.
 const SHIP_COST_WARP_DRIVE: int       = 20000  # unlocks when total_coins_banked >= 50000
 const SHIP_COST_CARGO_BAY: int        = 15000  # unlocks when bosses_defeated_total >= 1
 const SHIP_COST_LONG_SCANNER: int     = 30000  # unlocks when total_coins_banked >= 100000
@@ -228,19 +227,9 @@ func _process(delta: float) -> void:
 		total_playtime_seconds += delta
 
 ## Format a copper amount as a human-readable coin string.
-## Examples: 12345 → "1g 23s 45c", 500 → "5s", 7 → "7c", 0 → "0c"
+## 100 copper = 1g. Examples: 12345 → "123g", 500 → "5g", 7 → "0g", 0 → "0g"
 static func format_coins(copper: int) -> String:
-	if copper <= 0:
-		return "0c"
-	var gold := copper / 10000
-	var rem  := copper % 10000
-	var silver := rem / 100
-	var cents  := rem % 100
-	var parts: Array[String] = []
-	if gold   > 0: parts.append("%dg" % gold)
-	if silver > 0: parts.append("%ds" % silver)
-	if cents  > 0: parts.append("%dc" % cents)
-	return " ".join(parts)
+	return "%dg" % maxi(0, copper / 100)
 
 ## Add copper directly to the run wallet (use for ore pickups, bonuses, etc.).
 ## Callers may pass old "mineral unit" amounts — multiply by 100 to get copper.

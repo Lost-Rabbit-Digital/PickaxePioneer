@@ -1886,7 +1886,7 @@ func _check_streak_milestone() -> void:
 		var bonus := mini(_mine_streak, 15)
 		GameManager.add_currency(bonus)
 		EventBus.coins_earned.emit(bonus)
-		EventBus.game_notification.emit("Streak x%d! +%dc" % [_mine_streak, bonus], Color(1.0, 0.60, 0.10))
+		EventBus.game_notification.emit("Streak x%d! +%s" % [_mine_streak, GameManager.format_coins(bonus * 100)], Color(1.0, 0.60, 0.10))
 
 # ---------------------------------------------------------------------------
 # Gravity block system — GRAVITY_TILES fall when unsupported

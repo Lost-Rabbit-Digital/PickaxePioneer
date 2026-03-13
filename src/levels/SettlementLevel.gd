@@ -788,7 +788,7 @@ func _close_shop() -> void:
 	_shop_layer.visible = false
 
 func _refresh_minerals() -> void:
-	_minerals_label.text = "Coins: %s" % GameManager.format_coins(GameManager.coins)
+	_minerals_label.text = "Balance: %s" % GameManager.format_coins(GameManager.coins)
 
 func _update_button_states() -> void:
 	var m := GameManager.coins

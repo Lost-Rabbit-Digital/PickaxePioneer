@@ -135,7 +135,7 @@ func _build_ui() -> void:
 	_add_label(_panel_node, "Count", px + 260.0, py + HEADER_H - ROW_H + 4.0,
 			90.0, ROW_H - 6.0, 13, Color(0.55, 0.55, 0.55),
 			HORIZONTAL_ALIGNMENT_RIGHT)
-	_add_label(_panel_node, "Coins", px + 356.0, py + HEADER_H - ROW_H + 4.0,
+	_add_label(_panel_node, "Value", px + 356.0, py + HEADER_H - ROW_H + 4.0,
 			160.0, ROW_H - 6.0, 13, Color(0.55, 0.55, 0.55),
 			HORIZONTAL_ALIGNMENT_RIGHT)
 
@@ -183,7 +183,7 @@ func _build_ui() -> void:
 		row_nodes.append(_add_label(_panel_node, "x%d" % count, px + 260.0, y, 90.0, ROW_H, 16,
 				Color(0.75, 0.75, 0.75), HORIZONTAL_ALIGNMENT_RIGHT))
 
-		# Coins earned (earned is in copper)
+		# Value earned (earned is in copper; format_coins converts to g)
 		row_nodes.append(_add_label(_panel_node, "+%s" % GameManager.format_coins(earned), px + 356.0, y, 160.0, ROW_H, 16,
 				Color(1.00, 0.88, 0.25), HORIZONTAL_ALIGNMENT_RIGHT))
 
