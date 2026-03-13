@@ -229,6 +229,7 @@ func _snapshot_game_manager() -> Dictionary:
 		"long_scanner_built": gm.long_scanner_built,
 		"gem_refinery_built": gm.gem_refinery_built,
 		"trade_amplifier_built": gm.trade_amplifier_built,
+		"debt_paid": gm.debt_paid,
 		"last_overworld_node_name": gm.last_overworld_node_name,
 		"ladder_count": gm.ladder_count,
 		"equipped_leaf": gm.equipped_leaf,
@@ -309,6 +310,7 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 	gm.long_scanner_built = data.get("long_scanner_built", false)
 	gm.gem_refinery_built = data.get("gem_refinery_built", false)
 	gm.trade_amplifier_built = data.get("trade_amplifier_built", false)
+	gm.debt_paid = data.get("debt_paid", 0)
 	gm.last_overworld_node_name = data.get("last_overworld_node_name", "")
 	gm.ladder_count = data.get("ladder_count", 10)
 	gm.equipped_leaf = data.get("equipped_leaf", false)
@@ -403,6 +405,7 @@ func _reset_game_manager() -> void:
 	gm.long_scanner_built = false
 	gm.gem_refinery_built = false
 	gm.trade_amplifier_built = false
+	gm.debt_paid = 0
 	gm.ladder_count = 10
 	gm.equipped_leaf = false
 	gm.equipped_ice = false
