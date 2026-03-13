@@ -403,7 +403,6 @@ func _build_footer() -> void:
 	_canvas.add_child(btn)
 
 	# Stats summary — left of footer
-	var runs := GameManager.total_runs if GameManager.get("total_runs") != null else 0
 	var stats := Label.new()
 	stats.text = "Deepest: %dm  |  Bosses: %d" % [
 		GameManager.deepest_row_reached * 50,
