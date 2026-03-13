@@ -45,6 +45,10 @@ signal xp_changed(current_xp: int, xp_to_next: int)   # Emitted whenever XP chan
 signal player_leveled_up(new_level: int, perk_points: int)  # Emitted on each level-up
 signal perk_points_changed(perk_points: int)            # Emitted when points are spent/gained
 
+# Global Progress Signals — cross-save account-level progression
+signal global_xp_changed(current_xp: int, xp_to_next: int)  # Emitted whenever global XP changes
+signal global_player_leveled_up(new_level: int)              # Emitted on each global level-up
+
 # Trinket Signals
 signal trinket_equipped(trinket_id: String)  # Emitted when a trinket is equipped or unequipped
 

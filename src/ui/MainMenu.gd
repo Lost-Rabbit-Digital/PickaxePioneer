@@ -66,6 +66,9 @@ var _settings_panel: Node = null
 var _customize_menu: CustomizationMenu = null
 var _menu_char_sprite: AnimatedSprite2D = null
 
+@onready var _player_level_bar: ProgressBar = $CharacterContainer/CurrentPlayerLevelProgress
+@onready var _player_level_label: Label = $CharacterContainer/CurrentPlayerLevelProgress/Panel/Label
+
 func _ready() -> void:
 	$VBoxContainer/SingleplayerButton.pressed.connect(_on_singleplayer_pressed)
 	$VBoxContainer/MultiplayerButton.pressed.connect(_on_multiplayer_pressed)
@@ -105,6 +108,10 @@ func _ready() -> void:
 		NetworkManager.disconnect_session()
 
 	credits_panel.hide()
+
+	_update_player_level_display()
+	EventBus.global_xp_changed.connect(_on_global_xp_changed)
+	EventBus.global_player_leveled_up.connect(_on_global_player_leveled_up)
 
 # ---------------------------------------------------------------------------
 # Menu buttons
@@ -325,6 +332,24 @@ func _update_menu_char_sprite_shader() -> void:
 		var mat := _menu_char_sprite.material as ShaderMaterial
 		mat.set_shader_parameter("base_color", GameManager.cat_color)
 		mat.set_shader_parameter("outline_color", GameManager.cat_outline_color)
+
+# ---------------------------------------------------------------------------
+# Player level display — shows global cross-save level and XP progress
+# ---------------------------------------------------------------------------
+
+func _update_player_level_display() -> void:
+	var level: int = GameManager.global_player_level
+	var xp: int = GameManager.global_player_xp
+	var xp_max: int = PerkSystem.xp_for_next_level(level)
+	_player_level_bar.max_value = xp_max
+	_player_level_bar.value = xp
+	_player_level_label.text = str(level)
+
+func _on_global_xp_changed(_current_xp: int, _xp_to_next: int) -> void:
+	_update_player_level_display()
+
+func _on_global_player_leveled_up(_new_level: int) -> void:
+	_update_player_level_display()
 
 # ---------------------------------------------------------------------------
 # Singleplayer overlay — built in code
