@@ -378,6 +378,7 @@ var _exit_pulse_time: float = 0.0
 
 # Cursor highlight
 var _cursor_grid_pos: Vector2i = Vector2i(-1, -1)
+var _cursor_raw_grid_pos: Vector2i = Vector2i(-1, -1)  # hovered tile regardless of mining range
 
 # Ladder ghost preview — shown when slot 1 (ladder) is selected
 var _ladder_ghost_pos: Vector2i = Vector2i(-1, -1)
@@ -1273,6 +1274,7 @@ func _update_cursor_highlight() -> void:
 	var mouse_world := get_global_mouse_position()
 	var gp := Vector2i(floori(mouse_world.x / CELL_SIZE), floori(mouse_world.y / CELL_SIZE))
 	if gp.x >= 0 and gp.x < GRID_COLS and gp.y >= 0 and gp.y < GRID_ROWS:
+		_cursor_raw_grid_pos = gp
 		# World-space distance from player position to tile centre (in tile units)
 		# matches the range check used in PlayerProbe so the highlight is accurate.
 		var tile_center := Vector2(gp.x + 0.5, gp.y + 0.5) * CELL_SIZE
@@ -1282,6 +1284,7 @@ func _update_cursor_highlight() -> void:
 		else:
 			_cursor_grid_pos = Vector2i(-1, -1)
 	else:
+		_cursor_raw_grid_pos = Vector2i(-1, -1)
 		_cursor_grid_pos = Vector2i(-1, -1)
 
 	# Ladder ghost preview — only active when ladder slot (slot 1) is selected
