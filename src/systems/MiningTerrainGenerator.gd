@@ -45,6 +45,8 @@ const VEIN_MEANDER_CHANCE: float = 0.35
 ##
 ## `seed_value`       = deterministic seed; identical seeds produce identical terrain.
 ## `depth_zone_rows`  = MiningLevel.DEPTH_ZONE_ROWS (used for vein zone bounds)
+## `biome`            = one of "Ice", "Desert", "Rock", "Forest", "Jungle".
+##                      Controls terrain composition and generation parameters.
 func generate(
 		grid: Array,
 		cols: int,
@@ -54,7 +56,8 @@ func generate(
 		depth_zone_rows: Array,
 		allowed_ore_types: Array,
 		allowed_hazard_types: Array,
-		seed_value: int = 0) -> void:
+		seed_value: int = 0,
+		biome: String = "Rock") -> void:
 	_rng.seed = seed_value
 	_cols = cols
 	_rows = rows
@@ -64,6 +67,7 @@ func generate(
 	_allowed_ore = allowed_ore_types
 	_allowed_hazard = allowed_hazard_types
 	_grid = grid
+	_biome = biome
 
 	_generate_grid()
 	_generate_tile_patches()
@@ -85,6 +89,76 @@ var _exit_cols: int
 var _depth_zone_rows: Array
 var _allowed_ore: Array
 var _allowed_hazard: Array
+# Current biome — set by generate().  Drives generation parameter overrides.
+var _biome: String = "Rock"
+
+# ---------------------------------------------------------------------------
+# Biome configuration tables
+# ---------------------------------------------------------------------------
+# Per-biome overrides for the base random-tile composition.
+# Keys: stone_bonus (added to depth-scaled stone_chance),
+#       hazard_mult (multiplier on base_hazard before explosive split),
+#       energy_bonus (extra flat probability for energy nodes).
+const BIOME_TILE_PARAMS: Dictionary = {
+	"Ice": {
+		"stone_bonus":   0.15,   # rockier / more frozen ground
+		"hazard_mult":   0.30,   # fewer hazards (frozen, inert)
+		"energy_bonus":  0.02,   # frozen crystal energy nodes
+		"lava_allowed":  false,  # no lava on ice worlds
+	},
+	"Desert": {
+		"stone_bonus":  -0.10,   # sandier, less solid stone
+		"hazard_mult":   1.60,   # unstable, more explosives
+		"energy_bonus":  0.00,
+		"lava_allowed":  true,
+	},
+	"Rock": {
+		"stone_bonus":   0.20,   # very rocky
+		"hazard_mult":   1.00,   # standard hazards
+		"energy_bonus":  0.00,
+		"lava_allowed":  true,
+	},
+	"Forest": {
+		"stone_bonus":  -0.15,   # earthy, more dirt than stone
+		"hazard_mult":   0.60,   # less hazardous underground
+		"energy_bonus":  0.01,   # bioluminescent energy nodes
+		"lava_allowed":  false,  # no lava in forest worlds
+	},
+	"Jungle": {
+		"stone_bonus":  -0.10,
+		"hazard_mult":   0.80,
+		"energy_bonus":  0.015,
+		"lava_allowed":  false,
+	},
+}
+
+# Per-biome overrides for lava lake count range [min, max].
+# Ice/Forest/Jungle have no lava (enforced by lava_allowed flag above).
+const BIOME_LAVA_COUNTS: Dictionary = {
+	"Ice":    [0, 0],
+	"Desert": [7, 12],
+	"Rock":   [5, 9],   # default
+	"Forest": [0, 0],
+	"Jungle": [0, 0],
+}
+
+# Per-biome cave room count ranges [min, max].
+const BIOME_CAVE_COUNTS: Dictionary = {
+	"Ice":    [8,  13],   # fewer caves (frozen solid)
+	"Desert": [10, 15],   # moderate
+	"Rock":   [12, 18],   # default
+	"Forest": [16, 24],   # extensive cave networks
+	"Jungle": [14, 20],
+}
+
+# Per-biome stone-mass patch count ranges [min, max].
+const BIOME_STONE_PATCH_COUNTS: Dictionary = {
+	"Ice":    [16, 22],   # many frozen rock masses
+	"Desert": [6,  10],   # less stone, more open sand
+	"Rock":   [10, 16],   # default
+	"Forest": [6,  10],   # fewer stone masses
+	"Jungle": [8,  12],
+}
 
 # ---------------------------------------------------------------------------
 # Grid initialisation
@@ -123,20 +197,25 @@ func _random_tile(_col: int, row: int) -> int:
 	var r := _rng.randf()
 	var depth := float(row - _surface_rows) / float(_rows - _surface_rows)
 
-	var explosive_ok := _allowed_hazard.is_empty() or _allowed_hazard.has("Explosives")
-	var lava_ok      := _allowed_hazard.is_empty() or _allowed_hazard.has("Lava")
+	# Fetch biome modifiers (fall back to Rock defaults if biome unknown)
+	var bparams: Dictionary = BIOME_TILE_PARAMS.get(_biome, BIOME_TILE_PARAMS["Rock"])
+	var hazard_mult:  float = bparams.get("hazard_mult",  1.0)
+	var energy_bonus: float = bparams.get("energy_bonus", 0.0)
+	var stone_bonus:  float = bparams.get("stone_bonus",  0.0)
 
-	var base_hazard    := 0.08 + depth * 0.20
+	var explosive_ok := _allowed_hazard.is_empty() or _allowed_hazard.has("Explosives")
+
+	var base_hazard    := (0.08 + depth * 0.20) * hazard_mult
 	var explosive_bias := base_hazard * 0.45 if explosive_ok else 0.0
 	# Lava generation moved entirely to _generate_lava_lakes() for semi-circular pools only
 	var total_hazard   := explosive_bias
 
-	if   r < explosive_bias * (2.0 / 3.0):       return T_EXPLOSIVE
-	elif r < explosive_bias:                       return T_EXPLOSIVE_ARMED
-	elif r < total_hazard + 0.02:                 return T_ENERGY_NODE
-	elif r < total_hazard + 0.03:                 return T_ENERGY_NODE_FULL
+	if   r < explosive_bias * (2.0 / 3.0):                    return T_EXPLOSIVE
+	elif r < explosive_bias:                                   return T_EXPLOSIVE_ARMED
+	elif r < total_hazard + 0.02 + energy_bonus:              return T_ENERGY_NODE
+	elif r < total_hazard + 0.03 + energy_bonus * 2.0:        return T_ENERGY_NODE_FULL
 
-	var stone_chance := 0.10 + depth * 0.50
+	var stone_chance := clampf(0.10 + depth * 0.50 + stone_bonus, 0.0, 0.90)
 	var r2 := _rng.randf()
 	if   r2 < stone_chance * 0.6:   return T_STONE_DARK
 	elif r2 < stone_chance:          return T_STONE
@@ -196,7 +275,8 @@ func _seed_shallow_ore() -> void:
 # ---------------------------------------------------------------------------
 
 func _generate_cave_rooms() -> void:
-	var num_rooms := _rng.randi_range(12, 18)
+	var cave_range: Array = BIOME_CAVE_COUNTS.get(_biome, [12, 18])
+	var num_rooms := _rng.randi_range(cave_range[0], cave_range[1])
 	for _i in range(num_rooms):
 		var room_col  := _rng.randi_range(5, _cols - 8)
 		var room_row  := _rng.randi_range(_surface_rows + 6, _rows - 8)
@@ -279,7 +359,8 @@ func _generate_tile_patches() -> void:
 	# --- Stone masses ---
 	# Replace scattered dirt tiles with stone in elliptical blobs, biased
 	# toward darker stone at greater depth.
-	var num_stone := _rng.randi_range(10, 16)
+	var stone_range: Array = BIOME_STONE_PATCH_COUNTS.get(_biome, [10, 16])
+	var num_stone := _rng.randi_range(stone_range[0], stone_range[1])
 	for _i in range(num_stone):
 		var pc    := _rng.randi_range(3, _cols - 4)
 		var pr    := _rng.randi_range(_surface_rows + 8, _rows - 6)
@@ -348,10 +429,12 @@ func _generate_tile_patches() -> void:
 ## The outer shell uses T_LAVA_FLOW and the dense interior uses T_LAVA.
 func _generate_lava_lakes() -> void:
 	var lava_ok := _allowed_hazard.is_empty() or _allowed_hazard.has("Lava")
-	if not lava_ok:
+	var bparams: Dictionary = BIOME_TILE_PARAMS.get(_biome, BIOME_TILE_PARAMS["Rock"])
+	if not lava_ok or not bparams.get("lava_allowed", true):
 		return
 
-	var num_lakes := _rng.randi_range(5, 9)
+	var lake_range: Array = BIOME_LAVA_COUNTS.get(_biome, [5, 9])
+	var num_lakes := _rng.randi_range(lake_range[0], lake_range[1])
 	for _i in range(num_lakes):
 		var center_col := _rng.randi_range(8, _cols - 9)
 		# Keep lakes away from the very top and bottom of the mine
