@@ -5,6 +5,7 @@ extends Node
 # stays consistent until the player dies.
 
 const SAVE_PATH := "user://save_slots.json"
+const GLOBAL_SAVE_PATH := "user://global_progress.json"
 const MAX_SLOTS := 3
 
 # Currently active slot index (-1 = no slot loaded)
@@ -15,6 +16,7 @@ var _slots: Array = [null, null, null]
 
 func _ready() -> void:
 	_load_all_slots()
+	_load_global_progress()
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -152,6 +154,32 @@ func _persist_all_slots() -> void:
 	if file:
 		file.store_string(JSON.stringify(_slots))
 		file.close()
+
+## Save global progress (cross-save XP and level) to its own file.
+func save_global_progress() -> void:
+	var gm = GameManager
+	var data := {
+		"global_player_xp": gm.global_player_xp,
+		"global_player_level": gm.global_player_level,
+	}
+	var file = FileAccess.open(GLOBAL_SAVE_PATH, FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.stringify(data))
+		file.close()
+
+func _load_global_progress() -> void:
+	if not FileAccess.file_exists(GLOBAL_SAVE_PATH):
+		return
+	var file = FileAccess.open(GLOBAL_SAVE_PATH, FileAccess.READ)
+	if not file:
+		return
+	var json_string = file.get_as_text()
+	file.close()
+	var json = JSON.new()
+	if json.parse(json_string) == OK and json.data is Dictionary:
+		var gm = GameManager
+		gm.global_player_xp = json.data.get("global_player_xp", 0)
+		gm.global_player_level = json.data.get("global_player_level", 1)
 
 func _migrate_legacy_save() -> void:
 	# If the old single-file save exists, import it into slot 0

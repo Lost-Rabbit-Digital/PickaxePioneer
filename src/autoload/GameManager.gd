@@ -120,6 +120,13 @@ var perk_points: int = 0        # Unspent perk points (1 awarded per level-up)
 ## Maps perk id (String) -> current rank (int).  Missing key = rank 0.
 var perk_ranks: Dictionary = {}
 
+# ---------------------------------------------------------------------------
+# Global Progress — shared across all saves, stored in a separate file.
+# Used to unlock cosmetics (cat colors, companions) independent of save slots.
+# ---------------------------------------------------------------------------
+var global_player_xp: int = 0      # XP within the current global level
+var global_player_level: int = 1   # Global player level (1-indexed)
+
 # Gem socketing system — gems collected as items, socketed for passive bonuses
 var gem_count: int = 0                       # unspent gems in the colony's stockpile
 const GEM_SOCKET_COST: int = 3              # gems required to fill one socket slot
@@ -695,11 +702,16 @@ func is_out_of_energy() -> bool:
 # XP and Perk Tree
 # ---------------------------------------------------------------------------
 
-## Add XP to the player.  Handles level-ups automatically.
+## Add XP to the player.  Handles per-save and global level-ups automatically.
 func add_xp(amount: int) -> void:
-	player_xp += maxi(1, roundi(amount * 0.3))
+	var xp_gained: int = maxi(1, roundi(amount * 0.3))
+	player_xp += xp_gained
 	_process_level_ups()
 	EventBus.xp_changed.emit(player_xp, PerkSystem.xp_for_next_level(player_level))
+	global_player_xp += xp_gained
+	_process_global_level_ups()
+	EventBus.global_xp_changed.emit(global_player_xp, PerkSystem.xp_for_next_level(global_player_level))
+	SaveManager.save_global_progress()
 
 func _process_level_ups() -> void:
 	var threshold := PerkSystem.xp_for_next_level(player_level)
@@ -710,6 +722,14 @@ func _process_level_ups() -> void:
 		SaveManager.save_active_slot()
 		EventBus.player_leveled_up.emit(player_level, perk_points)
 		threshold = PerkSystem.xp_for_next_level(player_level)
+
+func _process_global_level_ups() -> void:
+	var threshold := PerkSystem.xp_for_next_level(global_player_level)
+	while global_player_xp >= threshold:
+		global_player_xp -= threshold
+		global_player_level += 1
+		EventBus.global_player_leveled_up.emit(global_player_level)
+		threshold = PerkSystem.xp_for_next_level(global_player_level)
 
 ## Spend one perk point on a perk.  Returns true on success.
 func spend_perk_point(perk_id: String) -> bool:
