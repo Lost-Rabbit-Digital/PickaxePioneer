@@ -157,16 +157,23 @@ func _draw() -> void:
 				draw_rect(Rect2(lx + 10, ly + 10 + rung * 18, CELL_SIZE - 20, 5), rung_c)
 			draw_rect(Rect2(lx, ly, CELL_SIZE, CELL_SIZE), border_c, false, 2.0)
 	else:
-		if level._cursor_grid_pos.x >= 0 and level._cursor_grid_pos.y >= 0:
+		var in_range: bool = level._cursor_grid_pos.x >= 0 and level._cursor_grid_pos.y >= 0
+		var raw_valid: bool = level._cursor_raw_grid_pos.x >= 0 and level._cursor_raw_grid_pos.y >= 0
+		if in_range:
 			var cursor_col: int = level._cursor_grid_pos.x
 			var cursor_row: int = level._cursor_grid_pos.y
 			var tile_type: int = grid[cursor_col][cursor_row]
-			var is_mineable: bool = level._is_tile_mineable(tile_type)
-			# Only draw the border if it's a real block (not air) and is mineable (green border),
-			# or if it's a real block and not mineable (red border for shops, protected blocks, etc.)
 			if tile_type != _T_EMPTY:
+				var is_mineable: bool = level._is_tile_mineable(tile_type) \
+					and not level._shop_protected_cells.has(Vector2i(cursor_col, cursor_row))
 				var border_color: Color = Color(0.20, 0.90, 0.20) if is_mineable else Color(0.90, 0.20, 0.20)
 				_draw_dotted_border(cursor_col * CELL_SIZE, cursor_row * CELL_SIZE, CELL_SIZE, CELL_SIZE, border_color, 3)
+		elif raw_valid:
+			var raw_col: int = level._cursor_raw_grid_pos.x
+			var raw_row: int = level._cursor_raw_grid_pos.y
+			var tile_type: int = grid[raw_col][raw_row]
+			if tile_type != _T_EMPTY:
+				_draw_dotted_border(raw_col * CELL_SIZE, raw_row * CELL_SIZE, CELL_SIZE, CELL_SIZE, Color(0.90, 0.20, 0.20), 3)
 
 	# -------------------------------------------------------------------------
 	# Boss overlays — delegated to BossRenderer
