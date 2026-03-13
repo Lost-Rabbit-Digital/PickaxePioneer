@@ -163,8 +163,7 @@ func _ready() -> void:
 		_add_ship_state_to_config(config)
 		rpc_apply_planet_config.rpc_id(NetworkManager.guest_peer_id, config)
 
-	if NetworkManager.is_multiplayer_session:
-		add_child(preload("res://src/ui/ChatBox.tscn").instantiate())
+	add_child(preload("res://src/ui/ChatBox.tscn").instantiate())
 
 	# Initialize camera
 	camera.enabled = true

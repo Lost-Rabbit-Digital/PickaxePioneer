@@ -41,6 +41,7 @@ func _ready() -> void:
 	if filter_file.length() > 0:
 		_text_filter.load_from_file(filter_file)
 	EventBus.chat_message_received.connect(_on_chat_message_received)
+	EventBus.game_notification.connect(_on_game_notification)
 
 	# Restore history from previous levels in this session.
 	for msg in _history:
@@ -90,6 +91,20 @@ func _on_chat_message_received(sender_name: String, message: String, sender_colo
 	var clean := _text_filter.filter(message)
 	var color_hex := sender_color.to_html(false)
 	var bbcode := "[color=#%s][%s][/color] %s" % [color_hex, sender_name, clean]
+	_history.append(bbcode)
+	if _history.size() > MAX_MESSAGES:
+		_history = _history.slice(_history.size() - MAX_MESSAGES)
+		var oldest := _msg_container.get_child(0)
+		if oldest:
+			oldest.queue_free()
+	_add_label(bbcode)
+	if _at_bottom:
+		await get_tree().process_frame
+		_scroll_to_bottom()
+
+func _on_game_notification(message: String, color: Color) -> void:
+	var color_hex := color.to_html(false)
+	var bbcode := "[color=#%s][i]%s[/i][/color]" % [color_hex, message]
 	_history.append(bbcode)
 	if _history.size() > MAX_MESSAGES:
 		_history = _history.slice(_history.size() - MAX_MESSAGES)

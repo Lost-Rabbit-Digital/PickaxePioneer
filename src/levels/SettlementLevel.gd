@@ -129,8 +129,7 @@ func _ready() -> void:
 	_setup_supply_dock_shop()
 	_hud.set_hotbar_visible(false)
 
-	if NetworkManager.is_multiplayer_session:
-		add_child(preload("res://src/ui/ChatBox.tscn").instantiate())
+	add_child(preload("res://src/ui/ChatBox.tscn").instantiate())
 
 	queue_redraw()
 
@@ -506,7 +505,7 @@ func _try_interact() -> void:
 			"That pickaxe looks like it could use sharpening.",
 			"Got any Star Gold? I'll trade you for... oh wait, I'm broke.",
 		]
-		EventBus.ore_mined_popup.emit(0, messages[randi() % messages.size()])
+		EventBus.game_notification.emit(messages[randi() % messages.size()], Color(0.75, 0.90, 1.0))
 
 # ---------------------------------------------------------------------------
 # Rendering

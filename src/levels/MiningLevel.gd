@@ -638,8 +638,7 @@ func _ready() -> void:
 	_setup_trinket_menu()
 	_setup_customization_menu()
 
-	if NetworkManager.is_multiplayer_session:
-		add_child(preload("res://src/ui/ChatBox.tscn").instantiate())
+	add_child(preload("res://src/ui/ChatBox.tscn").instantiate())
 
 	# Tension vignette overlay (screen-space, used for energy escalation)
 	_tension_layer = CanvasLayer.new()
@@ -1769,7 +1768,7 @@ func _check_streak_milestone() -> void:
 		var bonus := mini(_mine_streak, 15)
 		GameManager.add_currency(bonus)
 		EventBus.coins_earned.emit(bonus)
-		EventBus.ore_mined_popup.emit(bonus, "Streak!")
+		EventBus.game_notification.emit("Streak x%d! +%dc" % [_mine_streak, bonus], Color(1.0, 0.60, 0.10))
 
 # ---------------------------------------------------------------------------
 # Gravity block system — GRAVITY_TILES fall when unsupported
@@ -2413,7 +2412,7 @@ func _try_interact() -> void:
 	var nearby_npc: FarmAnimalNPC = _get_nearby_farm_npc()
 	if nearby_npc:
 		nearby_npc.wiggle()
-		EventBus.ore_mined_popup.emit(0, nearby_npc.get_pet_message())
+		EventBus.game_notification.emit(nearby_npc.get_pet_message(), Color(0.75, 0.90, 1.0))
 
 # ---------------------------------------------------------------------------
 # Farm animals
