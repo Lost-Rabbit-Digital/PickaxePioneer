@@ -842,7 +842,7 @@ func _input(event: InputEvent) -> void:
 # Save Slot Popup — built entirely in code
 # ---------------------------------------------------------------------------
 
-const POPUP_W := 520.0
+const POPUP_W := 584.0
 const POPUP_H := 420.0
 const SLOT_H := 90.0
 const SLOT_GAP := 12.0
@@ -1026,7 +1026,7 @@ func _on_popup_close() -> void:
 # Confirmation Dialog — for overwriting existing saves
 # ---------------------------------------------------------------------------
 
-const CONFIRM_DIALOG_W := 440.0
+const CONFIRM_DIALOG_W := 504.0
 const CONFIRM_DIALOG_H := 240.0
 
 func _build_confirm_dialog() -> void:
