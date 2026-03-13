@@ -54,6 +54,14 @@ var terrain_seed: int = 0
 # MiningLevel._draw() uses it to tint the sky strip and underground gradient.
 var sky_color: Color = Color(0.40, 0.65, 0.90)
 
+# Biome for the current mine run — one of "Ice", "Desert", "Rock", "Forest", "Jungle".
+# Determined by the selected MapNode's planet data and passed to MiningTerrainGenerator.
+var terrain_biome: String = "Rock"
+
+# Planet size for the current mine run — one of "Small", "Medium", "Large".
+# Determines the grid dimensions used by MiningLevel.
+var planet_size: String = "Medium"
+
 # Energy system
 var current_energy: int = 100
 
@@ -353,7 +361,7 @@ func _on_guest_connected(peer_id: int) -> void:
 			current_scene_path, current_energy,
 			sky_color.r, sky_color.g, sky_color.b,
 			allowed_ore_types, allowed_hazard_types,
-			planet_animal_type, terrain_seed)
+			planet_animal_type, terrain_seed, terrain_biome, planet_size)
 	else:
 		# Host is on the overworld (or a settlement) — sync kit then load the
 		# overworld on the guest.  Planet config (names, positions, sprite frames)
@@ -481,7 +489,7 @@ func load_mining_level(scene_path: String = "") -> void:
 			current_energy, sky_color.r, sky_color.g, sky_color.b,
 			allowed_ore_types, allowed_hazard_types,
 			settlement_shroom_charges, settlement_mandible_bonus,
-			planet_animal_type, terrain_seed)
+			planet_animal_type, terrain_seed, terrain_biome, planet_size)
 	change_state(GameState.PLAYING)
 	await _transition_to_scene(path)
 
@@ -491,7 +499,8 @@ func rpc_load_mine_as_guest(path: String, start_energy: int,
 		sky_r: float, sky_g: float, sky_b: float,
 		ore_types: Array, hazard_types: Array,
 		shroom_charges: int, mandible_bonus: int,
-		animal_type: String, seed_value: int) -> void:
+		animal_type: String, seed_value: int,
+		biome: String = "Rock", size: String = "Medium") -> void:
 	run_coins = 0
 	run_ore_counts.clear()
 	run_ore_earnings.clear()
@@ -505,6 +514,8 @@ func rpc_load_mine_as_guest(path: String, start_energy: int,
 	settlement_mandible_bonus = mandible_bonus
 	planet_animal_type = animal_type
 	terrain_seed = seed_value
+	terrain_biome = biome
+	planet_size = size
 	EventBus.coins_changed.emit(0)
 	EventBus.energy_changed.emit(current_energy, get_max_energy())
 	await _transition_to_scene(path)
@@ -519,7 +530,8 @@ func rpc_drop_in_to_mine_as_guest(carapace_lvl: int, legs_lvl: int, mandibles_lv
 		mine_path: String, start_energy: int,
 		sky_r: float, sky_g: float, sky_b: float,
 		ore_types: Array, hazard_types: Array,
-		animal_type: String, seed_value: int) -> void:
+		animal_type: String, seed_value: int,
+		biome: String = "Rock", size: String = "Medium") -> void:
 	carapace_level = carapace_lvl
 	legs_level = legs_lvl
 	mandibles_level = mandibles_lvl
@@ -548,6 +560,8 @@ func rpc_drop_in_to_mine_as_guest(carapace_lvl: int, legs_lvl: int, mandibles_lv
 	allowed_hazard_types = hazard_types.duplicate()
 	planet_animal_type = animal_type
 	terrain_seed = seed_value
+	terrain_biome = biome
+	planet_size = size
 	EventBus.coins_changed.emit(0)
 	EventBus.energy_changed.emit(current_energy, get_max_energy())
 	change_state(GameState.PLAYING)

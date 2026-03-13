@@ -808,6 +808,9 @@ func _on_modal_confirmed(node: MapNode) -> void:
 	GameManager.current_node_type = node.node_type
 	if node.node_type == MapNode.NodeType.MINE:
 		GameManager.sky_color = node.get_average_pixel_color()
+		var planet_info: Dictionary = node.get_planet_info()
+		GameManager.terrain_biome = planet_info.get("biome", "Rock")
+		GameManager.planet_size   = planet_info.get("size",  "Medium")
 	GameManager.save_game()
 
 	if node.node_type == MapNode.NodeType.MINE or node.node_type == MapNode.NodeType.STATION:

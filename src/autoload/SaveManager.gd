@@ -272,6 +272,8 @@ func _snapshot_game_manager() -> Dictionary:
 	data["run_player_pos_y"] = gm.run_player_pos_y
 	data["run_player_health"] = gm.run_player_health
 	data["run_terrain_seed"] = gm.terrain_seed
+	data["run_terrain_biome"] = gm.terrain_biome
+	data["run_planet_size"]   = gm.planet_size
 	data["run_current_energy"] = gm.current_energy
 	data["run_coins"] = gm.run_coins
 	data["run_ore_chunk_counts"] = gm.run_ore_chunk_counts.duplicate()
@@ -354,9 +356,11 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 	gm.run_player_pos_y = data.get("run_player_pos_y", 0.0)
 	gm.run_player_health = data.get("run_player_health", 0.0)
 	if gm.run_is_in_mining_level:
-		# Restore the exact terrain seed, energy, currency, and inventory from the
-		# saved mid-run state so load_mining_level() can resume rather than reset.
-		gm.terrain_seed = data.get("run_terrain_seed", 0)
+		# Restore the exact terrain seed, biome, size, energy, currency, and inventory
+		# from the saved mid-run state so load_mining_level() can resume rather than reset.
+		gm.terrain_seed  = data.get("run_terrain_seed", 0)
+		gm.terrain_biome = data.get("run_terrain_biome", "Rock")
+		gm.planet_size   = data.get("run_planet_size",   "Medium")
 		gm.current_energy = data.get("run_current_energy", gm.get_max_energy())
 		gm.run_coins = data.get("run_coins", 0)
 		var saved_ore_chunks: Variant = data.get("run_ore_chunk_counts", {})

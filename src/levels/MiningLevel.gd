@@ -7,10 +7,19 @@ extends Node2D
 # Mining is cursor-based: click to mine space rocks and asteroids within range.
 # Energy drains over time while in deep space (faster at distance).
 
-const GRID_COLS: int = 96
-const GRID_ROWS: int = 128
+# Grid dimensions — set dynamically in _ready() based on GameManager.planet_size.
+# Defaults match "Medium" so the values are always valid before _ready() runs.
+var GRID_COLS: int = 96
+var GRID_ROWS: int = 128
 const CELL_SIZE: int = 64
 const EXIT_COLS: int = 2
+
+# Grid dimensions per planet size category.
+const SIZE_GRID: Dictionary = {
+	"Small":  {"cols": 64,  "rows": 96},
+	"Medium": {"cols": 96,  "rows": 128},
+	"Large":  {"cols": 128, "rows": 160},
+}
 
 const VIEWPORT_W: int = 1280
 const VIEWPORT_H: int = 720
@@ -133,6 +142,53 @@ const TILE_ATLAS_COORDS: Dictionary = {
 	TileType.UPGRADE_STATION:  Vector2i(8, 0),
 	TileType.SMELTERY_STATION: Vector2i(8, 0),
 	TileType.CAT_TAVERN:       Vector2i(8, 0),
+}
+
+# ---------------------------------------------------------------------------
+# Per-biome atlas coordinate overrides for the five base terrain tile types.
+# Only DIRT, DIRT_DARK, STONE, STONE_DARK, and SURFACE_GRASS differ visually
+# between biomes; ore, lava, hazard, and station tiles stay the same.
+#
+# Biomes: "Ice", "Desert", "Rock", "Forest" (and "Jungle" shares Forest).
+# "Rock" is the default look — no overrides needed for it.
+#
+# TODO: Replace the filler Vector2i(0, 0) coords with the correct atlas cells
+#       once the block atlas sheet has biome-specific tiles painted in.
+# ---------------------------------------------------------------------------
+const BIOME_ATLAS_OVERRIDES: Dictionary = {
+	"Ice": {
+		# Frozen / icy terrain tiles
+		TileType.SURFACE_GRASS: Vector2i(0, 0),  # TODO: snow/frost surface
+		TileType.DIRT:          Vector2i(0, 0),  # TODO: frozen soil
+		TileType.DIRT_DARK:     Vector2i(0, 0),  # TODO: dense frozen soil
+		TileType.STONE:         Vector2i(0, 0),  # TODO: ice-encrusted rock
+		TileType.STONE_DARK:    Vector2i(0, 0),  # TODO: dense ice rock
+	},
+	"Desert": {
+		# Sandy / arid terrain tiles
+		TileType.SURFACE_GRASS: Vector2i(0, 0),  # TODO: sand surface
+		TileType.DIRT:          Vector2i(0, 0),  # TODO: loose sand
+		TileType.DIRT_DARK:     Vector2i(0, 0),  # TODO: packed sand
+		TileType.STONE:         Vector2i(0, 0),  # TODO: sandstone
+		TileType.STONE_DARK:    Vector2i(0, 0),  # TODO: dense sandstone
+	},
+	"Forest": {
+		# Earthy / overgrown terrain tiles
+		TileType.SURFACE_GRASS: Vector2i(1, 3),   # forest grass (same as default for now)
+		TileType.DIRT:          Vector2i(0, 0),   # TODO: rich forest soil
+		TileType.DIRT_DARK:     Vector2i(0, 0),   # TODO: dark humus
+		TileType.STONE:         Vector2i(0, 0),   # TODO: mossy stone
+		TileType.STONE_DARK:    Vector2i(0, 0),   # TODO: dense mossy stone
+	},
+	"Jungle": {
+		# Dense jungle terrain — shares Forest visuals until bespoke tiles exist
+		TileType.SURFACE_GRASS: Vector2i(1, 3),
+		TileType.DIRT:          Vector2i(0, 0),   # TODO: jungle soil
+		TileType.DIRT_DARK:     Vector2i(0, 0),   # TODO: dark jungle soil
+		TileType.STONE:         Vector2i(0, 0),   # TODO: vine-covered stone
+		TileType.STONE_DARK:    Vector2i(0, 0),   # TODO: dense vine stone
+	},
+	# "Rock" uses TILE_ATLAS_COORDS directly — no overrides needed.
 }
 
 const TILE_HP: Dictionary = {
@@ -334,7 +390,8 @@ func _thread_generate(args: Dictionary) -> void:
 		args["grid"], args["cols"], args["rows"],
 		args["surface_rows"], args["exit_cols"],
 		args["zone_rows"], args["ore_types"],
-		args["hazard_types"], args["seed"])
+		args["hazard_types"], args["seed"],
+		args.get("biome", "Rock"))
 
 # Boss visual rendering — extracted to BossRenderer.gd
 var _boss_renderer: BossRenderer = BossRenderer.new()
@@ -487,6 +544,11 @@ var _level_particles: Array = []
 const LEVEL_PARTICLE_MAX: int = 300
 
 func _ready() -> void:
+	# Set grid dimensions from the planet size stored in GameManager.
+	var size_entry: Dictionary = SIZE_GRID.get(GameManager.planet_size, SIZE_GRID["Medium"])
+	GRID_COLS = size_entry["cols"]
+	GRID_ROWS = size_entry["rows"]
+
 	var _items_tileset := load("res://assets/db32_rpg_items/items_tileset.tres") as TileSet
 	if _items_tileset:
 		var _atlas_source := _items_tileset.get_source(0) as TileSetAtlasSource
@@ -527,6 +589,7 @@ func _ready() -> void:
 		"ore_types": GameManager.allowed_ore_types,
 		"hazard_types": GameManager.allowed_hazard_types,
 		"seed": GameManager.terrain_seed,
+		"biome": GameManager.terrain_biome,
 	}
 	gen_thread.start(_thread_generate.bind(gen_args))
 	# Yield frames so the loading label renders
@@ -923,7 +986,9 @@ func _set_visual_cell(col: int, row: int) -> void:
 	var tile: int = grid[col][row]
 	if tile in _SKIP_VISUAL_TILES:
 		return
-	var atlas_coord: Variant = TILE_ATLAS_COORDS.get(tile)
+	# Check for biome-specific atlas override first, then fall back to defaults.
+	var biome_overrides: Dictionary = BIOME_ATLAS_OVERRIDES.get(GameManager.terrain_biome, {})
+	var atlas_coord: Variant = biome_overrides.get(tile, TILE_ATLAS_COORDS.get(tile))
 	if atlas_coord == null:
 		return
 	if tile in _NONMINEABLE_VISUAL_TILES:
