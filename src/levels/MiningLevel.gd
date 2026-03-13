@@ -53,6 +53,31 @@ enum TileType {
 	SMELTERY_STATION = 26,   # Smeltery — smelt ores into bars and sell them
 	LADDER           = 27,   # Placeable ladder — player climbs up by pressing jump
 	CAT_TAVERN       = 28,   # Underground Cat Tavern — hire mining/collecting cats
+	# ---------------------------------------------------------------------------
+	# Biome-specific terrain tile variants (atlas stubs — coords TBD)
+	# ---------------------------------------------------------------------------
+	# Ice biome
+	ICE_SURFACE_GRASS  = 29,  # Snow / frost surface crust
+	ICE_DIRT           = 30,  # Frozen soil
+	ICE_DIRT_DARK      = 31,  # Dense frozen soil
+	ICE_STONE          = 32,  # Ice-encrusted rock
+	ICE_STONE_DARK     = 33,  # Dense ice rock
+	# Desert biome
+	DESERT_SURFACE_GRASS = 34,  # Sand surface
+	DESERT_DIRT          = 35,  # Loose sand
+	DESERT_DIRT_DARK     = 36,  # Packed sand
+	DESERT_STONE         = 37,  # Sandstone
+	DESERT_STONE_DARK    = 38,  # Dense sandstone
+	# Forest biome
+	FOREST_DIRT        = 39,  # Rich forest soil
+	FOREST_DIRT_DARK   = 40,  # Dark humus
+	FOREST_STONE       = 41,  # Mossy stone
+	FOREST_STONE_DARK  = 42,  # Dense mossy stone
+	# Jungle biome
+	JUNGLE_DIRT        = 43,  # Jungle soil
+	JUNGLE_DIRT_DARK   = 44,  # Dark jungle soil
+	JUNGLE_STONE       = 45,  # Vine-covered stone
+	JUNGLE_STONE_DARK  = 46,  # Dense vine stone
 }
 
 const TILE_NAMES: Dictionary = {
@@ -142,6 +167,31 @@ const TILE_ATLAS_COORDS: Dictionary = {
 	TileType.UPGRADE_STATION:  Vector2i(8, 0),
 	TileType.SMELTERY_STATION: Vector2i(8, 0),
 	TileType.CAT_TAVERN:       Vector2i(8, 0),
+	# ---------------------------------------------------------------------------
+	# Biome-specific terrain atlas stubs — replace Vector2i(0, 0) with real coords
+	# ---------------------------------------------------------------------------
+	# Ice biome
+	TileType.ICE_SURFACE_GRASS: Vector2i(0, 0),  # TODO: snow/frost surface crust
+	TileType.ICE_DIRT:          Vector2i(0, 0),  # TODO: frozen soil
+	TileType.ICE_DIRT_DARK:     Vector2i(0, 0),  # TODO: dense frozen soil
+	TileType.ICE_STONE:         Vector2i(0, 0),  # TODO: ice-encrusted rock
+	TileType.ICE_STONE_DARK:    Vector2i(0, 0),  # TODO: dense ice rock
+	# Desert biome
+	TileType.DESERT_SURFACE_GRASS: Vector2i(0, 0),  # TODO: sand surface
+	TileType.DESERT_DIRT:          Vector2i(0, 0),  # TODO: loose sand
+	TileType.DESERT_DIRT_DARK:     Vector2i(0, 0),  # TODO: packed sand
+	TileType.DESERT_STONE:         Vector2i(0, 0),  # TODO: sandstone
+	TileType.DESERT_STONE_DARK:    Vector2i(0, 0),  # TODO: dense sandstone
+	# Forest biome (SURFACE_GRASS reuses default Vector2i(1, 3))
+	TileType.FOREST_DIRT:       Vector2i(0, 0),  # TODO: rich forest soil
+	TileType.FOREST_DIRT_DARK:  Vector2i(0, 0),  # TODO: dark humus
+	TileType.FOREST_STONE:      Vector2i(0, 0),  # TODO: mossy stone
+	TileType.FOREST_STONE_DARK: Vector2i(0, 0),  # TODO: dense mossy stone
+	# Jungle biome (SURFACE_GRASS reuses default Vector2i(1, 3))
+	TileType.JUNGLE_DIRT:       Vector2i(0, 0),  # TODO: jungle soil
+	TileType.JUNGLE_DIRT_DARK:  Vector2i(0, 0),  # TODO: dark jungle soil
+	TileType.JUNGLE_STONE:      Vector2i(0, 0),  # TODO: vine-covered stone
+	TileType.JUNGLE_STONE_DARK: Vector2i(0, 0),  # TODO: dense vine stone
 }
 
 # ---------------------------------------------------------------------------
@@ -157,36 +207,36 @@ const TILE_ATLAS_COORDS: Dictionary = {
 # ---------------------------------------------------------------------------
 const BIOME_ATLAS_OVERRIDES: Dictionary = {
 	"Ice": {
-		# Frozen / icy terrain tiles
-		TileType.SURFACE_GRASS: Vector2i(0, 0),  # TODO: snow/frost surface
-		TileType.DIRT:          Vector2i(0, 0),  # TODO: frozen soil
-		TileType.DIRT_DARK:     Vector2i(0, 0),  # TODO: dense frozen soil
-		TileType.STONE:         Vector2i(0, 0),  # TODO: ice-encrusted rock
-		TileType.STONE_DARK:    Vector2i(0, 0),  # TODO: dense ice rock
+		# Frozen / icy terrain tiles — fill coords in TILE_ATLAS_COORDS stubs above
+		TileType.SURFACE_GRASS: Vector2i(0, 0),  # → TileType.ICE_SURFACE_GRASS
+		TileType.DIRT:          Vector2i(0, 0),  # → TileType.ICE_DIRT
+		TileType.DIRT_DARK:     Vector2i(0, 0),  # → TileType.ICE_DIRT_DARK
+		TileType.STONE:         Vector2i(0, 0),  # → TileType.ICE_STONE
+		TileType.STONE_DARK:    Vector2i(0, 0),  # → TileType.ICE_STONE_DARK
 	},
 	"Desert": {
-		# Sandy / arid terrain tiles
-		TileType.SURFACE_GRASS: Vector2i(0, 0),  # TODO: sand surface
-		TileType.DIRT:          Vector2i(0, 0),  # TODO: loose sand
-		TileType.DIRT_DARK:     Vector2i(0, 0),  # TODO: packed sand
-		TileType.STONE:         Vector2i(0, 0),  # TODO: sandstone
-		TileType.STONE_DARK:    Vector2i(0, 0),  # TODO: dense sandstone
+		# Sandy / arid terrain tiles — fill coords in TILE_ATLAS_COORDS stubs above
+		TileType.SURFACE_GRASS: Vector2i(0, 0),  # → TileType.DESERT_SURFACE_GRASS
+		TileType.DIRT:          Vector2i(0, 0),  # → TileType.DESERT_DIRT
+		TileType.DIRT_DARK:     Vector2i(0, 0),  # → TileType.DESERT_DIRT_DARK
+		TileType.STONE:         Vector2i(0, 0),  # → TileType.DESERT_STONE
+		TileType.STONE_DARK:    Vector2i(0, 0),  # → TileType.DESERT_STONE_DARK
 	},
 	"Forest": {
-		# Earthy / overgrown terrain tiles
+		# Earthy / overgrown terrain tiles — fill coords in TILE_ATLAS_COORDS stubs above
 		TileType.SURFACE_GRASS: Vector2i(1, 3),   # forest grass (same as default for now)
-		TileType.DIRT:          Vector2i(0, 0),   # TODO: rich forest soil
-		TileType.DIRT_DARK:     Vector2i(0, 0),   # TODO: dark humus
-		TileType.STONE:         Vector2i(0, 0),   # TODO: mossy stone
-		TileType.STONE_DARK:    Vector2i(0, 0),   # TODO: dense mossy stone
+		TileType.DIRT:          Vector2i(0, 0),   # → TileType.FOREST_DIRT
+		TileType.DIRT_DARK:     Vector2i(0, 0),   # → TileType.FOREST_DIRT_DARK
+		TileType.STONE:         Vector2i(0, 0),   # → TileType.FOREST_STONE
+		TileType.STONE_DARK:    Vector2i(0, 0),   # → TileType.FOREST_STONE_DARK
 	},
 	"Jungle": {
 		# Dense jungle terrain — shares Forest visuals until bespoke tiles exist
 		TileType.SURFACE_GRASS: Vector2i(1, 3),
-		TileType.DIRT:          Vector2i(0, 0),   # TODO: jungle soil
-		TileType.DIRT_DARK:     Vector2i(0, 0),   # TODO: dark jungle soil
-		TileType.STONE:         Vector2i(0, 0),   # TODO: vine-covered stone
-		TileType.STONE_DARK:    Vector2i(0, 0),   # TODO: dense vine stone
+		TileType.DIRT:          Vector2i(0, 0),   # → TileType.JUNGLE_DIRT
+		TileType.DIRT_DARK:     Vector2i(0, 0),   # → TileType.JUNGLE_DIRT_DARK
+		TileType.STONE:         Vector2i(0, 0),   # → TileType.JUNGLE_STONE
+		TileType.STONE_DARK:    Vector2i(0, 0),   # → TileType.JUNGLE_STONE_DARK
 	},
 	# "Rock" uses TILE_ATLAS_COORDS directly — no overrides needed.
 }
