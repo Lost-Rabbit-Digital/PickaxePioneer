@@ -28,18 +28,7 @@ var _health_drain_tween: Tween
 var info_panel: ColorRect
 var earnings_label: Label
 var depth_label: Label
-var dollars_label: Label
 var _earnings_tween: Tween
-var _coins_tween: Tween
-var _prev_run_coins: int = 0
-
-# XP / level display (lower-left of info panel)
-var _xp_bar_bg   : ColorRect
-var _xp_bar_fill : ColorRect
-var _level_label : Label
-var _perk_hint   : Label
-var _levelup_banner : Label
-var _levelup_tween  : Tween
 
 # Ore-only pickup notification — icon + amount + name, upper-left
 const ORE_NAMES: Array[String] = [
@@ -138,7 +127,6 @@ const ORE_COLORS: Dictionary = {
 }
 
 func _ready() -> void:
-	EventBus.coins_changed.connect(_on_coins_changed)
 	EventBus.player_health_changed.connect(_on_health_changed)
 	EventBus.energy_changed.connect(_on_energy_changed)
 	EventBus.ore_mined_popup.connect(_on_ore_mined_popup)
@@ -150,7 +138,7 @@ func _ready() -> void:
 	info_panel = ColorRect.new()
 	info_panel.color = Color(0.0, 0.0, 0.0, 0.55)
 	info_panel.position = Vector2(4, 6)
-	info_panel.size = Vector2(210, 132)
+	info_panel.size = Vector2(210, 110)
 	info_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	$Control.add_child(info_panel)
 	$Control.move_child(info_panel, 0)  # Draw behind everything else
@@ -201,65 +189,6 @@ func _ready() -> void:
 	depth_label.text = "Orbit"
 	depth_label.modulate = Color(0.6, 0.85, 1.0, 1.0)  # Light blue tint
 	$Control.add_child(depth_label)
-
-	# Coins label — shows the player's persistent coin wallet
-	dollars_label = Label.new()
-	dollars_label.position = Vector2(12, 106)
-	dollars_label.custom_minimum_size = Vector2(136, 22)
-	dollars_label.text = GameManager.format_coins(GameManager.coins)
-	dollars_label.modulate = Color(0.30, 1.0, 0.40, 1.0)  # Green tint
-	$Control.add_child(dollars_label)
-
-	# Expand info panel to fit the XP bar row
-	info_panel.size = Vector2(210, 148)
-
-	# Level label — shows "Lv.1" in the info panel
-	_level_label = Label.new()
-	_level_label.position = Vector2(8, 124)
-	_level_label.custom_minimum_size = Vector2(80, 18)
-	_level_label.add_theme_font_size_override("font_size", 12)
-	_level_label.add_theme_color_override("font_color", Color(0.80, 0.65, 1.00, 1.0))
-	_level_label.text = "Lv.%d" % GameManager.player_level
-	$Control.add_child(_level_label)
-
-	# XP bar background
-	_xp_bar_bg = ColorRect.new()
-	_xp_bar_bg.color = Color(0.10, 0.08, 0.20, 0.90)
-	_xp_bar_bg.position = Vector2(50, 127)
-	_xp_bar_bg.size = Vector2(156, 12)
-	_xp_bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	$Control.add_child(_xp_bar_bg)
-
-	# XP bar fill
-	_xp_bar_fill = ColorRect.new()
-	_xp_bar_fill.color = Color(0.45, 0.25, 0.90, 1.00)
-	_xp_bar_fill.position = Vector2(50, 127)
-	_xp_bar_fill.size = Vector2(0, 12)
-	_xp_bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	$Control.add_child(_xp_bar_fill)
-
-	# "[P] Perks" hint label — tiny, right side of XP bar
-	_perk_hint = Label.new()
-	_perk_hint.text = "[P]"
-	_perk_hint.position = Vector2(8, 141)
-	_perk_hint.custom_minimum_size = Vector2(50, 12)
-	_perk_hint.add_theme_font_size_override("font_size", 10)
-	_perk_hint.add_theme_color_override("font_color", Color(0.55, 0.45, 0.75, 0.80))
-	$Control.add_child(_perk_hint)
-
-	# Level-up banner — top-centre flash
-	_levelup_banner = Label.new()
-	_levelup_banner.position = Vector2(440, 50)
-	_levelup_banner.custom_minimum_size = Vector2(400, 30)
-	_levelup_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_levelup_banner.modulate = Color(1.0, 0.85, 0.20, 0.0)
-	_levelup_banner.add_theme_font_size_override("font_size", 22)
-	$Control.add_child(_levelup_banner)
-
-	_update_xp_display()
-
-	EventBus.xp_changed.connect(_on_xp_changed)
-	EventBus.player_leveled_up.connect(_on_player_leveled_up)
 
 	_update_ladder_display(GameManager.ladder_count)
 
@@ -381,23 +310,6 @@ func _build_depth_sidebar() -> void:
 	_depth_sidebar_marker.size = Vector2(DEPTH_SIDEBAR_W + 6, 3.0)
 	_depth_sidebar_marker.color = Color(1.0, 1.0, 1.0, 0.9)
 	$Control.add_child(_depth_sidebar_marker)
-
-func _on_coins_changed(_copper: int) -> void:
-	scrap_label.text = "Slots: %d/%d" % [GameManager.get_stacked_slots_used(), GameManager.get_ore_capacity()]
-	dollars_label.text = GameManager.format_coins(GameManager.coins)
-
-	# Scale-bounce + color flash when run coins increase
-	if GameManager.run_coins > _prev_run_coins and _prev_run_coins >= 0:
-		if _coins_tween:
-			_coins_tween.kill()
-		dollars_label.scale = Vector2(1.25, 1.25)
-		dollars_label.modulate = Color(1.0, 1.0, 0.3, 1.0)
-		_coins_tween = create_tween()
-		_coins_tween.set_parallel(true)
-		_coins_tween.tween_property(dollars_label, "scale", Vector2.ONE, 0.25) \
-			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-		_coins_tween.tween_property(dollars_label, "modulate", Color(0.30, 1.0, 0.40, 1.0), 0.35)
-	_prev_run_coins = GameManager.run_coins
 
 # Called when a tile is mined.
 # Ore pickups (ORE_NAMES + amount > 0) show a rich icon + amount + name popup.
@@ -852,27 +764,3 @@ func set_hotbar_visible(value: bool) -> void:
 	if _hotbar_container:
 		_hotbar_container.visible = value
 
-# ---------------------------------------------------------------------------
-# XP / Level callbacks
-# ---------------------------------------------------------------------------
-
-func _update_xp_display() -> void:
-	var xp     : int   = GameManager.player_xp
-	var xp_max : int   = PerkSystem.xp_for_next_level(GameManager.player_level)
-	var ratio  : float = float(xp) / float(maxi(1, xp_max))
-	_xp_bar_fill.size.x = 156.0 * ratio
-	_level_label.text   = "Lv.%d" % GameManager.player_level
-
-func _on_xp_changed(_xp: int, _xp_next: int) -> void:
-	_update_xp_display()
-
-func _on_player_leveled_up(new_level: int, points: int) -> void:
-	_update_xp_display()
-	var pts_str : String = "%d point%s" % [points, "s" if points != 1 else ""]
-	_levelup_banner.text = "LEVEL UP!  Lv.%d  —  %s  [P]" % [new_level, pts_str]
-	if _levelup_tween:
-		_levelup_tween.kill()
-	_levelup_tween = create_tween()
-	_levelup_tween.tween_property(_levelup_banner, "modulate:a", 1.0, 0.20)
-	_levelup_tween.tween_interval(3.0)
-	_levelup_tween.tween_property(_levelup_banner, "modulate:a", 0.0, 0.60)
