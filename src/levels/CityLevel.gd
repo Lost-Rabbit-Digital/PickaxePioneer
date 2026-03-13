@@ -3,7 +3,7 @@ extends Node2D
 
 ## City hub level — The Clowder, a feline space station.
 ## Polished atmospheric menu with NPC flavor, starfield backdrop,
-## and themed station sections for Perk Tree and Spaceship Upgrades.
+## and themed station sections for Perk Tree and Father's Debt repayment.
 
 const VW: int = 1280
 const VH: int = 720
@@ -22,39 +22,6 @@ const DIM_TEXT := Color(0.55, 0.55, 0.60)
 const PANEL_BG := Color(0.06, 0.06, 0.10, 0.92)
 const PANEL_BORDER := Color(0.25, 0.20, 0.40, 0.85)
 
-const SHIP_UPGRADES: Array = [
-	{
-		"key": "warp_drive", "name": "Warp Drive",
-		"effect": "2x overworld travel speed",
-		"unlock_label": "Bank 50s total to unlock",
-		"cost_const": "SHIP_COST_WARP_DRIVE", "built_prop": "warp_drive_built",
-	},
-	{
-		"key": "cargo_bay", "name": "Cargo Bay Expansion",
-		"effect": "+25 ore carrying capacity",
-		"unlock_label": "Defeat first boss to unlock",
-		"cost_const": "SHIP_COST_CARGO_BAY", "built_prop": "cargo_bay_built",
-	},
-	{
-		"key": "long_scanner", "name": "Long-Range Scanner",
-		"effect": "Always shows both asteroid mines",
-		"unlock_label": "Bank 10g total to unlock",
-		"cost_const": "SHIP_COST_LONG_SCANNER", "built_prop": "long_scanner_built",
-	},
-	{
-		"key": "gem_refinery", "name": "Gem Refinery",
-		"effect": "+1 bonus gem per gem ore mined",
-		"unlock_label": "Find 10 space fossils total to unlock",
-		"cost_const": "SHIP_COST_GEM_REFINERY", "built_prop": "gem_refinery_built",
-	},
-	{
-		"key": "trade_amplifier", "name": "Trade Amplifier",
-		"effect": "+25% coin payout on bar sales",
-		"unlock_label": "Reach sector 96 in a run to unlock",
-		"cost_const": "SHIP_COST_TRADE_AMPLIFIER", "built_prop": "trade_amplifier_built",
-	},
-]
-
 # NPC dialogue pools — randomly chosen on each visit
 const MATRIARCH_LINES: Array[String] = [
 	"Welcome back, miner. The Clowder grows stronger with every haul.",
@@ -64,17 +31,23 @@ const MATRIARCH_LINES: Array[String] = [
 	"Every gem you bring home is one step closer to a new world.",
 ]
 
-const ENGINEER_LINES: Array[String] = [
-	"Ship's holding together. Got some upgrades if you've got the coin.",
-	"I've been tinkering. Take a look at what's new in the bay.",
-	"Warp drive's humming. Ready for whatever you need.",
-	"More ore, more options. Let's see what we can build.",
-	"The Clowder's finest engineer, at your service.",
+const DEBT_COLLECTOR_LINES: Array[String] = [
+	"Your father dug deep. Now so must you.",
+	"The debt doesn't sleep, miner. Neither do I.",
+	"Every coin brings you closer to a clean slate.",
+	"He left quite the hole. Fill it.",
+	"Thirty-two years of interest. Best get digging.",
 ]
 
 var _canvas: CanvasLayer
-var _status_label: Label
-var _chamber_buttons: Dictionary = {}
+
+# Debt panel UI refs
+var _debt_bar_fill: ColorRect
+var _debt_amount_lbl: Label
+var _debt_percent_lbl: Label
+var _debt_pay_btn: Button
+var _debt_coins_lbl: Label
+var _debt_status_lbl: Label
 
 # Perk tree info panel refs
 var _perk_level_lbl   : Label
@@ -306,7 +279,7 @@ func _refresh_perk_panel() -> void:
 		ACCENT_GREEN if pts > 0 else DIM_TEXT)
 
 
-# ── Right panel: Spaceship Upgrades ─────────────────────────────────────────
+# ── Right panel: Father's Debt ───────────────────────────────────────────────
 func _build_chambers_panel() -> void:
 	var px := RIGHT_X
 	var py := PANEL_Y
@@ -318,62 +291,96 @@ func _build_chambers_panel() -> void:
 	var npc_bg := ColorRect.new()
 	npc_bg.position = Vector2(px + 12, py + 12)
 	npc_bg.size = Vector2(PANEL_W - 24, 52)
-	npc_bg.color = Color(0.12, 0.10, 0.06, 0.80)
+	npc_bg.color = Color(0.10, 0.06, 0.06, 0.85)
 	npc_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(npc_bg)
 
 	# NPC name
 	var npc_name := Label.new()
-	npc_name.text = "Chief Engineer Bolt"
+	npc_name.text = "Debt Collector Rax"
 	npc_name.position = Vector2(px + 20, py + 14)
 	npc_name.size = Vector2(PANEL_W - 40, 20)
 	npc_name.add_theme_font_size_override("font_size", 14)
-	npc_name.add_theme_color_override("font_color", ACCENT_GOLD)
+	npc_name.add_theme_color_override("font_color", Color(0.95, 0.40, 0.35))
 	_canvas.add_child(npc_name)
 
 	# NPC dialogue
 	var dialogue := Label.new()
-	dialogue.text = "\"%s\"" % ENGINEER_LINES[randi() % ENGINEER_LINES.size()]
+	dialogue.text = "\"%s\"" % DEBT_COLLECTOR_LINES[randi() % DEBT_COLLECTOR_LINES.size()]
 	dialogue.position = Vector2(px + 20, py + 34)
 	dialogue.size = Vector2(PANEL_W - 40, 22)
 	dialogue.add_theme_font_size_override("font_size", 11)
-	dialogue.add_theme_color_override("font_color", Color(0.65, 0.60, 0.45))
+	dialogue.add_theme_color_override("font_color", Color(0.70, 0.55, 0.55))
 	_canvas.add_child(dialogue)
 
 	_divider(px, py + 72)
 
-	var title := _label("Spaceship Upgrades", px, py + 80, PANEL_W, 26, 20)
-	title.add_theme_color_override("font_color", ACCENT_GOLD)
+	var title := _label("Father's Debt", px, py + 80, PANEL_W, 28, 22)
+	title.add_theme_color_override("font_color", Color(0.95, 0.40, 0.35))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	var sub := _label("Permanent ship upgrades — built once, kept forever.", px, py + 108, PANEL_W, 20, 12)
-	sub.add_theme_color_override("font_color", Color(0.60, 0.55, 0.45))
+	var sub := _label("Repay your father's debt to the Clowder.", px, py + 112, PANEL_W, 18, 12)
+	sub.add_theme_color_override("font_color", Color(0.65, 0.50, 0.50))
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	var dollars_lbl := _label("", px, py + 130, PANEL_W, 20, 14)
-	dollars_lbl.add_theme_color_override("font_color", ACCENT_GREEN)
-	dollars_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	dollars_lbl.text = "Coins: %s" % GameManager.format_coins(GameManager.coins)
+	_divider(px, py + 136)
 
-	_divider(px, py + 156)
+	# Current coins label
+	_debt_coins_lbl = _label("", px, py + 148, PANEL_W, 20, 13)
+	_debt_coins_lbl.add_theme_color_override("font_color", ACCENT_GREEN)
+	_debt_coins_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	const BTN_W: int   = PANEL_W - 40
-	const BTN_H: int   = 58
-	const BTN_GAP: int = 66
-	var bx := px + 20
-	var by := py + 168
+	_divider(px, py + 174)
 
-	for upgrade in SHIP_UPGRADES:
-		var btn := _button(bx, by, BTN_W, BTN_H, "", _on_chamber_pressed.bind(upgrade["key"]))
-		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		_chamber_buttons[upgrade["key"]] = btn
-		by += BTN_GAP
+	# "Debt Progress" section header
+	var prog_hdr := _label("Debt Progress", px + 20, py + 184, PANEL_W - 40, 18, 12)
+	prog_hdr.add_theme_color_override("font_color", DIM_TEXT)
 
-	_status_label = _label("", px, by + 4, PANEL_W, 24, 12)
-	_status_label.add_theme_color_override("font_color", ACCENT_GREEN)
-	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# Progress bar background
+	var bar_bg := ColorRect.new()
+	bar_bg.color = Color(0.12, 0.06, 0.06, 1.0)
+	bar_bg.position = Vector2(px + 20, py + 208)
+	bar_bg.size = Vector2(PANEL_W - 40, 22)
+	bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.add_child(bar_bg)
 
-	_refresh_chamber_panel()
+	# Progress bar fill
+	_debt_bar_fill = ColorRect.new()
+	_debt_bar_fill.color = Color(0.85, 0.25, 0.20, 1.0)
+	_debt_bar_fill.position = Vector2(px + 20, py + 208)
+	_debt_bar_fill.size = Vector2(0, 22)
+	_debt_bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.add_child(_debt_bar_fill)
+
+	# Paid / Total label
+	_debt_amount_lbl = _label("", px + 20, py + 236, PANEL_W - 40, 18, 12)
+	_debt_amount_lbl.add_theme_color_override("font_color", Color(0.80, 0.65, 0.65))
+
+	# Percentage label
+	_debt_percent_lbl = _label("", px + 20, py + 258, PANEL_W - 40, 18, 13)
+	_debt_percent_lbl.add_theme_color_override("font_color", Color(0.95, 0.40, 0.35))
+
+	_divider(px, py + 282)
+
+	# Pay button
+	var btn_w := PANEL_W - 40
+	_debt_pay_btn = _button(px + 20, py + 296, btn_w, 52,
+		"Make Payment", _on_pay_debt_pressed)
+	_debt_pay_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
+	# Helper note
+	var note := _label("Pays all available coins toward the debt.", px, py + 356, PANEL_W, 16, 11)
+	note.add_theme_color_override("font_color", DIM_TEXT)
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	_divider(px, py + 378)
+
+	# Status / completion label
+	_debt_status_lbl = _label("", px, py + 390, PANEL_W, 24, 12)
+	_debt_status_lbl.add_theme_color_override("font_color", ACCENT_GREEN)
+	_debt_status_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	_refresh_debt_panel()
 
 
 func _build_footer() -> void:
@@ -462,52 +469,55 @@ func _button(x: int, y: int, w: int, h: int, text: String, callback: Callable) -
 	return btn
 
 
-# ── Spaceship upgrades ──────────────────────────────────────────────────────
-func _is_chamber_unlocked(key: String) -> bool:
-	match key:
-		"warp_drive":      return GameManager.total_coins_banked >= 50000
-		"cargo_bay":       return GameManager.bosses_defeated_total >= 1
-		"long_scanner":    return GameManager.total_coins_banked >= 100000
-		"gem_refinery":    return GameManager.total_fossils >= 10
-		"trade_amplifier": return GameManager.deepest_row_reached >= 96
-	return false
+# ── Father's Debt panel ──────────────────────────────────────────────────────
+func _refresh_debt_panel() -> void:
+	var paid: int  = GameManager.debt_paid
+	var total: int = GameManager.FATHERS_DEBT_TOTAL
+	var remaining: int = maxi(0, total - paid)
+	var coins: int = GameManager.coins
+	var debt_cleared: bool = paid >= total
+
+	_debt_coins_lbl.text = "Your coins: %s" % GameManager.format_coins(coins)
+
+	var bar_max_w: float = float(PANEL_W - 40)
+	_debt_bar_fill.size.x = bar_max_w * clampf(float(paid) / float(total), 0.0, 1.0)
+
+	_debt_amount_lbl.text = "%s  /  %s paid" % [
+		GameManager.format_coins(paid), GameManager.format_coins(total)]
+	var pct: float = clampf(float(paid) / float(total) * 100.0, 0.0, 100.0)
+	_debt_percent_lbl.text = "%.1f%% repaid  —  %s remaining" % [
+		pct, GameManager.format_coins(remaining)]
+
+	if debt_cleared:
+		_debt_pay_btn.disabled = true
+		_debt_pay_btn.text = "Debt Cleared!"
+		_debt_status_lbl.text = "Your father's debt is paid. You are free."
+		_debt_status_lbl.add_theme_color_override("font_color", ACCENT_GREEN)
+		_debt_bar_fill.color = Color(0.30, 0.85, 0.40, 1.0)
+	elif coins <= 0:
+		_debt_pay_btn.disabled = true
+		_debt_pay_btn.text = "Make Payment\n(no coins available)"
+	else:
+		_debt_pay_btn.disabled = false
+		var pay_amount: int = mini(coins, remaining)
+		_debt_pay_btn.text = "Make Payment  —  %s" % GameManager.format_coins(pay_amount)
 
 
-func _refresh_chamber_panel() -> void:
-	for upgrade in SHIP_UPGRADES:
-		var btn: Button = _chamber_buttons.get(upgrade["key"])
-		if not btn:
-			continue
-		var built: bool    = GameManager.get(upgrade["built_prop"])
-		var cost_val: int  = GameManager.get(upgrade["cost_const"])
-		var unlocked: bool = _is_chamber_unlocked(upgrade["key"])
-
-		btn.disabled = built or not unlocked or GameManager.coins < cost_val
-
-		if built:
-			btn.text = "[INSTALLED]  %s\n%s" % [upgrade["name"], upgrade["effect"]]
-		elif not unlocked:
-			btn.text = "[LOCKED]  %s\n%s\n%s" % [upgrade["name"], upgrade["effect"], upgrade["unlock_label"]]
-		else:
-			btn.text = "Install %s  —  %s\nCost: %s" % [upgrade["name"], upgrade["effect"], GameManager.format_coins(cost_val)]
-
-
-func _on_chamber_pressed(key: String) -> void:
-	for upgrade in SHIP_UPGRADES:
-		if upgrade["key"] != key:
-			continue
-		var built: bool   = GameManager.get(upgrade["built_prop"])
-		var cost_val: int = GameManager.get(upgrade["cost_const"])
-		if built or not _is_chamber_unlocked(key) or GameManager.coins < cost_val:
-			return
-		GameManager.coins -= cost_val
-		EventBus.coins_changed.emit(GameManager.coins)
-		GameManager.set(upgrade["built_prop"], true)
-		GameManager.save_game()
-		_status_label.text = "%s installed!" % upgrade["name"]
-		SoundManager.play_ui_click_sound()
-		_refresh_chamber_panel()
-		break
+func _on_pay_debt_pressed() -> void:
+	var remaining: int = maxi(0, GameManager.FATHERS_DEBT_TOTAL - GameManager.debt_paid)
+	if remaining <= 0 or GameManager.coins <= 0:
+		return
+	var pay_amount: int = mini(GameManager.coins, remaining)
+	GameManager.coins -= pay_amount
+	GameManager.debt_paid += pay_amount
+	EventBus.coins_changed.emit(GameManager.coins)
+	GameManager.save_game()
+	SoundManager.play_ui_click_sound()
+	if GameManager.debt_paid >= GameManager.FATHERS_DEBT_TOTAL:
+		_debt_status_lbl.text = "Debt cleared! Your father would be proud."
+	else:
+		_debt_status_lbl.text = "Paid %s toward the debt." % GameManager.format_coins(pay_amount)
+	_refresh_debt_panel()
 
 
 func _on_open_perk_tree_pressed() -> void:

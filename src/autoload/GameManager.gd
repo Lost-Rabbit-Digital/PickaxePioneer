@@ -167,6 +167,11 @@ var long_scanner_built: bool = false     # always show both asteroid mines on ov
 var gem_refinery_built: bool = false     # +1 bonus gem per gem ore mined
 var trade_amplifier_built: bool = false  # +25% dollar payout when selling bars
 
+# Father's Debt — story goal tracked across all runs (persisted to save)
+## Total debt owed: 50,000,000 copper (5000g). Paid off incrementally via the Clowder menu.
+const FATHERS_DEBT_TOTAL: int = 50_000_000
+var debt_paid: int = 0  # copper amount paid toward the father's debt so far
+
 # Planet progression tracking (persisted to save)
 var has_completed_tier_1_mine: bool = false       # True when player completes any Mine 1/2/3
 var has_completed_tier_2_settlement: bool = false # True when player completes any Settlement 3/4
@@ -803,6 +808,7 @@ func save_game() -> void:
 		"long_scanner_built": long_scanner_built,
 		"gem_refinery_built": gem_refinery_built,
 		"trade_amplifier_built": trade_amplifier_built,
+		"debt_paid": debt_paid,
 		"ladder_count": ladder_count,
 		"equipped_leaf": equipped_leaf,
 		"equipped_ice": equipped_ice,
@@ -877,6 +883,7 @@ func load_game() -> void:
 			long_scanner_built = data.get("long_scanner_built", false)
 			gem_refinery_built = data.get("gem_refinery_built", false)
 			trade_amplifier_built = data.get("trade_amplifier_built", false)
+			debt_paid = data.get("debt_paid", 0)
 			ladder_count = data.get("ladder_count", 0)
 			equipped_leaf = data.get("equipped_leaf", false)
 			equipped_ice = data.get("equipped_ice", false)
