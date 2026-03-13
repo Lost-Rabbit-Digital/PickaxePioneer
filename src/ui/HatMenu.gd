@@ -173,7 +173,7 @@ var _page: int = 0
 var _page_count: int = 0
 
 # Persistent UI nodes (live for the full scene lifetime)
-var _cards_root: Node = null
+var _cards_root: Control = null
 var _page_label: Label = null
 var _prev_btn: Button = null
 var _next_btn: Button = null
@@ -255,8 +255,11 @@ func _build_ui() -> void:
 	sep.size = Vector2(PANEL_W - 32, 1)
 	add_child(sep)
 
-	# Cards container — rebuilt each page
-	_cards_root = Node.new()
+	# Cards container — rebuilt each page.
+	# Must be a Control (CanvasItem) so child CanvasItems register on this
+	# CanvasLayer's canvas and are properly hidden when close() calls hide().
+	_cards_root = Control.new()
+	_cards_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_cards_root)
 
 	# ---- Bottom navigation bar ----
