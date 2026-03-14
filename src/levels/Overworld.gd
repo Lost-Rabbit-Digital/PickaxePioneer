@@ -45,6 +45,13 @@ const _MOMENTUM_DAMPING: float = 0.97
 const _MOMENTUM_THRESHOLD: float = 0.5
 const _DRAG_VEL_BLEND: float = 0.70
 
+# Left-click drag panning
+var _left_is_press_held: bool = false
+var _left_drag_triggered: bool = false
+var _left_drag_total_moved: float = 0.0
+var _left_node_was_clicked: bool = false
+const _LEFT_DRAG_THRESHOLD: float = 5.0
+
 # Asteroid mine name options for randomization
 var mine_names = [
 	"Iron Asteroid",
@@ -534,7 +541,7 @@ func _process(delta: float) -> void:
 	_update_camera()
 
 	# Handle momentum decay for mouse drag panning
-	if _is_dragging:
+	if _is_dragging or _left_drag_triggered:
 		# Continuously estimate drag velocity so releasing feels natural
 		if delta > 0.0:
 			var instant := _mouse_delta_acc / delta
@@ -549,9 +556,28 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _unhandled_input(event: InputEvent) -> void:
-	# Handle mouse drag panning (right-click drag)
+	# Handle mouse drag panning (left and right-click drag)
 	if event is InputEventMouseButton:
 		match event.button_index:
+			MOUSE_BUTTON_LEFT:
+				if event.pressed:
+					_left_is_press_held = true
+					_left_drag_triggered = false
+					_left_drag_total_moved = 0.0
+					# Note: _left_node_was_clicked is NOT reset here — it may
+					# already be true if Area2D fired _on_node_clicked for this
+					# same press event (Area2D input fires before _unhandled_input)
+				else:
+					if not _left_drag_triggered and not _left_node_was_clicked:
+						# Click on empty space — deselect any pending selection
+						_deselect_pending()
+					if _left_drag_triggered:
+						_momentum_velocity = _drag_velocity
+						_drag_velocity = Vector2.ZERO
+						_mouse_delta_acc = Vector2.ZERO
+					_left_is_press_held = false
+					_left_drag_triggered = false
+					_left_node_was_clicked = false
 			MOUSE_BUTTON_RIGHT:
 				if event.pressed:
 					_is_dragging = true
@@ -579,13 +605,26 @@ func _unhandled_input(event: InputEvent) -> void:
 					get_viewport().set_input_as_handled()
 				return
 
-	elif event is InputEventMouseMotion and _is_dragging:
-		# Drag right → camera pans left. Divide by zoom so dragging feels
-		# consistent across different zoom levels
+	elif event is InputEventMouseMotion:
 		var world_delta: Vector2 = (event as InputEventMouseMotion).relative / _camera_zoom
-		_camera_pan_offset -= world_delta
-		_mouse_delta_acc -= world_delta
-		get_viewport().set_input_as_handled()
+		if _is_dragging:
+			# Right-click drag — pan camera
+			_camera_pan_offset -= world_delta
+			_mouse_delta_acc -= world_delta
+			get_viewport().set_input_as_handled()
+		elif _left_is_press_held:
+			_left_drag_total_moved += (event as InputEventMouseMotion).relative.length()
+			if _left_drag_total_moved > _LEFT_DRAG_THRESHOLD:
+				if not _left_drag_triggered:
+					# Drag just started — stop camera from following caravan
+					_left_drag_triggered = true
+					_camera_follow_caravan = false
+					_momentum_velocity = Vector2.ZERO
+					_drag_velocity = Vector2.ZERO
+					_mouse_delta_acc = Vector2.ZERO
+				_camera_pan_offset -= world_delta
+				_mouse_delta_acc -= world_delta
+			get_viewport().set_input_as_handled()
 		return
 
 	# Handle space to toggle camera follow
@@ -658,7 +697,15 @@ func _move_selection(direction: Vector2) -> void:
 			rpc_sync_ship_travel.rpc_id(NetworkManager.guest_peer_id,
 					caravan.position.x, caravan.position.y, flat, best_neighbor.name)
 
+func _deselect_pending() -> void:
+	if _pending_node and _pending_node != current_node:
+		_pending_node.highlight(false)
+	_pending_node = null
+	if _modal and _modal.visible:
+		_modal.hide()
+
 func _on_node_clicked(node: MapNode) -> void:
+	_left_node_was_clicked = true
 	# In co-op, only the host navigates the star chart; guest watches
 	if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
 		return
