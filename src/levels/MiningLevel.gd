@@ -2705,7 +2705,7 @@ func _try_place_ladder_at(gp: Vector2i) -> void:
 	GameManager.ladder_count -= 1
 	GameManager.save_game()
 	EventBus.ladder_count_changed.emit(GameManager.ladder_count)
-	EventBus.ore_mined_popup.emit(0, "Ladder placed!  (%d remaining)" % GameManager.ladder_count)
+
 	queue_redraw()
 	if NetworkManager.is_multiplayer_session and NetworkManager.guest_peer_id > 0:
 		rpc_ladder_placed.rpc_id(NetworkManager.guest_peer_id, gp)
