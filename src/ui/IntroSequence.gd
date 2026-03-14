@@ -8,10 +8,9 @@ extends CanvasLayer
 signal finished
 
 const CARDS: Array[String] = [
-	"Your father ran these mining routes for thirty years.\nHis ship. His routes. His debts.\nNow they're yours.",
-	"You have fourteen days to repay his debts.",
-	"You are a mining cat.\nKeep the family business alive — dig deep, bank your ore, keep flying.",
-	"The deeper you go, the richer the reward...\nbut your energy won't last forever.",
+	"Your father never came back from the frontier.\nHe left you his ship, his routes...\nand a debt to the Clowder you didn't ask for.",
+	"The Clowder always collects.\nFourteen days.\nNot a moment more.",
+	"Somewhere out there, ore waits in the dark.\nMine it. Sell it. Survive.\nThe rest you'll figure out.",
 ]
 
 const FADE_IN_TIME: float = 0.8
