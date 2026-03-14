@@ -69,6 +69,9 @@ var _settings_panel: Node = null
 var _customize_menu: CustomizationMenu = null
 var _menu_char_sprite: AnimatedSprite2D = null
 
+const _IDLE_ANIMATIONS: Array[StringName] = [&"idle_1", &"idle_2", &"sleep"]
+var _menu_char_scared: bool = false
+
 @onready var _player_level_bar: ProgressBar = $CharacterContainer/CurrentPlayerLevelProgress
 @onready var _player_level_label: Label = $CharacterContainer/CurrentPlayerLevelProgress/Panel/Label
 
@@ -314,7 +317,8 @@ func _setup_menu_char_sprite() -> void:
 	_menu_char_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	$CharacterContainer.add_child(_menu_char_sprite)
 	_load_char_sprite_frames(_menu_char_sprite)
-	_menu_char_sprite.play(&"idle")
+	_menu_char_sprite.animation_finished.connect(_on_menu_char_animation_finished)
+	_menu_char_sprite.play(_IDLE_ANIMATIONS[randi() % _IDLE_ANIMATIONS.size()])
 	var mat := ShaderMaterial.new()
 	mat.shader = preload("res://assets/shaders/cat_color.gdshader")
 	mat.set_shader_parameter("base_color", GameManager.cat_color)
@@ -329,6 +333,23 @@ func _load_char_sprite_frames(target: AnimatedSprite2D) -> void:
 		if source_sprite:
 			target.sprite_frames = source_sprite.sprite_frames
 		temp.queue_free()
+
+func _on_menu_char_animation_finished() -> void:
+	if not _menu_char_sprite:
+		return
+	_menu_char_scared = false
+	_menu_char_sprite.play(_IDLE_ANIMATIONS[randi() % _IDLE_ANIMATIONS.size()])
+
+func _unhandled_input(event: InputEvent) -> void:
+	if _menu_char_sprite == null:
+		return
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed \
+			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		var sprite_global_pos := _menu_char_sprite.global_position
+		var mouse_pos := get_viewport().get_mouse_position()
+		if mouse_pos.distance_to(sprite_global_pos) < 64.0 and not _menu_char_scared:
+			_menu_char_scared = true
+			_menu_char_sprite.play(&"scared")
 
 func _update_menu_char_sprite_shader() -> void:
 	if _menu_char_sprite and _menu_char_sprite.material is ShaderMaterial:
