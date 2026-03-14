@@ -1266,6 +1266,10 @@ func _process(delta: float) -> void:
 	var _boss_prow := floori(player_node.global_position.y / CELL_SIZE) if player_node else -1
 	boss_system.update(delta, _boss_pcol, _boss_prow)
 
+	# Keep companion cats updated on the player's position so they follow with offsets
+	if cat_system and player_node:
+		cat_system.set_player_pos(player_node.global_position)
+
 	# Update on_ladder flag for all locally-authoritative players
 	for p_check in [player_node, guest_player_node]:
 		if p_check == null:
