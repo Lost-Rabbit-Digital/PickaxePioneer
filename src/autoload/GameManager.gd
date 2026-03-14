@@ -633,9 +633,22 @@ func get_stacked_slots_used() -> int:
 func is_inventory_full() -> bool:
 	return get_stacked_slots_used() >= get_ore_capacity()
 
-## Caravan travel speed multiplier on the overworld (boosted by Warp Drive).
+## Caravan travel speed multiplier on the overworld (boosted by Warp Drive and Thrusters perk).
 func get_ship_speed_mult() -> float:
-	return 2.0 if warp_drive_built else 1.0
+	var base: float = 2.0 if warp_drive_built else 1.0
+	return base * (1.0 + perk_ranks.get("thrusters", 0) * 0.15)
+
+## Number of extra mining planets added to the star chart (from Nav Charts perk).
+func get_extra_mine_planets() -> int:
+	return perk_ranks.get("nav_charts", 0) / 2
+
+## Number of ore types revealed in the planet preview before landing (from Ore Scanner perk).
+func get_ore_preview_slots() -> int:
+	return perk_ranks.get("ore_scanner", 0)
+
+## Warp cost reduction fraction from Warp Mastery perk (0.0–0.45).
+func get_warp_cost_reduction() -> float:
+	return perk_ranks.get("warp_mastery", 0) * 0.15
 
 ## Bonus gems awarded per gem ore mined (boosted by Gem Refinery).
 func get_gem_mine_bonus() -> int:

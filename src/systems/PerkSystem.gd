@@ -2,10 +2,11 @@ class_name PerkSystem
 extends RefCounted
 
 ## Perk Tree System — defines all perks, prerequisites, and stat contributions.
-## Three branches in Diablo-2 style:
+## Four branches in Diablo-2 style:
 ##   Branch 0 — PELT    (Survival)
 ##   Branch 1 — CLAWS   (Mining)
 ##   Branch 2 — WHISKERS (Utility)
+##   Branch 3 — SHIP    (Overworld)
 ## Each branch has 4 tiers; top-tier perks have 3 max ranks, others have 5.
 
 # ---------------------------------------------------------------------------
@@ -162,14 +163,65 @@ const PERKS: Array[Dictionary] = [
 		"icon_color": Color(0.90, 0.90, 0.30),
 		"desc": "Elite scavenging. +10% Fossil find rate per rank.",
 	},
+
+	# ---- BRANCH 3: SHIP (Overworld) ----------------------------------------
+	{
+		"id": "thrusters",
+		"name": "Thrusters",
+		"branch": 3,
+		"tier": 0,
+		"max_rank": 5,
+		"prereq_id": "",
+		"prereq_rank": 0,
+		"mineral_cost": 400,
+		"icon_color": Color(0.20, 0.85, 0.90),
+		"desc": "Upgraded ship thrusters. +15% caravan travel speed per rank.",
+	},
+	{
+		"id": "nav_charts",
+		"name": "Nav Charts",
+		"branch": 3,
+		"tier": 1,
+		"max_rank": 4,
+		"prereq_id": "thrusters",
+		"prereq_rank": 1,
+		"mineral_cost": 900,
+		"icon_color": Color(0.15, 0.70, 0.95),
+		"desc": "Expanded navigation charts. +1 extra mining planet per 2 ranks.",
+	},
+	{
+		"id": "ore_scanner",
+		"name": "Ore Scanner",
+		"branch": 3,
+		"tier": 2,
+		"max_rank": 5,
+		"prereq_id": "nav_charts",
+		"prereq_rank": 2,
+		"mineral_cost": 1500,
+		"icon_color": Color(0.10, 0.55, 0.80),
+		"desc": "Deep-space ore scanner. Preview +1 ore type before landing per rank.",
+	},
+	{
+		"id": "warp_mastery",
+		"name": "Warp Mastery",
+		"branch": 3,
+		"tier": 3,
+		"max_rank": 3,
+		"prereq_id": "ore_scanner",
+		"prereq_rank": 3,
+		"mineral_cost": 3000,
+		"icon_color": Color(0.50, 0.90, 1.00),
+		"desc": "Interstellar expertise. -15% warp energy cost and travel time per rank.",
+	},
 ]
 
 # Branch display names shown above each column in the tree UI
-const BRANCH_NAMES: Array[String] = ["PELT", "CLAWS", "WHISKERS"]
+const BRANCH_NAMES: Array[String] = ["PELT", "CLAWS", "WHISKERS", "SHIP"]
 const BRANCH_COLORS: Array[Color] = [
 	Color(0.95, 0.40, 0.40),  # Pelt — warm red
 	Color(0.30, 0.90, 0.45),  # Claws — green
 	Color(0.75, 0.50, 1.00),  # Whiskers — purple
+	Color(0.25, 0.88, 0.95),  # Ship — cyan
 ]
 
 # ---------------------------------------------------------------------------
