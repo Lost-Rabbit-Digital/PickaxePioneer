@@ -25,9 +25,9 @@ var health_bar_highlights: Array[ColorRect] = []
 var _displayed_health: float = 10.0
 var _health_drain_tween: Tween
 
-var info_panel: ColorRect
-var earnings_label: Label
-var depth_label: Label
+@onready var info_panel: ColorRect = $Control/InfoPanel
+@onready var earnings_label: Label = $Control/EarningsLabel
+@onready var depth_label: Label = $Control/DepthLabel
 var _earnings_tween: Tween
 
 # Ore-only pickup notification — icon + amount + name, upper-left
@@ -37,31 +37,31 @@ const ORE_NAMES: Array[String] = [
 	"Star Gold", "Deep Star Gold",
 	"Cosmic Gem", "Deep Cosmic Gem",
 ]
-var _ore_popup_root: Control
-var _ore_popup_icon: ColorRect
-var _ore_popup_label: Label
+@onready var _ore_popup_root: Control = $Control/OrePopupRoot
+@onready var _ore_popup_icon: ColorRect = $Control/OrePopupRoot/OrePopupIcon
+@onready var _ore_popup_label: Label = $Control/OrePopupRoot/OrePopupLabel
 var _ore_popup_tween: Tween
 
 # Boss hint notification — bottom-centre, larger and persistent, with a queue
 # so rapid hints (spawn warning + queued hints) don't overwrite each other.
-var _boss_hint_label: Label
-var _boss_hint_panel: ColorRect
+@onready var _boss_hint_label: Label = $Control/BossHintLabel
+@onready var _boss_hint_panel: ColorRect = $Control/BossHintPanel
 var _boss_hint_tween: Tween
 var _boss_hint_queue: Array[String] = []
 var _boss_hint_showing: bool = false
 
 # Low energy warning
-var _low_energy_warning: Label
+@onready var _low_energy_warning: Label = $Control/LowEnergyWarning
 var _low_energy_tween: Tween
 
 # Depth milestone banner
-var _milestone_label: Label
+@onready var _milestone_label: Label = $Control/MilestoneLabel
 var _milestone_tween: Tween
 var _next_milestone: int = 20
 
 # Depth sidebar — vertical indicator showing player depth relative to zones
-var _depth_sidebar_bg: ColorRect
-var _depth_sidebar_marker: ColorRect
+@onready var _depth_sidebar_bg: ColorRect = $Control/DepthSidebar/DepthSidebarBg
+@onready var _depth_sidebar_marker: ColorRect = $Control/DepthSidebar/DepthMarker
 var _depth_sidebar_zones: Array[ColorRect] = []
 const DEPTH_SIDEBAR_X := 4.0
 const DEPTH_SIDEBAR_W := 8.0
@@ -69,13 +69,13 @@ const DEPTH_SIDEBAR_TOP := 180.0
 const DEPTH_SIDEBAR_H := 400.0
 const TOTAL_DEPTH_ROWS := 128  # matches GRID_ROWS
 
-# Surface exit hint — bottom-right, pulses when player is on surface
-var _exit_hint_label: Label
-var _exit_hint_panel: ColorRect
+# Surface exit hint — bottom-right corner, visible when on surface
+@onready var _exit_hint_label: Label = $Control/ExitHintLabel
+@onready var _exit_hint_panel: ColorRect = $Control/ExitHintPanel
 var _exit_hint_tween: Tween
 
 # Low HP danger warning — bottom-centre, pulses red when HP == 1
-var _low_hp_warning: Label
+@onready var _low_hp_warning: Label = $Control/LowHPWarning
 var _low_hp_tween: Tween
 
 # Hotbar — bottom-centre quick-slot strip (pickaxe, ladder, empty); click opens inventory
@@ -88,7 +88,7 @@ var _hotbar_slots: Array[PanelContainer] = []
 var _hotbar_styles: Array[StyleBoxFlat] = []  # One StyleBoxFlat per slot for border recolouring
 var _hotbar_ladder_icon: Control       # Ladder slot content — shown/hidden based on ladder count
 var _hotbar_ladder_count_label: Label  # Small count badge on the ladder hotbar slot
-var _hotbar_container: HBoxContainer  # Root container for the hotbar strip
+@onready var _hotbar_container: HBoxContainer = $Control/HotbarContainer
 
 # Ore colour mapping for the earnings popup
 const ORE_COLORS: Dictionary = {
@@ -133,126 +133,7 @@ func _ready() -> void:
 	EventBus.ladder_count_changed.connect(_on_ladder_count_changed)
 	EventBus.depth_changed.connect(_on_depth_changed)
 
-	# Single combined panel behind all upper-left info labels (Capacity, earnings, Depth, $)
-	info_panel = ColorRect.new()
-	info_panel.color = Color(0.0, 0.0, 0.0, 0.55)
-	info_panel.position = Vector2(4, 6)
-	info_panel.size = Vector2(210, 110)
-	info_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	$Control.add_child(info_panel)
-	$Control.move_child(info_panel, 0)  # Draw behind everything else
-
-	# Earnings popup label — appears below the minerals panel when a tile is mined
-	earnings_label = Label.new()
-	earnings_label.position = Vector2(16, 46)
-	earnings_label.custom_minimum_size = Vector2(220, 22)
-	earnings_label.modulate = Color(1.0, 0.88, 0.2, 0.0)  # Gold, starts invisible
-	earnings_label.add_theme_font_size_override("font_size", 14)
-	$Control.add_child(earnings_label)
-
-	# Ore pickup popup — icon + amount + name, shown only for actual ore (not special events).
-	# Positioned at the same y as earnings_label; only one is visible at a time.
-	_ore_popup_root = Control.new()
-	_ore_popup_root.position = Vector2(8, 44)
-	_ore_popup_root.custom_minimum_size = Vector2(200, 24)
-	_ore_popup_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ore_popup_root.modulate.a = 0.0
-	$Control.add_child(_ore_popup_root)
-
-	# Dark border behind the ore icon (1 px inset on each side)
-	var icon_bg := ColorRect.new()
-	icon_bg.color = Color(0.05, 0.05, 0.08, 0.90)
-	icon_bg.position = Vector2(0, 0)
-	icon_bg.size = Vector2(22, 22)
-	icon_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ore_popup_root.add_child(icon_bg)
-
-	# Ore colour swatch (inset 2 px inside the border)
-	_ore_popup_icon = ColorRect.new()
-	_ore_popup_icon.position = Vector2(2, 2)
-	_ore_popup_icon.size = Vector2(18, 18)
-	_ore_popup_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ore_popup_root.add_child(_ore_popup_icon)
-
-	# "+X Name" label to the right of the icon
-	_ore_popup_label = Label.new()
-	_ore_popup_label.position = Vector2(27, 1)
-	_ore_popup_label.custom_minimum_size = Vector2(170, 22)
-	_ore_popup_label.add_theme_font_size_override("font_size", 14)
-	_ore_popup_root.add_child(_ore_popup_label)
-
-	# Depth indicator — shows how far into space the cat has traveled
-	depth_label = Label.new()
-	depth_label.position = Vector2(8, 72)
-	depth_label.custom_minimum_size = Vector2(148, 22)
-	depth_label.text = "Orbit"
-	depth_label.modulate = Color(0.6, 0.85, 1.0, 1.0)  # Light blue tint
-	$Control.add_child(depth_label)
-
 	_update_ladder_display(GameManager.ladder_count)
-
-	# Boss hint panel — bottom-centre, larger and more prominent than ore popups.
-	# Displays boss instructions and attack warnings so they don't compete with
-	# the upper-left mining feedback.
-	_boss_hint_panel = ColorRect.new()
-	_boss_hint_panel.color = Color(0.05, 0.02, 0.14, 0.88)
-	_boss_hint_panel.position = Vector2(240, 550)
-	_boss_hint_panel.size = Vector2(800, 44)
-	_boss_hint_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_boss_hint_panel.modulate.a = 0.0
-	$Control.add_child(_boss_hint_panel)
-
-	_boss_hint_label = Label.new()
-	_boss_hint_label.position = Vector2(244, 554)
-	_boss_hint_label.custom_minimum_size = Vector2(792, 36)
-	_boss_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_boss_hint_label.modulate = Color(1.0, 0.95, 0.80, 0.0)  # Warm white, starts invisible
-	_boss_hint_label.add_theme_font_size_override("font_size", 16)
-	$Control.add_child(_boss_hint_label)
-
-	# Low energy warning — bottom-centre, pulses red when energy <= 20 %
-	_low_energy_warning = Label.new()
-	_low_energy_warning.position = Vector2(540, 656)
-	_low_energy_warning.custom_minimum_size = Vector2(200, 28)
-	_low_energy_warning.text = "! LOW ENERGY !"
-	_low_energy_warning.modulate = Color(1.0, 0.2, 0.1, 0.0)  # Red, starts invisible
-	_low_energy_warning.add_theme_font_size_override("font_size", 18)
-	$Control.add_child(_low_energy_warning)
-
-	# Depth milestone banner — top-centre, fades in/out on each 20 m milestone
-	_milestone_label = Label.new()
-	_milestone_label.position = Vector2(440, 10)
-	_milestone_label.custom_minimum_size = Vector2(400, 28)
-	_milestone_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_milestone_label.modulate = Color(1.0, 0.85, 0.2, 0.0)  # Gold, starts invisible
-	_milestone_label.add_theme_font_size_override("font_size", 18)
-	$Control.add_child(_milestone_label)
-
-	# Surface exit hint — bottom-right corner, visible when on surface
-	_exit_hint_panel = ColorRect.new()
-	_exit_hint_panel.color = Color(0.0, 0.0, 0.0, 0.55)
-	_exit_hint_panel.position = Vector2(1044, 650)
-	_exit_hint_panel.size = Vector2(228, 32)
-	_exit_hint_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_exit_hint_panel.modulate.a = 0.0
-	$Control.add_child(_exit_hint_panel)
-
-	_exit_hint_label = Label.new()
-	_exit_hint_label.text = "Walk right to exit  ->"
-	_exit_hint_label.position = Vector2(1048, 655)
-	_exit_hint_label.custom_minimum_size = Vector2(218, 22)
-	_exit_hint_label.modulate = Color(0.30, 1.0, 0.40, 0.0)  # Green, starts invisible
-	_exit_hint_label.add_theme_font_size_override("font_size", 14)
-	$Control.add_child(_exit_hint_label)
-
-	# Low HP danger warning — bottom-centre above the energy warning, pulses red at 1 HP
-	_low_hp_warning = Label.new()
-	_low_hp_warning.position = Vector2(490, 628)
-	_low_hp_warning.custom_minimum_size = Vector2(300, 24)
-	_low_hp_warning.text = "! CRITICAL DAMAGE — return to station !"
-	_low_hp_warning.modulate = Color(1.0, 0.10, 0.05, 0.0)  # Red, starts invisible
-	_low_hp_warning.add_theme_font_size_override("font_size", 14)
-	$Control.add_child(_low_hp_warning)
 
 	# Initialize hearts immediately since PlayerProbe emits before HUD connects
 	var max_hp := GameManager.get_max_health()
@@ -260,55 +141,8 @@ func _ready() -> void:
 	# Initialize energy display after all UI elements are created
 	_on_energy_changed(GameManager.current_energy, GameManager.get_max_energy())
 
-	# Build the depth sidebar — vertical bar on left edge showing player depth
-	_build_depth_sidebar()
-
 	# Build the bottom-centre hotbar (pickaxe / ladder / empty)
 	_build_hotbar()
-
-func _build_depth_sidebar() -> void:
-	# Background track
-	_depth_sidebar_bg = ColorRect.new()
-	_depth_sidebar_bg.position = Vector2(DEPTH_SIDEBAR_X, DEPTH_SIDEBAR_TOP)
-	_depth_sidebar_bg.size = Vector2(DEPTH_SIDEBAR_W, DEPTH_SIDEBAR_H)
-	_depth_sidebar_bg.color = Color(0.1, 0.1, 0.15, 0.6)
-	$Control.add_child(_depth_sidebar_bg)
-
-	# Depth zone color bands
-	var zone_rows := [0, 20, 41, 71, 101, TOTAL_DEPTH_ROWS]
-	var zone_colors := [
-		Color(0.72, 0.56, 0.36, 0.5),  # The Crust
-		Color(0.80, 0.40, 0.15, 0.5),  # The Mantle
-		Color(0.90, 0.22, 0.08, 0.5),  # The Outer Core
-		Color(1.00, 0.70, 0.10, 0.5),  # The Inner Core
-		Color(0.70, 0.10, 0.85, 0.5),  # The Primordial Forge
-	]
-	for i in range(mini(zone_colors.size(), zone_rows.size() - 1)):
-		var y_start := DEPTH_SIDEBAR_TOP + (float(zone_rows[i]) / float(TOTAL_DEPTH_ROWS)) * DEPTH_SIDEBAR_H
-		var y_end := DEPTH_SIDEBAR_TOP + (float(zone_rows[i + 1]) / float(TOTAL_DEPTH_ROWS)) * DEPTH_SIDEBAR_H
-		var zone_rect := ColorRect.new()
-		zone_rect.position = Vector2(DEPTH_SIDEBAR_X, y_start)
-		zone_rect.size = Vector2(DEPTH_SIDEBAR_W, y_end - y_start)
-		zone_rect.color = zone_colors[i]
-		$Control.add_child(zone_rect)
-		_depth_sidebar_zones.append(zone_rect)
-
-	# Boss row markers (thin white lines)
-	var boss_rows := [32, 64, 96, 112, 128]
-	for br in boss_rows:
-		var by := DEPTH_SIDEBAR_TOP + (float(br) / float(TOTAL_DEPTH_ROWS)) * DEPTH_SIDEBAR_H
-		var boss_mark := ColorRect.new()
-		boss_mark.position = Vector2(DEPTH_SIDEBAR_X - 2, by - 0.5)
-		boss_mark.size = Vector2(DEPTH_SIDEBAR_W + 4, 1.0)
-		boss_mark.color = Color(1.0, 0.3, 0.2, 0.7)
-		$Control.add_child(boss_mark)
-
-	# Player depth marker (bright, wider)
-	_depth_sidebar_marker = ColorRect.new()
-	_depth_sidebar_marker.position = Vector2(DEPTH_SIDEBAR_X - 3, DEPTH_SIDEBAR_TOP)
-	_depth_sidebar_marker.size = Vector2(DEPTH_SIDEBAR_W + 6, 3.0)
-	_depth_sidebar_marker.color = Color(1.0, 1.0, 1.0, 0.9)
-	$Control.add_child(_depth_sidebar_marker)
 
 # Called when a tile is mined.
 # Ore pickups (ORE_NAMES + amount > 0) show a rich icon + amount + name popup.
@@ -659,18 +493,6 @@ func _get_pickaxe_texture() -> Texture2D:
 	return atlas_texture
 
 func _build_hotbar() -> void:
-	var slot_outer: int = HOTBAR_SLOT_SIZE + 6  # content + border (3 px margin each side)
-	var total_w: int = 10 * slot_outer + 9 * HOTBAR_SLOT_GAP
-	var hb_x: int = (1280 - total_w) / 2
-	var hb_y: int = 6
-
-	var container := HBoxContainer.new()
-	container.position = Vector2(hb_x, hb_y)
-	container.add_theme_constant_override("separation", HOTBAR_SLOT_GAP)
-	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	$Control.add_child(container)
-	_hotbar_container = container
-
 	for i in range(10):
 		var slot := PanelContainer.new()
 		slot.custom_minimum_size = Vector2(HOTBAR_SLOT_SIZE, HOTBAR_SLOT_SIZE)
@@ -749,7 +571,7 @@ func _build_hotbar() -> void:
 
 		# Slots 3–10 (i == 2–9) intentionally left empty
 
-		container.add_child(slot)
+		_hotbar_container.add_child(slot)
 		_hotbar_slots.append(slot)
 
 	# Highlight slot 0 (pickaxe) as selected by default
