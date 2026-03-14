@@ -99,6 +99,19 @@ func hire(role: CatRole, world_pos: Vector2) -> void:
 	)
 
 
+## Called each frame by MiningLevel to keep cats updated on player position.
+func set_player_pos(pos: Vector2) -> void:
+	_player_pos = pos
+
+
+## Returns the staggered world-space follow target for the cat at the given index.
+## Cats trail behind the player in an alternating high-low pattern so they never stack.
+func _get_follow_target(cat_index: int) -> Vector2:
+	var x_off := -(1.2 + cat_index * 0.8) * CELL_SIZE
+	var y_off := -CELL_SIZE * 0.4 if cat_index % 2 == 0 else 0.0
+	return _player_pos + Vector2(x_off, y_off)
+
+
 func get_cat_count() -> int:
 	return _cats.size()
 
@@ -156,6 +169,12 @@ func _update_cat(cat: HiredCat, delta: float) -> void:
 
 
 func _update_mining_cat(cat: HiredCat, delta: float) -> void:
+	# Keep anchor drifting toward the player so the patrol area follows along.
+	var cat_idx := _cats.find(cat)
+	var follow_target := _get_follow_target(cat_idx)
+	if _player_pos != Vector2.ZERO:
+		cat.anchor_pos = cat.anchor_pos.move_toward(follow_target, CAT_MOVE_SPEED * delta)
+
 	match cat.state:
 		"idle":
 			_play_anim(cat, &"idle")
@@ -165,7 +184,12 @@ func _update_mining_cat(cat: HiredCat, delta: float) -> void:
 				cat.target_tile = ore_tile
 				cat.state = "moving"
 			else:
-				# No ore nearby — wait
+				# No ore nearby — drift toward follow position and wait
+				if _player_pos != Vector2.ZERO and cat.world_pos.distance_to(follow_target) > CELL_SIZE * 0.4:
+					_play_anim(cat, &"movement")
+					var dir := (follow_target - cat.world_pos)
+					cat.facing_left = dir.x > 0
+					cat.world_pos += dir.normalized() * CAT_MOVE_SPEED * delta
 				cat.mine_timer += delta
 				if cat.mine_timer >= 2.5:
 					cat.mine_timer = 0.0
@@ -207,7 +231,19 @@ func _update_mining_cat(cat: HiredCat, delta: float) -> void:
 func _update_collecting_cat(cat: HiredCat, delta: float) -> void:
 	match cat.state:
 		"idle", "collecting":
-			_play_anim(cat, &"idle")
+			# Drift toward the staggered follow position behind the player
+			if _player_pos != Vector2.ZERO:
+				var cat_idx := _cats.find(cat)
+				var follow_target := _get_follow_target(cat_idx)
+				if cat.world_pos.distance_to(follow_target) > CELL_SIZE * 0.4:
+					_play_anim(cat, &"movement")
+					var dir := (follow_target - cat.world_pos)
+					cat.facing_left = dir.x > 0
+					cat.world_pos += dir.normalized() * CAT_MOVE_SPEED * delta
+				else:
+					_play_anim(cat, &"idle")
+			else:
+				_play_anim(cat, &"idle")
 			cat.collect_timer += delta
 			if cat.collect_timer >= CAT_COLLECT_INTERVAL:
 				cat.collect_timer = 0.0
