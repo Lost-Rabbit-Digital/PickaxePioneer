@@ -106,6 +106,18 @@ func get_planet_config() -> Dictionary:
 		return {}
 	return slot.get("planet_config", {})
 
+## Wipe all save data — all slots and global progress. Used by the reset button in settings.
+func reset_all_data() -> void:
+	for i in range(MAX_SLOTS):
+		_slots[i] = null
+	active_slot = -1
+	_persist_all_slots()
+	var gm := GameManager
+	gm.global_player_xp = 0
+	gm.global_player_level = 1
+	save_global_progress()
+	_reset_game_manager()
+
 ## Clear the active save slot's run data (called on player death or run complete).
 func clear_active_slot_run_data() -> void:
 	if active_slot < 0 or active_slot >= MAX_SLOTS:
