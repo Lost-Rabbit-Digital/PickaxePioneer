@@ -138,7 +138,6 @@ The implemented micro loop maps to:
 **Reward signals:**
 - Mineral currency is immediate and visible (HUD counter + popups)
 - Smelting chains provide escalating bonuses (50-200%)
-- Mine streak bonus (+1-15 minerals per 5 consecutive ore mines)
 - XP + leveling system with perk points
 - Run Summary screen with animated ore tally — satisfying
 

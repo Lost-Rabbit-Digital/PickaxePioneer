@@ -478,7 +478,6 @@ const HEAL_FRAME_DURATION: float = 0.12 # Seconds each frame is shown during rev
 var _gravity_pending: Dictionary = {}
 # Falling stalactites: Vector2i foliage pos -> float seconds_until_next_step
 var _falling_stalactites: Dictionary = {}
-var _mine_streak: int = 0
 var _zones_discovered: Array[bool] = [false, false, false, false, false]
 var _last_banner_time_ms: int = -5000
 var _exit_pulse_time: float = 0.0
@@ -1755,7 +1754,6 @@ func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 			EventBus.ore_mined_popup.emit(gems_gained, "Diamond collected!")
 		if tile in MINEABLE_TILES:
 			var minerals: int = TILE_MINERALS.get(tile, 1)
-			_mine_streak += 1
 			var lucky_chance := (LUCKY_STRIKE_CHANCE + GameManager.get_lucky_strike_bonus()) * (2.0 if _lucky_compass_active[0] else 1.0)
 			var lucky := tile in ORE_TILES and randf() < lucky_chance
 			if lucky:
@@ -1781,7 +1779,6 @@ func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 				var popup_label: String = "LUCKY!" if lucky else TILE_NAMES.get(tile, "Mineral")
 				EventBus.ore_mined_popup.emit(minerals, popup_label)
 			# Non-ore tiles (dirt, stone, grass) give no minerals.
-			_check_streak_milestone()
 		# Particle burst on tile destruction — scaled by ore value
 		var tile_world_pos := Vector2(col * CELL_SIZE + CELL_SIZE * 0.5, row * CELL_SIZE + CELL_SIZE * 0.5)
 		var burst_color: Color = TILE_PARTICLE_COLORS.get(tile, Color(0.7, 0.6, 0.4))
@@ -1889,13 +1886,6 @@ func _spawn_decorations(data: Dictionary) -> void:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-func _check_streak_milestone() -> void:
-	if _mine_streak > 0 and _mine_streak % 5 == 0:
-		var bonus := mini(_mine_streak, 15)
-		GameManager.add_currency(bonus)
-		EventBus.coins_earned.emit(bonus)
-		EventBus.game_notification.emit("Streak x%d! +%s" % [_mine_streak, GameManager.format_coins(bonus * 100)], Color(1.0, 0.60, 0.10))
 
 # ---------------------------------------------------------------------------
 # Gravity block system — GRAVITY_TILES fall when unsupported
@@ -2387,9 +2377,6 @@ func _update_depth() -> void:
 		# Track deepest row for Colony Chamber unlock condition
 		if depth > GameManager.deepest_row_reached:
 				GameManager.deepest_row_reached = depth
-			# Reset mine streak when surfacing
-		if depth <= 0:
-			_mine_streak = 0
 
 func _check_zone_transition(depth_row: int) -> void:
 	var new_zone_idx := 0
