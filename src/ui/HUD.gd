@@ -29,17 +29,17 @@ var info_panel: ColorRect
 var depth_label: Label
 
 # Low energy warning
-var _low_energy_warning: Label
+@onready var _low_energy_warning: Label = $Control/LowEnergyWarning
 var _low_energy_tween: Tween
 
 # Depth milestone banner
-var _milestone_label: Label
+@onready var _milestone_label: Label = $Control/MilestoneLabel
 var _milestone_tween: Tween
 var _next_milestone: int = 20
 
 # Depth sidebar — vertical indicator showing player depth relative to zones
-var _depth_sidebar_bg: ColorRect
-var _depth_sidebar_marker: ColorRect
+@onready var _depth_sidebar_bg: ColorRect = $Control/DepthSidebar/DepthSidebarBg
+@onready var _depth_sidebar_marker: ColorRect = $Control/DepthSidebar/DepthMarker
 var _depth_sidebar_zones: Array[ColorRect] = []
 const DEPTH_SIDEBAR_X := 4.0
 const DEPTH_SIDEBAR_W := 8.0
@@ -47,13 +47,13 @@ const DEPTH_SIDEBAR_TOP := 180.0
 const DEPTH_SIDEBAR_H := 400.0
 const TOTAL_DEPTH_ROWS := 128  # matches GRID_ROWS
 
-# Surface exit hint — bottom-right, pulses when player is on surface
-var _exit_hint_label: Label
-var _exit_hint_panel: ColorRect
+# Surface exit hint — bottom-right corner, visible when on surface
+@onready var _exit_hint_label: Label = $Control/ExitHintLabel
+@onready var _exit_hint_panel: ColorRect = $Control/ExitHintPanel
 var _exit_hint_tween: Tween
 
 # Low HP danger warning — bottom-centre, pulses red when HP == 1
-var _low_hp_warning: Label
+@onready var _low_hp_warning: Label = $Control/LowHPWarning
 var _low_hp_tween: Tween
 
 # Hotbar — bottom-centre quick-slot strip (pickaxe, ladder, empty); click opens inventory
@@ -66,7 +66,7 @@ var _hotbar_slots: Array[PanelContainer] = []
 var _hotbar_styles: Array[StyleBoxFlat] = []  # One StyleBoxFlat per slot for border recolouring
 var _hotbar_ladder_icon: Control       # Ladder slot content — shown/hidden based on ladder count
 var _hotbar_ladder_count_label: Label  # Small count badge on the ladder hotbar slot
-var _hotbar_container: HBoxContainer  # Root container for the hotbar strip
+@onready var _hotbar_container: HBoxContainer = $Control/HotbarContainer
 
 # Ore colour mapping for the earnings popup
 const ORE_COLORS: Dictionary = {
@@ -179,9 +179,6 @@ func _ready() -> void:
 	_on_health_changed(max_hp, max_hp)
 	# Initialize energy display after all UI elements are created
 	_on_energy_changed(GameManager.current_energy, GameManager.get_max_energy())
-
-	# Build the depth sidebar — vertical bar on left edge showing player depth
-	_build_depth_sidebar()
 
 	# Build the bottom-centre hotbar (pickaxe / ladder / empty)
 	_build_hotbar()
@@ -535,18 +532,6 @@ func _get_pickaxe_texture() -> Texture2D:
 	return atlas_texture
 
 func _build_hotbar() -> void:
-	var slot_outer: int = HOTBAR_SLOT_SIZE + 6  # content + border (3 px margin each side)
-	var total_w: int = 10 * slot_outer + 9 * HOTBAR_SLOT_GAP
-	var hb_x: int = (1280 - total_w) / 2
-	var hb_y: int = 6
-
-	var container := HBoxContainer.new()
-	container.position = Vector2(hb_x, hb_y)
-	container.add_theme_constant_override("separation", HOTBAR_SLOT_GAP)
-	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	$Control.add_child(container)
-	_hotbar_container = container
-
 	for i in range(10):
 		var slot := PanelContainer.new()
 		slot.custom_minimum_size = Vector2(HOTBAR_SLOT_SIZE, HOTBAR_SLOT_SIZE)
@@ -625,7 +610,7 @@ func _build_hotbar() -> void:
 
 		# Slots 3–10 (i == 2–9) intentionally left empty
 
-		container.add_child(slot)
+		_hotbar_container.add_child(slot)
 		_hotbar_slots.append(slot)
 
 	# Highlight slot 0 (pickaxe) as selected by default
