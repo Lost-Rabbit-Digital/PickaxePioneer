@@ -48,7 +48,7 @@ const ROW_H: int    = 50
 const SEC_GAP: int  = 14
 
 # Inventory slot grid constants
-const SLOT_SIZE: int  = 72   # px per slot cell (icon + padding)
+const SLOT_SIZE: int  = 56   # px per slot cell (icon + padding)
 const SLOT_GAP: int   = 4    # gap between cells
 const SLOT_COLS: int  = 10   # columns in the slot grid
 const TOOL_SLOT_COUNT: int = 2  # Pickaxe slot + Ladder slot
@@ -202,7 +202,7 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 		for _i in empty_count:
 			_slot_order.append({"kind": "empty"})
 
-	var cols: int = int((w + SLOT_GAP) / (SLOT_SIZE + SLOT_GAP))
+	var cols: int = SLOT_COLS
 	var cell: int = SLOT_SIZE + SLOT_GAP
 	var rows: int = ceili(float(total_display_slots) / float(cols))
 
@@ -411,23 +411,23 @@ func _draw_tool_slot_content(parent: Control, sx: int, sy: int, tool_idx: int, s
 
 		var lp := ColorRect.new()
 		lp.color = pole_color
-		lp.position = Vector2(sx + 15, sy + 6)
-		lp.size = Vector2(4, 57)
+		lp.position = Vector2(sx + 10, sy + 5)
+		lp.size = Vector2(3, 44)
 		lp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		parent.add_child(lp)
 
 		var rp := ColorRect.new()
 		rp.color = pole_color
-		rp.position = Vector2(sx + 53, sy + 6)
-		rp.size = Vector2(4, 57)
+		rp.position = Vector2(sx + 42, sy + 5)
+		rp.size = Vector2(3, 44)
 		rp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		parent.add_child(rp)
 
 		for r in 4:
 			var rung := ColorRect.new()
 			rung.color = rung_color
-			rung.position = Vector2(sx + 15, sy + 9 + r * 14)
-			rung.size = Vector2(42, 3)
+			rung.position = Vector2(sx + 10, sy + 7 + r * 11)
+			rung.size = Vector2(32, 2)
 			rung.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			parent.add_child(rung)
 
@@ -545,18 +545,18 @@ func _start_drag(slot_data: Dictionary) -> void:
 		var pc := Color(0.80, 0.60, 0.15, 0.70)
 		var rc := Color(0.70, 0.50, 0.10, 0.70)
 		var lp := ColorRect.new()
-		lp.color = pc; lp.position = Vector2(15, 6); lp.size = Vector2(4, 57)
+		lp.color = pc; lp.position = Vector2(10, 5); lp.size = Vector2(3, 44)
 		lp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_drag_ghost_icon_root.add_child(lp)
 		var rp := ColorRect.new()
-		rp.color = pc; rp.position = Vector2(53, 6); rp.size = Vector2(4, 57)
+		rp.color = pc; rp.position = Vector2(42, 5); rp.size = Vector2(3, 44)
 		rp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_drag_ghost_icon_root.add_child(rp)
 		for r in 4:
 			var rung := ColorRect.new()
 			rung.color = rc
-			rung.position = Vector2(15, 9 + r * 14)
-			rung.size = Vector2(42, 3)
+			rung.position = Vector2(10, 7 + r * 11)
+			rung.size = Vector2(32, 2)
 			rung.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			_drag_ghost_icon_root.add_child(rung)
 
