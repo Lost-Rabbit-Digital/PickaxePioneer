@@ -52,6 +52,67 @@ const COL_TEXT_GREEN   := Color(0.40, 0.88, 0.46)
 const COL_TEXT_RED     := Color(0.80, 0.38, 0.33)
 
 # ---------------------------------------------------------------------------
+# PerkParticleLayer — draws purchase-burst particles (lives in canvas space)
+# ---------------------------------------------------------------------------
+
+class PerkParticleLayer extends Control:
+	const P_COUNT    : int   = 18
+	const P_LIFETIME : float = 0.55
+	const P_SPEED_MIN: float = 60.0
+	const P_SPEED_MAX: float = 180.0
+	const P_SIZE_MIN : float = 3.0
+	const P_SIZE_MAX : float = 8.0
+	const P_DRAG     : float = 0.82
+
+	## Each entry: { pos, vel, life, max_life, size, col }
+	var _particles : Array = []
+
+	func _ready() -> void:
+		set_process(false)
+		mouse_filter = MOUSE_FILTER_IGNORE
+		size         = Vector2(4000, 4000)
+		position     = Vector2(-1000, -1000)  # centred so particles aren't clipped
+
+	## Fire a burst of particles at canvas-space [pos] using [col] as the tint.
+	func burst(pos: Vector2, col: Color) -> void:
+		for _i: int in range(P_COUNT):
+			var angle : float = randf() * TAU
+			var speed : float = randf_range(P_SPEED_MIN, P_SPEED_MAX)
+			_particles.append({
+				"pos":      pos + Vector2(1000.0, 1000.0),  # offset for layer shift
+				"vel":      Vector2(cos(angle), sin(angle)) * speed,
+				"life":     P_LIFETIME,
+				"max_life": P_LIFETIME,
+				"size":     randf_range(P_SIZE_MIN, P_SIZE_MAX),
+				"col":      col,
+			})
+		set_process(true)
+
+	func _process(delta: float) -> void:
+		var i : int = _particles.size() - 1
+		while i >= 0:
+			var p : Dictionary = _particles[i]
+			p["life"] = (p["life"] as float) - delta
+			if (p["life"] as float) <= 0.0:
+				_particles.remove_at(i)
+			else:
+				p["pos"] = (p["pos"] as Vector2) + (p["vel"] as Vector2) * delta
+				p["vel"] = (p["vel"] as Vector2) * P_DRAG
+			i -= 1
+		if _particles.is_empty():
+			set_process(false)
+		queue_redraw()
+
+	func _draw() -> void:
+		for p: Dictionary in _particles:
+			var alpha : float  = (p["life"] as float) / (p["max_life"] as float)
+			var col   : Color  = (p["col"] as Color)
+			col.a = alpha
+			var s   : float   = (p["size"] as float) * (0.5 + 0.5 * alpha)
+			var pos : Vector2 = p["pos"] as Vector2
+			draw_rect(Rect2(pos - Vector2(s, s) * 0.5, Vector2(s, s)), col)
+
+# ---------------------------------------------------------------------------
 # ConnectorLayer — draws lines between vertically adjacent perk nodes
 # ---------------------------------------------------------------------------
 
@@ -85,6 +146,7 @@ class PerkNodeControl extends Control:
 	func setup() -> void:
 		custom_minimum_size = Vector2(NODE_SIZE, NODE_SIZE)
 		size                = Vector2(NODE_SIZE, NODE_SIZE)
+		pivot_offset        = Vector2(NODE_SIZE, NODE_SIZE) * 0.5
 		mouse_filter        = MOUSE_FILTER_STOP
 		mouse_entered.connect(_mouse_entered)
 		mouse_exited.connect(_mouse_exited)
@@ -168,11 +230,29 @@ class PerkNodeControl extends Control:
 		else:
 			_rank_lbl.text = ""
 
+	## Shrink → particle burst → bounce back with the unlocked visual.
+	func _play_purchase_animation() -> void:
+		var tw := create_tween()
+		# Phase 1: shrink to zero
+		tw.tween_property(self, "scale", Vector2.ZERO, 0.15) \
+			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_BACK)
+		# Mid-point: fire particle burst, then refresh to show new state
+		tw.tween_callback(func() -> void:
+			var p        := PerkSystem.get_perk(perk_id)
+			var icon_col : Color   = p.get("icon_color", Color.WHITE)
+			var burst_pt : Vector2 = position + Vector2(NODE_SIZE, NODE_SIZE) * 0.5
+			menu_ref._particle_layer.burst(burst_pt, icon_col)
+			menu_ref.refresh_all_nodes()
+		)
+		# Phase 2: elastic bounce back to full size
+		tw.tween_property(self, "scale", Vector2.ONE, 0.40) \
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
+
 	func _gui_input(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.pressed \
 				and event.button_index == MOUSE_BUTTON_LEFT:
 			if GameManager.purchase_perk(perk_id):
-				menu_ref.refresh_all_nodes()
+				_play_purchase_animation()
 				menu_ref._show_tooltip(perk_id, global_position)
 
 	func _mouse_entered() -> void:
@@ -188,7 +268,8 @@ class PerkNodeControl extends Control:
 var _root_panel    : ColorRect
 var _tree_clip     : Control         # clips tree canvas to exclude bottom bar
 var _canvas        : Control         # panning container
-var _connector_lyr : ConnectorLayer
+var _connector_lyr  : ConnectorLayer
+var _particle_layer : PerkParticleLayer
 
 var _tip_panel     : ColorRect
 var _tip_hdr_bg    : ColorRect
@@ -412,6 +493,10 @@ func _build_canvas_nodes() -> void:
 			node.setup()
 			node.position = Vector2(bx, node_y_start + i * ROW_STRIDE)
 			_node_controls[p_id] = node
+
+	# Particle layer sits above nodes so bursts render on top
+	_particle_layer = PerkParticleLayer.new()
+	_canvas.add_child(_particle_layer)
 
 	_rebuild_connector_lines()
 
