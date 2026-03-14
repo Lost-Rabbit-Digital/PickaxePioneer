@@ -295,6 +295,7 @@ func start_game() -> void:
 		ResourceLoader.load_threaded_request(OVERWORLD)
 		var intro := IntroSequence.new()
 		get_tree().root.add_child(intro)
+		await SceneTransition.fade_from_black(0.5)
 		await intro.finished
 		# The intro leaves a solid black background on screen; take it over with
 		# SceneTransition before the intro node is freed so there is no flash.

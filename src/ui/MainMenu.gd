@@ -1131,6 +1131,7 @@ func _on_slot_selected(index: int) -> void:
 		_mp_host_pending = false
 		_start_mp_hosting()
 		return
+	await SceneTransition.fade_to_black(0.5)
 	GameManager.start_game()
 
 func _on_slot_delete(index: int) -> void:
@@ -1246,6 +1247,7 @@ func _on_confirm_overwrite() -> void:
 			_mp_host_pending = false
 			_start_mp_hosting()
 		else:
+			await SceneTransition.fade_to_black(0.5)
 			GameManager.start_game()
 	_pending_slot_index = -1
 
