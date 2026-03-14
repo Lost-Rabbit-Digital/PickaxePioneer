@@ -70,8 +70,10 @@ var _web_freeze_timer: float = 0.0
 var _web_slow_timer: float = 0.0
 var _web_tile_key: Vector2i = Vector2i(-1, -1)  # Grid pos of the web being escaped
 
-# Double jump and trinket-powered third jump (Jet Boots)
-var _double_jumped: bool = false
+# Air jumps: counts how many mid-air jumps have been used this airborne period.
+# Resets on landing. Capacity comes from GameManager.get_extra_air_jumps() (Double Jump perk).
+var _air_jumps_used: int = 0
+# Trinket-powered boost after all air jumps are spent (Jet Boots trinket).
 var _jet_boost_used: bool = false
 
 # Trinket effect timers
@@ -138,7 +140,9 @@ func update_trinket_stats() -> void:
 	move_speed = GameManager.get_max_speed()
 	ladder_climb_speed = GameManager.get_ladder_climb_speed()
 	mine_range = GameManager.get_mining_reach()
-	jump_velocity = BASE_JUMP_VELOCITY + (-128.0 if GameManager.trinket_spring_boots else 0.0)
+	jump_velocity = (BASE_JUMP_VELOCITY
+		+ (-128.0 if GameManager.trinket_spring_boots else 0.0)
+		+ GameManager.get_jump_height_bonus())
 
 	# Multiplayer: set authority based on peer assignment (0 = not yet assigned / single player)
 	# MiningLevel sets multiplayer_authority after instantiating the second player.
@@ -238,7 +242,8 @@ func _physics_process(delta: float) -> void:
 	# Sprint — Shift held, burns energy, boosts horizontal speed
 	_sprinting = Input.is_action_pressed("sprint") and GameManager.current_energy > 0
 	var web_mult := WEB_SLOW_MULT if _web_slow_timer > 0.0 else 1.0
-	var effective_speed := move_speed * (SPRINT_MULT if _sprinting else 1.0) * web_mult
+	var sprint_mult := SPRINT_MULT * GameManager.get_sprint_speed_mult() if _sprinting else 1.0
+	var effective_speed := move_speed * sprint_mult * web_mult
 
 	# Horizontal movement
 	var direction := Input.get_axis("move_left", "move_right")
@@ -268,13 +273,14 @@ func _physics_process(delta: float) -> void:
 		_facing_left = true
 		sprite.flip_h = true
 
-	# Reset double jump (and jet boost) when grounded or on a ladder
+	# Reset air jumps (and jet boost) when grounded or on a ladder
 	if is_on_floor() or on_ladder:
-		_double_jumped = false
+		_air_jumps_used = 0
 		_jet_boost_used = false
 
 	# Jump from floor or release from ladder — Space jumps/launches in both cases.
-	# Jet Boots trinket: grants a third mid-air boost after the double jump.
+	# Double Jump perk: each rank grants one extra mid-air jump.
+	# Jet Boots trinket: grants a powered boost after all air jumps are spent.
 	if Input.is_action_just_pressed("jump"):
 		if is_on_floor():
 			velocity.y = jump_velocity
@@ -284,9 +290,9 @@ func _physics_process(delta: float) -> void:
 			velocity.y = jump_velocity  # Jump releases the player from the ladder
 			SoundManager.play_jump_sound()
 			_squash_stretch(Vector2(0.8, 1.3))
-		elif not _double_jumped:
-			velocity.y = jump_velocity  # Double jump
-			_double_jumped = true
+		elif _air_jumps_used < GameManager.get_extra_air_jumps():
+			velocity.y = jump_velocity  # Air jump (double jump / triple jump etc.)
+			_air_jumps_used += 1
 			_spawn_poof()
 			SoundManager.play_jump_sound()
 			_squash_stretch(Vector2(0.75, 1.35))
@@ -530,7 +536,8 @@ func _apply_fall_damage() -> void:
 		if fall_distance > FALL_DAMAGE_THRESHOLD and not on_ladder:
 			# Paraglider prevents fall damage entirely
 			if not GameManager.trinket_paraglider:
-				var damage := health_component.max_health / 2
+				var reduction := GameManager.get_fall_damage_reduction()
+				var damage := int(health_component.max_health / 2.0 * (1.0 - reduction))
 				health_component.damage(damage)
 				var cam := get_viewport().get_camera_2d()
 				if cam is CameraShake:

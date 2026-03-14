@@ -19,7 +19,9 @@ const ROW_STRIDE      : int   = 140         # vertical distance between tier sta
 const HEADER_H        : int   = 22          # branch name label height above tier-0 nodes
 const SECTION_LABEL_H : int   = 28          # section title bar height ("MINING UPGRADES" etc.)
 const TRUNK_H         : int   = 34          # tree trunk connector area height above branch labels
-const SHIP_OFFSET_X   : int   = 2 * COL_STRIDE + 152  # x start of SHIP column (500px)
+const SHIP_OFFSET_X       : int   = 2 * COL_STRIDE + 152           # x start of SHIP column (500px)
+const MOVEMENT_OFFSET_X   : int   = SHIP_OFFSET_X + COL_STRIDE     # x start of MOVEMENT column (674px)
+const INVENTORY_OFFSET_X  : int   = MOVEMENT_OFFSET_X + COL_STRIDE # x start of INVENTORY column (848px)
 const LINE_W          : float = 3.0         # connector line width
 const PAN_SPEED       : float = 280.0       # canvas pan speed via WASD (px/s)
 const TIP_W           : int   = 218         # tooltip width
@@ -328,8 +330,8 @@ func _build_canvas_nodes() -> void:
 	# Y at which tier-0 nodes begin (section title + trunk connector + branch label)
 	var node_y_start : int = SECTION_LABEL_H + TRUNK_H + HEADER_H  # = 84
 
-	# Total canvas footprint
-	var tree_w      : int = SHIP_OFFSET_X + NODE_SIZE               # = 564
+	# Total canvas footprint (spans all 6 branches)
+	var tree_w      : int = INVENTORY_OFFSET_X + NODE_SIZE             # = 912
 	var tree_h      : int = node_y_start + ROW_STRIDE * 3 + NODE_SIZE  # = 504
 
 	_canvas_default = Vector2(
@@ -338,46 +340,54 @@ func _build_canvas_nodes() -> void:
 	)
 	_canvas.position = _canvas_default
 
-	# --- Section title: "MINING UPGRADES" over the three mining columns ---
-	var mining_w    : int = 2 * COL_STRIDE + NODE_SIZE  # = 412
-	var mining_lbl  := Label.new()
-	mining_lbl.text                = "MINING UPGRADES"
-	mining_lbl.position            = Vector2(0, 0)
-	mining_lbl.custom_minimum_size = Vector2(mining_w, SECTION_LABEL_H)
-	mining_lbl.size                = Vector2(mining_w, SECTION_LABEL_H)
-	mining_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	mining_lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
-	mining_lbl.add_theme_font_size_override("font_size", 11)
-	mining_lbl.add_theme_color_override("font_color", Color(0.55, 0.55, 0.68))
-	mining_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_canvas.add_child(mining_lbl)
+	# Helper to add a section label above a given x range
+	var _add_section_label := func(text: String, x: int, w: int, col: Color) -> void:
+		var lbl := Label.new()
+		lbl.text                = text
+		lbl.position            = Vector2(x, 0)
+		lbl.custom_minimum_size = Vector2(w, SECTION_LABEL_H)
+		lbl.size                = Vector2(w, SECTION_LABEL_H)
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
+		lbl.add_theme_font_size_override("font_size", 11)
+		lbl.add_theme_color_override("font_color", col)
+		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_canvas.add_child(lbl)
 
-	# --- Section title: "OVERWORLD" over the ship column ---
-	var ship_lbl_w  : int = NODE_SIZE + 96
-	var ship_lbl    := Label.new()
-	ship_lbl.text                = "OVERWORLD"
-	ship_lbl.position            = Vector2(SHIP_OFFSET_X - 16, 0)
-	ship_lbl.custom_minimum_size = Vector2(ship_lbl_w, SECTION_LABEL_H)
-	ship_lbl.size                = Vector2(ship_lbl_w, SECTION_LABEL_H)
-	ship_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	ship_lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
-	ship_lbl.add_theme_font_size_override("font_size", 11)
-	ship_lbl.add_theme_color_override("font_color", PerkSystem.BRANCH_COLORS[3])
-	ship_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_canvas.add_child(ship_lbl)
+	# Helper to add a vertical divider at a given x
+	var _add_divider := func(x: int) -> void:
+		var div := ColorRect.new()
+		div.color       = Color(0.22, 0.22, 0.30, 0.80)
+		div.position    = Vector2(x, 0)
+		div.size        = Vector2(1, tree_h)
+		div.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_canvas.add_child(div)
 
-	# --- Vertical divider between mining and ship sections ---
-	var div_x    : int = (mining_w + SHIP_OFFSET_X) / 2
-	var div_rect := ColorRect.new()
-	div_rect.color       = Color(0.22, 0.22, 0.30, 0.80)
-	div_rect.position    = Vector2(div_x, 0)
-	div_rect.size        = Vector2(1, tree_h)
-	div_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_canvas.add_child(div_rect)
+	# --- Section labels ---
+	var mining_w : int = 2 * COL_STRIDE + NODE_SIZE  # 412 — spans PELT through WHISKERS
+	_add_section_label.call("MINING UPGRADES", 0, mining_w, Color(0.55, 0.55, 0.68))
+	_add_section_label.call("OVERWORLD",  SHIP_OFFSET_X - 16,     NODE_SIZE + 96, PerkSystem.BRANCH_COLORS[3])
+	_add_section_label.call("MOVEMENT",   MOVEMENT_OFFSET_X - 16, NODE_SIZE + 96, PerkSystem.BRANCH_COLORS[4])
+	_add_section_label.call("INVENTORY",  INVENTORY_OFFSET_X - 16, NODE_SIZE + 96, PerkSystem.BRANCH_COLORS[5])
 
-	# --- Branch labels + perk nodes for all 4 branches ---
-	for b in range(4):
-		var bx : int = SHIP_OFFSET_X if b == 3 else b * COL_STRIDE
+	# --- Dividers between sections ---
+	_add_divider.call((mining_w + SHIP_OFFSET_X) / 2)           # between MINING and OVERWORLD
+	_add_divider.call((SHIP_OFFSET_X + NODE_SIZE + MOVEMENT_OFFSET_X) / 2)  # between OVERWORLD and MOVEMENT
+	_add_divider.call((MOVEMENT_OFFSET_X + NODE_SIZE + INVENTORY_OFFSET_X) / 2)  # between MOVEMENT and INVENTORY
+
+	# --- Branch x positions (branches 0–5) ---
+	var branch_x : Array[int] = [
+		0,                    # 0 — PELT
+		COL_STRIDE,           # 1 — CLAWS      (174)
+		2 * COL_STRIDE,       # 2 — WHISKERS   (348)
+		SHIP_OFFSET_X,        # 3 — SHIP       (500)
+		MOVEMENT_OFFSET_X,    # 4 — MOVEMENT   (674)
+		INVENTORY_OFFSET_X,   # 5 — INVENTORY  (848)
+	]
+
+	# --- Branch labels + perk nodes for all 6 branches ---
+	for b in range(6):
+		var bx : int = branch_x[b]
 
 		# Branch name label (sits between trunk area and first node)
 		var hdr_lbl := Label.new()
@@ -410,8 +420,8 @@ func _rebuild_connector_lines() -> void:
 
 	_connector_lyr.lines.clear()
 
-	# Within-branch vertical connectors (tier N → tier N+1) for all 4 branches
-	for b in range(4):
+	# Within-branch vertical connectors (tier N → tier N+1) for all 6 branches
+	for b in range(6):
 		var perks := PerkSystem.get_branch_perks(b)
 		for i in range(1, perks.size()):
 			var top_id   : String = perks[i - 1]["id"]
@@ -649,8 +659,8 @@ func _refresh_coins_label() -> void:
 		_coins_label.text = GameManager.format_coins(GameManager.coins)
 
 func _clamp_canvas() -> void:
-	# Allow panning up to 400 px away from the default centred position
-	var margin : float = 400.0
+	# Allow panning up to 500 px away from the default centred position
+	var margin : float = 500.0
 	_canvas.position.x = clampf(
 		_canvas.position.x,
 		_canvas_default.x - margin,

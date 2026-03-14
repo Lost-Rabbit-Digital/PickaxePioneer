@@ -617,16 +617,27 @@ func get_sonar_ping_radius() -> float:
 	return 4.0 + perk_ranks.get("whiskers", 0) * 3.0
 
 ## Number of inventory slots available per run (slot-based; each ore chunk uses one slot).
-## Boosted by Cargo Bay spaceship upgrade and Cargo Claws perk.
+## Boosted by Cargo Bay spaceship upgrade, Cargo Claws perk, Satchel, Deep Satchel, and Packrat perks.
 func get_ore_capacity() -> int:
-	return BASE_INVENTORY_SLOTS + (5 if cargo_bay_built else 0) + perk_ranks.get("cargo", 0) * 2
+	return (BASE_INVENTORY_SLOTS
+		+ (5 if cargo_bay_built else 0)
+		+ perk_ranks.get("cargo", 0) * 2
+		+ perk_ranks.get("satchel", 0) * 3
+		+ perk_ranks.get("deep_satchel", 0) * 5
+		+ perk_ranks.get("packrat", 0) * 3)
 
-## Number of slots currently occupied, counting stacks of up to STACK_SIZE chunks per slot.
-## Same ore type chunks stack together; one slot holds up to STACK_SIZE of a single type.
+## Maximum number of same-type ore chunks per inventory slot.
+## Boosted by Stack Mastery and Packrat perks.
+func get_max_stack_size() -> int:
+	return STACK_SIZE + perk_ranks.get("stack_mastery", 0) * 8 + perk_ranks.get("packrat", 0) * 10
+
+## Number of slots currently occupied, counting stacks of up to get_max_stack_size() chunks per slot.
+## Same ore type chunks stack together; one slot holds up to get_max_stack_size() of a single type.
 func get_stacked_slots_used() -> int:
 	var total: int = 0
+	var stack_size: int = get_max_stack_size()
 	for count: int in run_ore_chunk_counts.values():
-		total += ceili(float(count) / float(STACK_SIZE))
+		total += ceili(float(count) / float(stack_size))
 	return total
 
 ## Returns true when every inventory slot is occupied and no more ore can be picked up.
@@ -691,6 +702,25 @@ func get_ore_yield_mult() -> float:
 ## Returns a value in [0.0, 0.5]; subtract from drain multiplier.
 func get_boss_drain_reduction() -> float:
 	return perk_ranks.get("iron_hide", 0) * 0.10
+
+## Additional upward jump velocity from Agility perk (negative = higher jump).
+## Each rank adds -42 to jump velocity (~10% of BASE_JUMP_VELOCITY of -420).
+func get_jump_height_bonus() -> float:
+	return perk_ranks.get("agility", 0) * -42.0
+
+## Number of extra air jumps granted by Double Jump perk (0 = no double jump).
+func get_extra_air_jumps() -> int:
+	return perk_ranks.get("double_jump", 0)
+
+## Fall damage reduction fraction from Soft Landing perk (0.0–0.50).
+## Multiply fall damage by (1.0 - get_fall_damage_reduction()).
+func get_fall_damage_reduction() -> float:
+	return perk_ranks.get("soft_landing", 0) * 0.10
+
+## Sprint speed multiplier from Momentum perk (1.0 = no bonus).
+## Applied on top of the base SPRINT_MULT in PlayerProbe.
+func get_sprint_speed_mult() -> float:
+	return 1.0 + perk_ranks.get("momentum", 0) * 0.20
 
 ## Magnet attraction radius in pixels (0 when trinket not equipped).
 func get_magnet_range() -> float:
