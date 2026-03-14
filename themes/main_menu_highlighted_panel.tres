@@ -1,4 +1,6 @@
-[gd_resource type="Theme" load_steps=5 format=3 uid="uid://bqraki0ecnavw"]
+[gd_resource type="Theme" load_steps=6 format=3 uid="uid://bqraki0ecnavw"]
+
+[ext_resource type="FontFile" uid="uid://dhtidqasfbk7p" path="res://assets/Asai-Analogue.ttf" id="1_f82tg"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_brwy4"]
 bg_color = Color(0.23921569, 0.5019608, 0.6392157, 1)
@@ -57,10 +59,21 @@ shadow_color = Color(0.3882353, 0.76862746, 0.8, 1)
 shadow_size = 8
 
 [resource]
-Button/colors/font_color = Color(0.13333334, 0.1254902, 0.20392157, 1)
+Button/colors/font_color = Color(0.4509804, 0.6039216, 0.4392157, 1)
+Button/colors/font_focus_color = Color(0.4509804, 0.6039216, 0.4392157, 1)
+Button/colors/font_hover_color = Color(0.4509804, 0.6039216, 0.4392157, 1)
+Button/colors/font_hover_pressed_color = Color(0.4509804, 0.6039216, 0.4392157, 1)
+Button/colors/font_outline_color = Color(0.13333334, 0.1254902, 0.20392157, 1)
+Button/colors/font_pressed_color = Color(0.4509804, 0.6039216, 0.4392157, 1)
+Button/constants/outline_size = 8
+Button/font_sizes/font_size = 32
+Button/fonts/font = ExtResource("1_f82tg")
 Button/styles/hover = SubResource("StyleBoxFlat_brwy4")
 Button/styles/normal = SubResource("StyleBoxFlat_2j5gq")
 Button/styles/pressed = SubResource("StyleBoxFlat_dw30p")
-Label/colors/font_color = Color(0.13333334, 0.1254902, 0.20392157, 1)
-Label/font_sizes/font_size = 24
+Label/colors/font_color = Color(0.4509804, 0.6039216, 0.4392157, 1)
+Label/colors/font_outline_color = Color(0.13333334, 0.1254902, 0.20392157, 1)
+Label/constants/outline_size = 8
+Label/font_sizes/font_size = 32
+Label/fonts/font = ExtResource("1_f82tg")
 Panel/styles/panel = SubResource("StyleBoxFlat_f82tg")

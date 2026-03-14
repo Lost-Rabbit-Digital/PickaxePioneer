@@ -418,7 +418,7 @@ func _reset_game_manager() -> void:
 	gm.gem_refinery_built = false
 	gm.trade_amplifier_built = false
 	gm.debt_paid = 0
-	gm.ladder_count = 10
+	gm.ladder_count = 32
 	gm.equipped_leaf = false
 	gm.equipped_ice = false
 	gm.equipped_companions = {}

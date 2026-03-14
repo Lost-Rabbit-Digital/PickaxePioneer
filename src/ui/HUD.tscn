@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://cqagp0vwv0vae" path="res://src/ui/HUD.gd" id="1_hud"]
 [ext_resource type="PackedScene" uid="uid://custmmenu0001" path="res://src/ui/CustomizationMenu.tscn" id="2_custmenu"]
 [ext_resource type="Texture2D" uid="uid://c6npfe02ptwde" path="res://assets/backpack.png" id="2_fonul"]
-[ext_resource type="Theme" uid="uid://bqraki0ecnavw" path="res://themes/main_menu_highlighted_panel.tres" id="3_2mynw"]
+[ext_resource type="Theme" uid="uid://c800yw018hi7n" path="res://themes/inventory_label_button.tres" id="3_2mynw"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -18,48 +18,50 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="InfoPanel" type="ColorRect" parent="Control"]
-layout_mode = 0
-offset_left = 4.0
-offset_top = 6.0
-offset_right = 214.0
-offset_bottom = 116.0
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -210.0
+offset_bottom = 110.0
+grow_horizontal = 0
 mouse_filter = 2
 color = Color(0, 0, 0, 0.55)
 
-[node name="ScrapLabel" type="Label" parent="Control"]
+[node name="ScrapLabel" type="Label" parent="Control/InfoPanel"]
 layout_mode = 0
-offset_left = 16.0
-offset_top = 16.0
-offset_right = 220.0
-offset_bottom = 42.0
+offset_left = 12.0
+offset_top = 10.0
+offset_right = 216.0
+offset_bottom = 36.0
 text = "Capacity:"
 
-[node name="EarningsLabel" type="Label" parent="Control"]
+[node name="EarningsLabel" type="Label" parent="Control/InfoPanel"]
 modulate = Color(1, 0.88, 0.2, 0)
 layout_mode = 0
-offset_left = 16.0
-offset_top = 46.0
-offset_right = 236.0
-offset_bottom = 68.0
+offset_left = 12.0
+offset_top = 40.0
+offset_right = 232.0
+offset_bottom = 62.0
 theme_override_font_sizes/font_size = 14
 
-[node name="OrePopupRoot" type="Control" parent="Control"]
+[node name="OrePopupRoot" type="Control" parent="Control/InfoPanel"]
 modulate = Color(1, 1, 1, 0)
 anchors_preset = 0
-offset_left = 8.0
-offset_top = 44.0
-offset_right = 208.0
-offset_bottom = 68.0
+offset_left = 4.0
+offset_top = 38.0
+offset_right = 204.0
+offset_bottom = 62.0
 mouse_filter = 2
 
-[node name="OreIconBg" type="ColorRect" parent="Control/OrePopupRoot"]
+[node name="OreIconBg" type="ColorRect" parent="Control/InfoPanel/OrePopupRoot"]
 layout_mode = 0
 offset_right = 22.0
 offset_bottom = 22.0
 mouse_filter = 2
 color = Color(0.05, 0.05, 0.08, 0.9)
 
-[node name="OrePopupIcon" type="ColorRect" parent="Control/OrePopupRoot"]
+[node name="OrePopupIcon" type="ColorRect" parent="Control/InfoPanel/OrePopupRoot"]
 layout_mode = 0
 offset_left = 2.0
 offset_top = 2.0
@@ -67,7 +69,7 @@ offset_right = 20.0
 offset_bottom = 20.0
 mouse_filter = 2
 
-[node name="OrePopupLabel" type="Label" parent="Control/OrePopupRoot"]
+[node name="OrePopupLabel" type="Label" parent="Control/InfoPanel/OrePopupRoot"]
 layout_mode = 0
 offset_left = 27.0
 offset_top = 1.0
@@ -75,49 +77,39 @@ offset_right = 197.0
 offset_bottom = 23.0
 theme_override_font_sizes/font_size = 14
 
-[node name="DepthLabel" type="Label" parent="Control"]
+[node name="DepthLabel" type="Label" parent="Control/InfoPanel"]
 modulate = Color(0.6, 0.85, 1, 1)
 layout_mode = 0
-offset_left = 8.0
-offset_top = 72.0
-offset_right = 156.0
-offset_bottom = 94.0
+offset_left = 4.0
+offset_top = 66.0
+offset_right = 152.0
+offset_bottom = 89.0
 text = "Orbit"
 
-[node name="EnergyLabel" type="Label" parent="Control"]
-layout_mode = 0
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -220.0
-offset_top = 16.0
-offset_right = -16.0
-offset_bottom = 42.0
-grow_horizontal = 0
-text = "Energy: 100/100"
-
-[node name="EnergyBarContainer" type="HBoxContainer" parent="Control"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Control/InfoPanel"]
+custom_minimum_size = Vector2(210, 64)
 layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
+anchors_preset = 14
+anchor_top = 0.5
 anchor_right = 1.0
-offset_left = -220.0
-offset_top = 46.0
-offset_right = -16.0
-offset_bottom = 106.0
-grow_horizontal = 0
+anchor_bottom = 0.5
+offset_top = 53.0
+offset_bottom = 117.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="EnergyBarContainer" type="HBoxContainer" parent="Control/InfoPanel/VBoxContainer"]
+layout_mode = 2
 theme_override_constants/separation = 4
 alignment = 2
 
-[node name="HealthContainer" type="HBoxContainer" parent="Control"]
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -232.0
-offset_top = 110.0
-offset_right = -16.0
-offset_bottom = 170.0
-grow_horizontal = 0
+[node name="EnergyLabel" type="Label" parent="Control/InfoPanel/VBoxContainer/EnergyBarContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Energy: 100/100"
+
+[node name="HealthContainer" type="HBoxContainer" parent="Control/InfoPanel/VBoxContainer"]
+layout_mode = 2
 theme_override_constants/separation = 4
 alignment = 2
 
@@ -180,16 +172,6 @@ offset_right = 1266.0
 offset_bottom = 677.0
 theme_override_font_sizes/font_size = 14
 text = "Walk right to exit  ->"
-
-[node name="LowHPWarning" type="Label" parent="Control"]
-modulate = Color(1, 0.1, 0.05, 0)
-layout_mode = 0
-offset_left = 490.0
-offset_top = 628.0
-offset_right = 790.0
-offset_bottom = 652.0
-theme_override_font_sizes/font_size = 14
-text = "! CRITICAL DAMAGE — return to station !"
 
 [node name="DepthSidebar" type="Control" parent="Control"]
 anchors_preset = 0
@@ -293,31 +275,49 @@ offset_right = 15.0
 offset_bottom = 183.0
 color = Color(1, 1, 1, 0.9)
 
-[node name="HotbarContainer" type="HBoxContainer" parent="Control"]
+[node name="Panel" type="Panel" parent="Control"]
+custom_minimum_size = Vector2(648, 64)
 layout_mode = 0
-offset_left = 352.0
+offset_left = 420.0
 offset_top = 6.0
-offset_right = 928.0
-offset_bottom = 60.0
+offset_right = 420.0
+offset_bottom = 70.0
+
+[node name="HotbarContainer" type="HBoxContainer" parent="Control/Panel"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -576.0
+offset_top = -32.0
+offset_bottom = 32.0
+grow_horizontal = 0
+grow_vertical = 2
 mouse_filter = 2
 theme_override_constants/separation = 4
 
-[node name="InventoryIcon" type="TextureRect" parent="Control"]
+[node name="InventoryIcon" type="TextureRect" parent="Control/Panel"]
 custom_minimum_size = Vector2(64, 64)
-layout_mode = 0
-offset_left = 8.0
-offset_top = 12.0
-offset_right = 72.0
-offset_bottom = 76.0
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = -32.0
+offset_right = 64.0
+offset_bottom = 32.0
+grow_vertical = 2
 texture = ExtResource("2_fonul")
 
-[node name="InventoryLabel" type="Label" parent="Control/InventoryIcon"]
+[node name="InventoryLabel" type="Label" parent="Control/Panel/InventoryIcon"]
 layout_mode = 0
-offset_left = 69.0
-offset_top = 21.0
-offset_right = 114.0
-offset_bottom = 55.0
+offset_left = 4.0
+offset_top = 66.0
+offset_right = 49.0
+offset_bottom = 100.0
 theme = ExtResource("3_2mynw")
+theme_override_font_sizes/font_size = 32
 text = "TAB"
 horizontal_alignment = 1
 vertical_alignment = 1
