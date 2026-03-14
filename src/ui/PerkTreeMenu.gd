@@ -10,18 +10,21 @@ extends CanvasLayer
 # Layout constants
 # ---------------------------------------------------------------------------
 
-const SCREEN_W   : int   = 1280
-const SCREEN_H   : int   = 720
-const BOTTOM_H   : int   = 64          # bottom control bar height
-const NODE_SIZE  : int   = 64          # perk square side length (px)
-const COL_STRIDE : int   = 174         # horizontal distance between branch starts
-const ROW_STRIDE : int   = 140         # vertical distance between tier starts
-const HEADER_H   : int   = 26          # space above tier-0 for branch name labels
-const LINE_W     : float = 3.0         # connector line width
-const PAN_SPEED  : float = 280.0       # canvas pan speed via WASD (px/s)
-const TIP_W      : int   = 218         # tooltip width
-const TIP_HDR_H  : int   = 28          # tooltip header bar height
-const TIP_BODY_H : int   = 90          # tooltip body height
+const SCREEN_W        : int   = 1280
+const SCREEN_H        : int   = 720
+const BOTTOM_H        : int   = 64          # bottom control bar height
+const NODE_SIZE       : int   = 64          # perk square side length (px)
+const COL_STRIDE      : int   = 174         # horizontal distance between branch starts (mining)
+const ROW_STRIDE      : int   = 140         # vertical distance between tier starts
+const HEADER_H        : int   = 22          # branch name label height above tier-0 nodes
+const SECTION_LABEL_H : int   = 28          # section title bar height ("MINING UPGRADES" etc.)
+const TRUNK_H         : int   = 34          # tree trunk connector area height above branch labels
+const SHIP_OFFSET_X   : int   = 2 * COL_STRIDE + 152  # x start of SHIP column (500px)
+const LINE_W          : float = 3.0         # connector line width
+const PAN_SPEED       : float = 280.0       # canvas pan speed via WASD (px/s)
+const TIP_W           : int   = 218         # tooltip width
+const TIP_HDR_H       : int   = 28          # tooltip header bar height
+const TIP_BODY_H      : int   = 90          # tooltip body height
 
 # Colours
 const COL_BG           := Color(0.06, 0.06, 0.10, 0.97)
@@ -322,24 +325,66 @@ func _build_ui() -> void:
 	_built = true
 
 func _build_canvas_nodes() -> void:
-	# Compute canvas default position to centre tree in the usable area
-	var tree_w         : int = 2 * COL_STRIDE + NODE_SIZE
-	var canvas_h_need  : int = HEADER_H + ROW_STRIDE * 3 + NODE_SIZE
+	# Y at which tier-0 nodes begin (section title + trunk connector + branch label)
+	var node_y_start : int = SECTION_LABEL_H + TRUNK_H + HEADER_H  # = 84
+
+	# Total canvas footprint
+	var tree_w      : int = SHIP_OFFSET_X + NODE_SIZE               # = 564
+	var tree_h      : int = node_y_start + ROW_STRIDE * 3 + NODE_SIZE  # = 504
+
 	_canvas_default = Vector2(
 		(SCREEN_W - tree_w) / 2.0,
-		(SCREEN_H - BOTTOM_H - canvas_h_need) / 2.0
+		(SCREEN_H - BOTTOM_H - tree_h) / 2.0
 	)
 	_canvas.position = _canvas_default
 
-	for b in range(3):
-		var bx : int = b * COL_STRIDE
+	# --- Section title: "MINING UPGRADES" over the three mining columns ---
+	var mining_w    : int = 2 * COL_STRIDE + NODE_SIZE  # = 412
+	var mining_lbl  := Label.new()
+	mining_lbl.text                = "MINING UPGRADES"
+	mining_lbl.position            = Vector2(0, 0)
+	mining_lbl.custom_minimum_size = Vector2(mining_w, SECTION_LABEL_H)
+	mining_lbl.size                = Vector2(mining_w, SECTION_LABEL_H)
+	mining_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mining_lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
+	mining_lbl.add_theme_font_size_override("font_size", 11)
+	mining_lbl.add_theme_color_override("font_color", Color(0.55, 0.55, 0.68))
+	mining_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.add_child(mining_lbl)
 
-		# Branch column header label
+	# --- Section title: "OVERWORLD" over the ship column ---
+	var ship_lbl_w  : int = NODE_SIZE + 96
+	var ship_lbl    := Label.new()
+	ship_lbl.text                = "OVERWORLD"
+	ship_lbl.position            = Vector2(SHIP_OFFSET_X - 16, 0)
+	ship_lbl.custom_minimum_size = Vector2(ship_lbl_w, SECTION_LABEL_H)
+	ship_lbl.size                = Vector2(ship_lbl_w, SECTION_LABEL_H)
+	ship_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	ship_lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
+	ship_lbl.add_theme_font_size_override("font_size", 11)
+	ship_lbl.add_theme_color_override("font_color", PerkSystem.BRANCH_COLORS[3])
+	ship_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.add_child(ship_lbl)
+
+	# --- Vertical divider between mining and ship sections ---
+	var div_x    : int = (mining_w + SHIP_OFFSET_X) / 2
+	var div_rect := ColorRect.new()
+	div_rect.color       = Color(0.22, 0.22, 0.30, 0.80)
+	div_rect.position    = Vector2(div_x, 0)
+	div_rect.size        = Vector2(1, tree_h)
+	div_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.add_child(div_rect)
+
+	# --- Branch labels + perk nodes for all 4 branches ---
+	for b in range(4):
+		var bx : int = SHIP_OFFSET_X if b == 3 else b * COL_STRIDE
+
+		# Branch name label (sits between trunk area and first node)
 		var hdr_lbl := Label.new()
-		hdr_lbl.text                = PerkSystem.BRANCH_NAMES[b]
-		hdr_lbl.position            = Vector2(bx, 0)
-		hdr_lbl.custom_minimum_size = Vector2(NODE_SIZE, HEADER_H)
-		hdr_lbl.size                = Vector2(NODE_SIZE, HEADER_H)
+		hdr_lbl.text                 = PerkSystem.BRANCH_NAMES[b]
+		hdr_lbl.position             = Vector2(bx, SECTION_LABEL_H + TRUNK_H)
+		hdr_lbl.custom_minimum_size  = Vector2(NODE_SIZE, HEADER_H)
+		hdr_lbl.size                 = Vector2(NODE_SIZE, HEADER_H)
 		hdr_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		hdr_lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
 		hdr_lbl.add_theme_font_size_override("font_size", 12)
@@ -347,25 +392,26 @@ func _build_canvas_nodes() -> void:
 		hdr_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_canvas.add_child(hdr_lbl)
 
-		# Perk nodes for this branch (tier 0 at top, tier 3 at bottom)
+		# Perk nodes (tier 0 at top, tier 3 at bottom)
 		var perks := PerkSystem.get_branch_perks(b)
 		for i in range(perks.size()):
 			var p    := perks[i]
 			var p_id : String = p["id"]
-			var nx   : int = bx
-			var ny   : int = HEADER_H + i * ROW_STRIDE
-
 			var node := PerkNodeControl.new(p_id, self)
 			_canvas.add_child(node)
 			node.setup()
-			node.position = Vector2(nx, ny)
+			node.position = Vector2(bx, node_y_start + i * ROW_STRIDE)
 			_node_controls[p_id] = node
 
 	_rebuild_connector_lines()
 
 func _rebuild_connector_lines() -> void:
+	var node_y_start : int = SECTION_LABEL_H + TRUNK_H + HEADER_H  # = 84
+
 	_connector_lyr.lines.clear()
-	for b in range(3):
+
+	# Within-branch vertical connectors (tier N → tier N+1) for all 4 branches
+	for b in range(4):
 		var perks := PerkSystem.get_branch_perks(b)
 		for i in range(1, perks.size()):
 			var top_id   : String = perks[i - 1]["id"]
@@ -378,6 +424,32 @@ func _rebuild_connector_lines() -> void:
 			var to_pt   := bot_node.position + Vector2(NODE_SIZE / 2.0, 0.0)
 			var lit     : bool = GameManager.perk_ranks.get(top_id, 0) > 0
 			_connector_lyr.lines.append({"from": from_pt, "to": to_pt, "lit": lit})
+
+	# Mining-section tree trunk:
+	#   Horizontal bar at mid-trunk-area spanning all three mining branch centres,
+	#   plus short vertical drops from the bar down to the top of each tier-0 node.
+	var trunk_y  : float = SECTION_LABEL_H + TRUNK_H / 2.0  # ≈ 45.0
+	var drop_y   : float = node_y_start as float             # 84.0
+
+	# Is any mining tier-0 perk ranked?  (determines bar lit state)
+	var bar_lit  : bool  = false
+	for b in range(3):
+		var perks := PerkSystem.get_branch_perks(b)
+		if perks.size() > 0 and GameManager.perk_ranks.get(perks[0]["id"], 0) > 0:
+			bar_lit = true
+
+	# Horizontal trunk bar: left branch centre → right branch centre
+	var cx_left  : float = NODE_SIZE / 2.0
+	var cx_right : float = 2 * COL_STRIDE + NODE_SIZE / 2.0
+	_connector_lyr.lines.append({"from": Vector2(cx_left, trunk_y), "to": Vector2(cx_right, trunk_y), "lit": bar_lit})
+
+	# Vertical drops from bar to each tier-0 mining node
+	for b in range(3):
+		var cx       : float = b * COL_STRIDE + NODE_SIZE / 2.0
+		var perks    := PerkSystem.get_branch_perks(b)
+		var drop_lit : bool = perks.size() > 0 and GameManager.perk_ranks.get(perks[0]["id"], 0) > 0
+		_connector_lyr.lines.append({"from": Vector2(cx, trunk_y), "to": Vector2(cx, drop_y), "lit": drop_lit})
+
 	_connector_lyr.queue_redraw()
 
 func _build_tooltip() -> void:
@@ -577,8 +649,8 @@ func _refresh_coins_label() -> void:
 		_coins_label.text = GameManager.format_coins(GameManager.coins)
 
 func _clamp_canvas() -> void:
-	# Allow panning up to 300 px away from the default centred position
-	var margin : float = 300.0
+	# Allow panning up to 400 px away from the default centred position
+	var margin : float = 400.0
 	_canvas.position.x = clampf(
 		_canvas.position.x,
 		_canvas_default.x - margin,
