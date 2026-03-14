@@ -162,43 +162,43 @@ mouse_filter = 2
 
 [node name="DragGhost" type="Control" parent="."]
 visible = false
-offset_right = 72.0
-offset_bottom = 72.0
+offset_right = 56.0
+offset_bottom = 56.0
 mouse_filter = 2
 
 [node name="DragGhostBg" type="ColorRect" parent="DragGhost"]
-offset_right = 72.0
-offset_bottom = 72.0
+offset_right = 56.0
+offset_bottom = 56.0
 color = Color(0.2, 0.18, 0.26, 0.8)
 mouse_filter = 2
 
 [node name="DragGhostBorderTop" type="ColorRect" parent="DragGhost"]
-offset_right = 72.0
+offset_right = 56.0
 offset_bottom = 2.0
 color = Color(0.85, 0.8, 0.4, 0.7)
 mouse_filter = 2
 
 [node name="DragGhostBorderBottom" type="ColorRect" parent="DragGhost"]
-offset_top = 70.0
-offset_right = 72.0
-offset_bottom = 72.0
+offset_top = 54.0
+offset_right = 56.0
+offset_bottom = 56.0
 color = Color(0.85, 0.8, 0.4, 0.7)
 mouse_filter = 2
 
 [node name="DragGhostBorderLeft" type="ColorRect" parent="DragGhost"]
 offset_right = 2.0
-offset_bottom = 72.0
+offset_bottom = 56.0
 color = Color(0.85, 0.8, 0.4, 0.7)
 mouse_filter = 2
 
 [node name="DragGhostBorderRight" type="ColorRect" parent="DragGhost"]
-offset_left = 70.0
-offset_right = 72.0
-offset_bottom = 72.0
+offset_left = 54.0
+offset_right = 56.0
+offset_bottom = 56.0
 color = Color(0.85, 0.8, 0.4, 0.7)
 mouse_filter = 2
 
 [node name="DragGhostIconRoot" type="Control" parent="DragGhost"]
-offset_right = 72.0
-offset_bottom = 72.0
+offset_right = 56.0
+offset_bottom = 56.0
 mouse_filter = 2
