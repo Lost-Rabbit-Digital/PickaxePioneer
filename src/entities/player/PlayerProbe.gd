@@ -203,6 +203,14 @@ func _physics_process(delta: float) -> void:
 		_is_falling = true
 		_fall_start_y = global_position.y
 
+	# Continuous screen shake while actively falling more than 3 tiles
+	if _is_falling and not on_ladder:
+		var fall_distance := global_position.y - _fall_start_y
+		if fall_distance > 3 * CELL_SIZE:
+			var cam := get_viewport().get_camera_2d()
+			if cam is CameraShake:
+				cam.add_trauma(0.3 * delta)
+
 	# Grip/climb: W or Up or left-stick-up held.  Descend: S or Down or left-stick-down.
 	var ls_y := Input.get_joy_axis(0, JOY_AXIS_LEFT_Y)
 	_gripping_ladder   = on_ladder and (Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP) or ls_y < -0.3)
@@ -541,7 +549,7 @@ func _apply_fall_damage() -> void:
 				health_component.damage(damage)
 				var cam := get_viewport().get_camera_2d()
 				if cam is CameraShake:
-					cam.add_trauma(0.85)
+					cam.add_trauma(1.0)
 		_is_falling = false
 
 func _update_followers() -> void:
