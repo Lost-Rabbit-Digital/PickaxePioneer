@@ -26,29 +26,7 @@ var _displayed_health: float = 10.0
 var _health_drain_tween: Tween
 
 var info_panel: ColorRect
-var earnings_label: Label
 var depth_label: Label
-var _earnings_tween: Tween
-
-# Ore-only pickup notification — icon + amount + name, upper-left
-const ORE_NAMES: Array[String] = [
-	"Lunar Copper", "Deep Lunar Copper",
-	"Meteor Iron", "Deep Meteor Iron",
-	"Star Gold", "Deep Star Gold",
-	"Cosmic Gem", "Deep Cosmic Gem",
-]
-var _ore_popup_root: Control
-var _ore_popup_icon: ColorRect
-var _ore_popup_label: Label
-var _ore_popup_tween: Tween
-
-# Boss hint notification — bottom-centre, larger and persistent, with a queue
-# so rapid hints (spawn warning + queued hints) don't overwrite each other.
-var _boss_hint_label: Label
-var _boss_hint_panel: ColorRect
-var _boss_hint_tween: Tween
-var _boss_hint_queue: Array[String] = []
-var _boss_hint_showing: bool = false
 
 # Low energy warning
 var _low_energy_warning: Label
@@ -137,49 +115,10 @@ func _ready() -> void:
 	info_panel = ColorRect.new()
 	info_panel.color = Color(0.0, 0.0, 0.0, 0.55)
 	info_panel.position = Vector2(4, 6)
-	info_panel.size = Vector2(210, 110)
+	info_panel.size = Vector2(210, 90)
 	info_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	$Control.add_child(info_panel)
 	$Control.move_child(info_panel, 0)  # Draw behind everything else
-
-	# Earnings popup label — appears below the minerals panel when a tile is mined
-	earnings_label = Label.new()
-	earnings_label.position = Vector2(16, 46)
-	earnings_label.custom_minimum_size = Vector2(220, 22)
-	earnings_label.modulate = Color(1.0, 0.88, 0.2, 0.0)  # Gold, starts invisible
-	earnings_label.add_theme_font_size_override("font_size", 14)
-	$Control.add_child(earnings_label)
-
-	# Ore pickup popup — icon + amount + name, shown only for actual ore (not special events).
-	# Positioned at the same y as earnings_label; only one is visible at a time.
-	_ore_popup_root = Control.new()
-	_ore_popup_root.position = Vector2(8, 44)
-	_ore_popup_root.custom_minimum_size = Vector2(200, 24)
-	_ore_popup_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ore_popup_root.modulate.a = 0.0
-	$Control.add_child(_ore_popup_root)
-
-	# Dark border behind the ore icon (1 px inset on each side)
-	var icon_bg := ColorRect.new()
-	icon_bg.color = Color(0.05, 0.05, 0.08, 0.90)
-	icon_bg.position = Vector2(0, 0)
-	icon_bg.size = Vector2(22, 22)
-	icon_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ore_popup_root.add_child(icon_bg)
-
-	# Ore colour swatch (inset 2 px inside the border)
-	_ore_popup_icon = ColorRect.new()
-	_ore_popup_icon.position = Vector2(2, 2)
-	_ore_popup_icon.size = Vector2(18, 18)
-	_ore_popup_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ore_popup_root.add_child(_ore_popup_icon)
-
-	# "+X Name" label to the right of the icon
-	_ore_popup_label = Label.new()
-	_ore_popup_label.position = Vector2(27, 1)
-	_ore_popup_label.custom_minimum_size = Vector2(170, 22)
-	_ore_popup_label.add_theme_font_size_override("font_size", 14)
-	_ore_popup_root.add_child(_ore_popup_label)
 
 	# Depth indicator — shows how far into space the cat has traveled
 	depth_label = Label.new()
@@ -190,25 +129,6 @@ func _ready() -> void:
 	$Control.add_child(depth_label)
 
 	_update_ladder_display(GameManager.ladder_count)
-
-	# Boss hint panel — bottom-centre, larger and more prominent than ore popups.
-	# Displays boss instructions and attack warnings so they don't compete with
-	# the upper-left mining feedback.
-	_boss_hint_panel = ColorRect.new()
-	_boss_hint_panel.color = Color(0.05, 0.02, 0.14, 0.88)
-	_boss_hint_panel.position = Vector2(240, 550)
-	_boss_hint_panel.size = Vector2(800, 44)
-	_boss_hint_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_boss_hint_panel.modulate.a = 0.0
-	$Control.add_child(_boss_hint_panel)
-
-	_boss_hint_label = Label.new()
-	_boss_hint_label.position = Vector2(244, 554)
-	_boss_hint_label.custom_minimum_size = Vector2(792, 36)
-	_boss_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_boss_hint_label.modulate = Color(1.0, 0.95, 0.80, 0.0)  # Warm white, starts invisible
-	_boss_hint_label.add_theme_font_size_override("font_size", 16)
-	$Control.add_child(_boss_hint_label)
 
 	# Low energy warning — bottom-centre, pulses red when energy <= 20 %
 	_low_energy_warning = Label.new()
@@ -310,36 +230,11 @@ func _build_depth_sidebar() -> void:
 	_depth_sidebar_marker.color = Color(1.0, 1.0, 1.0, 0.9)
 	$Control.add_child(_depth_sidebar_marker)
 
-# Called when a tile is mined.
-# Ore pickups (ORE_NAMES + amount > 0) show a rich icon + amount + name popup.
-# All other events (LUCKY!, system messages, etc.) use the plain earnings_label.
+# Called when a tile is mined — routes the notification to the chat log.
 func _on_ore_mined_popup(amount: int, ore_name: String) -> void:
 	var popup_color: Color = ORE_COLORS.get(ore_name, Color(1.0, 0.88, 0.2))
-	var is_ore: bool = ore_name in ORE_NAMES and amount > 0
-
-	if _earnings_tween:
-		_earnings_tween.kill()
-	if _ore_popup_tween:
-		_ore_popup_tween.kill()
-	# Reset both elements so a fast re-trigger starts from a clean state.
-	earnings_label.modulate.a = 0.0
-	_ore_popup_root.modulate.a = 0.0
-
-	if is_ore:
-		_ore_popup_icon.color = popup_color
-		_ore_popup_label.text = "+%d  %s" % [amount, ore_name]
-		_ore_popup_label.modulate = Color(popup_color.r, popup_color.g, popup_color.b, 1.0)
-		_ore_popup_root.modulate.a = 1.0
-		_ore_popup_tween = create_tween()
-		_ore_popup_tween.tween_interval(1.5)
-		_ore_popup_tween.tween_property(_ore_popup_root, "modulate:a", 0.0, 0.45)
-	else:
-		# amount == 0 means a pure notification — omit the "+" prefix
-		earnings_label.text = "+%d %s" % [amount, ore_name] if amount > 0 else ore_name
-		earnings_label.modulate = Color(popup_color.r, popup_color.g, popup_color.b, 1.0)
-		_earnings_tween = create_tween()
-		_earnings_tween.tween_interval(1.5)
-		_earnings_tween.tween_property(earnings_label, "modulate:a", 0.0, 0.45)
+	var text: String = "+%d  %s" % [amount, ore_name] if amount > 0 else ore_name
+	EventBus.game_notification.emit(text, popup_color)
 
 func _rebuild_health_bars(count: int) -> void:
 	for bar in health_bars:
@@ -580,28 +475,9 @@ func _update_ladder_display(count: int) -> void:
 	if _hotbar_ladder_icon:
 		_hotbar_ladder_icon.visible = count > 0
 
-# Queues a boss hint and kicks off display if nothing is showing.
+# Boss hints route directly to the chat log.
 func _on_boss_hint_popup(hint: String) -> void:
-	_boss_hint_queue.append(hint)
-	if not _boss_hint_showing:
-		_show_next_boss_hint()
-
-# Shows one hint from the queue, then chains to the next when done.
-func _show_next_boss_hint() -> void:
-	if _boss_hint_queue.is_empty():
-		_boss_hint_showing = false
-		return
-	_boss_hint_showing = true
-	_boss_hint_label.text = _boss_hint_queue.pop_front()
-	_boss_hint_label.modulate = Color(1.0, 0.95, 0.80, 1.0)
-	_boss_hint_panel.modulate.a = 1.0
-	if _boss_hint_tween:
-		_boss_hint_tween.kill()
-	_boss_hint_tween = create_tween()
-	_boss_hint_tween.tween_interval(3.5)
-	_boss_hint_tween.tween_property(_boss_hint_label, "modulate:a", 0.0, 0.6)
-	_boss_hint_tween.parallel().tween_property(_boss_hint_panel, "modulate:a", 0.0, 0.6)
-	_boss_hint_tween.tween_callback(_show_next_boss_hint)
+	EventBus.game_notification.emit(hint, Color(1.0, 0.85, 0.30))
 
 # ---------------------------------------------------------------------------
 # Hotbar — 10 slots at bottom-centre (pickaxe tool, ladder tool, 8 × empty).
