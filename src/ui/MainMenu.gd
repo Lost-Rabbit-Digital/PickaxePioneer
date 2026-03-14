@@ -36,6 +36,9 @@ var _pending_slot_index: int = -1
 var _delete_confirm_dialog: Control = null
 var _pending_delete_index: int = -1
 
+# Confirmation dialog for resetting all user data
+var _reset_data_dialog: Control = null
+
 # Singleplayer overlay
 var _sp_overlay: Control = null
 var _sp_continue_btn: Button = null
@@ -846,18 +849,111 @@ func _build_settings_overlay() -> void:
 	_settings_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_settings_panel)
 
-	# Close button (outside scroll, at bottom)
+	# Bottom row: Reset Data + Close
+	var bottom_row := HBoxContainer.new()
+	bottom_row.add_theme_constant_override("separation", 8)
+	outer_vbox.add_child(bottom_row)
+
+	var reset_btn := Button.new()
+	reset_btn.text = "RESET DATA"
+	reset_btn.custom_minimum_size = Vector2(0, 36)
+	reset_btn.add_theme_font_size_override("font_size", 16)
+	reset_btn.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
+	reset_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	reset_btn.pressed.connect(_on_reset_data_pressed)
+	bottom_row.add_child(reset_btn)
+
 	var close_btn := Button.new()
 	close_btn.text = "CLOSE"
 	close_btn.custom_minimum_size = Vector2(0, 36)
 	close_btn.add_theme_font_size_override("font_size", 20)
+	close_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	close_btn.pressed.connect(_on_settings_close)
-	outer_vbox.add_child(close_btn)
+	bottom_row.add_child(close_btn)
+
+	_build_reset_data_dialog()
 
 func _on_settings_close() -> void:
 	SoundManager.play_ui_close_sound()
 	_settings_panel.close_settings()
 	_settings_overlay.hide()
+
+func _build_reset_data_dialog() -> void:
+	_reset_data_dialog = Control.new()
+	_reset_data_dialog.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_reset_data_dialog.mouse_filter = Control.MOUSE_FILTER_STOP
+	_reset_data_dialog.hide()
+	add_child(_reset_data_dialog)
+
+	var dimmer := ColorRect.new()
+	dimmer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dimmer.color = Color(0, 0, 0, 0.85)
+	_reset_data_dialog.add_child(dimmer)
+
+	const DLG_W := 420.0
+	const DLG_H := 200.0
+	var px := (1280.0 - DLG_W) / 2.0
+	var py := (720.0 - DLG_H) / 2.0
+
+	var border := ColorRect.new()
+	border.position = Vector2(px - 2, py - 2)
+	border.size = Vector2(DLG_W + 4, DLG_H + 4)
+	border.color = Color(0.8, 0.2, 0.2, 0.9)
+	_reset_data_dialog.add_child(border)
+
+	var bg := ColorRect.new()
+	bg.position = Vector2(px, py)
+	bg.size = Vector2(DLG_W, DLG_H)
+	bg.color = Color(0.07, 0.06, 0.05, 0.98)
+	_reset_data_dialog.add_child(bg)
+
+	var vbox := VBoxContainer.new()
+	vbox.position = Vector2(px + 20, py + 20)
+	vbox.size = Vector2(DLG_W - 40, DLG_H - 40)
+	vbox.add_theme_constant_override("separation", 12)
+	_reset_data_dialog.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "RESET ALL DATA?"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
+	vbox.add_child(title)
+
+	var msg := Label.new()
+	msg.text = "This will permanently delete all save slots\nand progress. This cannot be undone."
+	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	msg.add_theme_font_size_override("font_size", 14)
+	msg.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
+	vbox.add_child(msg)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 16)
+	vbox.add_child(btn_row)
+
+	var confirm_btn := Button.new()
+	confirm_btn.text = "RESET"
+	confirm_btn.custom_minimum_size = Vector2(120, 36)
+	confirm_btn.add_theme_font_size_override("font_size", 16)
+	confirm_btn.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
+	confirm_btn.pressed.connect(_on_reset_data_confirmed)
+	btn_row.add_child(confirm_btn)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = "CANCEL"
+	cancel_btn.custom_minimum_size = Vector2(120, 36)
+	cancel_btn.add_theme_font_size_override("font_size", 16)
+	cancel_btn.pressed.connect(func() -> void: _reset_data_dialog.hide())
+	btn_row.add_child(cancel_btn)
+
+func _on_reset_data_pressed() -> void:
+	_reset_data_dialog.show()
+
+func _on_reset_data_confirmed() -> void:
+	_reset_data_dialog.hide()
+	SaveManager.reset_all_data()
+	_on_settings_close()
 
 func _input(event: InputEvent) -> void:
 	if _settings_panel and _settings_panel.handle_input(event):
