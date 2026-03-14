@@ -31,7 +31,7 @@ func check(tile: int, fossil_data: Dictionary) -> void:
 		var minerals: int = fossil_data["minerals"]
 		GameManager.total_fossils += 1
 		GameManager.add_currency(minerals)
-		EventBus.ore_mined_popup.emit(minerals, fossil_data["name"] + " Fossil!")
+		EventBus.game_notification.emit("+%d %s Fossil!" % [minerals, fossil_data["name"]], Color(1.0, 0.88, 0.2))
 		_drought[tile] = 0
 	else:
 		_drought[tile] = drought + 1
