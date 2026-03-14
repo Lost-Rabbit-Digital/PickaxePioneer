@@ -81,6 +81,8 @@ class PerkNodeControl extends Control:
 		custom_minimum_size = Vector2(NODE_SIZE, NODE_SIZE)
 		size                = Vector2(NODE_SIZE, NODE_SIZE)
 		mouse_filter        = MOUSE_FILTER_STOP
+		mouse_entered.connect(_mouse_entered)
+		mouse_exited.connect(_mouse_exited)
 
 		# Outer border
 		_border = ColorRect.new()
