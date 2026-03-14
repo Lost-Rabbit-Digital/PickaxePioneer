@@ -36,10 +36,16 @@ window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+mouse_cursor/custom_image="uid://b6s7l8p2gb4t"
+mouse_cursor/custom_image_hotspot=Vector2(2, 2)
 
 [dotnet]
 
 project/assembly_name="Pickaxe Pioneer"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/manage_user_data/plugin.cfg")
 
 [input]
 
