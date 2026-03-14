@@ -82,7 +82,7 @@ func _load_preview_frames() -> void:
 		if source_sprite:
 			_preview_sprite.sprite_frames = source_sprite.sprite_frames
 		temp.queue_free()
-	_preview_sprite.play(&"idle")
+	_preview_sprite.play(&"idle_1")
 	# Apply shader to preview sprite
 	var mat := ShaderMaterial.new()
 	mat.shader = preload("res://assets/shaders/cat_color.gdshader")

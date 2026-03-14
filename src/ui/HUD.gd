@@ -3,10 +3,10 @@ extends CanvasLayer
 
 # HUD — displays Ore Capacity (upper-left), health squares and energy gauge (upper-right).
 
-@onready var scrap_label: Label = $Control/ScrapLabel
-@onready var health_container: HBoxContainer = $Control/HealthContainer
-@onready var energy_label: Label = $Control/EnergyLabel
-@onready var energy_bar_container: HBoxContainer = $Control/EnergyBarContainer
+@onready var scrap_label: Label = $Control/InfoPanel/ScrapLabel
+@onready var health_container: HBoxContainer = $Control/InfoPanel/VBoxContainer/HealthContainer
+@onready var energy_label: Label = $Control/InfoPanel/VBoxContainer/EnergyBarContainer/EnergyLabel
+@onready var energy_bar_container: HBoxContainer = $Control/InfoPanel/VBoxContainer/EnergyBarContainer
 
 var energy_bars: Array[Control] = []
 var energy_bar_fills: Array[ColorRect] = []
@@ -51,10 +51,6 @@ const TOTAL_DEPTH_ROWS := 128  # matches GRID_ROWS
 @onready var _exit_hint_label: Label = $Control/ExitHintLabel
 @onready var _exit_hint_panel: ColorRect = $Control/ExitHintPanel
 var _exit_hint_tween: Tween
-
-# Low HP danger warning — bottom-centre, pulses red when HP == 1
-@onready var _low_hp_warning: Label = $Control/LowHPWarning
-var _low_hp_tween: Tween
 
 # Hotbar — bottom-centre quick-slot strip (pickaxe, ladder, empty); click opens inventory
 const HOTBAR_SLOT_SIZE: int = 48
@@ -164,15 +160,6 @@ func _ready() -> void:
 	_exit_hint_label.modulate = Color(0.30, 1.0, 0.40, 0.0)  # Green, starts invisible
 	_exit_hint_label.add_theme_font_size_override("font_size", 14)
 	$Control.add_child(_exit_hint_label)
-
-	# Low HP danger warning — bottom-centre above the energy warning, pulses red at 1 HP
-	_low_hp_warning = Label.new()
-	_low_hp_warning.position = Vector2(490, 628)
-	_low_hp_warning.custom_minimum_size = Vector2(300, 24)
-	_low_hp_warning.text = "! CRITICAL DAMAGE — return to station !"
-	_low_hp_warning.modulate = Color(1.0, 0.10, 0.05, 0.0)  # Red, starts invisible
-	_low_hp_warning.add_theme_font_size_override("font_size", 14)
-	$Control.add_child(_low_hp_warning)
 
 	# Initialize hearts immediately since PlayerProbe emits before HUD connects
 	var max_hp := GameManager.get_max_health()
@@ -319,21 +306,6 @@ func _on_health_changed(current: float, max_hp: int) -> void:
 
 		_health_drain_tween = create_tween()
 		_health_drain_tween.tween_method(_set_displayed_health, _displayed_health, current, duration)
-
-	# Flash danger warning when critically low HP
-	if current <= 1.0:
-		if not _low_hp_tween or not _low_hp_tween.is_running():
-			_low_hp_tween = create_tween()
-			_low_hp_tween.set_loops()
-			_low_hp_tween.tween_property(_low_hp_warning, "modulate:a", 1.0, 0.25)
-			_low_hp_tween.tween_interval(0.1)
-			_low_hp_tween.tween_property(_low_hp_warning, "modulate:a", 0.1, 0.25)
-			_low_hp_tween.tween_interval(0.1)
-	else:
-		if _low_hp_tween:
-			_low_hp_tween.kill()
-			_low_hp_tween = null
-		_low_hp_warning.modulate.a = 0.0
 
 func _on_depth_changed(depth_rows: int) -> void:
 	# Update depth sidebar marker position
