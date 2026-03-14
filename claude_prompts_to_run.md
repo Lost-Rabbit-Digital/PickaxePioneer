@@ -36,18 +36,12 @@ Fix mixels on chest
 Add the share a screenshot on our discord with discord link at the end of each run
 
 
-update terrain generator to work in-editor so i can see how it functions without running the game, i want a generate and clear terrain button in editor and maintain full function in-game, allow me to set the seed i generate in-editor, clear it out once the game starts and clear out any terrain i left in editor once game starts, ask any questions
 
 
 Controller compatibility
 
 
 
-Simplify all currencies to "coins", no minerals or copper/gold/silver
-
-
-
-New bomb texture
 
 
 
@@ -58,11 +52,9 @@ New bomb texture
 Remove the coin display from the upper left in mining level scene
 
 
-Do not modulate/tint the different ore types
 
 
 
-You have seven days to pay off the debts of your business
 
 
 

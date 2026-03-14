@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://chatbox001"]
+[gd_scene load_steps=2 format=3 uid="uid://bb1jugj3a2nlm"]
 
 [ext_resource type="Script" uid="uid://c2jv5uta11u2n" path="res://src/ui/ChatBox.gd" id="1_script"]
 

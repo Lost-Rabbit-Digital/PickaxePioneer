@@ -763,4 +763,3 @@ func _on_hotbar_slot_input(event: InputEvent, slot_index: int) -> void:
 func set_hotbar_visible(value: bool) -> void:
 	if _hotbar_container:
 		_hotbar_container.visible = value
-
