@@ -1186,7 +1186,8 @@ func any_ui_open() -> bool:
 	var hat_open := _hat_menu != null and _hat_menu.visible
 	var trinket_open := _trinket_menu != null and _trinket_menu.visible
 	var custom_open := _customization_menu != null and _customization_menu.visible
-	return hat_open or trinket_open or custom_open or (shop_system != null and shop_system.any_shop_open())
+	var perk_tree_open := PerkTreeMenu != null and PerkTreeMenu.visible
+	return hat_open or trinket_open or custom_open or perk_tree_open or (shop_system != null and shop_system.any_shop_open())
 
 # ---------------------------------------------------------------------------
 # Process — energy drain, cursor highlight, flashes
@@ -1445,6 +1446,8 @@ func _check_exit_zone() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _game_over:
+		return
+	if PerkTreeMenu != null and PerkTreeMenu.visible:
 		return
 	if shop_system != null and shop_system.any_shop_open():
 		if event.is_action_pressed("ui_cancel") and shop_system.any_shop_open():
