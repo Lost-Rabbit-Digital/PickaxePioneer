@@ -270,6 +270,7 @@ func _build_ui() -> void:
 	_prev_btn.position = Vector2(px + 20, nav_y)
 	_prev_btn.size = Vector2(88, 30)
 	_prev_btn.add_theme_font_size_override("font_size", 13)
+	_prev_btn.process_mode = Node.PROCESS_MODE_ALWAYS
 	_prev_btn.pressed.connect(_on_prev_page)
 	add_child(_prev_btn)
 
@@ -286,6 +287,7 @@ func _build_ui() -> void:
 	_next_btn.position = Vector2(px + PANEL_W - 108, nav_y)
 	_next_btn.size = Vector2(88, 30)
 	_next_btn.add_theme_font_size_override("font_size", 13)
+	_next_btn.process_mode = Node.PROCESS_MODE_ALWAYS
 	_next_btn.pressed.connect(_on_next_page)
 	add_child(_next_btn)
 
@@ -294,6 +296,7 @@ func _build_ui() -> void:
 	close_btn.position = Vector2(px + (PANEL_W - 88) / 2, nav_y)
 	close_btn.size = Vector2(88, 30)
 	close_btn.add_theme_font_size_override("font_size", 13)
+	close_btn.process_mode = Node.PROCESS_MODE_ALWAYS
 	close_btn.pressed.connect(close)
 	add_child(close_btn)
 
@@ -490,8 +493,16 @@ func close() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("toggle_companions_menu"):
+	if not visible:
+		return
+	if event.is_action_pressed("toggle_companions_menu") or event.is_action_pressed("ui_cancel"):
 		close()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_left") or event.is_action_pressed("ui_page_up"):
+		_on_prev_page()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_right") or event.is_action_pressed("ui_page_down"):
+		_on_next_page()
 		get_viewport().set_input_as_handled()
 
 
