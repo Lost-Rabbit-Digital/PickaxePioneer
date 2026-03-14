@@ -386,7 +386,7 @@ const GRAVITY_TILES: Array = [TileType.STONE_DARK, TileType.DIRT_DARK, TileType.
 const GRAVITY_FALL_DELAY: float = 0.2
 
 # Depth zones
-const DEPTH_ZONE_ROWS   = [0, 16, 41, 71, 101]
+const DEPTH_ZONE_ROWS   = [0, 20, 41, 71, 101]
 const DEPTH_ZONE_NAMES  = ["The Crust", "The Mantle", "The Outer Core", "The Inner Core", "The Primordial Forge"]
 const DEPTH_ZONE_COLORS = [
 	Color(0.72, 0.56, 0.36),  # The Crust - sandy brown
@@ -2330,8 +2330,7 @@ func _start_tutorial_hints() -> void:
 		{"delay": 1.5, "text": "WASD to move  |  SPACE to jump"},
 		{"delay": 6.0, "text": "Click on blocks to mine  |  Dig down for richer ore"},
 		{"delay": 12.0, "text": "Press Q to ping sonar  |  Reveals nearby ore (costs energy)"},
-		{"delay": 20.0, "text": "Watch your ENERGY bar (top-right)  |  It drains as you dig deeper"},
-		{"delay": 30.0, "text": "Walk RIGHT on the surface to EXIT and bank your minerals"},
+		{"delay": 20.0, "text": "Walk RIGHT on the surface to EXIT and bank your minerals"},
 	]
 	for hint in hints:
 		var timer := get_tree().create_timer(hint["delay"])
@@ -2400,6 +2399,13 @@ func _check_zone_transition(depth_row: int) -> void:
 					const DISCOVERY_ENERGY := 20
 					GameManager.restore_energy(DISCOVERY_ENERGY)
 					EventBus.ore_mined_popup.emit(DISCOVERY_ENERGY, "Discovery!")
+			# Trigger energy tutorial hint at 200m (Mantle entry) on first run
+			if new_zone_idx == 1 and not GameManager.has_completed_first_run:
+				var t := get_tree().create_timer(2.5)
+				t.timeout.connect(func() -> void:
+					if not _game_over:
+						EventBus.boss_hint_popup.emit("Watch your ENERGY bar (top-right)  |  It drains as you dig deeper")
+				)
 
 func _show_zone_banner(zone_name: String, color: Color, depth_row: int = -1) -> void:
 	const COOLDOWN_MS: int = 5000

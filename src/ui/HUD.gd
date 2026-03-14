@@ -276,7 +276,7 @@ func _build_depth_sidebar() -> void:
 	$Control.add_child(_depth_sidebar_bg)
 
 	# Depth zone color bands
-	var zone_rows := [0, 16, 41, 71, 101, TOTAL_DEPTH_ROWS]
+	var zone_rows := [0, 20, 41, 71, 101, TOTAL_DEPTH_ROWS]
 	var zone_colors := [
 		Color(0.72, 0.56, 0.36, 0.5),  # The Crust
 		Color(0.80, 0.40, 0.15, 0.5),  # The Mantle
