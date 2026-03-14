@@ -342,20 +342,36 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 			badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			parent.add_child(badge)
 
-		# --- Interactive overlay (hover tooltip + drag/drop) for occupied slots ---
-		if is_occupied or is_tool:
-			var hit := Control.new()
-			hit.position = Vector2(sx, sy)
-			hit.size = Vector2(SLOT_SIZE, SLOT_SIZE)
-			hit.mouse_filter = Control.MOUSE_FILTER_STOP
-			var captured: Dictionary = slot_data.duplicate()
-			var captured_idx: int = idx
-			var slot_gx: int = cr_gx + sx
-			var slot_gy: int = cr_gy + sy
+		# --- Interactive overlay (hover tooltip + drag/drop) for all slots ---
+		var hit := Control.new()
+		hit.position = Vector2(sx, sy)
+		hit.size = Vector2(SLOT_SIZE, SLOT_SIZE)
+		hit.mouse_filter = Control.MOUSE_FILTER_STOP
+		var captured: Dictionary = slot_data.duplicate()
+		var captured_idx: int = idx
+		var slot_gx: int = cr_gx + sx
+		var slot_gy: int = cr_gy + sy
+		if is_occupied:
 			hit.mouse_entered.connect(_on_slot_hover_enter.bind(captured, slot_gx, slot_gy))
 			hit.mouse_exited.connect(_on_slot_hover_exit)
-			hit.gui_input.connect(_on_slot_gui_input.bind(captured, captured_idx))
-			parent.add_child(hit)
+		else:
+			# Empty slot — show a subtle drop zone highlight while dragging
+			var drop_hl := ColorRect.new()
+			drop_hl.color = Color(1.0, 1.0, 1.0, 0.0)
+			drop_hl.position = Vector2(sx, sy)
+			drop_hl.size = Vector2(SLOT_SIZE, SLOT_SIZE)
+			drop_hl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			parent.add_child(drop_hl)
+			hit.mouse_entered.connect(func() -> void:
+				if _is_dragging:
+					drop_hl.color = Color(1.0, 1.0, 1.0, 0.12)
+			)
+			hit.mouse_exited.connect(func() -> void:
+				drop_hl.color = Color(1.0, 1.0, 1.0, 0.0)
+				_hide_tooltip()
+			)
+		hit.gui_input.connect(_on_slot_gui_input.bind(captured, captured_idx))
+		parent.add_child(hit)
 
 	var grid_h: int = rows * cell
 	return y + grid_h
@@ -486,8 +502,10 @@ func _hide_tooltip() -> void:
 func _on_slot_gui_input(event: InputEvent, slot_data: Dictionary, slot_idx: int) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
-			_drag_source_idx = slot_idx
-			_start_drag(slot_data)
+			# Only occupied slots can initiate a drag
+			if slot_data.get("type", "") != "":
+				_drag_source_idx = slot_idx
+				_start_drag(slot_data)
 		else:
 			if _is_dragging and _drag_source_idx >= 0 and _drag_source_idx != slot_idx:
 				_do_slot_swap(_drag_source_idx, slot_idx)
