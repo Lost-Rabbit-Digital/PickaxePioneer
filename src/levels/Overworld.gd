@@ -879,10 +879,16 @@ func _update_center_button_visibility() -> void:
 
 
 func _on_center_button_pressed() -> void:
-	_camera_follow_caravan = true
 	_momentum_velocity = Vector2.ZERO
 	if _camera_tween:
 		_camera_tween.kill()
+	# When camera is parked on a planet (not following caravan), convert the
+	# absolute camera position into an equivalent pan offset so the same
+	# pan-offset tween produces a smooth fly-back to the ship.
+	if not _camera_follow_caravan:
+		_camera_pan_offset = camera.global_position - caravan.global_position
+		_deselect_pending()
+	_camera_follow_caravan = true
 	_camera_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	_camera_tween.tween_property(self, "_camera_pan_offset", Vector2.ZERO, 0.4)
 	_update_center_button_visibility()
