@@ -32,6 +32,24 @@ const SWATCH_FONT_SIZE: int = 12
 
 const DEFAULT_OUTLINE: Color = Color("2b222a")
 
+# Unlock level required for each palette entry (index-matched to PALETTE).
+# First 4 colours are free; the remaining 48 spread evenly from level 3 → 100.
+const UNLOCK_LEVELS: Array[int] = [
+	1,  1,  1,  1,
+	3,  5,  7,  9,
+	11, 13, 15, 17,
+	20, 22, 24, 26,
+	28, 30, 32, 34,
+	36, 38, 40, 42,
+	44, 46, 48, 50,
+	53, 55, 57, 59,
+	61, 63, 65, 67,
+	69, 71, 73, 75,
+	77, 79, 81, 83,
+	86, 88, 90, 92,
+	94, 96, 98, 100,
+]
+
 # Emitted after any colour change so external scenes (e.g. MainMenu) can react
 signal color_changed
 
@@ -69,6 +87,9 @@ func _load_preview_frames() -> void:
 	var mat := ShaderMaterial.new()
 	mat.shader = preload("res://assets/shaders/cat_color.gdshader")
 	_preview_sprite.material = mat
+
+func _is_unlocked(index: int) -> bool:
+	return GameManager.global_player_level >= UNLOCK_LEVELS[index]
 
 func _build_swatches(container: Control, buttons: Array[Button], callback: Callable) -> void:
 	for i in range(PALETTE.size()):
@@ -119,9 +140,58 @@ func _create_swatch(index: int, sx: int, sy: int, container: Control, buttons: A
 
 	btn.pressed.connect(callback.bind(index))
 	container.add_child(btn)
+	_apply_lock_state(btn, index)
 	buttons.append(btn)
 
+func _apply_lock_state(btn: Button, index: int) -> void:
+	var locked := not _is_unlocked(index)
+	btn.disabled = locked
+	var rtl := btn.get_child(0) as RichTextLabel
+	if locked:
+		if rtl:
+			rtl.text = "[center][color=#555566]Lv.%d[/color][/center]" % UNLOCK_LEVELS[index]
+		var ls := StyleBoxFlat.new()
+		ls.bg_color = Color(0.09, 0.08, 0.11, 1.0)
+		ls.border_color = Color(0.22, 0.22, 0.25, 0.40)
+		ls.set_border_width_all(1)
+		ls.set_corner_radius_all(2)
+		btn.add_theme_stylebox_override("normal", ls)
+		btn.add_theme_stylebox_override("hover", ls.duplicate())
+		btn.add_theme_stylebox_override("pressed", ls.duplicate())
+		btn.add_theme_stylebox_override("disabled", ls.duplicate())
+		btn.add_theme_stylebox_override("focus", ls.duplicate())
+	else:
+		if rtl:
+			var hex := PALETTE[index].to_html(false).to_lower()
+			rtl.text = "[center][color=#%s]#%s[/color][/center]" % [hex, hex]
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.12, 0.11, 0.16, 1.0)
+		style.border_color = Color(0.30, 0.30, 0.35, 0.60)
+		style.set_border_width_all(1)
+		style.set_corner_radius_all(2)
+		btn.add_theme_stylebox_override("normal", style)
+		var hover_style := style.duplicate() as StyleBoxFlat
+		hover_style.bg_color = Color(0.20, 0.19, 0.26, 1.0)
+		hover_style.border_color = Color(1.0, 1.0, 1.0, 0.60)
+		hover_style.set_border_width_all(2)
+		btn.add_theme_stylebox_override("hover", hover_style)
+		var pressed_style := style.duplicate() as StyleBoxFlat
+		pressed_style.bg_color = Color(0.15, 0.14, 0.20, 1.0)
+		pressed_style.border_color = Color(1.0, 0.82, 0.35, 1.0)
+		pressed_style.set_border_width_all(2)
+		btn.add_theme_stylebox_override("pressed", pressed_style)
+		btn.add_theme_stylebox_override("focus", style.duplicate())
+		btn.add_theme_stylebox_override("disabled", style.duplicate())
+
+func _refresh_lock_states() -> void:
+	for i in range(_base_swatch_buttons.size()):
+		_apply_lock_state(_base_swatch_buttons[i], i)
+	for i in range(_outline_swatch_buttons.size()):
+		_apply_lock_state(_outline_swatch_buttons[i], i)
+
 func _on_base_swatch_pressed(index: int) -> void:
+	if not _is_unlocked(index):
+		return
 	_selected_base_index = index
 	GameManager.cat_color = PALETTE[index]
 	GameManager.save_game()
@@ -131,6 +201,8 @@ func _on_base_swatch_pressed(index: int) -> void:
 	color_changed.emit()
 
 func _on_outline_swatch_pressed(index: int) -> void:
+	if not _is_unlocked(index):
+		return
 	_selected_outline_index = index
 	GameManager.cat_outline_color = PALETTE[index]
 	GameManager.save_game()
@@ -166,6 +238,8 @@ func _apply_to_player() -> void:
 func _refresh_swatch_borders(buttons: Array[Button], selected_index: int) -> void:
 	for i in range(buttons.size()):
 		var btn := buttons[i]
+		if not _is_unlocked(i):
+			continue
 		var is_selected := (selected_index >= 0 and i == selected_index)
 
 		var style := StyleBoxFlat.new()
@@ -180,6 +254,7 @@ func _refresh_swatch_borders(buttons: Array[Button], selected_index: int) -> voi
 		btn.add_theme_stylebox_override("normal", style)
 
 func open() -> void:
+	_refresh_lock_states()
 	_find_selected_indices()
 	_refresh_swatch_borders(_base_swatch_buttons, _selected_base_index)
 	_refresh_swatch_borders(_outline_swatch_buttons, _selected_outline_index)
