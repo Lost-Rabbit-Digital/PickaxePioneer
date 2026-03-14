@@ -2,12 +2,14 @@ class_name PerkSystem
 extends RefCounted
 
 ## Perk Tree System — defines all perks, prerequisites, and stat contributions.
-## Four branches in Diablo-2 style:
-##   Branch 0 — PELT    (Survival)
-##   Branch 1 — CLAWS   (Mining)
-##   Branch 2 — WHISKERS (Utility)
-##   Branch 3 — SHIP    (Overworld)
-## Each branch has 4 tiers; top-tier perks have 3 max ranks, others have 5.
+## Six branches in Diablo-2 style:
+##   Branch 0 — PELT      (Survival)
+##   Branch 1 — CLAWS     (Mining)
+##   Branch 2 — WHISKERS  (Utility)
+##   Branch 3 — SHIP      (Overworld)
+##   Branch 4 — MOVEMENT  (Mobility)
+##   Branch 5 — INVENTORY (Storage)
+## Each branch has 4 tiers; top-tier perks have 3 max ranks, others have 4–5.
 
 # ---------------------------------------------------------------------------
 # Perk definitions
@@ -213,15 +215,117 @@ const PERKS: Array[Dictionary] = [
 		"icon_color": Color(0.50, 0.90, 1.00),
 		"desc": "Interstellar expertise. -15% warp energy cost and travel time per rank.",
 	},
+
+	# ---- BRANCH 4: MOVEMENT (Mobility) ------------------------------------
+	{
+		"id": "agility",
+		"name": "Agility",
+		"branch": 4,
+		"tier": 0,
+		"max_rank": 5,
+		"prereq_id": "",
+		"prereq_rank": 0,
+		"mineral_cost": 400,
+		"icon_color": Color(1.00, 0.65, 0.10),
+		"desc": "Powerful haunches. +10% jump height per rank.",
+	},
+	{
+		"id": "double_jump",
+		"name": "Double Jump",
+		"branch": 4,
+		"tier": 1,
+		"max_rank": 3,
+		"prereq_id": "agility",
+		"prereq_rank": 1,
+		"mineral_cost": 900,
+		"icon_color": Color(1.00, 0.85, 0.20),
+		"desc": "Midair leap. Grants +1 extra air jump per rank.",
+	},
+	{
+		"id": "soft_landing",
+		"name": "Soft Landing",
+		"branch": 4,
+		"tier": 2,
+		"max_rank": 5,
+		"prereq_id": "double_jump",
+		"prereq_rank": 1,
+		"mineral_cost": 1200,
+		"icon_color": Color(0.95, 0.55, 0.15),
+		"desc": "Cushioned impact. -10% fall damage per rank.",
+	},
+	{
+		"id": "momentum",
+		"name": "Momentum",
+		"branch": 4,
+		"tier": 3,
+		"max_rank": 3,
+		"prereq_id": "soft_landing",
+		"prereq_rank": 3,
+		"mineral_cost": 2500,
+		"icon_color": Color(1.00, 0.40, 0.10),
+		"desc": "Sprint mastery. +20% sprint speed per rank.",
+	},
+
+	# ---- BRANCH 5: INVENTORY (Storage) ------------------------------------
+	{
+		"id": "satchel",
+		"name": "Satchel",
+		"branch": 5,
+		"tier": 0,
+		"max_rank": 5,
+		"prereq_id": "",
+		"prereq_rank": 0,
+		"mineral_cost": 400,
+		"icon_color": Color(0.40, 0.75, 0.55),
+		"desc": "Larger pack. +3 inventory slots per rank.",
+	},
+	{
+		"id": "stack_mastery",
+		"name": "Stack Mastery",
+		"branch": 5,
+		"tier": 1,
+		"max_rank": 5,
+		"prereq_id": "satchel",
+		"prereq_rank": 1,
+		"mineral_cost": 700,
+		"icon_color": Color(0.25, 0.60, 0.80),
+		"desc": "Dense packing. +8 max stack size per rank.",
+	},
+	{
+		"id": "deep_satchel",
+		"name": "Deep Satchel",
+		"branch": 5,
+		"tier": 2,
+		"max_rank": 5,
+		"prereq_id": "stack_mastery",
+		"prereq_rank": 2,
+		"mineral_cost": 1200,
+		"icon_color": Color(0.20, 0.50, 0.70),
+		"desc": "Bottomless pockets. +5 inventory slots per rank.",
+	},
+	{
+		"id": "packrat",
+		"name": "Packrat",
+		"branch": 5,
+		"tier": 3,
+		"max_rank": 3,
+		"prereq_id": "deep_satchel",
+		"prereq_rank": 3,
+		"mineral_cost": 2500,
+		"icon_color": Color(0.30, 0.90, 0.75),
+		"desc": "Legendary hoarder. +3 inventory slots and +10 max stack size per rank.",
+	},
 ]
 
 # Branch display names shown above each column in the tree UI
-const BRANCH_NAMES: Array[String] = ["PELT", "CLAWS", "WHISKERS", "SHIP"]
+const BRANCH_NAMES: Array[String] = ["PELT", "CLAWS", "WHISKERS", "SHIP", "MOVEMENT", "INVENTORY"]
 const BRANCH_COLORS: Array[Color] = [
 	Color(0.95, 0.40, 0.40),  # Pelt — warm red
 	Color(0.30, 0.90, 0.45),  # Claws — green
 	Color(0.75, 0.50, 1.00),  # Whiskers — purple
 	Color(0.25, 0.88, 0.95),  # Ship — cyan
+	Color(1.00, 0.70, 0.15),  # Movement — orange
+	Color(0.35, 0.85, 0.65),  # Inventory — teal
 ]
 
 # ---------------------------------------------------------------------------
