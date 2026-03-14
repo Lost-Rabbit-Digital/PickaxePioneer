@@ -17,6 +17,8 @@ extends CanvasLayer
 ## every scene automatically.
 
 const MAX_MESSAGES: int = 100
+## Seconds of inactivity before the passive chat fades out.
+const HIDE_DELAY: float = 10.0
 
 ## Persists across level transitions for the duration of the session.
 static var _history: Array[String] = []
@@ -29,7 +31,10 @@ static var _history: Array[String] = []
 var _chat_open: bool = false
 var _at_bottom: bool = true
 var _text_filter: TextFilter = TextFilter.new()
+var _hide_timer: Timer
+var _active_tween: Tween
 
+@onready var _control: Control = $Control
 @onready var _panel: ColorRect = $Control/Panel
 @onready var _scroll: ScrollContainer = $Control/ScrollContainer
 @onready var _msg_container: VBoxContainer = $Control/ScrollContainer/MsgContainer
@@ -56,7 +61,16 @@ func _ready() -> void:
 
 	_input_field.text_submitted.connect(_on_message_submitted)
 	_scroll.get_v_scroll_bar().value_changed.connect(_on_scroll_changed)
+
+	_hide_timer = Timer.new()
+	_hide_timer.wait_time = HIDE_DELAY
+	_hide_timer.one_shot = true
+	_hide_timer.timeout.connect(_on_hide_timer_timeout)
+	add_child(_hide_timer)
+
 	_set_chat_open(false)
+	# Start fully hidden; messages will fade it in.
+	_control.modulate.a = 0.0
 
 	# Wait one frame for layout to settle before scrolling to the bottom.
 	await get_tree().process_frame
@@ -80,6 +94,26 @@ func _set_chat_open(open: bool) -> void:
 	if open:
 		_input_field.clear()
 		_input_field.grab_focus()
+		# Show the panel immediately and pause the hide timer while typing.
+		_hide_timer.stop()
+		_set_passive_alpha(1.0)
+	else:
+		# Restart the hide countdown whenever the input is dismissed.
+		_hide_timer.start()
+
+func _set_passive_alpha(target: float, duration: float = 0.3) -> void:
+	if _active_tween:
+		_active_tween.kill()
+	_active_tween = create_tween()
+	_active_tween.tween_property(_control, "modulate:a", target, duration)
+
+func _on_hide_timer_timeout() -> void:
+	if not _chat_open:
+		_set_passive_alpha(0.0, 1.0)
+
+func _show_on_message() -> void:
+	_set_passive_alpha(1.0)
+	_hide_timer.start()
 
 func _on_message_submitted(text: String) -> void:
 	var trimmed := text.strip_edges()
@@ -98,6 +132,7 @@ func _on_chat_message_received(sender_name: String, message: String, sender_colo
 		if oldest:
 			oldest.queue_free()
 	_add_label(bbcode)
+	_show_on_message()
 	if _at_bottom:
 		await get_tree().process_frame
 		_scroll_to_bottom()
@@ -112,6 +147,7 @@ func _on_game_notification(message: String, color: Color) -> void:
 		if oldest:
 			oldest.queue_free()
 	_add_label(bbcode)
+	_show_on_message()
 	if _at_bottom:
 		await get_tree().process_frame
 		_scroll_to_bottom()
