@@ -171,27 +171,27 @@ const TILE_ATLAS_COORDS: Dictionary = {
 	# Biome-specific terrain atlas stubs — replace Vector2i(0, 0) with real coords
 	# ---------------------------------------------------------------------------
 	# Ice biome
-	TileType.ICE_SURFACE_GRASS: Vector2i(0, 0),  # TODO: snow/frost surface crust
-	TileType.ICE_DIRT:          Vector2i(0, 0),  # TODO: frozen soil
-	TileType.ICE_DIRT_DARK:     Vector2i(0, 0),  # TODO: dense frozen soil
-	TileType.ICE_STONE:         Vector2i(0, 0),  # TODO: ice-encrusted rock
-	TileType.ICE_STONE_DARK:    Vector2i(0, 0),  # TODO: dense ice rock
+	TileType.ICE_SURFACE_GRASS: Vector2i(3, 3),  # TODO: snow/frost surface crust
+	TileType.ICE_DIRT:          Vector2i(1, 2),  # TODO: frozen soil
+	TileType.ICE_DIRT_DARK:     Vector2i(8, 3),  # TODO: dense frozen soil
+	TileType.ICE_STONE:         Vector2i(7, 3),  # TODO: ice-encrusted rock
+	TileType.ICE_STONE_DARK:    Vector2i(8, 3),  # TODO: dense ice rock
 	# Desert biome
 	TileType.DESERT_SURFACE_GRASS: Vector2i(0, 0),  # TODO: sand surface
-	TileType.DESERT_DIRT:          Vector2i(0, 0),  # TODO: loose sand
-	TileType.DESERT_DIRT_DARK:     Vector2i(0, 0),  # TODO: packed sand
-	TileType.DESERT_STONE:         Vector2i(0, 0),  # TODO: sandstone
-	TileType.DESERT_STONE_DARK:    Vector2i(0, 0),  # TODO: dense sandstone
+	TileType.DESERT_DIRT:          Vector2i(1, 2),  # TODO: loose sand
+	TileType.DESERT_DIRT_DARK:     Vector2i(7, 3),  # TODO: packed sand
+	TileType.DESERT_STONE:         Vector2i(7, 1),  # TODO: sandstone
+	TileType.DESERT_STONE_DARK:    Vector2i(8, 1),  # TODO: dense sandstone
 	# Forest biome (SURFACE_GRASS reuses default Vector2i(1, 3))
-	TileType.FOREST_DIRT:       Vector2i(0, 0),  # TODO: rich forest soil
-	TileType.FOREST_DIRT_DARK:  Vector2i(0, 0),  # TODO: dark humus
+	TileType.FOREST_DIRT:       Vector2i(1, 2),  # TODO: rich forest soil
+	TileType.FOREST_DIRT_DARK:  Vector2i(1, 1),  # TODO: dark humus
 	TileType.FOREST_STONE:      Vector2i(0, 0),  # TODO: mossy stone
 	TileType.FOREST_STONE_DARK: Vector2i(0, 0),  # TODO: dense mossy stone
 	# Jungle biome (SURFACE_GRASS reuses default Vector2i(1, 3))
-	TileType.JUNGLE_DIRT:       Vector2i(0, 0),  # TODO: jungle soil
-	TileType.JUNGLE_DIRT_DARK:  Vector2i(0, 0),  # TODO: dark jungle soil
-	TileType.JUNGLE_STONE:      Vector2i(0, 0),  # TODO: vine-covered stone
-	TileType.JUNGLE_STONE_DARK: Vector2i(0, 0),  # TODO: dense vine stone
+	TileType.JUNGLE_DIRT:       Vector2i(1, 2),  # TODO: jungle soil
+	TileType.JUNGLE_DIRT_DARK:  Vector2i(0, 2),  # TODO: dark jungle soil
+	TileType.JUNGLE_STONE:      Vector2i(0, 7),  # TODO: vine-covered stone
+	TileType.JUNGLE_STONE_DARK: Vector2i(1, 7),  # TODO: dense vine stone
 }
 
 # ---------------------------------------------------------------------------
