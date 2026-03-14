@@ -103,7 +103,6 @@ const ORE_COLORS: Dictionary = {
 	"Energy Cell":       Color(0.20, 0.80, 0.90),
 	"LUCKY!":            Color(1.0,  1.0,  0.30),   # Bright yellow for lucky double-strikes
 	"Discovery!":        Color(0.20, 0.90, 0.90),   # Teal for first zone visit
-	"Streak!":           Color(1.0,  0.60, 0.10),   # Orange for consecutive dig milestones
 	# Smelting chain / combo events (name + "!" suffix)
 	"Lunar Alloy!":      Color(0.90, 0.65, 0.30),
 	"Meteor Steel!":     Color(0.85, 0.50, 0.75),
@@ -313,7 +312,7 @@ func _build_depth_sidebar() -> void:
 
 # Called when a tile is mined.
 # Ore pickups (ORE_NAMES + amount > 0) show a rich icon + amount + name popup.
-# All other events (LUCKY!, Streak!, system messages, etc.) use the plain earnings_label.
+# All other events (LUCKY!, system messages, etc.) use the plain earnings_label.
 func _on_ore_mined_popup(amount: int, ore_name: String) -> void:
 	var popup_color: Color = ORE_COLORS.get(ore_name, Color(1.0, 0.88, 0.2))
 	var is_ore: bool = ore_name in ORE_NAMES and amount > 0
