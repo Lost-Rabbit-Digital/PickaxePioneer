@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://hud1234568aa"]
+[gd_scene load_steps=5 format=3 uid="uid://hud1234568aa"]
 
 [ext_resource type="Script" uid="uid://cqagp0vwv0vae" path="res://src/ui/HUD.gd" id="1_hud"]
 [ext_resource type="PackedScene" uid="uid://custmmenu0001" path="res://src/ui/CustomizationMenu.tscn" id="2_custmenu"]
+[ext_resource type="Texture2D" uid="uid://c6npfe02ptwde" path="res://assets/backpack.png" id="2_fonul"]
+[ext_resource type="Theme" uid="uid://bqraki0ecnavw" path="res://themes/main_menu_highlighted_panel.tres" id="3_2mynw"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -60,4 +62,25 @@ grow_horizontal = 0
 theme_override_constants/separation = 4
 alignment = 2
 
+[node name="InventoryIcon" type="TextureRect" parent="Control"]
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 0
+offset_left = 8.0
+offset_top = 12.0
+offset_right = 72.0
+offset_bottom = 76.0
+texture = ExtResource("2_fonul")
+
+[node name="InventoryLabel" type="Label" parent="Control/InventoryIcon"]
+layout_mode = 0
+offset_left = 69.0
+offset_top = 21.0
+offset_right = 114.0
+offset_bottom = 55.0
+theme = ExtResource("3_2mynw")
+text = "TAB"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="CustomizationMenu" parent="." instance=ExtResource("2_custmenu")]
+visible = false
