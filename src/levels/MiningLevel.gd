@@ -1381,6 +1381,12 @@ func _is_tile_mineable(tile_type: int) -> bool:
 	return tile_type in MINEABLE_TILES
 
 func _update_cursor_highlight() -> void:
+	if any_ui_open():
+		_cursor_grid_pos = Vector2i(-1, -1)
+		_cursor_raw_grid_pos = Vector2i(-1, -1)
+		_ladder_ghost_pos = Vector2i(-1, -1)
+		_ladder_ghost_valid = false
+		return
 	var local_player := _get_local_player()
 	if not local_player:
 		_cursor_grid_pos = Vector2i(-1, -1)
