@@ -2,7 +2,7 @@
 
 A 2D space mining roguelite where you play as a cat travelling between planets, scavenging ore and minerals to fuel your next jump across the galaxy.
 
-**Engine:** Godot 4.5 | **Genre:** Mining Roguelite | **Target:** Steam / Itch.io ($3–5)
+**Engine:** Godot 4.5 | **Genre:** Mining Roguelite | **Target:** Steam / Itch.io ($7.99)
 
 ---
 
