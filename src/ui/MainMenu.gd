@@ -1049,12 +1049,12 @@ func _build_save_popup() -> void:
 		var row := _build_slot_row(i, px + 20, slot_y, POPUP_W - 40)
 		slot_y += SLOT_H + SLOT_GAP
 
-	# Close button
+	# Close button — top-right corner of panel
 	var close_btn := Button.new()
-	close_btn.text = "BACK"
-	close_btn.position = Vector2(px + (POPUP_W - 140) / 2.0, py + POPUP_H - 52)
-	close_btn.size = Vector2(140, 38)
-	close_btn.add_theme_font_size_override("font_size", 20)
+	close_btn.text = "X"
+	close_btn.position = Vector2(px + POPUP_W - 36, py + 8)
+	close_btn.size = Vector2(28, 28)
+	close_btn.add_theme_font_size_override("font_size", 14)
 	close_btn.pressed.connect(_on_popup_close)
 	_save_popup.add_child(close_btn)
 
