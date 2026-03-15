@@ -1,0 +1,43 @@
+[gd_scene load_steps=8 format=3 uid="uid://bgnrilnemmmjb"]
+
+[ext_resource type="PackedScene" uid="uid://c8x7k2q5y302" path="res://src/entities/player/PlayerProbe.tscn" id="1_8n2hy"]
+[ext_resource type="PackedScene" uid="uid://hud1234568aa" path="res://src/ui/HUD.tscn" id="2_et3a4"]
+[ext_resource type="PackedScene" uid="uid://dom6mgmv6ffss" path="res://src/ui/PauseMenu.tscn" id="3_yk6cr"]
+[ext_resource type="Texture2D" uid="uid://btrbx3pw5rj00" path="res://assets/blocks/granite_bricks.png" id="4_et3a4"]
+[ext_resource type="Texture2D" uid="uid://byc72w1xwjxo2" path="res://assets/blocks/glass.png" id="5_yk6cr"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_yk6cr"]
+size = Vector2(15.94924, 16.259201)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ecis5"]
+size = Vector2(0.4750843, 18.937183)
+
+[node name="ForgeLevel" type="Node2D"]
+
+[node name="PlayerProbe" parent="." instance=ExtResource("1_8n2hy")]
+
+[node name="HUD" parent="." instance=ExtResource("2_et3a4")]
+
+[node name="PauseMenu" parent="." instance=ExtResource("3_yk6cr")]
+visible = false
+
+[node name="StaticBody2D" type="StaticBody2D" parent="."]
+position = Vector2(655, 712)
+scale = Vector2(88.405464, 10.455621)
+
+[node name="Sprite2D" type="Sprite2D" parent="StaticBody2D"]
+texture = ExtResource("4_et3a4")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D"]
+shape = SubResource("RectangleShape2D_yk6cr")
+
+[node name="PortalStaticBody2D" type="StaticBody2D" parent="."]
+position = Vector2(1138, 502.99997)
+scale = Vector2(88.405464, 10.455621)
+
+[node name="PortalToMiningLevel" type="Sprite2D" parent="PortalStaticBody2D"]
+scale = Vector2(0.031450614, 1.247297)
+texture = ExtResource("5_yk6cr")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PortalStaticBody2D"]
+shape = SubResource("RectangleShape2D_ecis5")

@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://c3tgnqlhrooet"]
+[gd_scene load_steps=10 format=3 uid="uid://c3tgnqlhrooet"]
 
 [ext_resource type="PackedScene" uid="uid://c8x7k2q5y302" path="res://src/entities/player/PlayerProbe.tscn" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://hud1234568aa" path="res://src/ui/HUD.tscn" id="2_hud"]
@@ -6,11 +6,11 @@
 [ext_resource type="TileSet" uid="uid://cjvmyl06h70j7" path="res://assets/blocks/blocks_tileset.tres" id="5_10hqt"]
 [ext_resource type="PackedScene" uid="uid://dom6mgmv6ffss" path="res://src/ui/PauseMenu.tscn" id="5_pause"]
 [ext_resource type="TileSet" uid="uid://i0vyrxve27ot" path="res://assets/blocks/plants/foliage_tileset.tres" id="6_vcf27"]
-[ext_resource type="Texture2D" uid="uid://ddw1bbbp5hn56" path="res://assets/shops/forge_shop.png" id="8_jcen4"]
+[ext_resource type="Texture2D" uid="uid://byc72w1xwjxo2" path="res://assets/blocks/glass.png" id="8_jcen4"]
 [ext_resource type="Script" uid="uid://cx4p8n3q6r1y5" path="res://src/levels/MiningLevelOverlay.gd" id="8_overlay"]
-[ext_resource type="Texture2D" uid="uid://bvxqwnl1sbhgn" path="res://assets/shops/museum_shop.png" id="9_gdvpb"]
-[ext_resource type="Texture2D" uid="uid://ch35csqfmdbt0" path="res://assets/shops/painting_shop.png" id="10_xkqax"]
-[ext_resource type="Texture2D" uid="uid://chlag7gsujs5u" path="res://assets/shops/supply_shop.png" id="11_q8ske"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_jcen4"]
+size = Vector2(0.4750843, 18.937183)
 
 [node name="MiningLevel" type="Node2D"]
 script = ExtResource("4_script")
@@ -62,18 +62,13 @@ navigation_enabled = false
 z_index = 1
 script = ExtResource("8_overlay")
 
-[node name="ForgeShop" type="Sprite2D" parent="."]
-position = Vector2(840, 135)
+[node name="PortalStaticBody2D" type="StaticBody2D" parent="."]
+position = Vector2(1343, 26)
+scale = Vector2(88.405464, 10.455621)
+
+[node name="PortalToMiningLevel" type="Sprite2D" parent="PortalStaticBody2D"]
+scale = Vector2(0.031450614, 1.247297)
 texture = ExtResource("8_jcen4")
 
-[node name="MuseumShop" type="Sprite2D" parent="."]
-position = Vector2(640, 135)
-texture = ExtResource("9_gdvpb")
-
-[node name="PaintingShop" type="Sprite2D" parent="."]
-position = Vector2(440, 135)
-texture = ExtResource("10_xkqax")
-
-[node name="SupplyShop" type="Sprite2D" parent="."]
-position = Vector2(240, 135)
-texture = ExtResource("11_q8ske")
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PortalStaticBody2D"]
+shape = SubResource("RectangleShape2D_jcen4")

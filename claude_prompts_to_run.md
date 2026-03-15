@@ -41,9 +41,16 @@ Add the share a screenshot on our discord with discord link at the end of each r
 Controller compatibility
 
 
+Should the supply shop be a traveling wagon?
+
+New tile/terrain system: auto tiling similar to terraria instead of 2d minecraft https://slowdevelopment.itch.io/autotiles-12x12-tilleset-pack
 
 
-
+NPCs:
+Painting shop - 
+Museum - 
+Supply Shop - Guy in cloak
+Forge - 
 
 
 
@@ -52,9 +59,7 @@ Controller compatibility
 Remove the coin display from the upper left in mining level scene
 
 
-
-
-
+Painting system, shows paintings greyed out in a menu, you find paintings in chests while exploring, 25% chance for one to spawn, painting collector in town
 
 
 
