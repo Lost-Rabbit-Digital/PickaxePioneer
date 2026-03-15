@@ -66,15 +66,6 @@ offset_bottom = 40.0
 theme_override_font_sizes/font_size = 20
 text = "CUSTOMIZATION"
 
-[node name="CloseHint" type="Label" parent="Panel"]
-modulate = Color(0.55, 0.55, 0.65, 0.9)
-layout_mode = 0
-offset_left = 790.0
-offset_top = 14.0
-offset_right = 892.0
-offset_bottom = 36.0
-theme_override_font_sizes/font_size = 13
-text = "[X] Close"
 
 [node name="Separator" type="ColorRect" parent="Panel"]
 layout_mode = 0
@@ -162,9 +153,9 @@ text = "RESET"
 
 [node name="CloseButton" type="Button" parent="Panel"]
 layout_mode = 0
-offset_left = 390.0
-offset_top = 494.0
-offset_right = 510.0
-offset_bottom = 526.0
+offset_left = 862.0
+offset_top = 8.0
+offset_right = 892.0
+offset_bottom = 36.0
 theme_override_font_sizes/font_size = 14
-text = "CLOSE"
+text = "X"
