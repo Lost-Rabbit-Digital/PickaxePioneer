@@ -56,7 +56,9 @@ var _exit_hint_tween: Tween
 const HOTBAR_SLOT_SIZE: int = 48
 const HOTBAR_SLOT_GAP: int = 4
 const ITEMS_TILESET_PATH: String = "res://assets/db32_rpg_items/items_tileset.tres"
+const BLOCKS_TILESET_PATH: String = "res://assets/blocks/blocks_tileset.tres"
 const PICKAXE_ATLAS_COORD: Vector2i = Vector2i(0, 10)
+const LADDER_ATLAS_COORD: Vector2i = Vector2i(3, 8)
 const TILE_SIZE: int = 64
 var _hotbar_slots: Array[PanelContainer] = []
 var _hotbar_styles: Array[StyleBoxFlat] = []  # One StyleBoxFlat per slot for border recolouring
@@ -503,6 +505,23 @@ func _get_pickaxe_texture() -> Texture2D:
 	)
 	return atlas_texture
 
+func _get_ladder_texture() -> Texture2D:
+	var tileset := load(BLOCKS_TILESET_PATH) as TileSet
+	if not tileset:
+		return null
+	var source := tileset.get_source(0) as TileSetAtlasSource
+	if not source:
+		return null
+	var atlas_texture := AtlasTexture.new()
+	atlas_texture.atlas = source.texture
+	atlas_texture.region = Rect2i(
+		LADDER_ATLAS_COORD.x * TILE_SIZE,
+		LADDER_ATLAS_COORD.y * TILE_SIZE,
+		TILE_SIZE,
+		TILE_SIZE
+	)
+	return atlas_texture
+
 func _build_hotbar() -> void:
 	for i in range(10):
 		var slot := PanelContainer.new()
@@ -534,38 +553,20 @@ func _build_hotbar() -> void:
 				slot.add_child(icon)
 
 		elif i == 1:
-			# Ladder tool — drawn as two poles + three rungs (matches in-game ladder style)
+			# Ladder tool — atlas tile from blocks_atlas.png coord (3, 8)
 			_hotbar_ladder_icon = Control.new()
 			_hotbar_ladder_icon.custom_minimum_size = Vector2(HOTBAR_SLOT_SIZE - 6, HOTBAR_SLOT_SIZE - 6)
 			_hotbar_ladder_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-			var pole_color := Color(0.80, 0.60, 0.15, 0.90)
-			var rung_color := Color(0.70, 0.50, 0.10, 0.90)
-
-			# Left pole
-			var left_pole := ColorRect.new()
-			left_pole.color = pole_color
-			left_pole.position = Vector2(7, 2)
-			left_pole.size = Vector2(5, 38)
-			left_pole.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			_hotbar_ladder_icon.add_child(left_pole)
-
-			# Right pole
-			var right_pole := ColorRect.new()
-			right_pole.color = pole_color
-			right_pole.position = Vector2(30, 2)
-			right_pole.size = Vector2(5, 38)
-			right_pole.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			_hotbar_ladder_icon.add_child(right_pole)
-
-			# Three rungs
-			for r in 3:
-				var rung := ColorRect.new()
-				rung.color = rung_color
-				rung.position = Vector2(7, 7 + r * 13)
-				rung.size = Vector2(28, 4)
-				rung.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				_hotbar_ladder_icon.add_child(rung)
+			var tex := _get_ladder_texture()
+			if tex:
+				var icon := TextureRect.new()
+				icon.texture = tex
+				icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+				icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+				icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				_hotbar_ladder_icon.add_child(icon)
 
 			# Count badge — small label in the bottom-right of the ladder icon
 			_hotbar_ladder_count_label = Label.new()

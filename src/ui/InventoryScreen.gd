@@ -9,7 +9,9 @@ extends CanvasLayer
 # Ore display order (matches terrain depth: shallow → deep)
 # Textures and colors must match MiningLevel.TILE_TEXTURE_PATHS and TILE_COLORS exactly.
 const ITEMS_TILESET_PATH: String = "res://assets/db32_rpg_items/items_tileset.tres"
+const BLOCKS_TILESET_PATH: String = "res://assets/blocks/blocks_tileset.tres"
 const PICKAXE_ATLAS_COORD: Vector2i = Vector2i(0, 10)
+const LADDER_ATLAS_COORD: Vector2i = Vector2i(3, 8)
 const TILE_SIZE: int = 64
 
 const ORE_ORDER: Array = [
@@ -97,6 +99,23 @@ func _get_pickaxe_texture() -> Texture2D:
 	atlas_texture.region = Rect2i(
 		PICKAXE_ATLAS_COORD.x * TILE_SIZE,
 		PICKAXE_ATLAS_COORD.y * TILE_SIZE,
+		TILE_SIZE,
+		TILE_SIZE
+	)
+	return atlas_texture
+
+func _get_ladder_texture() -> Texture2D:
+	var tileset = load(BLOCKS_TILESET_PATH) as TileSet
+	if not tileset:
+		return null
+	var source = tileset.get_source(0) as TileSetAtlasSource
+	if not source:
+		return null
+	var atlas_texture = AtlasTexture.new()
+	atlas_texture.atlas = source.texture
+	atlas_texture.region = Rect2i(
+		LADDER_ATLAS_COORD.x * TILE_SIZE,
+		LADDER_ATLAS_COORD.y * TILE_SIZE,
 		TILE_SIZE,
 		TILE_SIZE
 	)
@@ -405,31 +424,18 @@ func _draw_tool_slot_content(parent: Control, sx: int, sy: int, tool_idx: int, s
 		parent.add_child(tag)
 
 	else:
-		# Ladder — hand-drawn icon scaled into the slot
-		var pole_color := Color(0.80, 0.60, 0.15, 0.90)
-		var rung_color := Color(0.70, 0.50, 0.10, 0.90)
-
-		var lp := ColorRect.new()
-		lp.color = pole_color
-		lp.position = Vector2(sx + 10, sy + 5)
-		lp.size = Vector2(3, 44)
-		lp.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		parent.add_child(lp)
-
-		var rp := ColorRect.new()
-		rp.color = pole_color
-		rp.position = Vector2(sx + 42, sy + 5)
-		rp.size = Vector2(3, 44)
-		rp.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		parent.add_child(rp)
-
-		for r in 4:
-			var rung := ColorRect.new()
-			rung.color = rung_color
-			rung.position = Vector2(sx + 10, sy + 7 + r * 11)
-			rung.size = Vector2(32, 2)
-			rung.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			parent.add_child(rung)
+		# Ladder — atlas tile from blocks_atlas.png coord (3, 8)
+		var tex := _get_ladder_texture()
+		if tex:
+			var icon := TextureRect.new()
+			icon.texture = tex
+			icon.position = Vector2(sx + 4, sy + 4)
+			icon.size = Vector2(SLOT_SIZE - 8, SLOT_SIZE - 8)
+			icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			parent.add_child(icon)
 
 		# Count badge bottom-right
 		var badge := Label.new()
