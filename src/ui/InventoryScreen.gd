@@ -65,6 +65,7 @@ const TOOL_SLOT_COUNT: int = 2  # Pickaxe slot + Ladder slot
 @onready var _drag_ghost: Control = $DragGhost
 @onready var _drag_ghost_bg: ColorRect = $DragGhost/DragGhostBg
 @onready var _drag_ghost_icon_root: Control = $DragGhost/DragGhostIconRoot
+@onready var _close_button: Button = $CloseButton
 
 # Reference set by MiningLevel when it instantiates this screen
 var mining_level: Node = null
@@ -85,6 +86,7 @@ var _last_ore_counts: Dictionary = {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_close_button.pressed.connect(close)
 	hide()
 
 func _get_pickaxe_texture() -> Texture2D:

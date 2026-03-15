@@ -79,15 +79,14 @@ mouse_filter = 2
 theme = ExtResource("2_ey6tx")
 color = Color(0.5, 0.4, 0.65, 0.5)
 
-[node name="CloseHint" type="Label" parent="."]
-modulate = Color(0.55, 0.55, 0.65, 0.9)
-offset_left = 978.0
-offset_top = 94.0
-offset_right = 1078.0
-offset_bottom = 107.0
+[node name="CloseButton" type="Button" parent="."]
+offset_left = 1046.0
+offset_top = 88.0
+offset_right = 1076.0
+offset_bottom = 116.0
 theme = ExtResource("2_ey6tx")
-theme_override_font_sizes/font_size = 13
-text = "[I] Close"
+theme_override_font_sizes/font_size = 14
+text = "X"
 
 [node name="ContentRoot" type="Control" parent="."]
 clip_contents = true
