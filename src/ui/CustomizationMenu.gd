@@ -32,6 +32,8 @@ const SWATCH_FONT_SIZE: int = 12
 
 const DEFAULT_OUTLINE: Color = Color("2b222a")
 
+const IDLE_ANIMATIONS: Array[StringName] = [&"idle_1", &"idle_2", &"sleep"]
+
 # Unlock level required for each palette entry (index-matched to PALETTE).
 # First 4 colours are free; the remaining 48 spread evenly from level 3 → 100.
 const UNLOCK_LEVELS: Array[int] = [
@@ -65,14 +67,30 @@ var _selected_outline_index: int = -1
 var _base_swatch_buttons: Array[Button] = []
 var _outline_swatch_buttons: Array[Button] = []
 
+var _idle_switch_timer: Timer = null
+var _preview_scared: bool = false
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	hide()
+	_idle_switch_timer = Timer.new()
+	_idle_switch_timer.one_shot = true
+	_idle_switch_timer.timeout.connect(_on_idle_switch_timer_timeout)
+	add_child(_idle_switch_timer)
 	_load_preview_frames()
 	_build_swatches(_base_swatch_container, _base_swatch_buttons, _on_base_swatch_pressed)
 	_build_swatches(_outline_swatch_container, _outline_swatch_buttons, _on_outline_swatch_pressed)
 	$Panel/CloseButton.pressed.connect(close)
 	$Panel/ResetButton.pressed.connect(_on_reset)
+	# Transparent click area over the preview sprite (PreviewBG rect: 30,60 → 190,380)
+	var click_area := Button.new()
+	click_area.position = Vector2(30, 60)
+	click_area.size = Vector2(160, 320)
+	click_area.flat = true
+	click_area.self_modulate = Color(1, 1, 1, 0)
+	click_area.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	click_area.pressed.connect(_on_preview_sprite_clicked)
+	$Panel.add_child(click_area)
 
 func _load_preview_frames() -> void:
 	var player_scene := load("res://src/entities/player/PlayerProbe.tscn") as PackedScene
@@ -82,11 +100,33 @@ func _load_preview_frames() -> void:
 		if source_sprite:
 			_preview_sprite.sprite_frames = source_sprite.sprite_frames
 		temp.queue_free()
-	_preview_sprite.play(&"idle_1")
+	_preview_sprite.animation_finished.connect(_on_preview_animation_finished)
+	_play_random_idle()
 	# Apply shader to preview sprite
 	var mat := ShaderMaterial.new()
 	mat.shader = preload("res://assets/shaders/cat_color.gdshader")
 	_preview_sprite.material = mat
+
+func _play_random_idle() -> void:
+	var anim: StringName = IDLE_ANIMATIONS[randi() % IDLE_ANIMATIONS.size()]
+	_preview_sprite.play(anim)
+	_idle_switch_timer.start(randf_range(3.0, 7.0))
+
+func _on_idle_switch_timer_timeout() -> void:
+	if not _preview_scared:
+		_play_random_idle()
+
+func _on_preview_animation_finished() -> void:
+	if _preview_scared:
+		_preview_scared = false
+		_play_random_idle()
+	else:
+		_play_random_idle()
+
+func _on_preview_sprite_clicked() -> void:
+	_preview_scared = true
+	_idle_switch_timer.stop()
+	_preview_sprite.play(&"scared")
 
 func _is_unlocked(index: int) -> bool:
 	return GameManager.global_player_level >= UNLOCK_LEVELS[index]
