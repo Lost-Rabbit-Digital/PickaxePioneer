@@ -156,6 +156,7 @@ func _show_main_buttons() -> void:
 
 func _restore_main_buttons() -> void:
 	_active_submenu = ""
+	$VBoxContainer.show()
 	$VBoxContainer/SingleplayerButton.show()
 	$VBoxContainer/MultiplayerButton.show()
 	$VBoxContainer/WishlistButton.show()
@@ -1156,10 +1157,7 @@ func _show_class_selection() -> bool:
 	)
 	while not done:
 		await get_tree().process_frame
-	if confirmed:
-		$VBoxContainer.show()
-	else:
-		_restore_main_buttons()
+	_restore_main_buttons()
 	return confirmed
 
 
