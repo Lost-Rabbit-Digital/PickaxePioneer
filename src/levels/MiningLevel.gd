@@ -530,6 +530,7 @@ const FOLIAGE_WEB_ATLAS_COORD: Vector2i = Vector2i(7, 4)
 @onready var player_node := $PlayerProbe as PlayerProbe
 @onready var pause_menu = $PauseMenu
 @onready var _background_layer  := $TileMapLayers/BackgroundTileMapLayer as TileMapLayer
+@onready var _voronoi_bg_layer  := $TileMapLayers/VoronoiBackgroundLayer as VoronoiBackgroundLayer
 @onready var _mineable_layer    := $TileMapLayers/MineAbleTileMapLayer as TileMapLayer
 @onready var _nonmineable_layer := $TileMapLayers/NonMineAbleTileMapLayer as TileMapLayer
 @onready var _foliage_layer     := $TileMapLayers/FoliageTileMapLayer as TileMapLayer
@@ -993,6 +994,7 @@ func _populate_visual_tilemaplayers() -> void:
 ## Rows SURFACE_ROWS..(SURFACE_ROWS+9): dirt background atlas (1, 2).
 ## Rows (SURFACE_ROWS+10)..end: stone background atlas (7, 7).
 func _populate_background_tilemaplayer() -> void:
+	_voronoi_bg_layer.setup(GameManager.terrain_seed, GRID_COLS, GRID_ROWS, CELL_SIZE)
 	_background_layer.clear()
 	const BG_SKY_ATLAS   := Vector2i(9, 8)
 	const BG_DIRT_ATLAS  := Vector2i(1, 2)
