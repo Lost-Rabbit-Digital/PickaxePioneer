@@ -12,9 +12,9 @@ extends Control
 @onready var settlement_node_4: MapNode = $SettlementNode4
 @onready var final_node: MapNode = $FinalNode
 @onready var pause_menu = $PauseMenu
-@onready var version_label: Label = $Camera2D/BackgroundCanvasLayer/VersionLabel
+@onready var version_label: Label = $Camera2D/HUDCanvasLayer/VersionLabel
 @onready var camera: Camera2D = $Camera2D
-@onready var center_button: Button = $Camera2D/BackgroundCanvasLayer/CenterButton
+@onready var center_button: Button = $Camera2D/HUDCanvasLayer/CenterButton
 
 var current_node: MapNode
 var nodes: Array[MapNode] = []

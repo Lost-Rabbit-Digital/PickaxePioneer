@@ -1,7 +1,8 @@
-[gd_scene load_steps=17 format=3 uid="uid://mapnode123"]
+[gd_scene load_steps=18 format=3 uid="uid://mapnode123"]
 
 [ext_resource type="Script" uid="uid://t6s1a2wv460w" path="res://src/entities/overworld/MapNode.gd" id="1_node"]
 [ext_resource type="Texture2D" uid="uid://ccugob0fyy7k8" path="res://assets/celestial_bodies/planets.png" id="2_rq8q2"]
+[ext_resource type="Theme" uid="uid://xcmsew4f5udi" path="res://themes/version_label_theme.tres" id="3_oxvu1"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_oxvu1"]
 atlas = ExtResource("2_rq8q2")
@@ -104,13 +105,22 @@ script = ExtResource("1_node")
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_c6w87")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("CircleShape2D_1")
-
-[node name="Label" type="Label" parent="."]
-offset_left = -32.0
-offset_top = 32.0
+[node name="Label" type="Label" parent="AnimatedSprite2D"]
+custom_minimum_size = Vector2(128, 32)
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -96.0
+offset_top = -32.0
 offset_right = 32.0
-offset_bottom = 55.0
+grow_horizontal = 2
+grow_vertical = 0
+theme = ExtResource("3_oxvu1")
 text = "Node"
 horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_1")
