@@ -21,12 +21,12 @@ enum NodeType {
 signal node_clicked(node: MapNode)
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
-@onready var label: Label = $Label
+@onready var label: Label = $AnimatedSprite2D/Label
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
 
 # Base sprite dimensions (64x64 at scale 1.0)
 const SPRITE_BASE_SIZE: float = 64.0
-const LABEL_HEIGHT: float = 23.0  # offset_bottom - offset_top (55 - 32)
+const LABEL_HEIGHT: float = 32.0  # offset_bottom - offset_top (55 - 32)
 
 # Base scales before size multiplier is applied
 const BASE_SCALE_MINE: float = 2.5
@@ -106,12 +106,10 @@ var neighbors: Array[MapNode] = []
 
 func _update_label_position() -> void:
 	# Position label below sprite, accounting for sprite scale
-	var half_sprite_height = (SPRITE_BASE_SIZE / 2.0) * sprite.scale.y
+	var half_sprite_height = ((SPRITE_BASE_SIZE / 2.0)) * sprite.scale.y
 	var label_offset_top = half_sprite_height
-	var label_offset_bottom = label_offset_top + LABEL_HEIGHT
 
 	label.offset_top = label_offset_top
-	label.offset_bottom = label_offset_bottom
 
 func highlight(active: bool) -> void:
 	var highlight_scale: float = _base_scale * 1.2 if active else _base_scale
