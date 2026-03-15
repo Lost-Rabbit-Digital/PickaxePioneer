@@ -22,6 +22,7 @@ signal node_clicked(node: MapNode)
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var label: Label = $Label
+@onready var collision_shape: CollisionShape2D = $CollisionShape2D
 
 # Base sprite dimensions (64x64 at scale 1.0)
 const SPRITE_BASE_SIZE: float = 64.0
@@ -98,6 +99,7 @@ func refresh_visuals() -> void:
 
 	sprite.modulate = _base_modulate
 	sprite.scale = Vector2(_base_scale, _base_scale)
+	_update_collision_radius(_base_scale)
 	_update_label_position()
 
 var neighbors: Array[MapNode] = []
@@ -114,8 +116,13 @@ func _update_label_position() -> void:
 func highlight(active: bool) -> void:
 	var highlight_scale: float = _base_scale * 1.2 if active else _base_scale
 	sprite.scale = Vector2(highlight_scale, highlight_scale)
+	_update_collision_radius(highlight_scale)
 	label.modulate = Color.YELLOW if active else Color.WHITE
 	_update_label_position()
+
+func _update_collision_radius(scale_value: float) -> void:
+	var shape := collision_shape.shape as CircleShape2D
+	shape.radius = (SPRITE_BASE_SIZE / 2.0) * scale_value
 
 func set_locked(is_locked: bool) -> void:
 	# Apply or remove grey modulation based on lock state
