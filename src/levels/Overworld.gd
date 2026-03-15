@@ -143,7 +143,7 @@ func _ready() -> void:
 	# Initialize position
 	if GameManager.last_overworld_node_name != "":
 		for node in nodes:
-			if node.name == GameManager.last_overworld_node_name:
+			if node.location_name == GameManager.last_overworld_node_name:
 				current_node = node
 				break
 
