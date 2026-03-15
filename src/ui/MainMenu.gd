@@ -180,6 +180,11 @@ func _on_inline_continue_pressed() -> void:
 
 func _on_inline_new_game_pressed() -> void:
 	SoundManager.play_ui_click_sound()
+	if not SaveManager.has_any_save():
+		SaveManager.new_game(0)
+		await SceneTransition.fade_to_black(0.5)
+		GameManager.start_game()
+		return
 	_popup_mode = "new_game"
 	_refresh_popup()
 	_save_popup.show()
