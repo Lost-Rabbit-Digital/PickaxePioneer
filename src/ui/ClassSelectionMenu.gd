@@ -1,9 +1,11 @@
 extends CanvasLayer
 ## Class selection screen shown after choosing a save slot on New Game.
-## Displays a horizontal row of class cards.  Emits [signal class_confirmed]
+## Displays a horizontal scrollable row of class cards.  Emits [signal class_confirmed]
 ## with the chosen class id when the player clicks "BEGIN RUN".
+## Emits [signal cancelled] when the player clicks "BACK".
 
 signal class_confirmed(class_id: String)
+signal cancelled
 
 ## Placeholder class definitions — replace colors / descriptions with real art later.
 const CLASSES: Array[Dictionary] = [
@@ -39,6 +41,54 @@ const CLASSES: Array[Dictionary] = [
 		"locked": true,
 		"unlock_hint": "Complete a run to unlock.",
 	},
+	{
+		"id": "scout",
+		"name": "Scout",
+		"description": "Swift paws, keen eyes.\nStarts with boosted\nmovement speed.",
+		"color": Color(0.85, 0.78, 0.20),
+		"locked": true,
+		"unlock_hint": "Complete a run to unlock.",
+	},
+	{
+		"id": "engineer",
+		"name": "Engineer",
+		"description": "Built not born.\nStarts with improved\nmining efficiency.",
+		"color": Color(0.40, 0.60, 0.72),
+		"locked": true,
+		"unlock_hint": "Complete a run to unlock.",
+	},
+	{
+		"id": "alchemist",
+		"name": "Alchemist",
+		"description": "Worth more than weight.\nStarts with bonus\nore sell value.",
+		"color": Color(0.72, 0.38, 0.68),
+		"locked": true,
+		"unlock_hint": "Complete a run to unlock.",
+	},
+	{
+		"id": "sentinel",
+		"name": "Sentinel",
+		"description": "Standing guard.\nStarts with reinforced\nPelt and slow descent.",
+		"color": Color(0.45, 0.55, 0.45),
+		"locked": true,
+		"unlock_hint": "Complete a run to unlock.",
+	},
+	{
+		"id": "wanderer",
+		"name": "Wanderer",
+		"description": "Always further down.\nStarts with extended\nWhiskers scan radius.",
+		"color": Color(0.78, 0.52, 0.30),
+		"locked": true,
+		"unlock_hint": "Complete a run to unlock.",
+	},
+	{
+		"id": "phantom",
+		"name": "Phantom",
+		"description": "Unseen, unstoppable.\nStarts with rare ore\ndetection Claws.",
+		"color": Color(0.30, 0.30, 0.48),
+		"locked": true,
+		"unlock_hint": "Complete a run to unlock.",
+	},
 ]
 
 const CARD_W: float = 240.0
@@ -62,12 +112,12 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	# -----------------------------------------------------------------------
-	# Fullscreen dimmer
+	# Fullscreen solid background — completely hides anything behind this menu
 	# -----------------------------------------------------------------------
-	var dimmer := ColorRect.new()
-	dimmer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	dimmer.color = Color(0.0, 0.0, 0.0, 0.88)
-	add_child(dimmer)
+	var bg_fill := ColorRect.new()
+	bg_fill.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg_fill.color = Color(0.07, 0.06, 0.05, 1.0)
+	add_child(bg_fill)
 
 	# -----------------------------------------------------------------------
 	# Root control layer
@@ -90,7 +140,7 @@ func _build_ui() -> void:
 	root.add_child(title)
 
 	# -----------------------------------------------------------------------
-	# Scroll container — spans full viewport width
+	# Scroll container — spans full viewport width, horizontally scrollable
 	# -----------------------------------------------------------------------
 	var scroll := ScrollContainer.new()
 	scroll.set_anchors_preset(Control.PRESET_TOP_WIDE)
@@ -100,29 +150,46 @@ func _build_ui() -> void:
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	root.add_child(scroll)
 
-	# MarginContainer inside scroll provides a centering left/right margin.
-	var total_cards_w: float = CLASSES.size() * CARD_W + (CLASSES.size() - 1) * CARD_GAP
-	var viewport_w: float = 1280.0
-	var side_margin: int = max(0, int((viewport_w - total_cards_w) / 2.0))
-
-	var margin_c := MarginContainer.new()
-	margin_c.add_theme_constant_override("margin_left", side_margin)
-	margin_c.add_theme_constant_override("margin_right", side_margin)
-	margin_c.add_theme_constant_override("margin_top", 10)
-	margin_c.add_theme_constant_override("margin_bottom", 10)
-	scroll.add_child(margin_c)
+	# CenterContainer inside scroll so cards are centered when they fit
+	# and naturally overflow (scroll) when they don't.
+	var center_c := CenterContainer.new()
+	center_c.use_top_left = false
+	center_c.set_h_size_flags(Control.SIZE_EXPAND_FILL)
+	center_c.set_v_size_flags(Control.SIZE_EXPAND_FILL)
+	scroll.add_child(center_c)
 
 	var hbox := HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", int(CARD_GAP))
-	margin_c.add_child(hbox)
+	hbox.set_v_size_flags(Control.SIZE_SHRINK_CENTER)
+	center_c.add_child(hbox)
 
 	for i: int in range(CLASSES.size()):
 		var card := _build_card(i, CLASSES[i])
 		hbox.add_child(card)
 
 	# -----------------------------------------------------------------------
-	# "BEGIN RUN" confirm button
+	# Bottom button row — BACK on left, BEGIN RUN centered
 	# -----------------------------------------------------------------------
+	var bottom_anchor := Control.new()
+	bottom_anchor.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	bottom_anchor.offset_top = -90.0
+	bottom_anchor.offset_bottom = -30.0
+	root.add_child(bottom_anchor)
+
+	# BACK button — left side
+	var back_btn := Button.new()
+	back_btn.text = "BACK"
+	back_btn.custom_minimum_size = Vector2(140.0, 52.0)
+	back_btn.add_theme_font_size_override("font_size", 20)
+	back_btn.set_anchors_preset(Control.PRESET_CENTER_LEFT)
+	back_btn.offset_left = 48.0
+	back_btn.offset_right = 48.0 + 140.0
+	back_btn.offset_top = -26.0
+	back_btn.offset_bottom = 26.0
+	back_btn.pressed.connect(_on_back_pressed)
+	bottom_anchor.add_child(back_btn)
+
+	# BEGIN RUN button — centered
 	_confirm_btn = Button.new()
 	_confirm_btn.text = "BEGIN RUN"
 	_confirm_btn.custom_minimum_size = Vector2(220.0, 52.0)
@@ -130,15 +197,9 @@ func _build_ui() -> void:
 	_confirm_btn.disabled = true
 	_confirm_btn.pressed.connect(_on_confirm_pressed)
 
-	var btn_anchor := Control.new()
-	btn_anchor.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	btn_anchor.offset_top = -90.0
-	btn_anchor.offset_bottom = -30.0
-	root.add_child(btn_anchor)
-
 	var btn_center := CenterContainer.new()
 	btn_center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	btn_anchor.add_child(btn_center)
+	bottom_anchor.add_child(btn_center)
 	btn_center.add_child(_confirm_btn)
 
 
@@ -269,6 +330,12 @@ func _update_selection_visuals() -> void:
 		_card_borders[i].color = ACCENT_COLOR if i == _selected_index else Color(0.0, 0.0, 0.0, 0.0)
 
 
+func _on_back_pressed() -> void:
+	SoundManager.play_ui_close_sound()
+	cancelled.emit()
+	queue_free()
+
+
 func _on_confirm_pressed() -> void:
 	if _selected_index < 0:
 		return
@@ -281,3 +348,5 @@ func _on_confirm_pressed() -> void:
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_accept") and _selected_index >= 0:
 		_on_confirm_pressed()
+	elif event.is_action_pressed("ui_cancel"):
+		_on_back_pressed()
