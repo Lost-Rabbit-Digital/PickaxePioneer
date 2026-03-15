@@ -153,13 +153,12 @@ var sense_gem_socketed: bool = false         # +3 sonar ping radius
 const SHIP_COST_WARP_DRIVE: int       = 20000  # unlocks when total_coins_banked >= 50000
 const SHIP_COST_CARGO_BAY: int        = 15000  # unlocks when bosses_defeated_total >= 1
 const SHIP_COST_LONG_SCANNER: int     = 30000  # unlocks when total_coins_banked >= 100000
-const SHIP_COST_GEM_REFINERY: int     = 25000  # unlocks when total_fossils >= 10
+const SHIP_COST_GEM_REFINERY: int     = 25000
 const SHIP_COST_TRADE_AMPLIFIER: int  = 20000  # unlocks when deepest_row_reached >= 96
 
 # Cumulative milestone trackers (persisted to save)
 var total_coins_banked: int = 0          # sum of all coins ever banked (in copper)
 var bosses_defeated_total: int = 0       # total boss encounters won
-var total_fossils: int = 0               # total fossils found across all runs
 var deepest_row_reached: int = 0         # deepest grid row ever reached
 var total_playtime_seconds: float = 0.0  # total seconds played (accumulated while PLAYING)
 
@@ -838,7 +837,6 @@ func save_game() -> void:
 		"sense_gem_socketed": sense_gem_socketed,
 		"total_coins_banked": total_coins_banked,
 		"bosses_defeated_total": bosses_defeated_total,
-		"total_fossils": total_fossils,
 		"deepest_row_reached": deepest_row_reached,
 		"warp_drive_built": warp_drive_built,
 		"cargo_bay_built": cargo_bay_built,
@@ -913,7 +911,6 @@ func load_game() -> void:
 			sense_gem_socketed = data.get("sense_gem_socketed", false)
 			total_coins_banked = data.get("total_coins_banked", data.get("total_minerals_banked", 0) * 100)
 			bosses_defeated_total = data.get("bosses_defeated_total", 0)
-			total_fossils = data.get("total_fossils", 0)
 			deepest_row_reached = data.get("deepest_row_reached", 0)
 			warp_drive_built = data.get("warp_drive_built", false)
 			cargo_bay_built = data.get("cargo_bay_built", false)

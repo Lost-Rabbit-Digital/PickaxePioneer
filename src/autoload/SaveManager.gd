@@ -233,7 +233,6 @@ func _snapshot_game_manager() -> Dictionary:
 		"sense_gem_socketed": gm.sense_gem_socketed,
 		"total_coins_banked": gm.total_coins_banked,
 		"bosses_defeated_total": gm.bosses_defeated_total,
-		"total_fossils": gm.total_fossils,
 		"deepest_row_reached": gm.deepest_row_reached,
 		"total_playtime_seconds": gm.total_playtime_seconds,
 		"warp_drive_built": gm.warp_drive_built,
@@ -315,7 +314,6 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 	gm.sense_gem_socketed = data.get("sense_gem_socketed", false)
 	gm.total_coins_banked = data.get("total_coins_banked", data.get("total_minerals_banked", 0) * 100)
 	gm.bosses_defeated_total = data.get("bosses_defeated_total", 0)
-	gm.total_fossils = data.get("total_fossils", 0)
 	gm.deepest_row_reached = data.get("deepest_row_reached", 0)
 	gm.total_playtime_seconds = data.get("total_playtime_seconds", 0.0)
 	gm.warp_drive_built = data.get("warp_drive_built", false)
@@ -411,7 +409,6 @@ func _reset_game_manager() -> void:
 	gm.sense_gem_socketed = false
 	gm.total_coins_banked = 0
 	gm.bosses_defeated_total = 0
-	gm.total_fossils = 0
 	gm.deepest_row_reached = 0
 	gm.total_playtime_seconds = 0.0
 	gm.warp_drive_built = false
