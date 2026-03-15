@@ -521,7 +521,6 @@ const FOLIAGE_WEB_ATLAS_COORD: Vector2i = Vector2i(7, 4)
 @onready var player_node := $PlayerProbe as PlayerProbe
 @onready var pause_menu = $PauseMenu
 @onready var _background_layer  := $TileMapLayers/BackgroundTileMapLayer as TileMapLayer
-@onready var _voronoi_bg_layer  := $TileMapLayers/VoronoiBackgroundLayer as VoronoiBackgroundLayer
 @onready var _mineable_layer    := $TileMapLayers/MineAbleTileMapLayer as TileMapLayer
 @onready var _nonmineable_layer := $TileMapLayers/NonMineAbleTileMapLayer as TileMapLayer
 @onready var _foliage_layer     := $TileMapLayers/FoliageTileMapLayer as TileMapLayer
@@ -984,22 +983,40 @@ func _populate_visual_tilemaplayers() -> void:
 ## Rows 0..(SURFACE_ROWS-1): sky tile atlas (9, 8).
 ## Rows SURFACE_ROWS..(SURFACE_ROWS+9): dirt background atlas (1, 2).
 ## Rows (SURFACE_ROWS+10)..end: stone background atlas (7, 7).
+## Voronoi dark patches are baked into tile choice: near each cell centre the
+## dark tile variant is selected, fading out via dithered probability.
 func _populate_background_tilemaplayer() -> void:
-	_voronoi_bg_layer.setup(GameManager.terrain_seed, GRID_COLS, GRID_ROWS, CELL_SIZE)
 	_background_layer.clear()
 	const BG_SKY_ATLAS   := Vector2i(9, 8)
 	const BG_DIRT_ATLAS  := Vector2i(1, 2)
 	const BG_STONE_ATLAS := Vector2i(7, 7)
 	const DIRT_DEPTH: int = 10
+	# Dark tile atlas variants for the background (biome-aware).
+	var biome_overrides: Dictionary = BIOME_ATLAS_OVERRIDES.get(GameManager.terrain_biome, {})
+	var bg_dirt_dark: Vector2i  = biome_overrides.get(TileType.DIRT_DARK,
+			TILE_ATLAS_COORDS.get(TileType.DIRT_DARK, BG_DIRT_ATLAS))
+	var bg_stone_dark: Vector2i = biome_overrides.get(TileType.STONE_DARK,
+			TILE_ATLAS_COORDS.get(TileType.STONE_DARK, BG_STONE_ATLAS))
+	# Build Voronoi darkness map (0.0 = no dark, 1.0 = cell centre).
+	var darkness_map: Array[float] = VoronoiBGSystem.build_darkness_map(
+			GameManager.terrain_seed, GRID_COLS, GRID_ROWS)
+	# Per-tile RNG seeded from terrain seed so result is deterministic.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = GameManager.terrain_seed ^ 0xDEADBEEF
 	for col in range(GRID_COLS):
 		for row in range(GRID_ROWS):
 			var atlas: Vector2i
 			if row < SURFACE_ROWS:
 				atlas = BG_SKY_ATLAS
-			elif row < SURFACE_ROWS + DIRT_DEPTH:
-				atlas = BG_DIRT_ATLAS
 			else:
-				atlas = BG_STONE_ATLAS
+				# Darkness value drives dithered probability of the dark variant.
+				# Max dark probability caps at 0.85 so some light tiles remain at centres.
+				var darkness: float = darkness_map[row * GRID_COLS + col]
+				var use_dark: bool  = rng.randf() < darkness * 0.85
+				if row < SURFACE_ROWS + DIRT_DEPTH:
+					atlas = bg_dirt_dark if use_dark else BG_DIRT_ATLAS
+				else:
+					atlas = bg_stone_dark if use_dark else BG_STONE_ATLAS
 			_background_layer.set_cell(Vector2i(col, row), 0, atlas)
 
 ## Update the visual TileMapLayer cell at (col, row) to match grid[col][row].

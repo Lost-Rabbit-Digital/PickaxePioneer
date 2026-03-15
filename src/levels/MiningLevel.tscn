@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://c3tgnqlhrooet"]
+[gd_scene load_steps=10 format=3 uid="uid://c3tgnqlhrooet"]
 
 [ext_resource type="PackedScene" uid="uid://c8x7k2q5y302" path="res://src/entities/player/PlayerProbe.tscn" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://hud1234568aa" path="res://src/ui/HUD.tscn" id="2_hud"]
@@ -8,7 +8,6 @@
 [ext_resource type="TileSet" uid="uid://i0vyrxve27ot" path="res://assets/blocks/plants/foliage_tileset.tres" id="6_vcf27"]
 [ext_resource type="Texture2D" uid="uid://byc72w1xwjxo2" path="res://assets/blocks/glass.png" id="8_jcen4"]
 [ext_resource type="Script" uid="uid://cx4p8n3q6r1y5" path="res://src/levels/MiningLevelOverlay.gd" id="8_overlay"]
-[ext_resource type="Script" uid="uid://voronoi_bg_layer" path="res://src/levels/VoronoiBackgroundLayer.gd" id="9_voronoi"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_jcen4"]
 size = Vector2(0.4750843, 18.937183)
@@ -32,9 +31,6 @@ modulate = Color(0.34407577, 0.34407577, 0.34407565, 1)
 tile_set = ExtResource("5_10hqt")
 collision_enabled = false
 navigation_enabled = false
-
-[node name="VoronoiBackgroundLayer" type="Node2D" parent="TileMapLayers"]
-script = ExtResource("9_voronoi")
 
 [node name="ForegroundTileMapLayer" type="TileMapLayer" parent="TileMapLayers"]
 z_index = 1
