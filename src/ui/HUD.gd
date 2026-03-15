@@ -26,7 +26,7 @@ var _displayed_health: float = 10.0
 var _health_drain_tween: Tween
 
 var info_panel: ColorRect
-var depth_label: Label
+@onready var depth_label: Label = $Control/InfoPanel/DepthLabel
 
 # Low energy warning
 @onready var _low_energy_warning: Label = $Control/LowEnergyWarning
@@ -117,14 +117,6 @@ func _ready() -> void:
 	info_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	$Control.add_child(info_panel)
 	$Control.move_child(info_panel, 0)  # Draw behind everything else
-
-	# Depth indicator — shows how far into space the cat has traveled
-	depth_label = Label.new()
-	depth_label.position = Vector2(8, 72)
-	depth_label.custom_minimum_size = Vector2(148, 22)
-	depth_label.text = "Orbit"
-	depth_label.modulate = Color(0.6, 0.85, 1.0, 1.0)  # Light blue tint
-	$Control.add_child(depth_label)
 
 	_update_ladder_display(GameManager.ladder_count)
 
