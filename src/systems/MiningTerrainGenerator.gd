@@ -22,8 +22,6 @@ const T_EXPLOSIVE        = 13
 const T_EXPLOSIVE_ARMED  = 14
 const T_LAVA             = 15
 const T_LAVA_FLOW        = 16
-const T_ENERGY_NODE      = 17
-const T_ENERGY_NODE_FULL = 18
 const T_REENERGY_STATION = 19
 const T_SURFACE          = 20
 const T_SURFACE_GRASS    = 21
@@ -97,37 +95,31 @@ var _biome: String = "Rock"
 # ---------------------------------------------------------------------------
 # Per-biome overrides for the base random-tile composition.
 # Keys: stone_bonus (added to depth-scaled stone_chance),
-#       hazard_mult (multiplier on base_hazard before explosive split),
-#       energy_bonus (extra flat probability for energy nodes).
+#       hazard_mult (multiplier on base_hazard before explosive split).
 const BIOME_TILE_PARAMS: Dictionary = {
 	"Ice": {
 		"stone_bonus":   0.15,   # rockier / more frozen ground
 		"hazard_mult":   0.30,   # fewer hazards (frozen, inert)
-		"energy_bonus":  0.02,   # frozen crystal energy nodes
 		"lava_allowed":  false,  # no lava on ice worlds
 	},
 	"Desert": {
 		"stone_bonus":  -0.10,   # sandier, less solid stone
 		"hazard_mult":   1.60,   # unstable, more explosives
-		"energy_bonus":  0.00,
 		"lava_allowed":  true,
 	},
 	"Rock": {
 		"stone_bonus":   0.20,   # very rocky
 		"hazard_mult":   1.00,   # standard hazards
-		"energy_bonus":  0.00,
 		"lava_allowed":  true,
 	},
 	"Forest": {
 		"stone_bonus":  -0.15,   # earthy, more dirt than stone
 		"hazard_mult":   0.60,   # less hazardous underground
-		"energy_bonus":  0.01,   # bioluminescent energy nodes
 		"lava_allowed":  false,  # no lava in forest worlds
 	},
 	"Jungle": {
 		"stone_bonus":  -0.10,
 		"hazard_mult":   0.80,
-		"energy_bonus":  0.015,
 		"lava_allowed":  false,
 	},
 }
@@ -199,21 +191,17 @@ func _random_tile(_col: int, row: int) -> int:
 
 	# Fetch biome modifiers (fall back to Rock defaults if biome unknown)
 	var bparams: Dictionary = BIOME_TILE_PARAMS.get(_biome, BIOME_TILE_PARAMS["Rock"])
-	var hazard_mult:  float = bparams.get("hazard_mult",  1.0)
-	var energy_bonus: float = bparams.get("energy_bonus", 0.0)
-	var stone_bonus:  float = bparams.get("stone_bonus",  0.0)
+	var hazard_mult: float = bparams.get("hazard_mult", 1.0)
+	var stone_bonus: float = bparams.get("stone_bonus", 0.0)
 
 	var explosive_ok := _allowed_hazard.is_empty() or _allowed_hazard.has("Explosives")
 
 	var base_hazard    := (0.08 + depth * 0.20) * hazard_mult
 	var explosive_bias := base_hazard * 0.45 if explosive_ok else 0.0
 	# Lava generation moved entirely to _generate_lava_lakes() for semi-circular pools only
-	var total_hazard   := explosive_bias
 
-	if   r < explosive_bias * (2.0 / 3.0):                    return T_EXPLOSIVE
-	elif r < explosive_bias:                                   return T_EXPLOSIVE_ARMED
-	elif r < total_hazard + 0.02 + energy_bonus:              return T_ENERGY_NODE
-	elif r < total_hazard + 0.03 + energy_bonus * 2.0:        return T_ENERGY_NODE_FULL
+	if   r < explosive_bias * (2.0 / 3.0): return T_EXPLOSIVE
+	elif r < explosive_bias:                return T_EXPLOSIVE_ARMED
 
 	var stone_chance := clampf(0.10 + depth * 0.50 + stone_bonus, 0.0, 0.90)
 	var r2 := _rng.randf()
@@ -261,14 +249,6 @@ func _seed_shallow_ore() -> void:
 			or_ = clampi(or_, _surface_rows + 3, _rows - 2)
 			if _grid[oc][or_] in [T_DIRT, T_DIRT_DARK, T_STONE, T_STONE_DARK]:
 				_grid[oc][or_] = T_ORE_COAL
-
-	# Sprinkle a few energy nodes in the shallow band for new player safety
-	var num_energy := _rng.randi_range(2, 4)
-	for _i in range(num_energy):
-		var ec := _rng.randi_range(5, _cols - 6)
-		var er := _rng.randi_range(shallow_start + 2, shallow_end)
-		if _grid[ec][er] in [T_DIRT, T_DIRT_DARK]:
-			_grid[ec][er] = T_ENERGY_NODE_FULL
 
 # ---------------------------------------------------------------------------
 # Cave rooms
@@ -584,7 +564,7 @@ func generate_decorations() -> Dictionary:
 	}
 
 func _is_decoration_solid(tile: int) -> bool:
-	return tile not in [T_EMPTY, T_LAVA, T_LAVA_FLOW, T_ENERGY_NODE, T_ENERGY_NODE_FULL]
+	return tile not in [T_EMPTY, T_LAVA, T_LAVA_FLOW]
 
 # ---------------------------------------------------------------------------
 # Depth-scaled ore helper (used by cave room edge seeding)

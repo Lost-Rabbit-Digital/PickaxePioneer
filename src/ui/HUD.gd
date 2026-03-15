@@ -76,7 +76,6 @@ const ORE_COLORS: Dictionary = {
 	"Deep Star Gold":    Color(0.70, 0.65, 0.90),
 	"Cosmic Gem":        Color(0.20, 0.90, 0.95),
 	"Deep Cosmic Gem":   Color(0.10, 0.80, 0.85),
-	"Energy Cell":       Color(0.20, 0.80, 0.90),
 	"LUCKY!":            Color(1.0,  1.0,  0.30),   # Bright yellow for lucky double-strikes
 	"Discovery!":        Color(0.20, 0.90, 0.90),   # Teal for first zone visit
 	# Smelting chain / combo events (name + "!" suffix)
