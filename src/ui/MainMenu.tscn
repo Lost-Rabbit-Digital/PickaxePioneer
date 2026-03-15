@@ -5,9 +5,10 @@
 [ext_resource type="Script" uid="uid://b2f4ygsyu65y" path="res://src/ui/main_menu/social_buttons.gd" id="3_ihbld"]
 [ext_resource type="Theme" uid="uid://7wj3b1adgr72" path="res://themes/main_menu_player_level_progress.tres" id="4_4h2rs"]
 [ext_resource type="Theme" uid="uid://bqraki0ecnavw" path="res://themes/main_menu_highlighted_panel.tres" id="4_dbyr8"]
-[ext_resource type="Theme" uid="uid://c24g1w4ks0tqe" path="res://themes/main_menu_general_button.tres" id="4_fqh1q"]
+[ext_resource type="Theme" uid="uid://c24g1w4ks0tqe" path="res://themes/main_menu_general_theme.tres" id="4_fqh1q"]
 [ext_resource type="Texture2D" uid="uid://bhww7y11pvgal" path="res://assets/social_icons/discord_icon_normal.png" id="4_ihbld"]
 [ext_resource type="Texture2D" uid="uid://dykx02yxii2da" path="res://assets/title_screen_text.png" id="5_u6542"]
+[ext_resource type="Theme" uid="uid://xcmsew4f5udi" path="res://themes/version_label_theme.tres" id="9_wewln"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
 content_margin_left = 20.0
@@ -24,17 +25,6 @@ corner_radius_top_left = 8
 corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fqh1q"]
-content_margin_left = 8.0
-content_margin_top = 3.0
-content_margin_right = 8.0
-content_margin_bottom = 3.0
-bg_color = Color(0.05, 0.05, 0.05, 0.6)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -89,7 +79,6 @@ text = "Multiplayer"
 layout_mode = 2
 tooltip_text = "Tell the galaxy you want this game."
 theme = ExtResource("4_fqh1q")
-theme_override_font_sizes/font_size = 32
 text = "Wishlist on Steam!"
 
 [node name="SettingsButton" type="Button" parent="VBoxContainer"]
@@ -390,11 +379,10 @@ offset_left = 8.0
 offset_top = 8.0
 offset_right = 108.0
 offset_bottom = 34.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 14
-theme_override_styles/normal = SubResource("StyleBoxFlat_fqh1q")
+theme = ExtResource("9_wewln")
 text = "v0.1.0"
 horizontal_alignment = 1
+vertical_alignment = 1
 
 [connection signal="pressed" from="SocialButtons/DiscordButton" to="SocialButtons" method="_on_discord_button_pressed"]
 [connection signal="pressed" from="SocialButtons/DiscordButton/DiscordLabelButton" to="SocialButtons" method="_on_discord_label_button_pressed"]

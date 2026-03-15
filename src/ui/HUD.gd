@@ -62,7 +62,7 @@ var _hotbar_slots: Array[PanelContainer] = []
 var _hotbar_styles: Array[StyleBoxFlat] = []  # One StyleBoxFlat per slot for border recolouring
 var _hotbar_ladder_icon: Control       # Ladder slot content — shown/hidden based on ladder count
 var _hotbar_ladder_count_label: Label  # Small count badge on the ladder hotbar slot
-@onready var _hotbar_container: HBoxContainer = $Control/HotbarContainer
+@onready var _hotbar_container: HBoxContainer = $Control/Panel/HotbarContainer
 
 # Ore colour mapping for the earnings popup
 const ORE_COLORS: Dictionary = {

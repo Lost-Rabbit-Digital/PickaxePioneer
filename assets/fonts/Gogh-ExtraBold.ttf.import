@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://dhtidqasfbk7p"
-path="res://.godot/imported/Asai-Analogue.ttf-a76157d27f90d83ad1619ac72b25faf9.fontdata"
+uid="uid://blhc6q5q1jx0l"
+path="res://.godot/imported/Gogh-ExtraBold.ttf-1f61e0e241eb3a8141e2df5102442d07.fontdata"
 
 [deps]
 
-source_file="res://assets/Asai-Analogue.ttf"
-dest_files=["res://.godot/imported/Asai-Analogue.ttf-a76157d27f90d83ad1619ac72b25faf9.fontdata"]
+source_file="res://assets/fonts/Gogh-ExtraBold.ttf"
+dest_files=["res://.godot/imported/Gogh-ExtraBold.ttf-1f61e0e241eb3a8141e2df5102442d07.fontdata"]
 
 [params]
 
@@ -30,7 +30,12 @@ Fallbacks=null
 fallbacks=[]
 Compress=null
 compress=true
-preload=[]
+preload=[{
+"chars": [],
+"glyphs": [],
+"name": "New Configuration",
+"size": Vector2i(16, 0)
+}]
 language_support={}
 script_support={}
 opentype_features={}

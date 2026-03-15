@@ -1,6 +1,6 @@
 [gd_resource type="Theme" load_steps=4 format=3 uid="uid://7wj3b1adgr72"]
 
-[ext_resource type="FontFile" uid="uid://dhtidqasfbk7p" path="res://assets/Asai-Analogue.ttf" id="1_4wthu"]
+[ext_resource type="FontFile" uid="uid://blhc6q5q1jx0l" path="res://assets/fonts/Gogh-ExtraBold.ttf" id="1_4wthu"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_n3qn3"]
 bg_color = Color(0.13333334, 0.1254902, 0.20392157, 1)
@@ -32,7 +32,7 @@ corner_radius_bottom_left = 8
 ProgressBar/colors/font_color = Color(0.4509804, 0.6039216, 0.4392157, 1)
 ProgressBar/colors/font_outline_color = Color(0.13333334, 0.1254902, 0.20392157, 1)
 ProgressBar/constants/outline_size = 8
-ProgressBar/font_sizes/font_size = 32
+ProgressBar/font_sizes/font_size = 24
 ProgressBar/fonts/font = ExtResource("1_4wthu")
 ProgressBar/styles/background = SubResource("StyleBoxFlat_n3qn3")
 ProgressBar/styles/fill = SubResource("StyleBoxFlat_4wthu")

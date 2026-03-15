@@ -1,6 +1,6 @@
 [gd_resource type="Theme" load_steps=7 format=3 uid="uid://dm1wgyv4cood2"]
 
-[ext_resource type="FontFile" uid="uid://dhtidqasfbk7p" path="res://assets/Asai-Analogue.ttf" id="1_q0uhm"]
+[ext_resource type="FontFile" uid="uid://blhc6q5q1jx0l" path="res://assets/fonts/Gogh-ExtraBold.ttf" id="1_q0uhm"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rixie"]
 bg_color = Color(0.36078432, 0.16862746, 0.20392157, 1)
@@ -70,7 +70,7 @@ Button/colors/font_hover_pressed_color = Color(0.4509804, 0.6039216, 0.4392157, 
 Button/colors/font_outline_color = Color(0.13333334, 0.1254902, 0.20392157, 1)
 Button/colors/font_pressed_color = Color(0.4509804, 0.6039216, 0.4392157, 1)
 Button/constants/outline_size = 8
-Button/font_sizes/font_size = 32
+Button/font_sizes/font_size = 24
 Button/fonts/font = ExtResource("1_q0uhm")
 Button/styles/disabled = SubResource("StyleBoxFlat_rixie")
 Button/styles/focus = SubResource("StyleBoxFlat_artlc")
@@ -80,5 +80,5 @@ Button/styles/pressed = SubResource("StyleBoxFlat_3xfrl")
 Label/colors/font_color = Color(0.4509804, 0.6039216, 0.4392157, 1)
 Label/colors/font_outline_color = Color(0.13333334, 0.1254902, 0.20392157, 1)
 Label/constants/outline_size = 8
-Label/font_sizes/font_size = 32
+Label/font_sizes/font_size = 24
 Label/fonts/font = ExtResource("1_q0uhm")
