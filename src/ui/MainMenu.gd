@@ -1132,8 +1132,10 @@ func _format_playtime(seconds: float) -> String:
 		return "%dh %dm" % [hours, minutes]
 	return "%dm" % minutes
 
+const _CLASS_SELECTION_SCENE := preload("res://src/ui/ClassSelectionMenu.gd")
+
 func _show_class_selection() -> void:
-	var menu := ClassSelectionMenu.new()
+	var menu: CanvasLayer = _CLASS_SELECTION_SCENE.new()
 	add_child(menu)
 	await menu.class_confirmed
 
