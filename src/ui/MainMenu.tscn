@@ -374,11 +374,10 @@ theme_override_font_sizes/font_size = 24
 text = "?"
 
 [node name="VersionLabel" type="Label" parent="."]
-layout_mode = 0
-offset_left = 8.0
+layout_mode = 1
 offset_top = 8.0
-offset_right = 108.0
-offset_bottom = 34.0
+offset_right = 100.0
+offset_bottom = 42.0
 theme = ExtResource("9_wewln")
 text = "v0.1.0"
 horizontal_alignment = 1

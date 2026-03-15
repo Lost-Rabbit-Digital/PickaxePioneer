@@ -5,6 +5,7 @@ https://elthen.itch.io/2d-pixel-art-bumble-bee-sprites
 https://narehop.itch.io/emoji-comic-pack
 https://ashenlightstudios.itch.io/tiny-rpg-gui
 https://krishna-palacio.itch.io/minifantasy-enchanted-companions
+https://kanmandev.itch.io/blacksmith
 
 Inspiration:
 https://poki.com/en/g/fantasy-sandbox
@@ -32,4 +33,3 @@ https://opengameart.org/content/interface-sounds-starter-pack
 https://captainskolot.itch.io/16-paintings-asset-pixelart-pixel-art-sprite-paint-pack-rpg
 https://www.dafont.com/gogh.font?l[]=10&l[]=1
 https://slowdevelopment.itch.io/shop-with-shopkeeper
-https://kanmandev.itch.io/blacksmith
