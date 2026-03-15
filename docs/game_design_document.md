@@ -1,5 +1,5 @@
 # Pickaxe Pioneer - Game Design Document (GDD)
-## STEAM RELEASE VERSION - $3-5 Price Point
+## STEAM RELEASE VERSION - $7.99 Price Point
 
 ## 1. Game Overview
 **Title:** Pickaxe Pioneer

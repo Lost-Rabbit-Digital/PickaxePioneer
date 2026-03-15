@@ -11,7 +11,7 @@
 
 **Genre:** 2D side-scrolling mining roguelite (Motherload/Super Motherload lineage)
 **Core Mechanic:** Cursor-based mining with Terraria-style physics, energy-as-fuel risk/reward
-**Target Audience:** Indie roguelite fans, Motherload nostalgists, players who enjoy short-session progression loops. Price point $3-5 suggests casual-to-mid-core players seeking 5-12 hours of content.
+**Target Audience:** Indie roguelite fans, Motherload nostalgists, players who enjoy short-session progression loops. Price point $7.99 suggests casual-to-mid-core players seeking 5-12 hours of content.
 
 ---
 
