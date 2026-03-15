@@ -1139,10 +1139,23 @@ func _format_playtime(seconds: float) -> String:
 
 const _CLASS_SELECTION_SCENE := preload("res://src/ui/ClassSelectionMenu.gd")
 
-func _show_class_selection() -> void:
+func _show_class_selection() -> bool:
+	$VBoxContainer.hide()
 	var menu: CanvasLayer = _CLASS_SELECTION_SCENE.new()
 	add_child(menu)
-	await menu.class_confirmed
+	var confirmed: bool = false
+	var done: bool = false
+	menu.class_confirmed.connect(func(_id: String) -> void:
+		confirmed = true
+		done = true
+	)
+	menu.cancelled.connect(func() -> void:
+		done = true
+	)
+	while not done:
+		await get_tree().process_frame
+	$VBoxContainer.show()
+	return confirmed
 
 
 func _on_slot_selected(index: int) -> void:
@@ -1166,7 +1179,10 @@ func _on_slot_selected(index: int) -> void:
 		_start_mp_hosting()
 		return
 	if is_new_game:
-		await _show_class_selection()
+		var confirmed := await _show_class_selection()
+		if not confirmed:
+			_save_popup.show()
+			return
 	await SceneTransition.fade_to_black(0.5)
 	GameManager.start_game()
 
