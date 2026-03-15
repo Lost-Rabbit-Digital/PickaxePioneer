@@ -105,6 +105,7 @@ func _default_description(node: MapNode) -> String:
 	return "An unexplored sector."
 
 func _on_enter_pressed() -> void:
+	SoundManager.play_ui_click_sound()
 	hide()
 	# Only emit confirmed if a node was actually selected (not a lock message)
 	if _current_node != null:
@@ -114,6 +115,7 @@ func _on_enter_pressed() -> void:
 			confirmed.emit(_current_node)
 
 func _on_cancel_pressed() -> void:
+	SoundManager.play_ui_close_sound()
 	hide()
 	cancelled.emit()
 

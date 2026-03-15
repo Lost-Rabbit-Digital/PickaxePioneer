@@ -722,6 +722,7 @@ func _deselect_pending() -> void:
 
 func _on_node_clicked(node: MapNode) -> void:
 	_left_node_was_clicked = true
+	SoundManager.play_ui_click_sound()
 	# In co-op, only the host navigates the star chart; guest watches
 	if NetworkManager.is_multiplayer_session and not NetworkManager.is_host:
 		return
