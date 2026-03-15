@@ -82,7 +82,7 @@ func _ready() -> void:
 	$VBoxContainer/WishlistButton.pressed.connect(_on_wishlist_pressed)
 	$VBoxContainer/QuitButton.pressed.connect(_on_quit_pressed)
 	$CreditsButton.pressed.connect(_on_credits_pressed)
-	$CreditsPanel/VBox/CloseButton.pressed.connect(_on_credits_close_pressed)
+	$CreditsPanel/VBox/TitleRow/CloseButton.pressed.connect(_on_credits_close_pressed)
 	$CharacterContainer/CustomizeButton.pressed.connect(_on_customize_character_pressed)
 
 	_continue_btn.pressed.connect(_on_inline_continue_pressed)
@@ -879,11 +879,7 @@ func _build_settings_overlay() -> void:
 	_settings_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_settings_panel)
 
-	# Bottom row: Reset Data + Close
-	var bottom_row := HBoxContainer.new()
-	bottom_row.add_theme_constant_override("separation", 8)
-	outer_vbox.add_child(bottom_row)
-
+	# Bottom row: Reset Data
 	var reset_btn := Button.new()
 	reset_btn.text = "RESET DATA"
 	reset_btn.custom_minimum_size = Vector2(0, 36)
@@ -891,15 +887,16 @@ func _build_settings_overlay() -> void:
 	reset_btn.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
 	reset_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	reset_btn.pressed.connect(_on_reset_data_pressed)
-	bottom_row.add_child(reset_btn)
+	outer_vbox.add_child(reset_btn)
 
+	# Close button — top-right corner of panel
 	var close_btn := Button.new()
-	close_btn.text = "CLOSE"
-	close_btn.custom_minimum_size = Vector2(0, 36)
-	close_btn.add_theme_font_size_override("font_size", 20)
-	close_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	close_btn.text = "X"
+	close_btn.add_theme_font_size_override("font_size", 14)
+	close_btn.position = Vector2(px + SETTINGS_W - 36, py + 8)
+	close_btn.size = Vector2(28, 28)
 	close_btn.pressed.connect(_on_settings_close)
-	bottom_row.add_child(close_btn)
+	_settings_overlay.add_child(close_btn)
 
 	_build_reset_data_dialog()
 

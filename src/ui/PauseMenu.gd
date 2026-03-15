@@ -22,13 +22,29 @@ func _build_ui() -> void:
 	vbox.add_theme_constant_override("separation", 8)
 	panel.add_child(vbox)
 
-	# Title
+	# Title row with X close button at top-right
+	var title_row := HBoxContainer.new()
+	title_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.add_child(title_row)
+
+	var title_spacer := Control.new()
+	title_spacer.custom_minimum_size = Vector2(28, 0)
+	title_row.add_child(title_spacer)
+
 	var title := Label.new()
 	title.text = "PAUSED"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.add_theme_font_size_override("font_size", 28)
 	title.add_theme_color_override("font_color", SECTION_COLOR)
-	vbox.add_child(title)
+	title_row.add_child(title)
+
+	var close_btn := Button.new()
+	close_btn.text = "X"
+	close_btn.custom_minimum_size = Vector2(28, 28)
+	close_btn.add_theme_font_size_override("font_size", 14)
+	close_btn.pressed.connect(_on_resume_pressed)
+	title_row.add_child(close_btn)
 
 	# Resume button
 	var resume_btn := Button.new()
