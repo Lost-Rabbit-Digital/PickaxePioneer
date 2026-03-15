@@ -23,9 +23,6 @@ const _T_ORE_COPPER       = 4
 const _T_ORE_IRON         = 5
 const _T_ORE_GOLD         = 6
 const _T_ORE_DIAMOND      = 7
-const _T_ENERGY_NODE      = 17
-const _T_ENERGY_NODE_FULL = 18
-
 ## Reference to the owning MiningLevel (set by MiningLevel._ready via setup()).
 var level: Node = null
 
@@ -197,8 +194,7 @@ func _draw() -> void:
 				if stile != _T_ORE_COAL and stile != _T_ORE_COPPER \
 				and stile != _T_ORE_IRON \
 				and stile != _T_ORE_GOLD \
-				and stile != _T_ORE_DIAMOND \
-				and stile != _T_ENERGY_NODE and stile != _T_ENERGY_NODE_FULL:
+				and stile != _T_ORE_DIAMOND:
 					continue
 				var dist := Vector2(sc - cx, sr - cy).length()
 				if dist > level.sonar_system.wave_radius:
@@ -217,8 +213,6 @@ func _draw() -> void:
 						glow_color = Color(0.65, 0.65, 1.00, glow_alpha)
 					elif stile == _T_ORE_COPPER:
 						glow_color = Color(0.90, 0.60, 0.25, glow_alpha)
-					elif stile == _T_ENERGY_NODE or stile == _T_ENERGY_NODE_FULL:
-						glow_color = Color(0.30, 1.00, 0.30, glow_alpha)
 				draw_rect(Rect2(sc * CELL_SIZE, sr * CELL_SIZE, CELL_SIZE, CELL_SIZE), glow_color)
 		var wave_px: float = level.sonar_system.wave_radius * CELL_SIZE
 		var center_px := Vector2(cx * CELL_SIZE + CELL_SIZE * 0.5, cy * CELL_SIZE + CELL_SIZE * 0.5)

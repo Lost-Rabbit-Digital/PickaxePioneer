@@ -41,8 +41,6 @@ enum TileType {
 	EXPLOSIVE_ARMED  = 14,
 	LAVA             = 15,
 	LAVA_FLOW        = 16,
-	ENERGY_NODE        = 17,
-	ENERGY_NODE_FULL   = 18,
 	REENERGY_STATION   = 19,
 	SURFACE          = 20,
 	SURFACE_GRASS    = 21,
@@ -91,8 +89,6 @@ const TILE_NAMES: Dictionary = {
 	TileType.ORE_IRON:        "Meteor Iron",
 	TileType.ORE_GOLD:        "Star Gold",
 	TileType.ORE_DIAMOND:     "Cosmic Diamond",
-	TileType.ENERGY_NODE:       "Energy Cell",
-	TileType.ENERGY_NODE_FULL:  "Energy Cell",
 	TileType.EXPLOSIVE:       "Space Mine",
 	TileType.EXPLOSIVE_ARMED: "Armed Space Mine",
 	TileType.LAVA:            "Plasma",
@@ -121,8 +117,6 @@ const TILE_PARTICLE_COLORS: Dictionary = {
 	TileType.ORE_IRON:         Color(0.65, 0.68, 0.75),  # steel grey-blue
 	TileType.ORE_GOLD:         Color(1.00, 0.80, 0.10),  # bright gold
 	TileType.ORE_DIAMOND:      Color(0.60, 0.90, 1.00),  # brilliant blue
-	TileType.ENERGY_NODE:      Color(0.20, 0.60, 1.00),  # electric blue
-	TileType.ENERGY_NODE_FULL: Color(0.30, 0.90, 1.00),  # bright cyan
 	TileType.EXPLOSIVE:        Color(1.00, 0.55, 0.05),  # danger orange
 	TileType.EXPLOSIVE_ARMED:  Color(1.00, 0.55, 0.05),  # danger orange
 	TileType.LAVA:             Color(1.00, 0.35, 0.05),  # molten red-orange
@@ -160,8 +154,6 @@ const TILE_ATLAS_COORDS: Dictionary = {
 	TileType.EXPLOSIVE_ARMED:  Vector2i(5, 8),
 	TileType.LAVA:             Vector2i(5, 6),   # sand_ugly_3.png
 	TileType.LAVA_FLOW:        Vector2i(5, 6),
-	TileType.ENERGY_NODE:      Vector2i(9, 3),   # limestone.png
-	TileType.ENERGY_NODE_FULL: Vector2i(5, 4),   # marble.png
 	TileType.REENERGY_STATION: Vector2i(8, 0),   # cobblestone_bricks.png
 	TileType.SURFACE_GRASS:    Vector2i(1, 3),   # grass_side.png
 	TileType.UPGRADE_STATION:  Vector2i(8, 0),
@@ -359,7 +351,6 @@ const SOLID_TILES: Array = [
 	TileType.ORE_DIAMOND,
 	TileType.EXPLOSIVE, TileType.EXPLOSIVE_ARMED,
 	TileType.LAVA, TileType.LAVA_FLOW,
-	TileType.ENERGY_NODE, TileType.ENERGY_NODE_FULL,
 	TileType.SURFACE_GRASS,
 	TileType.BOSS_SEGMENT, TileType.BOSS_CORE,
 	TileType.CAT_TAVERN,
@@ -1673,16 +1664,6 @@ func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 		_spawn_pickaxe_effect(miner.global_position, target_world)
 		if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
 			rpc_pickaxe_effect.rpc_id(NetworkManager.guest_peer_id, miner.global_position.x, miner.global_position.y, target_world.x, target_world.y)
-
-	# Energy nodes — collect immediately
-	if tile == TileType.ENERGY_NODE or tile == TileType.ENERGY_NODE_FULL:
-		_mine_cell(col, row)
-		GameManager.restore_energy(10)
-		EventBus.ore_mined_popup.emit(10, "Energy")
-		SoundManager.play_drill_sound()
-		if NetworkManager.is_multiplayer_session and NetworkManager.is_host and NetworkManager.guest_peer_id > 0:
-			rpc_tile_broken.rpc_id(NetworkManager.guest_peer_id, Vector2i(col, row), 0.7, 0.9, 1.0)
-		return
 
 	# Explosives — detonate
 	if tile == TileType.EXPLOSIVE or tile == TileType.EXPLOSIVE_ARMED:
