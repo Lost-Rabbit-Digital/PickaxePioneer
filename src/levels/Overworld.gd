@@ -581,6 +581,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			MOUSE_BUTTON_RIGHT:
 				if event.pressed:
 					_is_dragging = true
+					# If camera is parked on a planet, convert its absolute position
+					# to a pan offset so drag immediately moves the camera.
+					if not _camera_follow_caravan:
+						_camera_pan_offset = camera.global_position - caravan.global_position
+						_camera_follow_caravan = true
+					if _camera_tween:
+						_camera_tween.kill()
+						_camera_tween = null
 					_momentum_velocity = Vector2.ZERO
 					_drag_velocity = Vector2.ZERO
 					_mouse_delta_acc = Vector2.ZERO
@@ -616,9 +624,17 @@ func _unhandled_input(event: InputEvent) -> void:
 			_left_drag_total_moved += (event as InputEventMouseMotion).relative.length()
 			if _left_drag_total_moved > _LEFT_DRAG_THRESHOLD:
 				if not _left_drag_triggered:
-					# Drag just started — stop camera from following caravan
+					# Drag just started — if camera is parked on a planet, convert its
+					# absolute position to a pan offset so dragging moves the camera.
 					_left_drag_triggered = true
-					_camera_follow_caravan = false
+					if not _camera_follow_caravan:
+						_camera_pan_offset = camera.global_position - caravan.global_position
+						_camera_follow_caravan = true
+					else:
+						_camera_follow_caravan = false
+					if _camera_tween:
+						_camera_tween.kill()
+						_camera_tween = null
 					_momentum_velocity = Vector2.ZERO
 					_drag_velocity = Vector2.ZERO
 					_mouse_delta_acc = Vector2.ZERO
