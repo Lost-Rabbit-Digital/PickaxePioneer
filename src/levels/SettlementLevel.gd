@@ -501,7 +501,6 @@ func _try_interact() -> void:
 			"Be careful out there in the asteroid fields.",
 			"Another miner? Good luck out there!",
 			"The plasma in the deeper zones is no joke.",
-			"I once found a Quantum Cat fossil. True story.",
 			"That pickaxe looks like it could use sharpening.",
 			"Got any Star Gold? I'll trade you for... oh wait, I'm broke.",
 		]

@@ -338,21 +338,6 @@ const SMELT_COMBOS: Dictionary = {
 # ---------------------------------------------------------------------------
 # Legendary Space Cat system (§3.6)
 # ---------------------------------------------------------------------------
-const FOSSIL_BASE_RATE: float  = 0.005
-const FOSSIL_DROUGHT_SCALE: float = 0.005
-const FOSSIL_CAP_RATE: float   = 0.30
-const FOSSIL_TYPES: Dictionary = {
-	TileType.DIRT:            {"name": "Astro Kitten",    "minerals": 25},
-	TileType.DIRT_DARK:       {"name": "Stellar Kitten",  "minerals": 30},
-	TileType.STONE:           {"name": "Nebula Cat",      "minerals": 50},
-	TileType.STONE_DARK:      {"name": "Void Cat",        "minerals": 60},
-	TileType.ORE_COAL:        {"name": "Comet Cat",       "minerals": 30},
-	TileType.ORE_COPPER:      {"name": "Meteor Cat",      "minerals": 45},
-	TileType.ORE_IRON:        {"name": "Pulsar Cat",      "minerals": 65},
-	TileType.ORE_GOLD:        {"name": "Supernova Cat",   "minerals": 100},
-	TileType.ORE_DIAMOND:     {"name": "Quantum Cat",     "minerals": 150},
-}
-
 # ---------------------------------------------------------------------------
 # Sonar ping system (§3.2)
 # ---------------------------------------------------------------------------
@@ -498,9 +483,6 @@ var sonar_system: SonarSystem = SonarSystem.new()
 
 # Consecutive smelting subsystem (§3.5) — logic lives in SmeltingSystem.gd
 var smelt_system: SmeltingSystem = SmeltingSystem.new()
-
-# Fossil forgiveness subsystem (§3.6) — logic lives in FossilSystem.gd
-var fossil_system: FossilSystem = FossilSystem.new()
 
 # Boss encounter subsystem (§4) — logic lives in BossSystem.gd
 var boss_system: BossSystem = BossSystem.new()
@@ -1771,8 +1753,6 @@ func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 			# Motherlode perk: percentage bonus to ore yield
 			if tile in ORE_TILES:
 				minerals = roundi(float(minerals) * GameManager.get_ore_yield_mult())
-			# Fossil forgiveness check (§3.6) — before awarding base minerals
-			fossil_system.check(tile, FOSSIL_TYPES.get(tile, {}))
 			# Consecutive smelting bonus (§3.5) — awards extra currency internally
 			smelt_system.process(SMELT_ORE_GROUPS.get(tile, ""), minerals)
 			if tile in ORE_TILES:
@@ -2355,12 +2335,6 @@ func _start_tutorial_hints() -> void:
 # ---------------------------------------------------------------------------
 # smelt_system.process(SMELT_ORE_GROUPS.get(tile, ""), minerals) is called
 # directly at the mine site in try_mine_at().  See src/systems/SmeltingSystem.gd.
-
-# ---------------------------------------------------------------------------
-# Fossil forgiveness (§3.6) — delegated to FossilSystem
-# ---------------------------------------------------------------------------
-# fossil_system.check(tile, FOSSIL_TYPES.get(tile, {})) is called directly at
-# the mine site in try_mine_at().  See src/systems/FossilSystem.gd.
 
 # ---------------------------------------------------------------------------
 # Depth tracking
