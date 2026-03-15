@@ -157,42 +157,75 @@ func _rebuild_content(ore_counts: Dictionary) -> void:
 	for child in _content_root.get_children():
 		child.queue_free()
 
-	var content_w: int = PANEL_W - 32   # 748
-	var eq_col_w: int = int(content_w * 0.30)   # ~224
+	var content_w: int = PANEL_W - 32   # 844
+
+	# -----------------------------------------------------------------------
+	# TOP: Full-width Inventory slot grid — tools + ore
+	# -----------------------------------------------------------------------
+	var inv_y: int = 4
+	inv_y = _draw_section_header(_content_root, 0, inv_y, content_w, "Inventory",
+		Color(0.85, 0.65, 0.20))
+	inv_y += 4
+	inv_y = _draw_slot_grid(_content_root, 0, inv_y, content_w, ore_counts)
+
+	# Horizontal divider separating inventory from the stats strip
+	inv_y += 8
+	var strip_div := ColorRect.new()
+	strip_div.color = Color(0.50, 0.40, 0.65, 0.30)
+	strip_div.position = Vector2(0, inv_y)
+	strip_div.size = Vector2(content_w, 1)
+	_content_root.add_child(strip_div)
+	inv_y += 8
+
+	# -----------------------------------------------------------------------
+	# BOTTOM STRIP: Equipment | Wallet | Trinkets (horizontal columns)
+	# -----------------------------------------------------------------------
+	var eq_col_w: int = int(content_w * 0.40)      # ~338
+	var wallet_col_w: int = int(content_w * 0.22)  # ~185
 	var col_gap: int = 10
-	var inv_col_x: int = eq_col_w + col_gap
-	var inv_col_w: int = content_w - inv_col_x   # ~514
+	var wallet_col_x: int = eq_col_w + col_gap
+	var trinket_col_x: int = wallet_col_x + wallet_col_w + col_gap
+	var trinket_col_w: int = content_w - trinket_col_x
 
-	# Vertical divider between columns
-	var vdiv := ColorRect.new()
-	vdiv.color = Color(0.50, 0.40, 0.65, 0.30)
-	vdiv.position = Vector2(eq_col_w + 4, 0)
-	vdiv.size = Vector2(1, PANEL_H - 68)
-	_content_root.add_child(vdiv)
+	var remaining_h: int = PANEL_H - inv_y - 10
+	for div_x: int in [eq_col_w + 4, wallet_col_x + wallet_col_w + 4]:
+		var vdiv := ColorRect.new()
+		vdiv.color = Color(0.50, 0.40, 0.65, 0.30)
+		vdiv.position = Vector2(div_x, inv_y)
+		vdiv.size = Vector2(1, remaining_h)
+		_content_root.add_child(vdiv)
 
-	# -----------------------------------------------------------------------
-	# LEFT COLUMN: Equipment stats + Money + Trinkets
-	# -----------------------------------------------------------------------
-	var eq_y: int = 4
+	# Equipment column
+	var eq_y: int = inv_y
 	eq_y = _draw_section_header(_content_root, 0, eq_y, eq_col_w, "Equipment",
 		Color(0.35, 0.75, 0.95))
 	eq_y += 4
-	eq_y = _draw_equipment(_content_root, 0, eq_y, eq_col_w)
-	eq_y = _draw_money(_content_root, 0, eq_y + 8, eq_col_w)
+	_draw_equipment(_content_root, 0, eq_y, eq_col_w)
 
-	eq_y = _draw_section_header(_content_root, 0, eq_y + 8, eq_col_w, "Trinkets",
+	# Wallet column
+	var wy: int = inv_y
+	wy = _draw_section_header(_content_root, wallet_col_x, wy, wallet_col_w, "Wallet",
+		Color(0.95, 0.85, 0.20))
+	wy += 8
+	var wallet_lbl := Label.new()
+	wallet_lbl.text = "Wallet: %s" % GameManager.format_coins(GameManager.coins)
+	wallet_lbl.position = Vector2(wallet_col_x + 2, wy)
+	wallet_lbl.add_theme_font_size_override("font_size", 13)
+	wallet_lbl.modulate = Color(0.95, 0.85, 0.20)
+	_content_root.add_child(wallet_lbl)
+	var run_lbl := Label.new()
+	run_lbl.text = "This run: %s" % GameManager.format_coins(GameManager.run_coins)
+	run_lbl.position = Vector2(wallet_col_x + 2, wy + 20)
+	run_lbl.add_theme_font_size_override("font_size", 11)
+	run_lbl.modulate = Color(0.75, 0.70, 0.45)
+	_content_root.add_child(run_lbl)
+
+	# Trinkets column
+	var tr_y: int = inv_y
+	tr_y = _draw_section_header(_content_root, trinket_col_x, tr_y, trinket_col_w, "Trinkets",
 		Color(0.80, 0.55, 1.00))
-	eq_y += 4
-	_draw_trinkets(_content_root, 0, eq_y, eq_col_w)
-
-	# -----------------------------------------------------------------------
-	# RIGHT COLUMN: Inventory slot grid — tools + ore
-	# -----------------------------------------------------------------------
-	var inv_y: int = 4
-	inv_y = _draw_section_header(_content_root, inv_col_x, inv_y, inv_col_w, "Inventory",
-		Color(0.85, 0.65, 0.20))
-	inv_y += 4
-	_draw_slot_grid(_content_root, inv_col_x, inv_y, inv_col_w, ore_counts)
+	tr_y += 4
+	_draw_trinkets(_content_root, trinket_col_x, tr_y, trinket_col_w)
 
 # -----------------------------------------------------------------------
 # Slot grid — tool slots first (pickaxe, ladder), then ore stacks.
