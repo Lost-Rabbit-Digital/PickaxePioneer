@@ -189,7 +189,8 @@ func _apply_lock_state(btn: Button, index: int) -> void:
 	var rtl := btn.get_child(0) as RichTextLabel
 	if locked:
 		if rtl:
-			rtl.text = "[center][color=#555566]Lv.%d[/color][/center]" % UNLOCK_LEVELS[index]
+			var color_hex := PALETTE[index].to_html(false).to_lower()
+			rtl.text = "[center][color=#%s]Lv.%d[/color][/center]" % [color_hex, UNLOCK_LEVELS[index]]
 		var ls := StyleBoxFlat.new()
 		ls.bg_color = Color(0.09, 0.08, 0.11, 1.0)
 		ls.border_color = Color(0.22, 0.22, 0.25, 0.40)
