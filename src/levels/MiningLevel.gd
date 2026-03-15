@@ -2680,7 +2680,7 @@ func _try_place_ladder_at(gp: Vector2i) -> void:
 	GameManager.ladder_count -= 1
 	GameManager.save_game()
 	EventBus.ladder_count_changed.emit(GameManager.ladder_count)
-
+	SoundManager.play_impact_sound()
 	queue_redraw()
 	if NetworkManager.is_multiplayer_session and NetworkManager.guest_peer_id > 0:
 		rpc_ladder_placed.rpc_id(NetworkManager.guest_peer_id, gp)
@@ -2737,6 +2737,7 @@ func _try_remove_ladder_at(gp: Vector2i) -> void:
 	GameManager.save_game()
 	EventBus.ladder_count_changed.emit(GameManager.ladder_count)
 	EventBus.ore_mined_popup.emit(0, "Ladder retrieved!  (%d in stock)" % GameManager.ladder_count)
+	SoundManager.play_drill_sound()
 	queue_redraw()
 	if NetworkManager.is_multiplayer_session and NetworkManager.guest_peer_id > 0:
 		rpc_ladder_removed.rpc_id(NetworkManager.guest_peer_id, gp)
