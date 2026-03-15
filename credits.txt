@@ -3,7 +3,6 @@ https://opengameart.org/content/16x16-swords-weird
 https://elthen.itch.io/2d-pixel-art-bumble-bee-sprites
 
 https://gabl18.itch.io/simple-pixel-cursors
-https://www.dafont.com/asai-analogue.font
 https://narehop.itch.io/emoji-comic-pack
 https://ashenlightstudios.itch.io/tiny-rpg-gui
 https://krishna-palacio.itch.io/minifantasy-enchanted-companions
@@ -35,3 +34,4 @@ https://elthen.itch.io/2d-pixel-art-squirrel-sprites
 https://captainskolot.itch.io/shop-pack-v2-top-down-assets-pixelart-pixel-art-store-pack
 https://captainskolot.itch.io/dungeon-entrance-asset-pixelart-pixel-art-sprite-top-down-dungeon-pack
 https://captainskolot.itch.io/16-paintings-asset-pixelart-pixel-art-sprite-paint-pack-rpg
+https://www.dafont.com/gogh.font?l[]=10&l[]=1
