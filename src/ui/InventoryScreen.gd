@@ -325,7 +325,7 @@ func _draw_slot_grid(parent: Control, x: int, y: int, w: int, ore_counts: Dictio
 				icon.texture = tex
 				icon.position = Vector2(sx + 4, sy + 4)
 				icon.size = Vector2(SLOT_SIZE - 8, SLOT_SIZE - 8)
-				icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+				icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 				icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 				icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 				icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -388,7 +388,7 @@ func _draw_tool_slot_content(parent: Control, sx: int, sy: int, tool_idx: int, s
 			icon.texture = tex
 			icon.position = Vector2(sx + 5, sy + 5)
 			icon.size = Vector2(SLOT_SIZE - 10, SLOT_SIZE - 10)
-			icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			icon.modulate = item_color
@@ -533,7 +533,7 @@ func _start_drag(slot_data: Dictionary) -> void:
 			icon.texture = tex
 			icon.position = Vector2(5, 5)
 			icon.size = Vector2(SLOT_SIZE - 10, SLOT_SIZE - 10)
-			icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			icon.modulate = Color(item_color.r, item_color.g, item_color.b, 0.75)
@@ -569,7 +569,7 @@ func _start_drag(slot_data: Dictionary) -> void:
 			icon.texture = tex
 			icon.position = Vector2(4, 4)
 			icon.size = Vector2(SLOT_SIZE - 8, SLOT_SIZE - 8)
-			icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			icon.modulate = Color(1.0, 1.0, 1.0, 0.80)
@@ -631,7 +631,7 @@ func _draw_ore_row(parent: Control, x: int, y: int, w: int, ore: Dictionary, cou
 		icon.texture = tex
 		icon.position = Vector2(x + 2, y + 4)
 		icon.size = Vector2(ICON_SZ, ICON_SZ)
-		icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		parent.add_child(icon)
