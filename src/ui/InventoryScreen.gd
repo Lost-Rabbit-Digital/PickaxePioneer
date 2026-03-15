@@ -453,7 +453,6 @@ func _draw_tool_slot_content(parent: Control, sx: int, sy: int, tool_idx: int, s
 		tag.text = "P"
 		tag.position = Vector2(sx + 3, sy + 2)
 		tag.add_theme_font_size_override("font_size", 9)
-		tag.modulate = Color(pole_color.r, pole_color.g, pole_color.b, 0.65)
 		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		parent.add_child(tag)
 
