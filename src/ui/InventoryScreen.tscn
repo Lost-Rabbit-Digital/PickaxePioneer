@@ -1,93 +1,29 @@
-[gd_scene load_steps=3 format=3 uid="uid://dkn86f7qv5ybi"]
+[gd_scene load_steps=4 format=3 uid="uid://dkn86f7qv5ybi"]
 
 [ext_resource type="Script" uid="uid://c0eowl48bi7or" path="res://src/ui/InventoryScreen.gd" id="1_inv"]
 [ext_resource type="Theme" uid="uid://dm1wgyv4cood2" path="res://themes/inventory_theme.tres" id="2_ey6tx"]
+[ext_resource type="Texture2D" uid="uid://dgmbfkmj8leyx" path="res://assets/shops/backpack.png" id="3_47lxw"]
 
 [node name="InventoryScreen" type="CanvasLayer"]
 script = ExtResource("1_inv")
 
-[node name="Backdrop" type="ColorRect" parent="."]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-theme = ExtResource("2_ey6tx")
-color = Color(0, 0, 0, 0.65)
-
 [node name="Panel" type="ColorRect" parent="."]
-offset_left = 202.0
-offset_top = 80.0
-offset_right = 1078.0
-offset_bottom = 640.0
+custom_minimum_size = Vector2(896, 648)
+offset_left = 347.0
+offset_top = 31.0
+offset_right = 1243.0
+offset_bottom = 679.0
 theme = ExtResource("2_ey6tx")
-color = Color(0.1, 0.09, 0.12, 0.96)
+color = Color(0.21960784, 0.21568628, 0.16470589, 0.42352942)
 
-[node name="BorderTop" type="ColorRect" parent="."]
-offset_left = 202.0
-offset_top = 80.0
-offset_right = 1078.0
-offset_bottom = 82.0
-mouse_filter = 2
-theme = ExtResource("2_ey6tx")
-color = Color(0.5, 0.4, 0.65, 0.8)
-
-[node name="BorderBottom" type="ColorRect" parent="."]
-offset_left = 202.0
-offset_top = 638.0
-offset_right = 1078.0
-offset_bottom = 640.0
-mouse_filter = 2
-theme = ExtResource("2_ey6tx")
-color = Color(0.5, 0.4, 0.65, 0.8)
-
-[node name="BorderLeft" type="ColorRect" parent="."]
-offset_left = 202.0
-offset_top = 80.0
-offset_right = 204.0
-offset_bottom = 640.0
-mouse_filter = 2
-theme = ExtResource("2_ey6tx")
-color = Color(0.5, 0.4, 0.65, 0.8)
-
-[node name="BorderRight" type="ColorRect" parent="."]
-offset_left = 1076.0
-offset_top = 80.0
-offset_right = 1078.0
-offset_bottom = 640.0
-mouse_filter = 2
-theme = ExtResource("2_ey6tx")
-color = Color(0.5, 0.4, 0.65, 0.8)
-
-[node name="Title" type="Label" parent="."]
-modulate = Color(0.85, 0.7, 1, 1)
-offset_left = 222.0
-offset_top = 92.0
-offset_right = 1058.0
-offset_bottom = 120.0
-theme = ExtResource("2_ey6tx")
-theme_override_font_sizes/font_size = 32
-text = "INVENTORY"
-
-[node name="Separator" type="ColorRect" parent="."]
-offset_left = 218.0
-offset_top = 124.0
-offset_right = 1062.0
-offset_bottom = 125.0
-mouse_filter = 2
-theme = ExtResource("2_ey6tx")
-color = Color(0.5, 0.4, 0.65, 0.5)
-
-[node name="CloseHint" type="Label" parent="."]
-modulate = Color(0.55, 0.55, 0.65, 0.9)
-offset_left = 978.0
-offset_top = 94.0
-offset_right = 1078.0
-offset_bottom = 107.0
-theme = ExtResource("2_ey6tx")
-theme_override_font_sizes/font_size = 13
-text = "[I] Close"
+[node name="InventoryIcon" type="TextureRect" parent="."]
+modulate = Color(1, 1, 1, 0.49411765)
+custom_minimum_size = Vector2(128, 128)
+offset_left = 32.0
+offset_top = 32.0
+offset_right = 160.0
+offset_bottom = 160.0
+texture = ExtResource("3_47lxw")
 
 [node name="ContentRoot" type="Control" parent="."]
 clip_contents = true
@@ -115,40 +51,6 @@ offset_bottom = 108.0
 mouse_filter = 2
 theme = ExtResource("2_ey6tx")
 color = Color(0.07, 0.06, 0.11, 0.97)
-
-[node name="TooltipBorderTop" type="ColorRect" parent="Tooltip"]
-layout_mode = 0
-offset_right = 230.0
-offset_bottom = 2.0
-mouse_filter = 2
-theme = ExtResource("2_ey6tx")
-color = Color(0.6, 0.5, 0.75, 0.8)
-
-[node name="TooltipBorderBottom" type="ColorRect" parent="Tooltip"]
-layout_mode = 0
-offset_top = 106.0
-offset_right = 230.0
-offset_bottom = 108.0
-mouse_filter = 2
-theme = ExtResource("2_ey6tx")
-color = Color(0.6, 0.5, 0.75, 0.8)
-
-[node name="TooltipBorderLeft" type="ColorRect" parent="Tooltip"]
-layout_mode = 0
-offset_right = 2.0
-offset_bottom = 108.0
-mouse_filter = 2
-theme = ExtResource("2_ey6tx")
-color = Color(0.6, 0.5, 0.75, 0.8)
-
-[node name="TooltipBorderRight" type="ColorRect" parent="Tooltip"]
-layout_mode = 0
-offset_left = 228.0
-offset_right = 230.0
-offset_bottom = 108.0
-mouse_filter = 2
-theme = ExtResource("2_ey6tx")
-color = Color(0.6, 0.5, 0.75, 0.8)
 
 [node name="TooltipName" type="Label" parent="Tooltip"]
 modulate = Color(1, 0.95, 0.7, 1)
@@ -207,40 +109,6 @@ offset_bottom = 56.0
 mouse_filter = 2
 theme = ExtResource("2_ey6tx")
 color = Color(0.2, 0.18, 0.26, 0.8)
-
-[node name="DragGhostBorderTop" type="ColorRect" parent="DragGhost"]
-layout_mode = 0
-offset_right = 56.0
-offset_bottom = 2.0
-mouse_filter = 2
-theme = ExtResource("2_ey6tx")
-color = Color(0.85, 0.8, 0.4, 0.7)
-
-[node name="DragGhostBorderBottom" type="ColorRect" parent="DragGhost"]
-layout_mode = 0
-offset_top = 54.0
-offset_right = 56.0
-offset_bottom = 56.0
-mouse_filter = 2
-theme = ExtResource("2_ey6tx")
-color = Color(0.85, 0.8, 0.4, 0.7)
-
-[node name="DragGhostBorderLeft" type="ColorRect" parent="DragGhost"]
-layout_mode = 0
-offset_right = 2.0
-offset_bottom = 56.0
-mouse_filter = 2
-theme = ExtResource("2_ey6tx")
-color = Color(0.85, 0.8, 0.4, 0.7)
-
-[node name="DragGhostBorderRight" type="ColorRect" parent="DragGhost"]
-layout_mode = 0
-offset_left = 54.0
-offset_right = 56.0
-offset_bottom = 56.0
-mouse_filter = 2
-theme = ExtResource("2_ey6tx")
-color = Color(0.85, 0.8, 0.4, 0.7)
 
 [node name="DragGhostIconRoot" type="Control" parent="DragGhost"]
 anchors_preset = 0
