@@ -82,7 +82,7 @@ func _ready() -> void:
 	$VBoxContainer/WishlistButton.pressed.connect(_on_wishlist_pressed)
 	$VBoxContainer/QuitButton.pressed.connect(_on_quit_pressed)
 	$CreditsButton.pressed.connect(_on_credits_pressed)
-	$CreditsPanel/VBox/CloseButton.pressed.connect(_on_credits_close_pressed)
+	$CreditsPanel/VBox/TitleRow/CloseButton.pressed.connect(_on_credits_close_pressed)
 	$CharacterContainer/CustomizeButton.pressed.connect(_on_customize_character_pressed)
 
 	_continue_btn.pressed.connect(_on_inline_continue_pressed)

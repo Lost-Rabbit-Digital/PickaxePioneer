@@ -306,12 +306,27 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_1")
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="CreditsTitle" type="Label" parent="CreditsPanel/VBox"]
+[node name="TitleRow" type="HBoxContainer" parent="CreditsPanel/VBox"]
 layout_mode = 2
+
+[node name="TitleSpacer" type="Control" parent="CreditsPanel/VBox/TitleRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(28, 0)
+
+[node name="CreditsTitle" type="Label" parent="CreditsPanel/VBox/TitleRow"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.9, 0.7, 0.3, 1)
 theme_override_font_sizes/font_size = 28
 text = "CREDITS"
 horizontal_alignment = 1
+
+[node name="CloseButton" type="Button" parent="CreditsPanel/VBox/TitleRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(28, 28)
+tooltip_text = "Back to the cosmos."
+theme_override_font_sizes/font_size = 14
+text = "X"
 
 [node name="ScrollContainer" type="ScrollContainer" parent="CreditsPanel/VBox"]
 custom_minimum_size = Vector2(0, 260)
@@ -353,11 +368,6 @@ MUSIC & SOUND
 fit_content = true
 horizontal_alignment = 1
 
-[node name="CloseButton" type="Button" parent="CreditsPanel/VBox"]
-layout_mode = 2
-tooltip_text = "Back to the cosmos."
-theme_override_font_sizes/font_size = 22
-text = "CLOSE"
 
 [node name="CreditsButton" type="Button" parent="."]
 layout_mode = 1
