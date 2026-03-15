@@ -29,8 +29,13 @@ const _T_ENERGY_NODE_FULL = 18
 ## Reference to the owning MiningLevel (set by MiningLevel._ready via setup()).
 var level: Node = null
 
+const _BLOCKS_ATLAS_PATH: String = "res://assets/blocks/blocks_atlas.png"
+const _LADDER_ATLAS_REGION := Rect2(3 * 64, 8 * 64, 64, 64)
+var _blocks_atlas: Texture2D = null
+
 func setup(mining_level: Node) -> void:
 	level = mining_level
+	_blocks_atlas = load(_BLOCKS_ATLAS_PATH) as Texture2D
 
 
 func _draw() -> void:
@@ -95,11 +100,9 @@ func _draw() -> void:
 			if tile == _T_LADDER:
 				var lx := col * CELL_SIZE
 				var ly := row * CELL_SIZE
-				draw_rect(Rect2(lx + 10, ly + 2, 8, CELL_SIZE - 4), Color(0.80, 0.60, 0.15, 0.90))
-				draw_rect(Rect2(lx + CELL_SIZE - 18, ly + 2, 8, CELL_SIZE - 4), Color(0.80, 0.60, 0.15, 0.90))
-				for rung in 3:
-					draw_rect(Rect2(lx + 10, ly + 10 + rung * 18, CELL_SIZE - 20, 5),
-						Color(0.70, 0.50, 0.10, 0.90))
+				if _blocks_atlas:
+					draw_texture_rect_region(_blocks_atlas,
+						Rect2(lx, ly, CELL_SIZE, CELL_SIZE), _LADDER_ATLAS_REGION)
 				continue
 
 			if tile == _T_REENERGY_STATION:
@@ -151,10 +154,9 @@ func _draw() -> void:
 				pole_c   = Color(0.90, 0.15, 0.10, GHOST_ALPHA)
 				rung_c   = Color(0.80, 0.10, 0.08, GHOST_ALPHA)
 				border_c = Color(0.90, 0.15, 0.10, 0.65)
-			draw_rect(Rect2(lx + 10, ly + 2, 8, CELL_SIZE - 4), pole_c)
-			draw_rect(Rect2(lx + CELL_SIZE - 18, ly + 2, 8, CELL_SIZE - 4), pole_c)
-			for rung in 3:
-				draw_rect(Rect2(lx + 10, ly + 10 + rung * 18, CELL_SIZE - 20, 5), rung_c)
+			if _blocks_atlas:
+				draw_texture_rect_region(_blocks_atlas,
+					Rect2(lx, ly, CELL_SIZE, CELL_SIZE), _LADDER_ATLAS_REGION, pole_c)
 			draw_rect(Rect2(lx, ly, CELL_SIZE, CELL_SIZE), border_c, false, 2.0)
 	else:
 		var in_range: bool = level._cursor_grid_pos.x >= 0 and level._cursor_grid_pos.y >= 0
