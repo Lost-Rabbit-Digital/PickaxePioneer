@@ -43,7 +43,7 @@ const TOOL_DEFS: Array = [
 	},
 ]
 
-const PANEL_W: int  = 780
+const PANEL_W: int  = 876
 const PANEL_H: int  = 560
 const ICON_SZ: int  = 40
 const ROW_H: int    = 50
@@ -405,8 +405,8 @@ func _draw_tool_slot_content(parent: Control, sx: int, sy: int, tool_idx: int, s
 		if tex:
 			var icon := TextureRect.new()
 			icon.texture = tex
-			icon.position = Vector2(sx + 5, sy + 5)
-			icon.size = Vector2(SLOT_SIZE - 10, SLOT_SIZE - 10)
+			icon.position = Vector2(sx + 4, sy + 4)
+			icon.size = Vector2(SLOT_SIZE - 8, SLOT_SIZE - 8)
 			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -431,7 +431,7 @@ func _draw_tool_slot_content(parent: Control, sx: int, sy: int, tool_idx: int, s
 			icon.texture = tex
 			icon.position = Vector2(sx + 4, sy + 4)
 			icon.size = Vector2(SLOT_SIZE - 8, SLOT_SIZE - 8)
-			icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
