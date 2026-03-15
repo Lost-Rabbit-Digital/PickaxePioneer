@@ -123,7 +123,7 @@ func _ready() -> void:
 	health_component.died.connect(_on_died)
 	update_trinket_stats()
 	EventBus.player_health_changed.emit(health_component.current_health, health_component.max_health)
-	sprite.play(&"idle")
+	sprite.play([&"idle_1", &"idle_2"].pick_random())
 	var _cat_shader_mat := ShaderMaterial.new()
 	_cat_shader_mat.shader = preload("res://assets/shaders/cat_color.gdshader")
 	_cat_shader_mat.set_shader_parameter("base_color", GameManager.cat_color)
@@ -365,7 +365,11 @@ func _update_animation(delta: float) -> void:
 			sleep_label.visible = true
 			anim = &"sleep"
 		else:
-			anim = &"idle"
+			# Pick a random idle variant when first entering idle; keep current once chosen
+			if sprite.animation == &"idle_1" or sprite.animation == &"idle_2":
+				anim = sprite.animation
+			else:
+				anim = [&"idle_1", &"idle_2"].pick_random()
 
 	if sprite.animation != anim:
 		sprite.play(anim)
