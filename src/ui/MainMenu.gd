@@ -1132,8 +1132,15 @@ func _format_playtime(seconds: float) -> String:
 		return "%dh %dm" % [hours, minutes]
 	return "%dm" % minutes
 
+func _show_class_selection() -> void:
+	var menu := ClassSelectionMenu.new()
+	add_child(menu)
+	await menu.class_confirmed
+
+
 func _on_slot_selected(index: int) -> void:
-	if _popup_mode == "new_game":
+	var is_new_game := _popup_mode == "new_game"
+	if is_new_game:
 		# Check if slot has existing data
 		var slot_data = SaveManager.get_slot(index)
 		if slot_data != null:
@@ -1151,6 +1158,8 @@ func _on_slot_selected(index: int) -> void:
 		_mp_host_pending = false
 		_start_mp_hosting()
 		return
+	if is_new_game:
+		await _show_class_selection()
 	await SceneTransition.fade_to_black(0.5)
 	GameManager.start_game()
 
@@ -1267,6 +1276,7 @@ func _on_confirm_overwrite() -> void:
 			_mp_host_pending = false
 			_start_mp_hosting()
 		else:
+			await _show_class_selection()
 			await SceneTransition.fade_to_black(0.5)
 			GameManager.start_game()
 	_pending_slot_index = -1

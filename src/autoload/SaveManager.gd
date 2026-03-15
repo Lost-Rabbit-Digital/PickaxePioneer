@@ -249,6 +249,7 @@ func _snapshot_game_manager() -> Dictionary:
 		"equipped_companions": gm.equipped_companions,
 		"cat_color": gm.cat_color.to_html(),
 		"cat_outline_color": gm.cat_outline_color.to_html(),
+		"player_class": gm.player_class,
 		"has_completed_tier_1_mine": gm.has_completed_tier_1_mine,
 		"has_completed_tier_2_settlement": gm.has_completed_tier_2_settlement,
 		"has_seen_overworld_hint": gm.has_seen_overworld_hint,
@@ -339,6 +340,7 @@ func _apply_to_game_manager(data: Dictionary) -> void:
 		gm.cat_outline_color = Color.from_string(outline_html, Color("2b222a"))
 	else:
 		gm.cat_outline_color = Color("2b222a")
+	gm.player_class = data.get("player_class", "")
 	gm.has_completed_tier_1_mine = data.get("has_completed_tier_1_mine", false)
 	gm.has_completed_tier_2_settlement = data.get("has_completed_tier_2_settlement", false)
 	gm.has_seen_overworld_hint = data.get("has_seen_overworld_hint", false)
@@ -424,6 +426,7 @@ func _reset_game_manager() -> void:
 	gm.equipped_companions = {}
 	gm.cat_color = Color.WHITE
 	gm.cat_outline_color = Color("2b222a")
+	gm.player_class = ""
 	gm.has_completed_tier_1_mine = false
 	gm.has_completed_tier_2_settlement = false
 	gm.has_seen_overworld_hint = false
