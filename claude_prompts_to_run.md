@@ -53,7 +53,16 @@ Supply Shop - Guy in cloak
 Forge - 
 
 
+10 classes to pick from:
 
+
+
+5 Playable characters:
+https://elthen.itch.io/2d-pixel-art-hedgehog-sprites
+https://elthen.itch.io/2d-pixel-art-fox-sprites
+https://elthen.itch.io/2d-pixel-art-crab-sprites
+https://elthen.itch.io/2d-pixel-art-squirrel-sprites
+cat
 
 
 Remove the coin display from the upper left in mining level scene
