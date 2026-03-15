@@ -103,6 +103,10 @@ var trinket_magnet: bool = false              # Attract ore within 4 tiles
 var trinket_cosmic_radiation: bool = false    # Random HP/energy bitflips
 var trinket_curse_of_core: bool = false       # -1 HP every 8 sec underground
 
+# Selected class for the current save (set during class selection on new game).
+# Empty string means no class chosen (legacy saves / multiplayer guest).
+var player_class: String = ""
+
 # Cat customization — base tint (white = no tint) and outline colour (default dark #2B222A)
 var cat_color: Color = Color.WHITE
 var cat_outline_color: Color = Color("2b222a")
