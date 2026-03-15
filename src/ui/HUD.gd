@@ -25,7 +25,6 @@ var health_bar_highlights: Array[ColorRect] = []
 var _displayed_health: float = 10.0
 var _health_drain_tween: Tween
 
-var info_panel: ColorRect
 @onready var depth_label: Label = $Control/InfoPanel/DepthLabel
 
 # Low energy warning
@@ -107,15 +106,6 @@ func _ready() -> void:
 	EventBus.boss_hint_popup.connect(_on_boss_hint_popup)
 	EventBus.ladder_count_changed.connect(_on_ladder_count_changed)
 	EventBus.depth_changed.connect(_on_depth_changed)
-
-	# Single combined panel behind all upper-left info labels (Capacity, earnings, Depth, $)
-	info_panel = ColorRect.new()
-	info_panel.color = Color(0.0, 0.0, 0.0, 0.55)
-	info_panel.position = Vector2(4, 6)
-	info_panel.size = Vector2(210, 90)
-	info_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	$Control.add_child(info_panel)
-	$Control.move_child(info_panel, 0)  # Draw behind everything else
 
 	_update_ladder_display(GameManager.ladder_count)
 
