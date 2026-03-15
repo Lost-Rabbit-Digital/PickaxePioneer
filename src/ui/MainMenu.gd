@@ -152,6 +152,9 @@ func _hide_main_buttons() -> void:
 
 func _show_main_buttons() -> void:
 	SoundManager.play_ui_close_sound()
+	_restore_main_buttons()
+
+func _restore_main_buttons() -> void:
 	_active_submenu = ""
 	$VBoxContainer/SingleplayerButton.show()
 	$VBoxContainer/MultiplayerButton.show()
@@ -182,8 +185,10 @@ func _on_inline_new_game_pressed() -> void:
 	SoundManager.play_ui_click_sound()
 	if not SaveManager.has_any_save():
 		SaveManager.new_game(0)
-		await SceneTransition.fade_to_black(0.5)
-		GameManager.start_game()
+		var confirmed := await _show_class_selection()
+		if confirmed:
+			await SceneTransition.fade_to_black(0.5)
+			GameManager.start_game()
 		return
 	_popup_mode = "new_game"
 	_refresh_popup()
@@ -1154,7 +1159,10 @@ func _show_class_selection() -> bool:
 	)
 	while not done:
 		await get_tree().process_frame
-	$VBoxContainer.show()
+	if confirmed:
+		$VBoxContainer.show()
+	else:
+		_restore_main_buttons()
 	return confirmed
 
 
@@ -1181,7 +1189,6 @@ func _on_slot_selected(index: int) -> void:
 	if is_new_game:
 		var confirmed := await _show_class_selection()
 		if not confirmed:
-			_save_popup.show()
 			return
 	await SceneTransition.fade_to_black(0.5)
 	GameManager.start_game()
@@ -1299,9 +1306,10 @@ func _on_confirm_overwrite() -> void:
 			_mp_host_pending = false
 			_start_mp_hosting()
 		else:
-			await _show_class_selection()
-			await SceneTransition.fade_to_black(0.5)
-			GameManager.start_game()
+			var confirmed := await _show_class_selection()
+			if confirmed:
+				await SceneTransition.fade_to_black(0.5)
+				GameManager.start_game()
 	_pending_slot_index = -1
 
 # ---------------------------------------------------------------------------
