@@ -365,7 +365,7 @@ func _update_animation(delta: float) -> void:
 			sleep_label.visible = true
 			anim = &"sleep"
 		else:
-			anim = &"idle"
+			anim = &"idle_1"
 
 	if sprite.animation != anim:
 		sprite.play(anim)

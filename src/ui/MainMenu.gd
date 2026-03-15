@@ -285,6 +285,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif _active_submenu != "":
 			_show_main_buttons()
 			get_viewport().set_input_as_handled()
+	
+	if _menu_char_sprite == null:
+		return
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed \
+			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		var sprite_global_pos := _menu_char_sprite.global_position
+		var mouse_pos := get_viewport().get_mouse_position()
+		if mouse_pos.distance_to(sprite_global_pos) < 64.0 and not _menu_char_scared:
+			_menu_char_scared = true
+			_menu_char_sprite.play(&"scared")
 
 func _on_credits_pressed() -> void:
 	SoundManager.play_ui_click_sound()
@@ -339,17 +349,6 @@ func _on_menu_char_animation_finished() -> void:
 		return
 	_menu_char_scared = false
 	_menu_char_sprite.play(_IDLE_ANIMATIONS[randi() % _IDLE_ANIMATIONS.size()])
-
-func _unhandled_input(event: InputEvent) -> void:
-	if _menu_char_sprite == null:
-		return
-	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed \
-			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
-		var sprite_global_pos := _menu_char_sprite.global_position
-		var mouse_pos := get_viewport().get_mouse_position()
-		if mouse_pos.distance_to(sprite_global_pos) < 64.0 and not _menu_char_scared:
-			_menu_char_scared = true
-			_menu_char_sprite.play(&"scared")
 
 func _update_menu_char_sprite_shader() -> void:
 	if _menu_char_sprite and _menu_char_sprite.material is ShaderMaterial:
