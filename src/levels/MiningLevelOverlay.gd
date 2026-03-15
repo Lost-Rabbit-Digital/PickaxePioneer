@@ -223,7 +223,7 @@ func _draw() -> void:
 		var wave_px: float = level.sonar_system.wave_radius * CELL_SIZE
 		var center_px := Vector2(cx * CELL_SIZE + CELL_SIZE * 0.5, cy * CELL_SIZE + CELL_SIZE * 0.5)
 		if wave_px > 0:
-			draw_arc(center_px, wave_px, 0.0, TAU, 48, Color(0.40, 1.0, 0.60, ping_alpha * 0.55), 2.0)
+			draw_rect(Rect2(center_px.x - wave_px, center_px.y - wave_px, wave_px * 2.0, wave_px * 2.0), Color(0.40, 1.0, 0.60, ping_alpha * 0.55), false, 2.0)
 
 	# -------------------------------------------------------------------------
 	# Level particles — mining sparks, lava embers, ore bursts
