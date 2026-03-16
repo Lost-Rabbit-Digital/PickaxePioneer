@@ -3,7 +3,6 @@ extends CanvasLayer
 
 # HUD — displays Ore Capacity (upper-left), health squares and energy gauge (upper-right).
 
-@onready var scrap_label: Label = $Control/InfoPanel/ScrapLabel
 @onready var health_container: HBoxContainer = $Control/InfoPanel/VBoxContainer/HealthContainer
 @onready var energy_label: Label = $Control/InfoPanel/VBoxContainer/EnergyBarContainer/EnergyLabel
 @onready var energy_bar_container: HBoxContainer = $Control/InfoPanel/VBoxContainer/EnergyBarContainer
