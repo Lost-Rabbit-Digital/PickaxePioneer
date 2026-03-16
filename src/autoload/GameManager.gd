@@ -186,6 +186,7 @@ var has_completed_tier_2_settlement: bool = false # True when player completes a
 # Onboarding flags (persisted to save)
 var has_seen_overworld_hint: bool = false  # Suppresses first-visit overworld guidance after first display
 var has_completed_first_run: bool = false  # True after first successful mine exit; gates tutorial hints
+var has_seen_intro: bool = false           # True after the narrative intro plays; prevents replay on continue
 
 # Current node type for the active mine/settlement run (transient, not persisted)
 var current_node_type: int = 0  # MapNode.NodeType value of the node being mined/visited
@@ -303,7 +304,7 @@ func start_game() -> void:
 			carapace_gem_socketed, legs_gem_socketed, mandibles_gem_socketed, sense_gem_socketed,
 			warp_drive_built, cargo_bay_built, long_scanner_built, gem_refinery_built, trade_amplifier_built)
 	# Show narrative intro on first new game (singleplayer only)
-	if not has_completed_first_run and not has_seen_overworld_hint and not NetworkManager.is_multiplayer_session:
+	if not has_seen_intro and not NetworkManager.is_multiplayer_session:
 		# Pre-load the overworld in the background while the intro is playing
 		# so there is no delay or flash when switching scenes afterwards.
 		const OVERWORLD := "res://src/levels/Overworld.tscn"
@@ -312,6 +313,8 @@ func start_game() -> void:
 		get_tree().root.add_child(intro)
 		await SceneTransition.fade_from_black(0.5)
 		await intro.finished
+		has_seen_intro = true
+		save_game()
 		# The intro leaves a solid black background on screen; take it over with
 		# SceneTransition before the intro node is freed so there is no flash.
 		SceneTransition.color_rect.modulate.a = 1.0
@@ -874,6 +877,7 @@ func save_game() -> void:
 		"has_completed_tier_2_settlement": has_completed_tier_2_settlement,
 		"has_seen_overworld_hint": has_seen_overworld_hint,
 		"has_completed_first_run": has_completed_first_run,
+		"has_seen_intro": has_seen_intro,
 		"trinket_paraglider": trinket_paraglider,
 		"trinket_jet_boots": trinket_jet_boots,
 		"trinket_stone_of_regen": trinket_stone_of_regen,
@@ -957,6 +961,7 @@ func load_game() -> void:
 			has_completed_tier_2_settlement = data.get("has_completed_tier_2_settlement", false)
 			has_seen_overworld_hint = data.get("has_seen_overworld_hint", false)
 			has_completed_first_run = data.get("has_completed_first_run", false)
+			has_seen_intro = data.get("has_seen_intro", false)
 			trinket_paraglider = data.get("trinket_paraglider", false)
 			trinket_jet_boots = data.get("trinket_jet_boots", false)
 			trinket_stone_of_regen = data.get("trinket_stone_of_regen", false)
