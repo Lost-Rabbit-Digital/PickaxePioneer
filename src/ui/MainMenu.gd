@@ -179,9 +179,11 @@ func _on_inline_continue_pressed() -> void:
 func _on_inline_new_game_pressed() -> void:
 	SoundManager.play_ui_click_sound()
 	if not SaveManager.has_any_save():
-		SaveManager.new_game(0)
 		var confirmed := await _show_class_selection()
 		if confirmed:
+			var class_id := GameManager.player_class
+			SaveManager.new_game(0)
+			GameManager.player_class = class_id
 			await SceneTransition.fade_to_black(0.5)
 			GameManager.start_game()
 		return
