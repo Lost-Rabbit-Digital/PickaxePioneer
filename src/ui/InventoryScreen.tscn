@@ -15,7 +15,7 @@ offset_top = 31.0
 offset_right = 1243.0
 offset_bottom = 679.0
 theme = ExtResource("2_ey6tx")
-color = Color(0.21960784, 0.21568628, 0.16470589, 0.42352942)
+color = Color(0.21960784, 0.21568628, 0.16470589, 0.88)
 
 [node name="InventoryIcon" type="TextureRect" parent="."]
 modulate = Color(1, 1, 1, 0.49411765)

@@ -1147,18 +1147,27 @@ func _show_class_selection() -> bool:
 	var menu: CanvasLayer = _CLASS_SELECTION_SCENE.new()
 	add_child(menu)
 	var confirmed: bool = false
-	var done: bool = false
+	var result: Array = await _await_class_menu(menu)
+	confirmed = result[0]
+	if not confirmed:
+		_restore_main_buttons()
+	return confirmed
+
+func _await_class_menu(menu: CanvasLayer) -> Array:
+	var confirmed := [false]
+	var done := [false]
 	menu.class_confirmed.connect(func(_id: String) -> void:
-		confirmed = true
-		done = true
+		confirmed[0] = true
+		done[0] = true
 	)
 	menu.cancelled.connect(func() -> void:
-		done = true
+		done[0] = true
 	)
-	while not done:
+	while not done[0]:
+		if not is_inside_tree():
+			return [false]
 		await get_tree().process_frame
-	_restore_main_buttons()
-	return confirmed
+	return [confirmed[0]]
 
 
 func _on_slot_selected(index: int) -> void:
