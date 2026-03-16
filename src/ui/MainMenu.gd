@@ -6,7 +6,6 @@ const WISHLIST_URL = "https://lost-rabbit-digital.itch.io/pickaxe-pioneer"
 @onready var version_label: Label = $VersionLabel
 
 # Inline sub-menu buttons
-@onready var _menu_title_label: Label = $VBoxContainer/MenuTitleLabel
 @onready var _continue_btn: Button = $VBoxContainer/ContinueButton
 @onready var _new_game_btn: Button = $VBoxContainer/NewGameButton
 @onready var _sp_back_btn: Button = $VBoxContainer/SpBackButton
@@ -82,7 +81,7 @@ func _ready() -> void:
 	$VBoxContainer/WishlistButton.pressed.connect(_on_wishlist_pressed)
 	$VBoxContainer/QuitButton.pressed.connect(_on_quit_pressed)
 	$CreditsButton.pressed.connect(_on_credits_pressed)
-	$CreditsPanel/VBox/TitleRow/CloseButton.pressed.connect(_on_credits_close_pressed)
+	$CreditsPanel/CloseButton.pressed.connect(_on_credits_close_pressed)
 	$CharacterContainer/CustomizeButton.pressed.connect(_on_customize_character_pressed)
 
 	_continue_btn.pressed.connect(_on_inline_continue_pressed)
@@ -127,8 +126,6 @@ func _on_singleplayer_pressed() -> void:
 	SoundManager.play_ui_click_sound()
 	_active_submenu = "sp"
 	_hide_main_buttons()
-	_menu_title_label.text = "SINGLEPLAYER"
-	_menu_title_label.show()
 	_continue_btn.visible = SaveManager.has_any_save()
 	_new_game_btn.show()
 	_sp_back_btn.show()
@@ -137,8 +134,6 @@ func _on_multiplayer_pressed() -> void:
 	SoundManager.play_ui_click_sound()
 	_active_submenu = "mp"
 	_hide_main_buttons()
-	_menu_title_label.text = "MULTIPLAYER"
-	_menu_title_label.show()
 	_host_btn.show()
 	_join_btn.show()
 	_mp_back_btn.show()
@@ -162,7 +157,6 @@ func _restore_main_buttons() -> void:
 	$VBoxContainer/WishlistButton.show()
 	$VBoxContainer/SettingsButton.show()
 	$VBoxContainer/QuitButton.show()
-	_menu_title_label.hide()
 	_continue_btn.hide()
 	_new_game_btn.hide()
 	_sp_back_btn.hide()
@@ -201,7 +195,6 @@ func _on_inline_host_pressed() -> void:
 	_host_btn.hide()
 	_join_btn.hide()
 	_mp_back_btn.hide()
-	_menu_title_label.text = "HOSTING"
 	_lan_btn.show()
 	_steam_btn.show()
 	_hosting_back_btn.show()
@@ -218,7 +211,6 @@ func _on_lan_pressed() -> void:
 	_lan_btn.hide()
 	_steam_btn.hide()
 	_hosting_back_btn.hide()
-	_menu_title_label.text = "HOST — SELECT SAVE"
 	_host_save_continue_btn.visible = SaveManager.has_any_save()
 	_host_save_new_game_btn.show()
 	_host_save_back_btn.show()
@@ -229,7 +221,6 @@ func _on_hosting_back_pressed() -> void:
 	_lan_btn.hide()
 	_steam_btn.hide()
 	_hosting_back_btn.hide()
-	_menu_title_label.text = "MULTIPLAYER"
 	_host_btn.show()
 	_join_btn.show()
 	_mp_back_btn.show()
@@ -240,7 +231,6 @@ func _on_inline_host_save_back_pressed() -> void:
 	_host_save_continue_btn.hide()
 	_host_save_new_game_btn.hide()
 	_host_save_back_btn.hide()
-	_menu_title_label.text = "HOSTING"
 	_lan_btn.show()
 	_steam_btn.show()
 	_hosting_back_btn.show()
@@ -774,7 +764,6 @@ func _on_mp_back_pressed() -> void:
 			_mp_lobby_start_btn.visible = false
 			_mp_overlay.hide()
 			_active_submenu = "host_save"
-			_menu_title_label.text = "HOST — SELECT SAVE"
 			_host_save_continue_btn.visible = SaveManager.has_any_save()
 			_host_save_new_game_btn.show()
 			_host_save_back_btn.show()

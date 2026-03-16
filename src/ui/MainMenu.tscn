@@ -8,23 +8,8 @@
 [ext_resource type="Theme" uid="uid://c24g1w4ks0tqe" path="res://themes/main_menu_general_theme.tres" id="4_fqh1q"]
 [ext_resource type="Texture2D" uid="uid://bhww7y11pvgal" path="res://assets/social_icons/discord_icon_normal.png" id="4_ihbld"]
 [ext_resource type="Texture2D" uid="uid://dykx02yxii2da" path="res://assets/title_screen_text.png" id="5_u6542"]
+[ext_resource type="Theme" uid="uid://ytfkiwkjh5v1" path="res://themes/exit_button_theme.tres" id="9_86t74"]
 [ext_resource type="Theme" uid="uid://xcmsew4f5udi" path="res://themes/version_label_theme.tres" id="9_wewln"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
-content_margin_left = 20.0
-content_margin_top = 16.0
-content_margin_right = 20.0
-content_margin_bottom = 16.0
-bg_color = Color(0.07, 0.06, 0.05, 0.94)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.5, 0.6, 0.9, 0.85)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -93,60 +78,46 @@ tooltip_text = "The asteroid belt will wait. (It won't.)"
 theme = ExtResource("4_fqh1q")
 text = "Quit"
 
-[node name="MenuTitleLabel" type="Label" parent="VBoxContainer"]
-visible = false
-layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.7, 0.3, 1)
-theme_override_font_sizes/font_size = 18
-horizontal_alignment = 1
-
 [node name="ContinueButton" type="Button" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
 theme = ExtResource("4_fqh1q")
-theme_override_font_sizes/font_size = 32
-text = "CONTINUE"
+text = "Continue"
 
 [node name="NewGameButton" type="Button" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
 theme = ExtResource("4_fqh1q")
-theme_override_font_sizes/font_size = 32
-text = "NEW GAME"
+text = "New Game"
 
 [node name="SpBackButton" type="Button" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
 theme = ExtResource("4_fqh1q")
-theme_override_font_sizes/font_size = 32
-text = "BACK"
+text = "Back"
 
 [node name="HostButton" type="Button" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
 theme = ExtResource("4_fqh1q")
-theme_override_font_sizes/font_size = 32
-text = "HOST"
+text = "Host"
 
 [node name="JoinButton" type="Button" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
 theme = ExtResource("4_fqh1q")
-theme_override_font_sizes/font_size = 32
-text = "JOIN"
+text = "Join"
 
 [node name="MpBackButton" type="Button" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
 theme = ExtResource("4_fqh1q")
-theme_override_font_sizes/font_size = 32
-text = "BACK"
+text = "Back"
 
 [node name="LanButton" type="Button" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
 theme = ExtResource("4_fqh1q")
-theme_override_font_sizes/font_size = 32
 text = "LAN"
 
 [node name="SteamButton" type="Button" parent="VBoxContainer"]
@@ -154,36 +125,31 @@ visible = false
 layout_mode = 2
 tooltip_text = "Coming Soon"
 theme = ExtResource("4_fqh1q")
-theme_override_font_sizes/font_size = 32
-text = "STEAM"
+text = "Steam"
 
 [node name="HostingBackButton" type="Button" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
 theme = ExtResource("4_fqh1q")
-theme_override_font_sizes/font_size = 32
-text = "BACK"
+text = "Back"
 
 [node name="HostSaveContinueButton" type="Button" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
 theme = ExtResource("4_fqh1q")
-theme_override_font_sizes/font_size = 32
-text = "CONTINUE"
+text = "Continue"
 
 [node name="HostSaveNewGameButton" type="Button" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
 theme = ExtResource("4_fqh1q")
-theme_override_font_sizes/font_size = 32
-text = "NEW GAME"
+text = "New Game"
 
 [node name="HostSaveBackButton" type="Button" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
 theme = ExtResource("4_fqh1q")
-theme_override_font_sizes/font_size = 32
-text = "BACK"
+text = "Back"
 
 [node name="CharacterContainer" type="Control" parent="."]
 layout_mode = 1
@@ -287,7 +253,6 @@ theme_override_font_sizes/font_size = 18
 text = "Join the Discord!"
 
 [node name="CreditsPanel" type="PanelContainer" parent="."]
-visible = false
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -300,42 +265,34 @@ offset_right = 260.0
 offset_bottom = 220.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_1")
+theme = ExtResource("4_fqh1q")
 
 [node name="VBox" type="VBoxContainer" parent="CreditsPanel"]
 layout_mode = 2
+theme = ExtResource("4_fqh1q")
 theme_override_constants/separation = 12
 
 [node name="TitleRow" type="HBoxContainer" parent="CreditsPanel/VBox"]
 layout_mode = 2
-
-[node name="TitleSpacer" type="Control" parent="CreditsPanel/VBox/TitleRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(28, 0)
+theme = ExtResource("4_fqh1q")
 
 [node name="CreditsTitle" type="Label" parent="CreditsPanel/VBox/TitleRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.9, 0.7, 0.3, 1)
-theme_override_font_sizes/font_size = 28
+theme = ExtResource("4_fqh1q")
 text = "CREDITS"
 horizontal_alignment = 1
-
-[node name="CloseButton" type="Button" parent="CreditsPanel/VBox/TitleRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(28, 28)
-tooltip_text = "Back to the cosmos."
-theme_override_font_sizes/font_size = 14
-text = "X"
 
 [node name="ScrollContainer" type="ScrollContainer" parent="CreditsPanel/VBox"]
 custom_minimum_size = Vector2(0, 260)
 layout_mode = 2
 size_flags_vertical = 3
+theme = ExtResource("4_fqh1q")
 
 [node name="CreditsContent" type="RichTextLabel" parent="CreditsPanel/VBox/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme = ExtResource("4_fqh1q")
 theme_override_colors/default_color = Color(0.85, 0.8, 0.7, 1)
 bbcode_enabled = true
 text = "DEVELOPERS
@@ -368,6 +325,14 @@ MUSIC & SOUND
 fit_content = true
 horizontal_alignment = 1
 
+[node name="CloseButton" type="Button" parent="CreditsPanel"]
+custom_minimum_size = Vector2(30, 28)
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+tooltip_text = "Back to the cosmos."
+theme = ExtResource("9_86t74")
+text = "X"
 
 [node name="CreditsButton" type="Button" parent="."]
 layout_mode = 1

@@ -1,6 +1,6 @@
-[gd_resource type="Theme" load_steps=8 format=3 uid="uid://c24g1w4ks0tqe"]
+[gd_resource type="Theme" load_steps=7 format=3 uid="uid://ytfkiwkjh5v1"]
 
-[ext_resource type="FontFile" uid="uid://blhc6q5q1jx0l" path="res://assets/fonts/Gogh-ExtraBold.ttf" id="1_7uvg5"]
+[ext_resource type="FontFile" uid="uid://blhc6q5q1jx0l" path="res://assets/fonts/Gogh-ExtraBold.ttf" id="1_hm14p"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rixie"]
 bg_color = Color(0.36078432, 0.16862746, 0.20392157, 1)
@@ -62,28 +62,16 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ymygj"]
-bg_color = Color(0.23529412, 0.14509805, 0.16862746, 1)
-border_width_left = 6
-border_width_top = 6
-border_width_right = 6
-border_width_bottom = 6
-border_color = Color(0.13333334, 0.1254902, 0.20392157, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
 [resource]
-Button/colors/font_color = Color(0.4509804, 0.6039216, 0.4392157, 1)
-Button/colors/font_focus_color = Color(0.4509804, 0.6039216, 0.4392157, 1)
-Button/colors/font_hover_color = Color(0.4509804, 0.6039216, 0.4392157, 1)
-Button/colors/font_hover_pressed_color = Color(0.4509804, 0.6039216, 0.4392157, 1)
+Button/colors/font_color = Color(0.36078432, 0.16862746, 0.20392157, 1)
+Button/colors/font_focus_color = Color(0.36078432, 0.16862746, 0.20392157, 1)
+Button/colors/font_hover_color = Color(0.13333334, 0.1254902, 0.20392157, 1)
+Button/colors/font_hover_pressed_color = Color(0.36078432, 0.16862746, 0.20392157, 1)
 Button/colors/font_outline_color = Color(0.13333334, 0.1254902, 0.20392157, 1)
-Button/colors/font_pressed_color = Color(0.4509804, 0.6039216, 0.4392157, 1)
+Button/colors/font_pressed_color = Color(0.36078432, 0.16862746, 0.20392157, 1)
 Button/constants/outline_size = 8
-Button/font_sizes/font_size = 24
-Button/fonts/font = ExtResource("1_7uvg5")
+Button/font_sizes/font_size = 16
+Button/fonts/font = ExtResource("1_hm14p")
 Button/styles/disabled = SubResource("StyleBoxFlat_rixie")
 Button/styles/focus = SubResource("StyleBoxFlat_artlc")
 Button/styles/hover = SubResource("StyleBoxFlat_bmhii")
@@ -93,5 +81,4 @@ Label/colors/font_color = Color(0.4509804, 0.6039216, 0.4392157, 1)
 Label/colors/font_outline_color = Color(0.13333334, 0.1254902, 0.20392157, 1)
 Label/constants/outline_size = 8
 Label/font_sizes/font_size = 24
-Label/fonts/font = ExtResource("1_7uvg5")
-PanelContainer/styles/panel = SubResource("StyleBoxFlat_ymygj")
+Label/fonts/font = ExtResource("1_hm14p")

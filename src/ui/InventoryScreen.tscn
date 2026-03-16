@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://dkn86f7qv5ybi"]
+[gd_scene load_steps=5 format=3 uid="uid://dkn86f7qv5ybi"]
 
 [ext_resource type="Script" uid="uid://c0eowl48bi7or" path="res://src/ui/InventoryScreen.gd" id="1_inv"]
 [ext_resource type="Theme" uid="uid://dm1wgyv4cood2" path="res://themes/inventory_theme.tres" id="2_ey6tx"]
 [ext_resource type="Texture2D" uid="uid://dgmbfkmj8leyx" path="res://assets/shops/backpack.png" id="3_47lxw"]
+[ext_resource type="Theme" uid="uid://ytfkiwkjh5v1" path="res://themes/exit_button_theme.tres" id="3_juwmx"]
 
 [node name="InventoryScreen" type="CanvasLayer"]
 script = ExtResource("1_inv")
@@ -18,11 +19,11 @@ color = Color(0.21960784, 0.21568628, 0.16470589, 0.42352942)
 
 [node name="InventoryIcon" type="TextureRect" parent="."]
 modulate = Color(1, 1, 1, 0.49411765)
-custom_minimum_size = Vector2(128, 128)
-offset_left = 32.0
-offset_top = 32.0
-offset_right = 160.0
-offset_bottom = 160.0
+custom_minimum_size = Vector2(196, 196)
+offset_left = 69.0
+offset_top = 59.0
+offset_right = 265.0
+offset_bottom = 255.0
 texture = ExtResource("3_47lxw")
 
 [node name="ContentRoot" type="Control" parent="."]
@@ -116,3 +117,17 @@ offset_right = 56.0
 offset_bottom = 56.0
 mouse_filter = 2
 theme = ExtResource("2_ey6tx")
+
+[node name="CloseButton" type="Button" parent="."]
+custom_minimum_size = Vector2(30, 28)
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -36.0
+offset_top = 3.0
+offset_right = -8.0
+offset_bottom = 31.0
+grow_horizontal = 0
+tooltip_text = "Back to the cosmos."
+theme = ExtResource("3_juwmx")
+text = "X"

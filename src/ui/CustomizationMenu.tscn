@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://custmmenu0001"]
+[gd_scene load_steps=3 format=3 uid="uid://custmmenu0001"]
 
 [ext_resource type="Script" uid="uid://dxom07drghtmb" path="res://src/ui/CustomizationMenu.gd" id="1_cm"]
+[ext_resource type="Theme" uid="uid://ytfkiwkjh5v1" path="res://themes/exit_button_theme.tres" id="2_bjxs2"]
 
 [node name="CustomizationMenu" type="Control"]
 layout_mode = 3
@@ -65,7 +66,6 @@ offset_right = 360.0
 offset_bottom = 40.0
 theme_override_font_sizes/font_size = 20
 text = "CUSTOMIZATION"
-
 
 [node name="Separator" type="ColorRect" parent="Panel"]
 layout_mode = 0
@@ -152,10 +152,11 @@ theme_override_font_sizes/font_size = 13
 text = "RESET"
 
 [node name="CloseButton" type="Button" parent="Panel"]
+custom_minimum_size = Vector2(30, 28)
 layout_mode = 0
 offset_left = 862.0
 offset_top = 8.0
 offset_right = 892.0
 offset_bottom = 36.0
-theme_override_font_sizes/font_size = 14
+theme = ExtResource("2_bjxs2")
 text = "X"
