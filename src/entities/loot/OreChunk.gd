@@ -39,19 +39,19 @@ func _ready() -> void:
 	collision_mask = 1 | SETTLED_LAYER
 
 	var shape := CollisionShape2D.new()
-	var rect := RectangleShape2D.new()
-	rect.size = Vector2(CHUNK_SIZE, CHUNK_SIZE)
-	shape.shape = rect
+	var circle := CircleShape2D.new()
+	circle.radius = CHUNK_SIZE * 0.5
+	shape.shape = circle
 	add_child(shape)
 
 	queue_redraw()
 
 func _draw() -> void:
 	var color: Color = CHUNK_COLORS.get(ore_type, Color(0.7, 0.7, 0.7))
-	var half: float = CHUNK_SIZE * 0.5
-	draw_rect(Rect2(-half, -half, CHUNK_SIZE, CHUNK_SIZE), color)
-	# Small highlight corner for a mineral-glint look.
-	draw_rect(Rect2(-half, -half, CHUNK_SIZE * 0.45, CHUNK_SIZE * 0.45), color.lightened(0.45))
+	var radius: float = CHUNK_SIZE * 0.5
+	draw_circle(Vector2.ZERO, radius, color)
+	# Small highlight arc for a mineral-glint look.
+	draw_circle(Vector2(-radius * 0.3, -radius * 0.3), radius * 0.35, color.lightened(0.45))
 
 func _physics_process(delta: float) -> void:
 	if _full_warn_cooldown > 0.0:
