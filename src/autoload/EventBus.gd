@@ -49,6 +49,7 @@ signal perk_points_changed(perk_points: int)            # Emitted when points ar
 # Global Progress Signals — cross-save account-level progression
 signal global_xp_changed(current_xp: int, xp_to_next: int)  # Emitted whenever global XP changes
 signal global_player_leveled_up(new_level: int)              # Emitted on each global level-up
+signal playtime_xp_progress(progress: float)                 # 0.0–1.0, emitted every frame; drives the live progress-bar fill on the main menu
 
 # Trinket Signals
 signal trinket_equipped(trinket_id: String)  # Emitted when a trinket is equipped or unequipped

@@ -138,6 +138,11 @@ var perk_ranks: Dictionary = {}
 var global_player_xp: int = 0      # XP within the current global level
 var global_player_level: int = 1   # Global player level (1-indexed)
 
+# Playtime incentive — awards 1% of the XP needed for the next global level every 25 minutes.
+# Runs regardless of game state so menu time counts too.  Persisted in global_progress.json.
+const PLAYTIME_XP_INTERVAL: float = 1500.0  # 25 minutes in seconds
+var playtime_xp_timer: float = 0.0
+
 # Gem socketing system — gems collected as items, socketed for passive bonuses
 var gem_count: int = 0                       # unspent gems in the colony's stockpile
 const GEM_SOCKET_COST: int = 3              # gems required to fill one socket slot
@@ -228,6 +233,13 @@ func _notification(what: int) -> void:
 func _process(delta: float) -> void:
 	if current_state == GameState.PLAYING:
 		total_playtime_seconds += delta
+
+	playtime_xp_timer += delta
+	if playtime_xp_timer >= PLAYTIME_XP_INTERVAL:
+		playtime_xp_timer -= PLAYTIME_XP_INTERVAL
+		var xp_reward: int = maxi(1, PerkSystem.xp_for_next_level(global_player_level) / 100)
+		_add_global_xp_only(xp_reward)
+	EventBus.playtime_xp_progress.emit(playtime_xp_timer / PLAYTIME_XP_INTERVAL)
 
 ## Format a copper amount as a human-readable coin string.
 ## 100 copper = 1g. Examples: 12345 → "123g", 500 → "5g", 7 → "0g", 0 → "0g"
@@ -785,6 +797,14 @@ func _process_global_level_ups() -> void:
 		global_player_level += 1
 		EventBus.global_player_leveled_up.emit(global_player_level)
 		threshold = PerkSystem.xp_for_next_level(global_player_level)
+
+## Award XP to the global level only (no per-save player_xp).
+## Used by the playtime incentive to avoid inflating run-scoped perk progress.
+func _add_global_xp_only(amount: int) -> void:
+	global_player_xp += amount
+	_process_global_level_ups()
+	EventBus.global_xp_changed.emit(global_player_xp, PerkSystem.xp_for_next_level(global_player_level))
+	SaveManager.save_global_progress()
 
 ## Spend one perk point on a perk.  Returns true on success.
 func spend_perk_point(perk_id: String) -> bool:

@@ -115,6 +115,7 @@ func reset_all_data() -> void:
 	var gm := GameManager
 	gm.global_player_xp = 0
 	gm.global_player_level = 1
+	gm.playtime_xp_timer = 0.0
 	save_global_progress()
 	_reset_game_manager()
 
@@ -167,12 +168,13 @@ func _persist_all_slots() -> void:
 		file.store_string(JSON.stringify(_slots))
 		file.close()
 
-## Save global progress (cross-save XP and level) to its own file.
+## Save global progress (cross-save XP, level, and playtime incentive timer) to its own file.
 func save_global_progress() -> void:
 	var gm = GameManager
 	var data := {
 		"global_player_xp": gm.global_player_xp,
 		"global_player_level": gm.global_player_level,
+		"playtime_xp_timer": gm.playtime_xp_timer,
 	}
 	var file = FileAccess.open(GLOBAL_SAVE_PATH, FileAccess.WRITE)
 	if file:
@@ -192,6 +194,7 @@ func _load_global_progress() -> void:
 		var gm = GameManager
 		gm.global_player_xp = json.data.get("global_player_xp", 0)
 		gm.global_player_level = json.data.get("global_player_level", 1)
+		gm.playtime_xp_timer = json.data.get("playtime_xp_timer", 0.0)
 
 func _migrate_legacy_save() -> void:
 	# If the old single-file save exists, import it into slot 0

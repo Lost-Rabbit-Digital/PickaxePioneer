@@ -117,6 +117,7 @@ func _ready() -> void:
 	_update_player_level_display()
 	EventBus.global_xp_changed.connect(_on_global_xp_changed)
 	EventBus.global_player_leveled_up.connect(_on_global_player_leveled_up)
+	EventBus.playtime_xp_progress.connect(_on_playtime_xp_progress)
 
 # ---------------------------------------------------------------------------
 # Menu buttons
@@ -365,14 +366,22 @@ func _update_player_level_display() -> void:
 	var level: int = GameManager.global_player_level
 	var xp: int = GameManager.global_player_xp
 	var xp_max: int = PerkSystem.xp_for_next_level(level)
+	# Include the portion of the next playtime-incentive XP that has accrued so far.
+	# This makes the bar gradually fill in real time between awards.
+	var one_percent_xp: int = maxi(1, xp_max / 100)
+	var progress: float = GameManager.playtime_xp_timer / GameManager.PLAYTIME_XP_INTERVAL
+	var pending_xp: int = int(progress * one_percent_xp)
 	_player_level_bar.max_value = xp_max
-	_player_level_bar.value = xp
+	_player_level_bar.value = mini(xp + pending_xp, xp_max)
 	_player_level_label.text = str(level)
 
 func _on_global_xp_changed(_current_xp: int, _xp_to_next: int) -> void:
 	_update_player_level_display()
 
 func _on_global_player_leveled_up(_new_level: int) -> void:
+	_update_player_level_display()
+
+func _on_playtime_xp_progress(_progress: float) -> void:
 	_update_player_level_display()
 
 # ---------------------------------------------------------------------------
