@@ -48,10 +48,10 @@ func _ready() -> void:
 
 func _draw() -> void:
 	var color: Color = CHUNK_COLORS.get(ore_type, Color(0.7, 0.7, 0.7))
-	var radius: float = CHUNK_SIZE * 0.5
-	draw_circle(Vector2.ZERO, radius, color)
-	# Small highlight arc for a mineral-glint look.
-	draw_circle(Vector2(-radius * 0.3, -radius * 0.3), radius * 0.35, color.lightened(0.45))
+	var half: float = CHUNK_SIZE * 0.5
+	draw_rect(Rect2(-half, -half, CHUNK_SIZE, CHUNK_SIZE), color)
+	# Small highlight corner for a mineral-glint look.
+	draw_rect(Rect2(-half, -half, CHUNK_SIZE * 0.45, CHUNK_SIZE * 0.45), color.lightened(0.45))
 
 func _physics_process(delta: float) -> void:
 	if _full_warn_cooldown > 0.0:
@@ -96,7 +96,7 @@ func _physics_process(delta: float) -> void:
 		velocity.y += GRAVITY * delta
 	else:
 		velocity.y = 0.0
-		velocity.x = move_toward(velocity.x, 0.0, 250.0 * delta)
+		velocity.x = move_toward(velocity.x, 0.0, 60.0 * delta)
 		# Once horizontal motion dies out, settle and join the stacking layer.
 		if abs(velocity.x) < SETTLE_SPEED_THRESHOLD:
 			_settle()
