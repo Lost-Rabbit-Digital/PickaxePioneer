@@ -10,21 +10,21 @@ script = ExtResource("1_script")
 
 [node name="DisplayHeader" type="Label" parent="."]
 layout_mode = 2
-text = "DISPLAY"
-horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.9, 0.7, 0.3, 1)
 theme_override_font_sizes/font_size = 20
+text = "DISPLAY"
+horizontal_alignment = 1
 
 [node name="ResolutionRow" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="ResolutionLabel" type="Label" parent="ResolutionRow"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Resolution"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Resolution"
+vertical_alignment = 1
 
 [node name="ResolutionOption" type="OptionButton" parent="ResolutionRow"]
 layout_mode = 2
@@ -36,11 +36,11 @@ layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="WindowModeLabel" type="Label" parent="WindowModeRow"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Window Mode"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Window Mode"
+vertical_alignment = 1
 
 [node name="WindowModeOption" type="OptionButton" parent="WindowModeRow"]
 layout_mode = 2
@@ -52,11 +52,11 @@ layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="VSyncLabel" type="Label" parent="VSyncRow"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "V-Sync"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "V-Sync"
+vertical_alignment = 1
 
 [node name="VSyncCheck" type="CheckButton" parent="VSyncRow"]
 layout_mode = 2
@@ -67,11 +67,11 @@ layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="FramerateCapLabel" type="Label" parent="FramerateCapRow"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Framerate Cap"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Framerate Cap"
+vertical_alignment = 1
 
 [node name="FramerateCapOption" type="OptionButton" parent="FramerateCapRow"]
 layout_mode = 2
@@ -83,11 +83,11 @@ layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="RefreshRateCapLabel" type="Label" parent="RefreshRateCapRow"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Refresh Rate Cap"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Refresh Rate Cap"
+vertical_alignment = 1
 
 [node name="RefreshRateCapOption" type="OptionButton" parent="RefreshRateCapRow"]
 layout_mode = 2
@@ -100,137 +100,137 @@ theme_override_constants/separation = 8
 
 [node name="AudioHeader" type="Label" parent="."]
 layout_mode = 2
-text = "AUDIO"
-horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.9, 0.7, 0.3, 1)
 theme_override_font_sizes/font_size = 20
+text = "AUDIO"
+horizontal_alignment = 1
 
 [node name="MasterRow" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="MasterLabel" type="Label" parent="MasterRow"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Master"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Master"
+vertical_alignment = 1
 
 [node name="MasterSlider" type="HSlider" parent="MasterRow"]
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(200, 0)
 max_value = 1.0
 step = 0.01
 value = 1.0
 
 [node name="MasterValue" type="Label" parent="MasterRow"]
-layout_mode = 2
 custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "100%"
 horizontal_alignment = 2
 vertical_alignment = 1
-text = "100%"
-theme_override_font_sizes/font_size = 16
 
 [node name="MusicRow" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="MusicLabel" type="Label" parent="MusicRow"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Music"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Music"
+vertical_alignment = 1
 
 [node name="MusicSlider" type="HSlider" parent="MusicRow"]
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(200, 0)
 max_value = 1.0
 step = 0.01
 value = 1.0
 
 [node name="MusicValue" type="Label" parent="MusicRow"]
-layout_mode = 2
 custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "100%"
 horizontal_alignment = 2
 vertical_alignment = 1
-text = "100%"
-theme_override_font_sizes/font_size = 16
 
 [node name="SFXRow" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="SFXLabel" type="Label" parent="SFXRow"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "SFX"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "SFX"
+vertical_alignment = 1
 
 [node name="SFXSlider" type="HSlider" parent="SFXRow"]
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(200, 0)
 max_value = 1.0
 step = 0.01
 value = 1.0
 
 [node name="SFXValue" type="Label" parent="SFXRow"]
-layout_mode = 2
 custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "100%"
 horizontal_alignment = 2
 vertical_alignment = 1
-text = "100%"
-theme_override_font_sizes/font_size = 16
 
 [node name="NowPlayingRow" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="NowPlayingLabel" type="Label" parent="NowPlayingRow"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Now Playing"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Now Playing"
+vertical_alignment = 1
 
 [node name="NowPlayingTrack" type="Label" parent="NowPlayingRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-vertical_alignment = 1
-clip_text = true
-text = "—"
 theme_override_colors/font_color = Color(0.75, 0.75, 0.75, 1)
 theme_override_font_sizes/font_size = 14
+text = "—"
+vertical_alignment = 1
+clip_text = true
 
 [node name="MusicControlsRow" type="HBoxContainer" parent="."]
 layout_mode = 2
-alignment = 1
 theme_override_constants/separation = 8
+alignment = 1
 
 [node name="PrevButton" type="Button" parent="MusicControlsRow"]
-layout_mode = 2
 custom_minimum_size = Vector2(52, 32)
+layout_mode = 2
 tooltip_text = "Previous track"
-text = "<<"
 theme_override_font_sizes/font_size = 16
+text = "<<"
 
 [node name="PlayPauseButton" type="Button" parent="MusicControlsRow"]
-layout_mode = 2
 custom_minimum_size = Vector2(72, 32)
+layout_mode = 2
 tooltip_text = "Play / Pause"
-text = "▶"
 theme_override_font_sizes/font_size = 16
+text = "▶"
 
 [node name="NextButton" type="Button" parent="MusicControlsRow"]
-layout_mode = 2
 custom_minimum_size = Vector2(52, 32)
+layout_mode = 2
 tooltip_text = "Next track"
-text = ">>"
 theme_override_font_sizes/font_size = 16
+text = ">>"
 
 [node name="AudioSeparator" type="HSeparator" parent="."]
 layout_mode = 2
@@ -238,299 +238,299 @@ theme_override_constants/separation = 8
 
 [node name="KeybindsHeader" type="Label" parent="."]
 layout_mode = 2
-text = "KEYBINDS"
-horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.9, 0.7, 0.3, 1)
 theme_override_font_sizes/font_size = 20
+text = "KEYBINDS"
+horizontal_alignment = 1
 
 [node name="KeybindRow_move_left" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="ActionLabel" type="Label" parent="KeybindRow_move_left"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Move Left"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Move Left"
+vertical_alignment = 1
 
 [node name="BindBtn" type="Button" parent="KeybindRow_move_left"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 32)
+layout_mode = 2
 theme_override_font_sizes/font_size = 14
 
 [node name="ResetBtn" type="Button" parent="KeybindRow_move_left"]
-layout_mode = 2
 custom_minimum_size = Vector2(60, 32)
-text = "Reset"
+layout_mode = 2
 theme_override_font_sizes/font_size = 13
+text = "Reset"
 
 [node name="KeybindRow_move_right" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="ActionLabel" type="Label" parent="KeybindRow_move_right"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Move Right"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Move Right"
+vertical_alignment = 1
 
 [node name="BindBtn" type="Button" parent="KeybindRow_move_right"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 32)
+layout_mode = 2
 theme_override_font_sizes/font_size = 14
 
 [node name="ResetBtn" type="Button" parent="KeybindRow_move_right"]
-layout_mode = 2
 custom_minimum_size = Vector2(60, 32)
-text = "Reset"
+layout_mode = 2
 theme_override_font_sizes/font_size = 13
+text = "Reset"
 
 [node name="KeybindRow_jump" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="ActionLabel" type="Label" parent="KeybindRow_jump"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Jump"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Jump"
+vertical_alignment = 1
 
 [node name="BindBtn" type="Button" parent="KeybindRow_jump"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 32)
+layout_mode = 2
 theme_override_font_sizes/font_size = 14
 
 [node name="ResetBtn" type="Button" parent="KeybindRow_jump"]
-layout_mode = 2
 custom_minimum_size = Vector2(60, 32)
-text = "Reset"
+layout_mode = 2
 theme_override_font_sizes/font_size = 13
+text = "Reset"
 
 [node name="KeybindRow_mine" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="ActionLabel" type="Label" parent="KeybindRow_mine"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Mine"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Mine"
+vertical_alignment = 1
 
 [node name="BindBtn" type="Button" parent="KeybindRow_mine"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 32)
+layout_mode = 2
 theme_override_font_sizes/font_size = 14
 
 [node name="ResetBtn" type="Button" parent="KeybindRow_mine"]
-layout_mode = 2
 custom_minimum_size = Vector2(60, 32)
-text = "Reset"
+layout_mode = 2
 theme_override_font_sizes/font_size = 13
+text = "Reset"
 
 [node name="KeybindRow_sprint" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="ActionLabel" type="Label" parent="KeybindRow_sprint"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Sprint"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Sprint"
+vertical_alignment = 1
 
 [node name="BindBtn" type="Button" parent="KeybindRow_sprint"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 32)
+layout_mode = 2
 theme_override_font_sizes/font_size = 14
 
 [node name="ResetBtn" type="Button" parent="KeybindRow_sprint"]
-layout_mode = 2
 custom_minimum_size = Vector2(60, 32)
-text = "Reset"
+layout_mode = 2
 theme_override_font_sizes/font_size = 13
+text = "Reset"
 
 [node name="KeybindRow_interact" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="ActionLabel" type="Label" parent="KeybindRow_interact"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Interact"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Interact"
+vertical_alignment = 1
 
 [node name="BindBtn" type="Button" parent="KeybindRow_interact"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 32)
+layout_mode = 2
 theme_override_font_sizes/font_size = 14
 
 [node name="ResetBtn" type="Button" parent="KeybindRow_interact"]
-layout_mode = 2
 custom_minimum_size = Vector2(60, 32)
-text = "Reset"
+layout_mode = 2
 theme_override_font_sizes/font_size = 13
+text = "Reset"
 
 [node name="KeybindRow_sonar_ping" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="ActionLabel" type="Label" parent="KeybindRow_sonar_ping"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Sonar Ping"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Sonar Ping"
+vertical_alignment = 1
 
 [node name="BindBtn" type="Button" parent="KeybindRow_sonar_ping"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 32)
+layout_mode = 2
 theme_override_font_sizes/font_size = 14
 
 [node name="ResetBtn" type="Button" parent="KeybindRow_sonar_ping"]
-layout_mode = 2
 custom_minimum_size = Vector2(60, 32)
-text = "Reset"
+layout_mode = 2
 theme_override_font_sizes/font_size = 13
+text = "Reset"
 
 [node name="KeybindRow_toggle_inventory" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="ActionLabel" type="Label" parent="KeybindRow_toggle_inventory"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Inventory"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Inventory"
+vertical_alignment = 1
 
 [node name="BindBtn" type="Button" parent="KeybindRow_toggle_inventory"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 32)
+layout_mode = 2
 theme_override_font_sizes/font_size = 14
 
 [node name="ResetBtn" type="Button" parent="KeybindRow_toggle_inventory"]
-layout_mode = 2
 custom_minimum_size = Vector2(60, 32)
-text = "Reset"
+layout_mode = 2
 theme_override_font_sizes/font_size = 13
+text = "Reset"
 
 [node name="KeybindRow_toggle_companions_menu" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="ActionLabel" type="Label" parent="KeybindRow_toggle_companions_menu"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Companions"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Companions"
+vertical_alignment = 1
 
 [node name="BindBtn" type="Button" parent="KeybindRow_toggle_companions_menu"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 32)
+layout_mode = 2
 theme_override_font_sizes/font_size = 14
 
 [node name="ResetBtn" type="Button" parent="KeybindRow_toggle_companions_menu"]
-layout_mode = 2
 custom_minimum_size = Vector2(60, 32)
-text = "Reset"
+layout_mode = 2
 theme_override_font_sizes/font_size = 13
+text = "Reset"
 
 [node name="KeybindRow_toggle_customization_menu" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="ActionLabel" type="Label" parent="KeybindRow_toggle_customization_menu"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Customization"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Customization"
+vertical_alignment = 1
 
 [node name="BindBtn" type="Button" parent="KeybindRow_toggle_customization_menu"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 32)
+layout_mode = 2
 theme_override_font_sizes/font_size = 14
 
 [node name="ResetBtn" type="Button" parent="KeybindRow_toggle_customization_menu"]
-layout_mode = 2
 custom_minimum_size = Vector2(60, 32)
-text = "Reset"
+layout_mode = 2
 theme_override_font_sizes/font_size = 13
+text = "Reset"
 
 [node name="KeybindRow_music_prev" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="ActionLabel" type="Label" parent="KeybindRow_music_prev"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Music Prev"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Music Prev"
+vertical_alignment = 1
 
 [node name="BindBtn" type="Button" parent="KeybindRow_music_prev"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 32)
+layout_mode = 2
 theme_override_font_sizes/font_size = 14
 
 [node name="ResetBtn" type="Button" parent="KeybindRow_music_prev"]
-layout_mode = 2
 custom_minimum_size = Vector2(60, 32)
-text = "Reset"
+layout_mode = 2
 theme_override_font_sizes/font_size = 13
+text = "Reset"
 
 [node name="KeybindRow_music_next" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="ActionLabel" type="Label" parent="KeybindRow_music_next"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Music Next"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Music Next"
+vertical_alignment = 1
 
 [node name="BindBtn" type="Button" parent="KeybindRow_music_next"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 32)
+layout_mode = 2
 theme_override_font_sizes/font_size = 14
 
 [node name="ResetBtn" type="Button" parent="KeybindRow_music_next"]
-layout_mode = 2
 custom_minimum_size = Vector2(60, 32)
-text = "Reset"
+layout_mode = 2
 theme_override_font_sizes/font_size = 13
+text = "Reset"
 
 [node name="KeybindRow_music_toggle" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="ActionLabel" type="Label" parent="KeybindRow_music_toggle"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 0)
-vertical_alignment = 1
-text = "Music Play/Pause"
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+text = "Music Play/Pause"
+vertical_alignment = 1
 
 [node name="BindBtn" type="Button" parent="KeybindRow_music_toggle"]
-layout_mode = 2
 custom_minimum_size = Vector2(160, 32)
+layout_mode = 2
 theme_override_font_sizes/font_size = 14
 
 [node name="ResetBtn" type="Button" parent="KeybindRow_music_toggle"]
-layout_mode = 2
 custom_minimum_size = Vector2(60, 32)
-text = "Reset"
+layout_mode = 2
 theme_override_font_sizes/font_size = 13
+text = "Reset"
 
 [node name="ResetAllKeybinds" type="Button" parent="."]
-layout_mode = 2
 custom_minimum_size = Vector2(0, 34)
-text = "Reset All Keybinds"
+layout_mode = 2
 theme_override_font_sizes/font_size = 14
+text = "Reset All Keybinds"

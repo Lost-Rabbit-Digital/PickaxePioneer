@@ -253,6 +253,7 @@ theme_override_font_sizes/font_size = 18
 text = "Join the Discord!"
 
 [node name="CreditsPanel" type="PanelContainer" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
