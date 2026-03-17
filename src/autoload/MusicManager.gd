@@ -14,6 +14,7 @@ var _tracks: Array[AudioStream] = []
 var _order: Array[int] = []
 var _index: int = -1
 var _paused: bool = false
+var _first_play: bool = true
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -64,6 +65,9 @@ func _crossfade_to(stream: AudioStream) -> void:
 	new_player.play()
 	new_player.finished.connect(_on_song_finished.bind(new_player))
 
+	var fade_in_duration: float = 2.0 if _first_play else fade_duration
+	_first_play = false
+
 	var tween := create_tween()
 	tween.set_parallel(true)
 
@@ -72,7 +76,7 @@ func _crossfade_to(stream: AudioStream) -> void:
 		tween.tween_property(old, "volume_db", -80.0, fade_duration)
 		tween.chain().tween_callback(old.queue_free)
 
-	tween.tween_property(new_player, "volume_db", 0.0, fade_duration)
+	tween.tween_property(new_player, "volume_db", 0.0, fade_in_duration)
 	current_player = new_player
 
 func _unhandled_input(event: InputEvent) -> void:
