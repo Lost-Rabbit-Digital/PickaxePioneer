@@ -1180,8 +1180,11 @@ func _on_slot_selected(index: int) -> void:
 			_pending_slot_index = index
 			_show_confirm_dialog(index)
 			return
-		# Slot is empty, proceed with new game
+		# Slot is empty — show class selection before creating the save
 		_save_popup.hide()
+		var confirmed := await _show_class_selection()
+		if not confirmed:
+			return
 		SaveManager.new_game(index)
 	else:
 		_save_popup.hide()
@@ -1190,10 +1193,6 @@ func _on_slot_selected(index: int) -> void:
 		_mp_host_pending = false
 		_start_mp_hosting()
 		return
-	if is_new_game:
-		var confirmed := await _show_class_selection()
-		if not confirmed:
-			return
 	await SceneTransition.fade_to_black(0.5)
 	GameManager.start_game()
 
@@ -1305,13 +1304,14 @@ func _on_confirm_overwrite() -> void:
 	_confirm_dialog.hide()
 	_save_popup.hide()
 	if _pending_slot_index >= 0:
-		SaveManager.new_game(_pending_slot_index)
 		if _mp_host_pending:
+			SaveManager.new_game(_pending_slot_index)
 			_mp_host_pending = false
 			_start_mp_hosting()
 		else:
 			var confirmed := await _show_class_selection()
 			if confirmed:
+				SaveManager.new_game(_pending_slot_index)
 				await SceneTransition.fade_to_black(0.5)
 				GameManager.start_game()
 	_pending_slot_index = -1
