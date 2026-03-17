@@ -1140,11 +1140,11 @@ func _format_playtime(seconds: float) -> String:
 		return "%dh %dm" % [hours, minutes]
 	return "%dm" % minutes
 
-const _CLASS_SELECTION_SCENE := preload("res://src/ui/ClassSelectionMenu.gd")
+const _CLASS_SELECTION_SCENE := preload("res://src/ui/ClassSelection.tscn")
 
 func _show_class_selection() -> bool:
 	$VBoxContainer.hide()
-	var menu: CanvasLayer = _CLASS_SELECTION_SCENE.new()
+	var menu: CanvasLayer = _CLASS_SELECTION_SCENE.instantiate()
 	add_child(menu)
 	var confirmed: bool = false
 	var result: Array = await _await_class_menu(menu)
