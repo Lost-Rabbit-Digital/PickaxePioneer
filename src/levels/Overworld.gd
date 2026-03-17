@@ -18,7 +18,7 @@ extends Control
 
 var current_node: MapNode
 var nodes: Array[MapNode] = []
-var _modal: LevelInfoModal = null
+@onready var _modal: LevelInfoModal = $LevelInfoModal
 var _pending_node: MapNode = null
 
 # Animated dashed lines
@@ -117,9 +117,7 @@ func _ready() -> void:
 	settlement_node_3.hazard_types = []
 	settlement_node_4.visible = false
 
-	# Instantiate the level info modal
-	_modal = preload("res://src/ui/LevelInfoModal.tscn").instantiate()
-	add_child(_modal)
+	# Connect level info modal signals
 	_modal.confirmed.connect(_on_modal_confirmed)
 	_modal.travel_confirmed.connect(_on_modal_travel_confirmed)
 	_modal.cancelled.connect(_on_modal_cancelled)

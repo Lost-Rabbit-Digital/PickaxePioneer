@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://overworld8aa"]
+[gd_scene load_steps=9 format=3 uid="uid://overworld8aa"]
 
 [ext_resource type="Script" uid="uid://bk70fmvti7sbc" path="res://src/levels/Overworld.gd" id="1_overworld"]
 [ext_resource type="Texture2D" uid="uid://2i1s08p2mq37" path="res://assets/pixelart_starfield.png" id="2_aphkn"]
@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://caravan456" path="res://src/entities/overworld/Caravan.tscn" id="4_caravan"]
 [ext_resource type="Theme" uid="uid://c24g1w4ks0tqe" path="res://themes/main_menu_general_theme.tres" id="4_qxpg8"]
 [ext_resource type="PackedScene" uid="uid://dom6mgmv6ffss" path="res://src/ui/PauseMenu.tscn" id="7_pausemenu"]
+[ext_resource type="PackedScene" uid="uid://b03nq7wdlp4c1" path="res://src/ui/LevelInfoModal.tscn" id="8_levelinfomodal"]
 
 [node name="Overworld" type="Control"]
 layout_mode = 3
@@ -112,5 +113,7 @@ vertical_alignment = 1
 
 [node name="PauseMenu" parent="." instance=ExtResource("7_pausemenu")]
 visible = false
+
+[node name="LevelInfoModal" parent="." instance=ExtResource("8_levelinfomodal")]
 
 [connection signal="pressed" from="Camera2D/HUDCanvasLayer/CenterButton" to="." method="_on_center_button_pressed"]
