@@ -14,7 +14,7 @@ const CARDS: Array[String] = [
 ]
 
 const FADE_IN_TIME: float = 0.8
-const HOLD_TIME: float = 2.5
+const HOLD_TIME: float = 4.5
 const FADE_OUT_TIME: float = 0.5
 
 var _current_card: int = -1
