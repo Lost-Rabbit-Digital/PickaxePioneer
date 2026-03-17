@@ -6,9 +6,9 @@ extends Node
 const SETTINGS_PATH = "user://settings.cfg"
 
 # Audio
-var master_volume: float = 1.0
-var music_volume: float = 1.0
-var sfx_volume: float = 1.0
+var master_volume: float = 0.5
+var music_volume: float = 0.5
+var sfx_volume: float = 0.5
 
 # Display
 var window_mode: int = 0  # 0=Windowed, 1=Fullscreen, 2=Borderless Fullscreen
@@ -266,9 +266,9 @@ func load_settings() -> void:
 		set_sfx_volume(sfx_volume)
 		return
 	# Audio
-	master_volume = config.get_value("audio", "master_volume", 1.0)
-	music_volume = config.get_value("audio", "music_volume", 1.0)
-	sfx_volume = config.get_value("audio", "sfx_volume", 1.0)
+	master_volume = config.get_value("audio", "master_volume", 0.5)
+	music_volume = config.get_value("audio", "music_volume", 0.5)
+	sfx_volume = config.get_value("audio", "sfx_volume", 0.5)
 	set_master_volume(master_volume)
 	set_music_volume(music_volume)
 	set_sfx_volume(sfx_volume)
