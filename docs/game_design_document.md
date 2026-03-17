@@ -7,7 +7,7 @@
 **Theme:** Underground Cat Civilization Mining Adventure
 **Engine:** Godot 4.5
 **Perspective:** Side-Scrolling 2D (Terraria-style physics)
-**Inspiration:** Motherlode, Supermotherlode, Dwarf Fortress, Path of Exile, ADOM, Noita
+**Inspiration:** Motherlode, Supermotherlode, Coal LLC, Dwarf Fortress, Path of Exile, ADOM, Noita
 **Target Playtime:** 5-12 hours (first completion), 15-25+ hours (100% completion)
 **Target Platforms:** Steam (Windows/Linux/Mac), Itch.io
 
@@ -22,21 +22,47 @@ You are a mining cat from the Clowder, venturing into the earth below. Armed wit
 3. **Environmental Storytelling:** Discover the underground world's secrets through collectible fossils, Clowder lore, and hidden chambers
 4. **Strategic Exploration:** Physics-based movement and energy management reward careful planning over recklessness
 
+### 1.2 Design Philosophy
+
+**Difficulty Model: All-or-Nothing (Coal LLC Style)**
+Runs are high-stakes. If you die or run out of energy, you lose ALL collected run minerals. There is no mercy mechanic, no partial banking, and no insurance. This creates genuine tension on every dive and makes successful extractions feel earned. The game never punishes permanently (upgrades persist), but each run is a real bet.
+
+**Emotional Tone: Tension-First Progression (A+B Hybrid, Leaning B)**
+The moment-to-moment feel is tension — energy ticking down, hazards closing in, the choice to push deeper or surface. But the session-to-session feel is progression — every banked haul buys permanent power, unlocks new systems, and opens new planets. Players should feel the squeeze during runs and the relief/reward between them.
+
+**Experienced Player Shortcut: "Launch Again"**
+The Run Summary screen offers a "Launch Again" button that returns the player directly to the Star Chart, bypassing the Clowder hub. This lets experienced players who know their upgrade path chain runs efficiently. New players are expected to return to the Clowder to explore upgrades, NPCs, and story. The hub is never skipped on first visit.
+
 ## 2. Gameplay Mechanics
 
 ### 2.1 Core Loop
-1. **Hub — The Clowder (Surface):**
-   - View stats, achievements, and total progression
-   - Access the Clowder Workshop (permanent cat upgrades: Pelt, Paws, Claws, Whiskers)
-   - Check the Mission Board (daily challenges, bounties, discovery missions)
-   - Read collected Fossils and Ancient Inscriptions in the Archive
-   - Interact with Clowder NPCs for quests and lore
 
-2. **Overworld — The Clowder Warren:**
-   - Node-based navigation between mine entrances, settlement rest stops, and the Clowder
-   - Multiple mines with varying depth, ore richness, and hazard profiles
-   - Each mine node has a name and unique composition (Iron Mine, Gold Vein, Gem Cavern, etc.)
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  CLOWDER HUB ──► STAR CHART ──► SETTLEMENT ──► MINING RUN     │
+│       ▲              │              (optional)       │          │
+│       │              │                               ▼          │
+│       │              └──────── "Launch Again" ◄── RUN SUMMARY  │
+│       └──────────────────────────────────────────────┘          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+1. **Hub — The Clowder (Spatial, Walkable):**
+   - A side-scrolling space station the player physically walks through as their cat
+   - **Clowder Workshop (Left):** The Matriarch — Pelt/Paws/Claws/Whiskers upgrades
+   - **Mission Board (Center):** Elder Miner — daily challenges, bounties, discovery missions
+   - **Fossil Archive (Right):** Clowder Archivist — collected fossils and Clowder lore
+   - **Docking Bay (Bottom):** Deploy to Star Chart
+   - **Stats Chamber:** Clowder wealth, depth records, achievements
+   - NPC interactions, ambient chatter, and lore discovery through exploration
+   - Safe zone — no energy cost, no hazards
+
+2. **Overworld — The Star Chart:**
+   - Node-based navigation between mine planets, settlement stations, and the Clowder
+   - Multiple planets with varying depth, ore richness, and hazard profiles
+   - Each planet node has a unique name, atmosphere color, ore mix, and hazard profile
    - Settlement nodes offer pre-run consumables for banked minerals
+   - Ship upgrades (Warp Drive, Long Scanner, etc.) affect overworld traversal
 
 3. **Settlement — Rest Stop:**
    - Spend banked minerals on run-scoped consumables before entering a mine
@@ -45,23 +71,31 @@ You are a mining cat from the Clowder, venturing into the earth below. Armed wit
 4. **Mining Run — The Descent:**
    - Spawn at the surface entrance of a mine shaft (96×128 tile grid)
    - Terraria-style physics: gravity, jump, horizontal run; cursor-based mining (left-click within 4.5 tiles)
+   - **Scout Cat companion** follows and auto-collects ore (see Section 2.5)
    - Energy depletes with depth; surface movement is free
    - Ore value increases dramatically with depth
    - Hazards: lava flows, explosive gas pockets, unstable rock
-   - Energy Nodes restore energy; the Reenergy Station (midpoint) reenergys for minerals
+   - Energy Nodes restore energy; the Reenergy Station (midpoint) refills for minerals
+   - Smelting chain bonuses reward consecutive same-ore mining (see Section 2.6)
+   - Wandering Trader appears at milestone depths with rare items
    - Reach the Exit Station to complete the run and bank your minerals
 
-5. **Post-Run — Return to Colony:**
-   - Successful surface return: bank all collected minerals (+ any forager-banked minerals)
-   - Out of energy or HP → 0: lose all run minerals, return empty to colony
-   - Review run statistics and depth reached
-   - Unlock new upgrades based on mineral wealth
+5. **Post-Run — Run Summary:**
+   - **Successful exit:** Bank all collected minerals + Scout Cat's banked minerals + depth bonus
+   - **Out of energy or HP → 0:** Lose ALL run minerals (all-or-nothing). Failure Summary shows loss recap and contextual tips
+   - Review run statistics: ore breakdown, depth reached, chain bonuses, fossils found
+   - **"Launch Again" button:** Experienced players skip the Clowder and return directly to Star Chart
+   - **"Return to Clowder" button:** Visit hub for upgrades, quests, story progression
 
 6. **Meta-Progression Loop:**
-   - Spend minerals on permanent carapace, legs, and mandibles upgrades
-   - Unlock new mine locations on the overworld
-   - Progress colony story through boss encounters and fossil collection
-   - Complete achievements for unique colony rewards
+   - Spend minerals on permanent Pelt/Paws/Claws/Whiskers upgrades at the Clowder Workshop
+   - Invest perk points in the 6-branch Perk Tree for deeper specialization
+   - Build ship upgrades (Warp Drive, Cargo Bay, etc.) for overworld advantages
+   - Pay down Father's Debt to advance the story
+   - Equip trinkets for passive run bonuses
+   - Unlock cosmetics (cat colors, companion followers) via global level
+   - Unlock new mine locations on the Star Chart
+   - Progress Clowder story through boss encounters and fossil collection
 
 ### 2.2 Run System
 
