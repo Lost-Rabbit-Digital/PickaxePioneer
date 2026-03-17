@@ -176,19 +176,6 @@ func _build_ui() -> void:
 	bottom_anchor.offset_bottom = -30.0
 	root.add_child(bottom_anchor)
 
-	# BACK button — left side
-	var back_btn := Button.new()
-	back_btn.text = "BACK"
-	back_btn.custom_minimum_size = Vector2(140.0, 52.0)
-	back_btn.add_theme_font_size_override("font_size", 20)
-	back_btn.set_anchors_preset(Control.PRESET_CENTER_LEFT)
-	back_btn.offset_left = 48.0
-	back_btn.offset_right = 48.0 + 140.0
-	back_btn.offset_top = -26.0
-	back_btn.offset_bottom = 26.0
-	back_btn.pressed.connect(_on_back_pressed)
-	bottom_anchor.add_child(back_btn)
-
 	# BEGIN RUN button — centered
 	_confirm_btn = Button.new()
 	_confirm_btn.text = "BEGIN RUN"
@@ -201,6 +188,19 @@ func _build_ui() -> void:
 	btn_center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bottom_anchor.add_child(btn_center)
 	btn_center.add_child(_confirm_btn)
+
+	# BACK button — left side (added after btn_center so it sits on top and receives input)
+	var back_btn := Button.new()
+	back_btn.text = "BACK"
+	back_btn.custom_minimum_size = Vector2(140.0, 52.0)
+	back_btn.add_theme_font_size_override("font_size", 20)
+	back_btn.set_anchors_preset(Control.PRESET_CENTER_LEFT)
+	back_btn.offset_left = 48.0
+	back_btn.offset_right = 48.0 + 140.0
+	back_btn.offset_top = -26.0
+	back_btn.offset_bottom = 26.0
+	back_btn.pressed.connect(_on_back_pressed)
+	bottom_anchor.add_child(back_btn)
 
 
 func _build_card(index: int, data: Dictionary) -> Control:
