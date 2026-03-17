@@ -7,7 +7,7 @@
 **Theme:** Underground Cat Civilization Mining Adventure
 **Engine:** Godot 4.5
 **Perspective:** Side-Scrolling 2D (Terraria-style physics)
-**Inspiration:** Motherlode, Supermotherlode, Dwarf Fortress, Path of Exile, ADOM, Noita
+**Inspiration:** Motherlode, Supermotherlode, Coal LLC, Dwarf Fortress, Path of Exile, ADOM, Noita
 **Target Playtime:** 5-12 hours (first completion), 15-25+ hours (100% completion)
 **Target Platforms:** Steam (Windows/Linux/Mac), Itch.io
 
@@ -22,21 +22,47 @@ You are a mining cat from the Clowder, venturing into the earth below. Armed wit
 3. **Environmental Storytelling:** Discover the underground world's secrets through collectible fossils, Clowder lore, and hidden chambers
 4. **Strategic Exploration:** Physics-based movement and energy management reward careful planning over recklessness
 
+### 1.2 Design Philosophy
+
+**Difficulty Model: All-or-Nothing (Coal LLC Style)**
+Runs are high-stakes. If you die or run out of energy, you lose ALL collected run minerals. There is no mercy mechanic, no partial banking, and no insurance. This creates genuine tension on every dive and makes successful extractions feel earned. The game never punishes permanently (upgrades persist), but each run is a real bet.
+
+**Emotional Tone: Tension-First Progression (A+B Hybrid, Leaning B)**
+The moment-to-moment feel is tension — energy ticking down, hazards closing in, the choice to push deeper or surface. But the session-to-session feel is progression — every banked haul buys permanent power, unlocks new systems, and opens new planets. Players should feel the squeeze during runs and the relief/reward between them.
+
+**Experienced Player Shortcut: "Launch Again"**
+The Run Summary screen offers a "Launch Again" button that returns the player directly to the Star Chart, bypassing the Clowder hub. This lets experienced players who know their upgrade path chain runs efficiently. New players are expected to return to the Clowder to explore upgrades, NPCs, and story. The hub is never skipped on first visit.
+
 ## 2. Gameplay Mechanics
 
 ### 2.1 Core Loop
-1. **Hub — The Clowder (Surface):**
-   - View stats, achievements, and total progression
-   - Access the Clowder Workshop (permanent cat upgrades: Pelt, Paws, Claws, Whiskers)
-   - Check the Mission Board (daily challenges, bounties, discovery missions)
-   - Read collected Fossils and Ancient Inscriptions in the Archive
-   - Interact with Clowder NPCs for quests and lore
 
-2. **Overworld — The Clowder Warren:**
-   - Node-based navigation between mine entrances, settlement rest stops, and the Clowder
-   - Multiple mines with varying depth, ore richness, and hazard profiles
-   - Each mine node has a name and unique composition (Iron Mine, Gold Vein, Gem Cavern, etc.)
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  CLOWDER HUB ──► STAR CHART ──► SETTLEMENT ──► MINING RUN     │
+│       ▲              │              (optional)       │          │
+│       │              │                               ▼          │
+│       │              └──────── "Launch Again" ◄── RUN SUMMARY  │
+│       └──────────────────────────────────────────────┘          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+1. **Hub — The Clowder (Spatial, Walkable):**
+   - A side-scrolling space station the player physically walks through as their cat
+   - **Clowder Workshop (Left):** The Matriarch — Pelt/Paws/Claws/Whiskers upgrades
+   - **Mission Board (Center):** Elder Miner — daily challenges, bounties, discovery missions
+   - **Fossil Archive (Right):** Clowder Archivist — collected fossils and Clowder lore
+   - **Docking Bay (Bottom):** Deploy to Star Chart
+   - **Stats Chamber:** Clowder wealth, depth records, achievements
+   - NPC interactions, ambient chatter, and lore discovery through exploration
+   - Safe zone — no energy cost, no hazards
+
+2. **Overworld — The Star Chart:**
+   - Node-based navigation between mine planets, settlement stations, and the Clowder
+   - Multiple planets with varying depth, ore richness, and hazard profiles
+   - Each planet node has a unique name, atmosphere color, ore mix, and hazard profile
    - Settlement nodes offer pre-run consumables for banked minerals
+   - Ship upgrades (Warp Drive, Long Scanner, etc.) affect overworld traversal
 
 3. **Settlement — Rest Stop:**
    - Spend banked minerals on run-scoped consumables before entering a mine
@@ -45,23 +71,31 @@ You are a mining cat from the Clowder, venturing into the earth below. Armed wit
 4. **Mining Run — The Descent:**
    - Spawn at the surface entrance of a mine shaft (96×128 tile grid)
    - Terraria-style physics: gravity, jump, horizontal run; cursor-based mining (left-click within 4.5 tiles)
+   - **Scout Cat companion** follows and auto-collects ore (see Section 2.5)
    - Energy depletes with depth; surface movement is free
    - Ore value increases dramatically with depth
    - Hazards: lava flows, explosive gas pockets, unstable rock
-   - Energy Nodes restore energy; the Reenergy Station (midpoint) reenergys for minerals
+   - Energy Nodes restore energy; the Reenergy Station (midpoint) refills for minerals
+   - Smelting chain bonuses reward consecutive same-ore mining (see Section 2.6)
+   - Wandering Trader appears at milestone depths with rare items
    - Reach the Exit Station to complete the run and bank your minerals
 
-5. **Post-Run — Return to Colony:**
-   - Successful surface return: bank all collected minerals (+ any forager-banked minerals)
-   - Out of energy or HP → 0: lose all run minerals, return empty to colony
-   - Review run statistics and depth reached
-   - Unlock new upgrades based on mineral wealth
+5. **Post-Run — Run Summary:**
+   - **Successful exit:** Bank all collected minerals + Scout Cat's banked minerals + depth bonus
+   - **Out of energy or HP → 0:** Lose ALL run minerals (all-or-nothing). Failure Summary shows loss recap and contextual tips
+   - Review run statistics: ore breakdown, depth reached, chain bonuses, fossils found
+   - **"Launch Again" button:** Experienced players skip the Clowder and return directly to Star Chart
+   - **"Return to Clowder" button:** Visit hub for upgrades, quests, story progression
 
 6. **Meta-Progression Loop:**
-   - Spend minerals on permanent carapace, legs, and mandibles upgrades
-   - Unlock new mine locations on the overworld
-   - Progress colony story through boss encounters and fossil collection
-   - Complete achievements for unique colony rewards
+   - Spend minerals on permanent Pelt/Paws/Claws/Whiskers upgrades at the Clowder Workshop
+   - Invest perk points in the 6-branch Perk Tree for deeper specialization
+   - Build ship upgrades (Warp Drive, Cargo Bay, etc.) for overworld advantages
+   - Pay down Father's Debt to advance the story
+   - Equip trinkets for passive run bonuses
+   - Unlock cosmetics (cat colors, companion followers) via global level
+   - Unlock new mine locations on the Star Chart
+   - Progress Clowder story through boss encounters and fossil collection
 
 ### 2.2 Run System
 
@@ -100,7 +134,7 @@ You are a mining cat from the Clowder, venturing into the earth below. Armed wit
   - Left-click: Mine the tile under the cursor (within 4.5-tile range)
 - **Abilities:**
   - `Q`: Sonar ping (costs energy; reveals ore in radius through solid rock)
-  - `F`: Place pheromone marker (directs Scout Cat companion)
+  - `F`: Place waypoint marker (directs Scout Cat companion)
 - **Interaction:**
   - `E`: Interact with Reenergy Station or NPC
   - `Esc`: Pause Menu
@@ -148,8 +182,103 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 1. **The Matriarch** (Clowder Hub): Faction leader, upgrade vendor, story guide
 2. **Elder Miner** (Clowder Hub): Mission giver, experienced mining cat
 3. **Clowder Archivist** (Clowder Hub): Fossil and lore collector
-4. **Wandering Trader** (Random Mine Event): Rare item exchange
+4. **Wandering Trader** (Random Mine Event): Rare item exchange at milestone depths
 5. **Stray Mining Cats** (Mine Events): Rescue for Clowder rewards
+
+### 2.5 Scout Cat Companion (ForagerSystem)
+
+The Scout Cat is an AI-controlled companion that follows the player underground and automatically collects ore chunks from mining.
+
+**Behavior States:**
+- **Follow:** Hovers 1.2 tiles behind and 0.5 tiles above the player; sweeps ore chunks within 80px radius every 0.25 seconds
+- **Return:** When carry capacity is full (30 minerals), rushes to the surface deposit point at 1.8× normal speed (252 px/s)
+- **Deposit:** Waits 1.8 seconds at the surface, banks minerals safely, then returns to follow the player
+
+**Key Stats:**
+| Stat | Value |
+|------|-------|
+| Base carry capacity | 30 minerals |
+| Move speed | 140 px/s (252 px/s returning) |
+| Collection radius | 80 px |
+| Sweep interval | 0.25 seconds |
+| Deposit delay | 1.8 seconds |
+
+**Design Intent:** The Scout Cat creates a "safety net" — minerals it banks at the surface are saved even if the player dies. This rewards staying alive long enough for the Scout Cat to make trips, without removing the all-or-nothing tension of the player's own inventory. Bonus capacity from settlement consumables increases its carry cap.
+
+### 2.6 Smelting System (SmeltingSystem)
+
+Mining consecutive tiles of the same ore type builds a **smelting chain** that awards bonus minerals. The chain resets when you mine a different ore type or stop mining for too long.
+
+**Chain Bonuses:**
+- Chain 3: +10% mineral yield
+- Chain 5: +25% mineral yield
+- Chain 8+: +50% mineral yield (cap)
+
+**Alloy Combos:** Mining specific ore sequences (e.g., Iron → Gold → Iron) triggers alloy discovery bonuses — one-time mineral bursts that reward exploration of mixed ore deposits.
+
+### 2.7 Trinket System (TrinketSystem)
+
+Trinkets are equippable one-off items that provide passive bonuses (and sometimes penalties) during mining runs. Each trinket is an independent toggle — equip as many as you want.
+
+**13 Trinkets:**
+
+| ID | Name | Effect | Category |
+|----|------|--------|----------|
+| paraglider | Paraglider | Slow fall, extended air control | Movement |
+| jet_boots | Jet Boots | Short hover burst in midair | Movement |
+| spring_boots | Spring Boots | Higher jump height | Movement |
+| sneakers | Sneakers | Faster horizontal movement | Movement |
+| gecko_gloves | Gecko Gloves | Wall cling and wall jump | Movement |
+| boots_of_sprinting | Boots of Sprinting | Sprint speed boost | Movement |
+| jumping_bean | Jumping Bean | +20% mining power | Combat |
+| magnet | Magnet | Attract ore chunks within 4 tiles | Combat |
+| stone_of_regen | Stone of Regeneration | +1 HP every 4 seconds | Survival |
+| cube_of_curing | Cube of Curing | Immune to plasma damage | Survival |
+| scuba_helmet | Scuba Helmet | Immune to gas pockets | Survival |
+| cosmic_radiation | Cosmic Radiation | Random HP/energy swaps every 15s | Chaos |
+| curse_of_core | Curse of the Core | -1 HP every 8s underground | Chaos |
+
+**Design Intent:** Trinkets let players customize their run style without permanent commitment. Chaos trinkets appeal to roguelite veterans seeking high-risk modifiers.
+
+### 2.8 Class System (ClassSelectionMenu)
+
+Players choose a starting class when beginning a new game. Classes determine initial stat bonuses and starting equipment.
+
+**10 Classes:**
+
+| # | Class | Unlock |
+|---|-------|--------|
+| 1 | Pioneer | Level 1 (default) |
+| 2 | Prospector | Level 1 |
+| 3 | Brawler | Level 1 |
+| 4 | Veteran | Level 1 |
+| 5 | Scout | Level 1 |
+| 6 | Engineer | Level 2 |
+| 7 | Alchemist | Level 2 |
+| 8 | Sentinel | Level 2 |
+| 9 | Wanderer | Level 2 |
+| 10 | Phantom | Level 2 |
+
+Classes 1–5 are available immediately; classes 6–10 unlock at global player level 2+. Class selection is shown as a horizontal scrollable row of 10 cards after save slot selection.
+
+### 2.9 Inventory System (InventoryScreen)
+
+Toggled via `I` key during mining runs. Three-section panel:
+
+1. **Slot Grid (10 columns):**
+   - First 2 slots: Pickaxe (power scales with Claws) and Ladders (placeable, count tracked)
+   - Remaining slots: Ore stacks (max 32 per stack)
+   - Drag-and-drop to rearrange slots; hover for tooltip (name, type, stat, description)
+   - Base capacity: 20 slots (+25 from Cargo Bay ship upgrade, +2 per Claws level)
+
+2. **Equipment Column:**
+   - Pelt / Paws / Claws / Whiskers upgrade levels displayed with level bars
+
+3. **Wallet & Trinkets Column:**
+   - Persistent coins, run coins, equipped trinkets list
+
+**Ore Display Order (shallow → deep):**
+Space Coal → Lunar Copper → Meteor Iron → Star Gold → Cosmic Diamond
 
 ## 3. Art & Audio Style
 
@@ -206,24 +335,39 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 
 ## 4. World Design
 
-### 4.1 The Hub: The Clowder Space Station
-**Layout:**
-- **Clowder Workshop (Left):** The Matriarch — Pelt/Paws/Claws/Whiskers upgrades
-- **Mission Board (Center):** Elder Miner — Daily challenges, bounties, discovery missions
-- **Fossil Archive (Right):** Clowder Archivist — View collected fossils and Clowder lore
-- **Docking Bay (Bottom):** Deploy to Star Chart
-- **Stats Chamber:** View Clowder wealth, depth records, achievements
+### 4.1 The Hub: The Clowder Space Station (Spatial Hub)
+
+The Clowder is a **walkable side-scrolling space station** — the player physically walks through it as their cat character (same controls as mining, minus mining). This grounds the hub in the same world as the mines.
+
+**Layout (Left to Right):**
+- **Clowder Workshop:** The Matriarch — Pelt/Paws/Claws/Whiskers upgrades, Perk Tree access
+- **Debt Office:** Pay down Father's Debt (see Section 5.5)
+- **Mission Board:** Elder Miner — Daily challenges, bounties, discovery missions
+- **Ship Hangar:** Ship upgrades (Warp Drive, Cargo Bay, etc.)
+- **Fossil Archive:** Clowder Archivist — Collected fossils and Clowder lore
+- **Gem Socketing Altar:** Socket gems into Pelt/Paws/Claws/Whiskers for permanent bonuses
+- **Stats Chamber:** Clowder wealth, depth records, achievements
+- **Docking Bay (Far Right):** Deploy to Star Chart
 
 **Atmosphere:**
 - Bustling cat space station humming with activity
 - Corridors lined with cat-clan memorabilia and glowing mineral samples
-- Clowder members with idle animations and ambient chatter
+- Clowder NPC members with idle animations and ambient chatter (ChatterManager)
 - Safe zone — no energy cost, no hazards
+- Cats walk past in the background, reinforcing a living world
 
 **NPC Interactions:**
 - Story-driven dialogue about the Clowder's need for minerals to fuel the next jump
-- Relationship system (unlocks special missions and upgrade discounts)
 - Rotating daily quests tied to ore types and depths
+- Quest NPCs placed at fixed stations the player walks to (spatial discovery)
+
+**Progressive Disclosure:**
+The Clowder reveals new areas and NPCs as the player progresses:
+- **First visit:** Only Workshop, Mission Board, and Docking Bay accessible
+- **After first boss:** Fossil Archive unlocks
+- **After banking 50,000 minerals:** Ship Hangar unlocks
+- **After finding first gem:** Gem Socketing Altar appears
+- Systems are introduced one at a time to avoid overwhelming new players
 
 ### 4.2 Overworld: The Star Chart
 **Structure:**
@@ -271,20 +415,26 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 ## 5. Progression System
 
 ### 5.1 Mineral Economy
-**Primary Currency: Minerals**
+**Primary Currency: Minerals (Copper)**
 - Collected by mining tiles underground
-- Lost if the cat dies or runs out of energy
+- Lost if the cat dies or runs out of energy (all-or-nothing)
 - Banked permanently on successful exit
-- Used for all Clowder upgrades
+- Used for all Clowder upgrades, ship modules, and debt payments
+- Internal unit: copper (100 copper = 1 gold display)
 
-**Secondary Collectibles (Planned):**
-- **Fossils:** Permanent story collectibles, never lost
-- **Rare Crystals:** Mid-tier crafting material, found in deep gem clusters
-- **Ancient Artifacts:** Ultra-rare, unlocks special colony chambers
+**Secondary Currencies:**
+- **Gems:** Rare drops from deep gem ore; used for gem socketing (3 gems per socket)
+- **Fossils:** Permanent story collectibles, never lost; 50 total across all depths
+- **XP:** Earned from mining, depth milestones, and playtime; levels up for perk points
+
+**Milestone Trackers (Persistent):**
+- `total_coins_banked` — cumulative minerals ever banked (unlocks ship upgrades)
+- `bosses_defeated_total` — total boss encounters won
+- `deepest_row_reached` — deepest grid row ever reached (caps at 128)
 
 ### 5.2 Upgrade System
 
-**Clowder Workshop — Four Tracks:**
+**Clowder Workshop — Four Core Tracks:**
 
 | Upgrade | Stat | Base Cost | Per Level | Max Levels |
 |---------|------|-----------|-----------|-----------|
@@ -293,32 +443,106 @@ See Section 2.2 for full tile breakdown. Tile richness is depth-weighted:
 | Sharpen Claws | +3 mining power | 50 minerals | +25 minerals | 10 |
 | Refine Whiskers | Larger sonar radius, lower energy/ping | 50 minerals | +25 minerals | 10 |
 
-**Future Upgrade Tracks (Planned):**
-- **Energy Sac:** Increases max energy capacity (separate from Paws)
-- **Clowder Bond:** Buffs earned near other rescued stray cats
+**Gem Socketing (4 Sockets, 3 Gems Each):**
 
-### 5.3 Research Tree (Meta-Progression, Planned)
+| Socket | Effect |
+|--------|--------|
+| Pelt Socket | +1 Max HP |
+| Paws Socket | +25 Max Energy, +15 Move Speed |
+| Claws Socket | +4 Mining Power |
+| Whiskers Socket | +3 Sonar Radius |
 
-**Tier 1** (1–5 Clowder Points Each):
-- Cat Nose: +10% mineral yield from all tiles
-- Thick Pelt: +5% max HP
-- Efficient Paws: −5% energy consumption
-- Quick Claws: −10% between-tile dig delay
-- Lucky Find: +2% chance to find Rare Crystals
+### 5.3 Perk Tree (6-Branch, Diablo II Style)
 
-**Tier 2** (5–10 Points Each):
-- Deep Whiskers: Reveal tile types one step ahead
-- Armored Pelt: +15% damage reduction
-- Razor Claws: Chain-mine explosive tiles safely
-- Extended Energy Sac: +25% max energy capacity
-- Treasure Instinct: Highlight fossil locations
+Players earn 1 perk point per level (XP scaling: `level × 100` XP per level). Each perk has prerequisites, max rank, and mineral cost per rank.
 
-**Tier 3** (10–20 Points Each):
-- Master Hunter: +50% all mineral gains
-- Indestructible Pelt: Auto-survive one fatal hit per run
-- Deep Sight: Full tile map visible from surface
-- Extraction Savings: Keep 25% of minerals even on energy death
-- Clowder Hero: +30% minerals near the Clowder docking bay
+**Branch 1 — PELT (Survival):**
+| Perk | Effect/Rank | Max Rank | Tier |
+|------|-------------|----------|------|
+| Pelt | +1 Max HP | 5 | 1 |
+| Paws | +25 Max Energy, +30 Move Speed | 5 | 1 |
+| Iron Hide | -10% boss energy drain | 5 | 2 |
+| Nine Lives | +2 Max HP | 3 | 3 |
+
+**Branch 2 — CLAWS (Mining):**
+| Perk | Effect/Rank | Max Rank | Tier |
+|------|-------------|----------|------|
+| Claws | +3 Mining Power | 5 | 1 |
+| Reach | +0.75 Mining Range (tiles) | 5 | 1 |
+| Deep Veins | +5% Lucky Strike chance | 5 | 2 |
+| Motherlode | +10% ore mineral yield | 3 | 3 |
+
+**Branch 3 — WHISKERS (Utility):**
+| Perk | Effect/Rank | Max Rank | Tier |
+|------|-------------|----------|------|
+| Whiskers | +3 Sonar Radius, -1 ping energy cost | 5 | 1 |
+| Cargo Claws | +2 Ore Slots | 5 | 1 |
+| Ladder Mastery | +50 Ladder Climb Speed | 5 | 2 |
+| Master Scavenger | +10% Fossil find rate | 3 | 3 |
+
+**Branch 4 — SHIP (Overworld):**
+| Perk | Effect/Rank | Max Rank | Tier |
+|------|-------------|----------|------|
+| Thrusters | +15% caravan travel speed | 5 | 1 |
+| Nav Charts | +1 extra mining planet per 2 ranks | 4 | 1 |
+| Ore Scanner | Preview +1 ore type before landing | 5 | 2 |
+| Warp Mastery | -15% warp energy cost & travel time | 3 | 3 |
+
+**Branch 5 — MOVEMENT (Mobility):**
+| Perk | Effect/Rank | Max Rank | Tier |
+|------|-------------|----------|------|
+| Agility | +10% jump height | 5 | 1 |
+| Double Jump | +1 air jump | 3 | 1 |
+| Soft Landing | -10% fall damage | 5 | 2 |
+| Momentum | +20% sprint speed | 3 | 3 |
+
+**Branch 6 — INVENTORY (Storage):**
+| Perk | Effect/Rank | Max Rank | Tier |
+|------|-------------|----------|------|
+| Satchel | +3 inventory slots | 5 | 1 |
+| Stack Mastery | +8 max stack size | 5 | 1 |
+| Deep Satchel | +5 inventory slots | 5 | 2 |
+| Packrat | +3 slots & +10 max stack | 3 | 3 |
+
+**Prerequisite System:** Tier 2 perks require their parent perk at a minimum rank. Tier 3 perks require their Tier 2 parent at a minimum rank. Each rank costs minerals (300–3000 depending on tier).
+
+### 5.4 Ship Upgrades (Spaceship System)
+
+Five permanent ship modules purchased at the Ship Hangar in the Clowder:
+
+| Module | Cost | Unlock Condition | Effect |
+|--------|------|------------------|--------|
+| Warp Drive | 20,000 copper (200g) | 50,000 total banked | 2× caravan travel speed |
+| Cargo Bay | 15,000 copper (150g) | 1 boss defeated | +25 ore carrying capacity |
+| Long Scanner | 30,000 copper (300g) | 100,000 total banked | Always show both asteroid mines on overworld |
+| Gem Refinery | 25,000 copper (250g) | — | +1 bonus gem per gem ore mined |
+| Trade Amplifier | 20,000 copper (200g) | Reached row 96 | +25% payout when selling bars |
+
+### 5.5 Father's Debt
+
+**Total Debt:** 50,000,000 copper (5,000 gold)
+
+The central story arc. Your father left you his ship, his routes, and a massive debt to the Clowder. Pay it off incrementally via the Debt Office in the Clowder hub. Debt progress unlocks story beats, NPC dialogue changes, and new Clowder areas.
+
+### 5.6 Cosmetic Progression
+
+**Cat Customization (CustomizationMenu — X key):**
+- Two independent color layers: BASE tint (multiply shader) and OUTLINE replacement
+- **52 color swatches:** 4 free at Level 1; remaining 48 unlock gradually (every ~2 global levels up to Level 100)
+- Applied via `cat_color.gdshader` with live preview (idle animations, clickable "scared" reaction)
+- Persisted across saves via `cat_color` and `cat_outline_color` in GameManager
+
+**Companion Followers (HatMenu — C key):**
+- 20 cosmetic companion creatures that follow the Mining Cat during runs
+- Displayed in a paginated 3×2 grid (6 per page)
+- Unlock by global player level (2 per level, from Level 1 to Level 10)
+- Companions: Leaf Elemental, Ice Elemental, Baby Observer, Magic Book, Bulldog, Cactus, Goblin Carrier, Cherub, Dog Chest, Magic Cloud, Draco, Doppelganger Egg, Hive, Stubby Lizard, Elemental Orbs, Rolling Stone, Shadow, Flying Skull, Sprite, Enchanted Sword
+
+**Global Level System:**
+- `global_player_xp` and `global_player_level` stored in a separate file (`global_progress.json`)
+- Progression persists across all save slots
+- Unlocks cosmetic colors, companion followers, and advanced classes
+- Playtime XP: +1% of next level every 25 minutes of play (afk-friendly)
 
 ## 6. Story & Lore
 
@@ -338,7 +562,7 @@ Scattered across all mine depth levels:
 - **Deep Fossils (15):** Massive arthropods, unknown creatures, glowing mineral formations
 - **Boss Chamber Relics (5):** Ancient star-cat artifacts, legendary specimens
 
-Each fossil reveals lore about the earth's deep history and grants bonus colony experience.
+Each fossil reveals lore about the planet's deep history and grants bonus XP toward global level progression.
 
 ### 6.3 Boss Encounters (5 Total — Depth Milestones)
 All bosses are defeated using the player's existing tools — no separate combat system. Energy drains 2.5× while a boss is alive; defeating one rewards 100 minerals + 30 energy.
@@ -349,44 +573,120 @@ All bosses are defeated using the player's existing tools — no separate combat
 4. **Stone Golem** (row 112) — three ore-phase armor (copper → iron → gold); player must last-mine the required ore type to crack each phase
 5. **The Ancient Star Beast** (row 128) — three-phase final boss: outer stone-shell ring (phase 1), crystalline inner ring with void pulses that reseal mined tunnels (phase 2), exposed regenerating core (phase 3); 2× energy drain throughout
 
+### 6.4 Intro Sequence (First-Time Only)
+
+A skippable **3-card narrative intro** establishing the mining-cat fantasy. Shown once on first new game before the Overworld loads. Press any key to advance; ESC skips.
+
+**Story Cards:**
+1. *"Your father never came back from the frontier. He left you his ship, his routes... and a debt to the Clowder you didn't ask for."*
+2. *"The Clowder always collects. Fourteen days. Not a moment more."*
+3. *"Somewhere out there, ore waits in the dark. Mine it. Sell it. Survive. The rest you'll figure out."*
+
+**Timing:** 0.8s fade in → 4.5s hold → 0.5s fade out per card (5.8s total per card). Sets `has_seen_intro = true` after completing.
+
+### 6.5 Failure Summary (Death Screen)
+
+When the player dies or runs out of energy, a contextual failure screen appears:
+
+- **Header:** "OUT OF ENERGY" or "LOST IN SPACE" (red title)
+- **Ore table:** Material breakdown with icon, count, and lost coins
+- **Total loss line:** Shows total minerals lost
+- **Contextual tip:** Random tip from a pool of 5 energy tips or 5 death tips
+- **"Return to Station" button:** Dismisses and returns player to Clowder
+
+**Example Tips:**
+- Energy: "Watch your energy bar — surface before it's too late"
+- Death: "Upgrade your Pelt to survive more hits"
+
 ## 7. Technical Design
 
 ### 7.1 Architecture Overview
 ```
 res://
 ├── assets/           # Art, Audio, Fonts
-├── docs/             # Documentation
-├── notes/            # Development notes
-└── src/              # Source Code & Scenes
-    ├── autoload/     # Global Singletons (GameManager, EventBus, SoundManager, MusicManager, etc.)
-    ├── components/   # Reusable Component Nodes (HealthComponent, StateMachine, etc.)
-    ├── entities/     # Game Objects (PlayerProbe/Ant, ScrapLoot/Minerals, NPCs, Overworld tokens)
-    ├── levels/       # Game Scenes (Overworld, MiningLevel, CityLevel, SettlementLevel)
-    ├── systems/      # Extracted subsystems (SmeltingSystem, FossilSystem, SonarSystem, ForagerSystem, BossSystem)
-    └── ui/           # User Interface (HUD, UpgradeMenu, RunSummary, LevelInfoModal, etc.)
+├── docs/             # Documentation (GDD, architecture, best practices)
+├── notes/            # Living development backlog
+└── src/
+    ├── autoload/     # Global Singletons
+    │   ├── GameManager.gd      # Game state, save/load, currency, upgrades, energy
+    │   ├── EventBus.gd         # Global signal bus for cross-system communication
+    │   ├── SoundManager.gd     # Procedural SFX via AudioStreamGenerator
+    │   ├── MusicManager.gd     # Adaptive music with scene crossfading
+    │   ├── SettingsManager.gd  # Graphics, audio, controls, accessibility
+    │   ├── SceneTransition.gd  # Animated scene transitions
+    │   ├── SaveManager.gd      # Save/load coordination (JSON)
+    │   └── QuestManager.gd     # Quest system (cleared on mine entry)
+    ├── components/   # Reusable node components
+    ├── entities/     # Game objects (player, NPCs, loot, overworld tokens)
+    ├── levels/       # Scene controllers (Overworld, MiningLevel, CityLevel, SettlementLevel)
+    ├── systems/      # Extracted subsystems (all RefCounted)
+    │   ├── SmeltingSystem.gd        # Consecutive ore chain bonuses and alloy combos
+    │   ├── FossilSystem.gd          # Fossil drops with forgiveness/pity counter
+    │   ├── SonarSystem.gd           # Sonar ping — radial ore shimmer, energy cost
+    │   ├── ForagerSystem.gd         # Scout Cat companion — auto-collects and banks ore
+    │   ├── BossSystem.gd            # Five depth-milestone boss encounters
+    │   ├── BossRenderer.gd          # Draw calls for BossSystem
+    │   ├── TrinketSystem.gd         # 13 equippable passive trinkets
+    │   ├── PerkSystem.gd            # 6-branch perk tree (24 perks)
+    │   ├── CatSystem.gd             # Cat-specific behaviors and stat helpers
+    │   ├── ChatterManager.gd        # Ambient NPC chatter bubble text pool
+    │   ├── MiningTerrainGenerator.gd # Procedural tile grid generation
+    │   └── VoronoiBGSystem.gd       # Procedural darkness strata (Voronoi noise)
+    └── ui/           # UI controllers
+        ├── HUD, RunSummary, FailureSummary
+        ├── UpgradeMenu, PerkTree
+        ├── InventoryScreen, HatMenu, CustomizationMenu
+        ├── ClassSelectionMenu, IntroSequence
+        └── LevelInfoModal, SettingsMenu
 ```
 
 ### 7.2 Key Systems
-- **GameManager:** Game state, scene transitions, mineral currency, 4 upgrade tracks, energy, settlement carry-overs
-- **EventBus:** Decoupled signals (minerals_changed, minerals_earned, energy_changed, player_health_changed, player_died)
-- **MiningLevel:** Terraria-style physics world, procedural tile generation, cursor mining, energy logic; delegates to subsystems below
-- **SmeltingSystem:** Consecutive ore chain bonuses and alloy combos
+
+**Autoloads (Global Singletons):**
+- **GameManager:** Central game state, save/load, mineral currency, all upgrade tracks, energy, ship upgrades, debt tracking, class selection, settlement carry-overs
+- **EventBus:** Decoupled signals — `game_state_changed`, `minerals_changed`, `minerals_earned`, `energy_changed`, `player_health_changed`, `player_died`
+- **SoundManager / MusicManager:** Procedural SFX generation + adaptive music with crossfading
+- **SaveManager:** JSON save/load coordination (`user://save_data.json` per slot + `global_progress.json` cross-slot)
+- **QuestManager:** Quest tracking, cleared on mine entry to prevent stale quest state
+
+**Mining Systems (RefCounted, instantiated per run):**
+- **SmeltingSystem:** Consecutive ore chain bonuses (3/5/8+ chains) and alloy combo discovery
 - **FossilSystem:** Fossil drop probability with forgiveness pity counter per block type
-- **SonarSystem:** Sonar ping — radial ore detection, energy cost per activation
-- **ForagerSystem:** Scout Cat companion — collects 40% ore yield, auto-banks when full
-- **BossSystem:** Five depth-milestone boss encounters; energy pressure, phase management
-- **UpgradeMenu:** Clowder Workshop UI — Pelt / Paws / Claws / Whiskers upgrades
-- **HUD:** Minerals counter, health squares, segmented energy bar, depth meter, milestone banners
+- **SonarSystem:** Sonar ping — radial ore detection, energy cost per activation, Whiskers-scaled
+- **ForagerSystem:** Scout Cat companion — follows player, auto-collects ore, banks at surface
+- **BossSystem + BossRenderer:** Five depth-milestone encounters with phase management and energy drain
+- **VoronoiBGSystem:** 55-seed Voronoi noise generates organic darkness strata per planet
+- **MiningTerrainGenerator:** Procedural tile grid generation (depth-weighted ore distribution)
+
+**Progression Systems (RefCounted):**
+- **PerkSystem:** 6-branch skill tree with 24 perks, prerequisite validation, mineral cost per rank
+- **TrinketSystem:** 13 toggleable passive trinkets with bonus/penalty effects
+- **CatSystem:** Cat stat aggregation from upgrades, perks, gems, trinkets, and class bonuses
+
+**UI Systems:**
+- **InventoryScreen:** 3-section drag/drop inventory with ore stacks, equipment, and trinkets
+- **HatMenu:** 20 cosmetic companion followers (paginated grid, level-gated)
+- **CustomizationMenu:** 52-swatch cat color picker (base tint + outline, shader-based)
+- **ClassSelectionMenu:** 10-class horizontal card selector for new games
+- **IntroSequence:** 3-card skippable narrative intro (first play only)
+- **FailureSummary:** Death/energy-loss recap with contextual tips
 
 ### 7.3 Save System
-Persistent save via JSON (`user://save_data.json`):
-- `mineral_currency` — banked Clowder minerals
-- `carapace_level` — pelt upgrade level (0–10) *(var rename to `pelt_level` pending Task 2.4)*
-- `legs_level` — paws upgrade level (0–10)
-- `mandibles_level` — claws upgrade level (0–10) *(var rename to `claws_level` pending Task 2.4)*
-- `mineral_sense_level` — whiskers upgrade level (0–10)
-- `gem_count`, `carapace_gem_socketed`, `legs_gem_socketed`, `mandibles_gem_socketed`, `sense_gem_socketed` — gem socket state
-- Spaceship upgrade flags, cumulative milestone trackers, planet config
+**Per-Slot Save** (`user://save_data.json`):
+- `mineral_currency` — banked minerals
+- `carapace_level` / `legs_level` / `mandibles_level` / `mineral_sense_level` — upgrade levels (0–10)
+- `gem_count`, `carapace_gem_socketed`, `legs_gem_socketed`, `mandibles_gem_socketed`, `sense_gem_socketed` — gem state
+- `warp_drive_built`, `cargo_bay_built`, `long_scanner_built`, `gem_refinery_built`, `trade_amplifier_built` — ship modules
+- `debt_paid` — copper paid toward Father's Debt (of 50,000,000 total)
+- `total_coins_banked`, `bosses_defeated_total`, `deepest_row_reached` — milestone trackers
+- `player_class`, `player_xp`, `player_level`, `perk_points`, `perk_ranks` — class and perk state
+- `trinket_<id>` booleans — equipped trinkets
+- `cat_color`, `cat_outline_color` — customization
+- `equipped_companions` — companion follower selection
+
+**Global Progress** (`user://global_progress.json` — cross-slot):
+- `global_player_xp`, `global_player_level` — unlocks cosmetics and advanced classes across all saves
+- Playtime XP: +1% of next level every 25 minutes
 
 ## 8. Glossary
 
@@ -417,14 +717,14 @@ Persistent save via JSON (`user://save_data.json`):
 - Defeat each boss (5)
 - Collect all 50 fossils
 - Unlock true ending
-- Complete all colony quests
+- Complete all Clowder quests
 
 **Mining Mastery (15):**
 - Mine 100/500/1000 total tiles
 - Reach max depth (row 128) in a single run
 - Mine a gem ore tile for the first time
 - Complete a run without using the Reenergy Station
-- Mine 10 tiles in a single second (mandibles speed)
+- Mine 10 tiles in a single second (Claws speed)
 
 **Survival (10):**
 - Complete a run with 1 HP remaining
@@ -435,7 +735,53 @@ Persistent save via JSON (`user://save_data.json`):
 
 **Collection (10):**
 - Bank 1,000/10,000/100,000 total minerals
-- Max out Carapace upgrades
-- Max out Legs upgrades
-- Max out Mandibles upgrades
+- Max out Pelt upgrades
+- Max out Paws upgrades
+- Max out Claws upgrades
 - Find a fossil at max depth
+
+## 10. Progressive Disclosure
+
+Systems are introduced gradually to avoid overwhelming new players:
+
+| Milestone | System Unlocked |
+|-----------|----------------|
+| Game start | Core mining, basic upgrades (Pelt/Paws/Claws/Whiskers), Star Chart |
+| First successful extraction | Mission Board, Run Summary "Launch Again" button |
+| First boss defeated (row 32) | Fossil Archive, Boss lore entries |
+| 50,000 total minerals banked | Ship Hangar (Warp Drive available) |
+| First gem found | Gem Socketing Altar |
+| Global Level 2 | Advanced classes (6–10), additional companion followers |
+| First perk point earned | Perk Tree (6 branches revealed progressively) |
+| First trinket found | Trinket slots in Inventory Screen |
+
+**Design Principle:** Every new system is introduced with a brief in-world prompt from an NPC or a contextual tooltip. No system is shown before the player has a reason to engage with it.
+
+## 11. Juice & Polish
+
+### 11.1 Visual Feedback
+- **Smelting chain indicator:** Floating multiplier text above player during ore chains (×1.1, ×1.25, ×1.5)
+- **Scout Cat banking animation:** Scout Cat visibly rushes to surface with sparkle trail; mineral count pops when deposited
+- **Boss HP overlay:** Segmented health bar appears above boss encounter area
+- **Failure screen:** Panel slides up with staggered row animation; border color pulses red
+- **Run Summary:** Ore rows animate in sequence with running total counter
+
+### 11.2 Audio Cues
+- **Energy low warning:** Anxious cat meow at 20% energy
+- **Smelting chain:** Ascending pitch chimes for each consecutive chain hit
+- **Boss encounter:** Unique music per boss; rumble SFX on tremor attacks
+- **Mineral banking:** Satisfying "ka-ching" with coin cascade SFX
+
+### 11.3 Procedural Planet Atmosphere
+Each planet's atmosphere color is automatically derived from its sprite art:
+- `MapNode.get_average_pixel_color()` samples the planet sprite's average RGB
+- `MiningLevel._draw()` uses this as the sky strip color
+- Underground gradient darkens from 75% → 96% with depth
+- Result: every planet feels unique without any hardcoded colours
+
+### 11.4 Voronoi Background Strata
+Underground darkness varies organically per planet:
+- 55 Voronoi seed points scattered across the grid (seeded from `terrain_seed`)
+- Each tile gets a darkness value (0.0–1.0) via quadratic ease-in from nearest seed
+- Background TileMapLayer selects normal vs. dark tile atlas variants
+- Creates organic rock-strata patches unique to each planet
