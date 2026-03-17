@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://bcs3x7n4q2m8d"]
+[gd_scene load_steps=2 format=3 uid="uid://df6ni4j86uwnm"]
 
 [ext_resource type="Script" uid="uid://cb5kd1k1fbhf5" path="res://src/ui/ClassSelectionMenu.gd" id="1_script"]
 
@@ -7,7 +7,6 @@ layer = 10
 script = ExtResource("1_script")
 
 [node name="BgFill" type="ColorRect" parent="."]
-layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -16,7 +15,7 @@ grow_vertical = 2
 color = Color(0.07, 0.06, 0.05, 1)
 
 [node name="Root" type="Control" parent="."]
-layout_mode = 1
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -31,8 +30,8 @@ anchor_right = 1.0
 offset_top = 32.0
 offset_bottom = 72.0
 grow_horizontal = 2
-theme_override_font_sizes/font_size = 34
 theme_override_colors/font_color = Color(0.9, 0.7, 0.28, 1)
+theme_override_font_sizes/font_size = 34
 text = "CHOOSE YOUR CLASS"
 horizontal_alignment = 1
 
@@ -41,16 +40,14 @@ layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_top = 90.0
-offset_bottom = 500.0
+offset_bottom = 616.0
 grow_horizontal = 2
-horizontal_scroll_mode = 1
 vertical_scroll_mode = 0
 
 [node name="CenterContainer" type="CenterContainer" parent="Root/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-use_top_left = false
 
 [node name="HBoxContainer" type="HBoxContainer" parent="Root/ScrollContainer/CenterContainer"]
 layout_mode = 2
@@ -58,11 +55,12 @@ size_flags_vertical = 4
 theme_override_constants/separation = 24
 
 [node name="Card0" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer"]
+custom_minimum_size = Vector2(260, 450)
 layout_mode = 2
-custom_minimum_size = Vector2(240, 370)
 
 [node name="Border" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card0"]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -4.0
@@ -84,7 +82,7 @@ color = Color(0.11, 0.09, 0.08, 1)
 
 [node name="Image" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card0"]
 layout_mode = 1
-offset_right = 240.0
+offset_right = 260.0
 offset_bottom = 160.0
 color = Color(0.35, 0.55, 0.85, 1)
 
@@ -94,9 +92,10 @@ offset_left = 10.0
 offset_top = 172.0
 offset_right = 230.0
 offset_bottom = 200.0
-theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.92, 0.86, 0.74, 1)
+theme_override_font_sizes/font_size = 20
 text = "Pioneer"
+horizontal_alignment = 1
 
 [node name="Separator" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card0"]
 layout_mode = 1
@@ -112,16 +111,18 @@ offset_left = 10.0
 offset_top = 212.0
 offset_right = 230.0
 offset_bottom = 360.0
-autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.78, 0.76, 0.7, 1)
+theme_override_font_sizes/font_size = 14
 text = "The reliable all-rounder.
 A balanced start for any
 mining expedition."
+horizontal_alignment = 1
+autowrap_mode = 2
 
 [node name="LockOverlay" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card0"]
 visible = false
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -142,12 +143,13 @@ layout_mode = 1
 offset_top = 66.0
 offset_right = 240.0
 offset_bottom = 94.0
-theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(0.9, 0.38, 0.38, 1)
+theme_override_font_sizes/font_size = 18
 text = "LOCKED"
 horizontal_alignment = 1
 
 [node name="ClickButton" type="Button" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card0"]
+self_modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -155,14 +157,14 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 flat = true
-self_modulate = Color(1, 1, 1, 0)
 
 [node name="Card1" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer"]
+custom_minimum_size = Vector2(260, 450)
 layout_mode = 2
-custom_minimum_size = Vector2(240, 370)
 
 [node name="Border" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card1"]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -4.0
@@ -184,7 +186,7 @@ color = Color(0.11, 0.09, 0.08, 1)
 
 [node name="Image" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card1"]
 layout_mode = 1
-offset_right = 240.0
+offset_right = 260.0
 offset_bottom = 160.0
 color = Color(0.25, 0.7, 0.45, 1)
 
@@ -194,9 +196,10 @@ offset_left = 10.0
 offset_top = 172.0
 offset_right = 230.0
 offset_bottom = 200.0
-theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.92, 0.86, 0.74, 1)
+theme_override_font_sizes/font_size = 20
 text = "Prospector"
+horizontal_alignment = 1
 
 [node name="Separator" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card1"]
 layout_mode = 1
@@ -212,16 +215,18 @@ offset_left = 10.0
 offset_top = 212.0
 offset_right = 230.0
 offset_bottom = 360.0
-autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.78, 0.76, 0.7, 1)
+theme_override_font_sizes/font_size = 14
 text = "Nose for riches.
 Starts with enhanced
 Whiskers sonar range."
+horizontal_alignment = 1
+autowrap_mode = 2
 
 [node name="LockOverlay" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card1"]
 visible = false
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -242,12 +247,13 @@ layout_mode = 1
 offset_top = 66.0
 offset_right = 240.0
 offset_bottom = 94.0
-theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(0.9, 0.38, 0.38, 1)
+theme_override_font_sizes/font_size = 18
 text = "LOCKED"
 horizontal_alignment = 1
 
 [node name="ClickButton" type="Button" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card1"]
+self_modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -255,14 +261,14 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 flat = true
-self_modulate = Color(1, 1, 1, 0)
 
 [node name="Card2" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer"]
+custom_minimum_size = Vector2(260, 450)
 layout_mode = 2
-custom_minimum_size = Vector2(240, 370)
 
 [node name="Border" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card2"]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -4.0
@@ -284,7 +290,7 @@ color = Color(0.11, 0.09, 0.08, 1)
 
 [node name="Image" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card2"]
 layout_mode = 1
-offset_right = 240.0
+offset_right = 260.0
 offset_bottom = 160.0
 color = Color(0.8, 0.4, 0.25, 1)
 
@@ -294,9 +300,10 @@ offset_left = 10.0
 offset_top = 172.0
 offset_right = 230.0
 offset_bottom = 200.0
-theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.92, 0.86, 0.74, 1)
+theme_override_font_sizes/font_size = 20
 text = "Brawler"
+horizontal_alignment = 1
 
 [node name="Separator" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card2"]
 layout_mode = 1
@@ -312,16 +319,18 @@ offset_left = 10.0
 offset_top = 212.0
 offset_right = 230.0
 offset_bottom = 360.0
-autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.78, 0.76, 0.7, 1)
+theme_override_font_sizes/font_size = 14
 text = "Sharpened claws,
 tougher hide. Starts
 with boosted excavation."
+horizontal_alignment = 1
+autowrap_mode = 2
 
 [node name="LockOverlay" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card2"]
 visible = false
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -342,12 +351,13 @@ layout_mode = 1
 offset_top = 66.0
 offset_right = 240.0
 offset_bottom = 94.0
-theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(0.9, 0.38, 0.38, 1)
+theme_override_font_sizes/font_size = 18
 text = "LOCKED"
 horizontal_alignment = 1
 
 [node name="ClickButton" type="Button" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card2"]
+self_modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -355,14 +365,14 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 flat = true
-self_modulate = Color(1, 1, 1, 0)
 
 [node name="Card3" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer"]
+custom_minimum_size = Vector2(260, 450)
 layout_mode = 2
-custom_minimum_size = Vector2(240, 370)
 
 [node name="Border" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card3"]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -4.0
@@ -384,7 +394,7 @@ color = Color(0.11, 0.09, 0.08, 1)
 
 [node name="Image" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card3"]
 layout_mode = 1
-offset_right = 240.0
+offset_right = 260.0
 offset_bottom = 160.0
 color = Color(0.28, 0.28, 0.28, 1)
 
@@ -394,9 +404,10 @@ offset_left = 10.0
 offset_top = 172.0
 offset_right = 230.0
 offset_bottom = 200.0
-theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.48, 0.48, 0.48, 1)
+theme_override_font_sizes/font_size = 20
 text = "Veteran"
+horizontal_alignment = 1
 
 [node name="Separator" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card3"]
 layout_mode = 1
@@ -412,14 +423,16 @@ offset_left = 10.0
 offset_top = 212.0
 offset_right = 230.0
 offset_bottom = 360.0
-autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.62, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 14
 text = "To unlock:
 Complete a run to unlock."
+horizontal_alignment = 1
+autowrap_mode = 2
 
 [node name="LockOverlay" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card3"]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -440,12 +453,13 @@ layout_mode = 1
 offset_top = 66.0
 offset_right = 240.0
 offset_bottom = 94.0
-theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(0.9, 0.38, 0.38, 1)
+theme_override_font_sizes/font_size = 18
 text = "LOCKED"
 horizontal_alignment = 1
 
 [node name="ClickButton" type="Button" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card3"]
+self_modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -454,14 +468,14 @@ grow_horizontal = 2
 grow_vertical = 2
 disabled = true
 flat = true
-self_modulate = Color(1, 1, 1, 0)
 
 [node name="Card4" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer"]
+custom_minimum_size = Vector2(260, 450)
 layout_mode = 2
-custom_minimum_size = Vector2(240, 370)
 
 [node name="Border" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card4"]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -4.0
@@ -483,7 +497,7 @@ color = Color(0.11, 0.09, 0.08, 1)
 
 [node name="Image" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card4"]
 layout_mode = 1
-offset_right = 240.0
+offset_right = 260.0
 offset_bottom = 160.0
 color = Color(0.28, 0.28, 0.28, 1)
 
@@ -493,9 +507,10 @@ offset_left = 10.0
 offset_top = 172.0
 offset_right = 230.0
 offset_bottom = 200.0
-theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.48, 0.48, 0.48, 1)
+theme_override_font_sizes/font_size = 20
 text = "Scout"
+horizontal_alignment = 1
 
 [node name="Separator" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card4"]
 layout_mode = 1
@@ -511,14 +526,16 @@ offset_left = 10.0
 offset_top = 212.0
 offset_right = 230.0
 offset_bottom = 360.0
-autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.62, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 14
 text = "To unlock:
 Complete a run to unlock."
+horizontal_alignment = 1
+autowrap_mode = 2
 
 [node name="LockOverlay" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card4"]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -539,12 +556,13 @@ layout_mode = 1
 offset_top = 66.0
 offset_right = 240.0
 offset_bottom = 94.0
-theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(0.9, 0.38, 0.38, 1)
+theme_override_font_sizes/font_size = 18
 text = "LOCKED"
 horizontal_alignment = 1
 
 [node name="ClickButton" type="Button" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card4"]
+self_modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -553,14 +571,14 @@ grow_horizontal = 2
 grow_vertical = 2
 disabled = true
 flat = true
-self_modulate = Color(1, 1, 1, 0)
 
 [node name="Card5" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer"]
+custom_minimum_size = Vector2(260, 450)
 layout_mode = 2
-custom_minimum_size = Vector2(240, 370)
 
 [node name="Border" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card5"]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -4.0
@@ -582,7 +600,7 @@ color = Color(0.11, 0.09, 0.08, 1)
 
 [node name="Image" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card5"]
 layout_mode = 1
-offset_right = 240.0
+offset_right = 260.0
 offset_bottom = 160.0
 color = Color(0.28, 0.28, 0.28, 1)
 
@@ -592,9 +610,10 @@ offset_left = 10.0
 offset_top = 172.0
 offset_right = 230.0
 offset_bottom = 200.0
-theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.48, 0.48, 0.48, 1)
+theme_override_font_sizes/font_size = 20
 text = "Engineer"
+horizontal_alignment = 1
 
 [node name="Separator" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card5"]
 layout_mode = 1
@@ -610,14 +629,16 @@ offset_left = 10.0
 offset_top = 212.0
 offset_right = 230.0
 offset_bottom = 360.0
-autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.62, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 14
 text = "To unlock:
 Complete a run to unlock."
+horizontal_alignment = 1
+autowrap_mode = 2
 
 [node name="LockOverlay" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card5"]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -638,12 +659,13 @@ layout_mode = 1
 offset_top = 66.0
 offset_right = 240.0
 offset_bottom = 94.0
-theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(0.9, 0.38, 0.38, 1)
+theme_override_font_sizes/font_size = 18
 text = "LOCKED"
 horizontal_alignment = 1
 
 [node name="ClickButton" type="Button" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card5"]
+self_modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -652,14 +674,14 @@ grow_horizontal = 2
 grow_vertical = 2
 disabled = true
 flat = true
-self_modulate = Color(1, 1, 1, 0)
 
 [node name="Card6" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer"]
+custom_minimum_size = Vector2(260, 450)
 layout_mode = 2
-custom_minimum_size = Vector2(240, 370)
 
 [node name="Border" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card6"]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -4.0
@@ -681,7 +703,7 @@ color = Color(0.11, 0.09, 0.08, 1)
 
 [node name="Image" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card6"]
 layout_mode = 1
-offset_right = 240.0
+offset_right = 260.0
 offset_bottom = 160.0
 color = Color(0.28, 0.28, 0.28, 1)
 
@@ -691,9 +713,10 @@ offset_left = 10.0
 offset_top = 172.0
 offset_right = 230.0
 offset_bottom = 200.0
-theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.48, 0.48, 0.48, 1)
+theme_override_font_sizes/font_size = 20
 text = "Alchemist"
+horizontal_alignment = 1
 
 [node name="Separator" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card6"]
 layout_mode = 1
@@ -709,14 +732,16 @@ offset_left = 10.0
 offset_top = 212.0
 offset_right = 230.0
 offset_bottom = 360.0
-autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.62, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 14
 text = "To unlock:
 Complete a run to unlock."
+horizontal_alignment = 1
+autowrap_mode = 2
 
 [node name="LockOverlay" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card6"]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -737,12 +762,13 @@ layout_mode = 1
 offset_top = 66.0
 offset_right = 240.0
 offset_bottom = 94.0
-theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(0.9, 0.38, 0.38, 1)
+theme_override_font_sizes/font_size = 18
 text = "LOCKED"
 horizontal_alignment = 1
 
 [node name="ClickButton" type="Button" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card6"]
+self_modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -751,14 +777,14 @@ grow_horizontal = 2
 grow_vertical = 2
 disabled = true
 flat = true
-self_modulate = Color(1, 1, 1, 0)
 
 [node name="Card7" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer"]
+custom_minimum_size = Vector2(260, 450)
 layout_mode = 2
-custom_minimum_size = Vector2(240, 370)
 
 [node name="Border" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card7"]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -4.0
@@ -780,7 +806,7 @@ color = Color(0.11, 0.09, 0.08, 1)
 
 [node name="Image" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card7"]
 layout_mode = 1
-offset_right = 240.0
+offset_right = 260.0
 offset_bottom = 160.0
 color = Color(0.28, 0.28, 0.28, 1)
 
@@ -790,9 +816,10 @@ offset_left = 10.0
 offset_top = 172.0
 offset_right = 230.0
 offset_bottom = 200.0
-theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.48, 0.48, 0.48, 1)
+theme_override_font_sizes/font_size = 20
 text = "Sentinel"
+horizontal_alignment = 1
 
 [node name="Separator" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card7"]
 layout_mode = 1
@@ -808,14 +835,16 @@ offset_left = 10.0
 offset_top = 212.0
 offset_right = 230.0
 offset_bottom = 360.0
-autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.62, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 14
 text = "To unlock:
 Complete a run to unlock."
+horizontal_alignment = 1
+autowrap_mode = 2
 
 [node name="LockOverlay" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card7"]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -836,12 +865,13 @@ layout_mode = 1
 offset_top = 66.0
 offset_right = 240.0
 offset_bottom = 94.0
-theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(0.9, 0.38, 0.38, 1)
+theme_override_font_sizes/font_size = 18
 text = "LOCKED"
 horizontal_alignment = 1
 
 [node name="ClickButton" type="Button" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card7"]
+self_modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -850,14 +880,14 @@ grow_horizontal = 2
 grow_vertical = 2
 disabled = true
 flat = true
-self_modulate = Color(1, 1, 1, 0)
 
 [node name="Card8" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer"]
+custom_minimum_size = Vector2(260, 450)
 layout_mode = 2
-custom_minimum_size = Vector2(240, 370)
 
 [node name="Border" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card8"]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -4.0
@@ -879,7 +909,7 @@ color = Color(0.11, 0.09, 0.08, 1)
 
 [node name="Image" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card8"]
 layout_mode = 1
-offset_right = 240.0
+offset_right = 260.0
 offset_bottom = 160.0
 color = Color(0.28, 0.28, 0.28, 1)
 
@@ -889,9 +919,10 @@ offset_left = 10.0
 offset_top = 172.0
 offset_right = 230.0
 offset_bottom = 200.0
-theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.48, 0.48, 0.48, 1)
+theme_override_font_sizes/font_size = 20
 text = "Wanderer"
+horizontal_alignment = 1
 
 [node name="Separator" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card8"]
 layout_mode = 1
@@ -907,14 +938,16 @@ offset_left = 10.0
 offset_top = 212.0
 offset_right = 230.0
 offset_bottom = 360.0
-autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.62, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 14
 text = "To unlock:
 Complete a run to unlock."
+horizontal_alignment = 1
+autowrap_mode = 2
 
 [node name="LockOverlay" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card8"]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -935,12 +968,13 @@ layout_mode = 1
 offset_top = 66.0
 offset_right = 240.0
 offset_bottom = 94.0
-theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(0.9, 0.38, 0.38, 1)
+theme_override_font_sizes/font_size = 18
 text = "LOCKED"
 horizontal_alignment = 1
 
 [node name="ClickButton" type="Button" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card8"]
+self_modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -949,14 +983,14 @@ grow_horizontal = 2
 grow_vertical = 2
 disabled = true
 flat = true
-self_modulate = Color(1, 1, 1, 0)
 
 [node name="Card9" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer"]
+custom_minimum_size = Vector2(260, 450)
 layout_mode = 2
-custom_minimum_size = Vector2(240, 370)
 
 [node name="Border" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card9"]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -4.0
@@ -978,7 +1012,7 @@ color = Color(0.11, 0.09, 0.08, 1)
 
 [node name="Image" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card9"]
 layout_mode = 1
-offset_right = 240.0
+offset_right = 260.0
 offset_bottom = 160.0
 color = Color(0.28, 0.28, 0.28, 1)
 
@@ -988,9 +1022,10 @@ offset_left = 10.0
 offset_top = 172.0
 offset_right = 230.0
 offset_bottom = 200.0
-theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.48, 0.48, 0.48, 1)
+theme_override_font_sizes/font_size = 20
 text = "Phantom"
+horizontal_alignment = 1
 
 [node name="Separator" type="ColorRect" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card9"]
 layout_mode = 1
@@ -1006,14 +1041,16 @@ offset_left = 10.0
 offset_top = 212.0
 offset_right = 230.0
 offset_bottom = 360.0
-autowrap_mode = 2
-theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.62, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 14
 text = "To unlock:
 Complete a run to unlock."
+horizontal_alignment = 1
+autowrap_mode = 2
 
 [node name="LockOverlay" type="Control" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card9"]
 layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -1034,12 +1071,13 @@ layout_mode = 1
 offset_top = 66.0
 offset_right = 240.0
 offset_bottom = 94.0
-theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(0.9, 0.38, 0.38, 1)
+theme_override_font_sizes/font_size = 18
 text = "LOCKED"
 horizontal_alignment = 1
 
 [node name="ClickButton" type="Button" parent="Root/ScrollContainer/CenterContainer/HBoxContainer/Card9"]
+self_modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -1048,12 +1086,10 @@ grow_horizontal = 2
 grow_vertical = 2
 disabled = true
 flat = true
-self_modulate = Color(1, 1, 1, 0)
 
 [node name="BottomAnchor" type="Control" parent="Root"]
 layout_mode = 1
 anchors_preset = 12
-anchor_left = 0.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -1071,10 +1107,10 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="ConfirmButton" type="Button" parent="Root/BottomAnchor/BtnCenter"]
-layout_mode = 2
 custom_minimum_size = Vector2(220, 52)
-disabled = true
+layout_mode = 2
 theme_override_font_sizes/font_size = 22
+disabled = true
 text = "BEGIN RUN"
 
 [node name="BackButton" type="Button" parent="Root/BottomAnchor"]

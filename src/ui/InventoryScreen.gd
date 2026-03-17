@@ -56,7 +56,7 @@ const SLOT_COLS: int  = 10   # columns in the slot grid
 const TOOL_SLOT_COUNT: int = 2  # Pickaxe slot + Ladder slot
 
 # Scene node references (defined in InventoryScreen.tscn)
-@onready var _content_root: Control = $ContentRoot
+@onready var _content_root: Control = $Panel/ContentRoot
 @onready var _tooltip_root: Control = $Tooltip
 @onready var _tooltip_name_lbl: Label = $Tooltip/TooltipName
 @onready var _tooltip_type_lbl: Label = $Tooltip/TooltipType

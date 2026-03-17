@@ -17,6 +17,16 @@ offset_bottom = 679.0
 theme = ExtResource("2_ey6tx")
 color = Color(0.21960784, 0.21568628, 0.16470589, 0.88)
 
+[node name="ContentRoot" type="Control" parent="Panel"]
+clip_contents = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_ey6tx")
+
 [node name="InventoryIcon" type="TextureRect" parent="."]
 modulate = Color(1, 1, 1, 0.49411765)
 custom_minimum_size = Vector2(196, 196)
@@ -25,16 +35,6 @@ offset_top = 59.0
 offset_right = 265.0
 offset_bottom = 255.0
 texture = ExtResource("3_47lxw")
-
-[node name="ContentRoot" type="Control" parent="."]
-clip_contents = true
-layout_mode = 3
-anchors_preset = 0
-offset_left = 218.0
-offset_top = 132.0
-offset_right = 1062.0
-offset_bottom = 624.0
-theme = ExtResource("2_ey6tx")
 
 [node name="Tooltip" type="Control" parent="."]
 visible = false
