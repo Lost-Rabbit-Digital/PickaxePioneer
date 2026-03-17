@@ -366,20 +366,6 @@ func try_hit_boss_segment(click_world: Vector2, last_ore_group: String = "") -> 
 
 	var seg: Dictionary = boss_segments[best_idx]
 
-	# Golem phase gating — armor must be broken in copper → iron → gold order
-	if boss_type == BOSS_TYPE_GOLEM:
-		if seg.is_core:
-			if golem_phase < GOLEM_PHASE_ORES.size():
-				return {"blocked": true, "message": "Armor intact! Mine surrounding segments!"}
-		else:
-			var armor_p: int = seg.get("armor_phase", 0)
-			if armor_p != golem_phase:
-				return {"blocked": true, "message": "Wrong armor layer!"}
-			if golem_phase < GOLEM_PHASE_ORES.size():
-				var required := GOLEM_PHASE_ORES[golem_phase]
-				if last_ore_group != required:
-					return {"blocked": true, "message": "Mine " + required.capitalize() + " ore first!"}
-
 	# Ancient phase gating — outer shell → inner ring → core
 	if boss_type == BOSS_TYPE_ANCIENT:
 		if seg.is_core:
