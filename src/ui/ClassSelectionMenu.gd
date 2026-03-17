@@ -64,7 +64,7 @@ func _on_card_clicked(index: int) -> void:
 func _on_card_hover(index: int, entered: bool) -> void:
 	if index == _selected_index:
 		return
-	_card_borders[index].color = Color(0.60, 0.50, 0.28, 0.55) if entered else Color(0.0, 0.0, 0.0, 0.0)
+	_card_borders[index].color = Color("222034ff") if entered else Color(0.0, 0.0, 0.0, 0.0)
 
 
 func _update_selection_visuals() -> void:
