@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://b03nq7wdlp4c1"]
+[gd_scene load_steps=3 format=3 uid="uid://b03nq7wdlp4c1"]
 
-[ext_resource type="Script" path="res://src/ui/LevelInfoModal.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://bhu01yj4ae8vg" path="res://src/ui/LevelInfoModal.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://8fi1ilh787ru" path="res://themes/level_info_modal_theme.tres" id="2_m0m55"]
 
 [node name="LevelInfoModal" type="CanvasLayer"]
 layer = 10
@@ -14,6 +15,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+theme = ExtResource("2_m0m55")
 
 [node name="Panel" type="Panel" parent="Control"]
 layout_mode = 1
@@ -28,12 +30,16 @@ offset_right = -10.0
 offset_bottom = -10.0
 grow_horizontal = 0
 grow_vertical = 0
+theme = ExtResource("2_m0m55")
 
 [node name="MarginContainer" type="MarginContainer" parent="Control/Panel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_m0m55")
 theme_override_constants/margin_left = 16
 theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 16
@@ -41,34 +47,40 @@ theme_override_constants/margin_bottom = 16
 
 [node name="VBox" type="VBoxContainer" parent="Control/Panel/MarginContainer"]
 layout_mode = 2
+theme = ExtResource("2_m0m55")
 theme_override_constants/separation = 6
 
 [node name="TitleLabel" type="Label" parent="Control/Panel/MarginContainer/VBox"]
 layout_mode = 2
+theme = ExtResource("2_m0m55")
 theme_override_font_sizes/font_size = 20
 text = "Location Name"
 horizontal_alignment = 1
 
 [node name="TypeLabel" type="Label" parent="Control/Panel/MarginContainer/VBox"]
+modulate = Color(1, 0.8, 0.3, 1)
 layout_mode = 2
+theme = ExtResource("2_m0m55")
 theme_override_font_sizes/font_size = 13
 text = "[ Mine ]"
-modulate = Color(1.0, 0.8, 0.3, 1.0)
 horizontal_alignment = 1
 
 [node name="PlanetInfoLabel" type="Label" parent="Control/Panel/MarginContainer/VBox"]
+modulate = Color(0.75, 0.9, 1, 1)
 layout_mode = 2
+theme = ExtResource("2_m0m55")
 theme_override_font_sizes/font_size = 12
 text = "Biome: —  ·  Temp: —  ·  Size: —"
-modulate = Color(0.75, 0.9, 1.0, 1.0)
 horizontal_alignment = 1
 
 [node name="HSep1" type="HSeparator" parent="Control/Panel/MarginContainer/VBox"]
 layout_mode = 2
+theme = ExtResource("2_m0m55")
 
 [node name="DescriptionLabel" type="Label" parent="Control/Panel/MarginContainer/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
+theme = ExtResource("2_m0m55")
 theme_override_font_sizes/font_size = 13
 text = "A promising mining site."
 horizontal_alignment = 1
@@ -77,24 +89,29 @@ autowrap_mode = 3
 
 [node name="HSep2" type="HSeparator" parent="Control/Panel/MarginContainer/VBox"]
 layout_mode = 2
+theme = ExtResource("2_m0m55")
 
 [node name="HazardsLabel" type="Label" parent="Control/Panel/MarginContainer/VBox"]
+modulate = Color(1, 0.45, 0.2, 1)
 layout_mode = 2
+theme = ExtResource("2_m0m55")
 theme_override_font_sizes/font_size = 13
 text = "Hazards: Explosives, Lava"
-modulate = Color(1.0, 0.45, 0.2, 1.0)
 horizontal_alignment = 1
 
 [node name="HSep3" type="HSeparator" parent="Control/Panel/MarginContainer/VBox"]
 layout_mode = 2
+theme = ExtResource("2_m0m55")
 
 [node name="ButtonsBox" type="HBoxContainer" parent="Control/Panel/MarginContainer/VBox"]
 layout_mode = 2
-alignment = 1
+theme = ExtResource("2_m0m55")
 theme_override_constants/separation = 12
+alignment = 1
 
 [node name="EnterButton" type="Button" parent="Control/Panel/MarginContainer/VBox/ButtonsBox"]
-layout_mode = 2
 custom_minimum_size = Vector2(120, 36)
+layout_mode = 2
 tooltip_text = "Commit to the dig. No turning back. (Well, maybe a little.)"
+theme = ExtResource("2_m0m55")
 text = "Enter"
