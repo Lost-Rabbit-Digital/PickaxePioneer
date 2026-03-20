@@ -2,6 +2,7 @@
 
 **Audit date:** 2026-03-03
 **Fixes applied:** 2026-03-03 — all Critical, Major, and actionable Minor/Cosmetic issues resolved
+**Follow-up fixes:** 2026-03-20 — guest auto-return to menu on host disconnect (m11), join timeout (m12)
 **Scope:** LAN co-op via ENetMultiplayerPeer (Steam path is a stub and not evaluated)
 **Codebase snapshot:** ~1,685 lines of multiplayer-specific GDScript across 8 files
 
@@ -96,7 +97,7 @@ verbally) and enter it in the join field. There is no LAN broadcast/autodiscover
 | Late-join / drop-in to active mine | ✅ | Full state sent on `guest_connected` |
 | Drop-in to overworld | ✅ | Planet config synced via `rpc_apply_planet_config` |
 | Host migration | ❌ | No migration; session ends on host exit |
-| `server_disconnected` → return to menu | ❌ | Signal never connected — see **C1** |
+| `server_disconnected` → return to menu | ✅ | Connected in `join_host()`; auto-returns to main menu (C1+m11) |
 | Full-session-state snapshot on join | ✅ | Kit state, energy, sky colour, ore/hazard filter, animal type |
 
 ### Latency & Responsiveness
@@ -145,7 +146,7 @@ LAN capacity and typical consumer home network upload limits.
 | `connection_failed` → user feedback | ✅ | Status label updated in MainMenu |
 | `server_disconnected` → user feedback | ❌ | Signal not handled — see **C1** |
 | Guest disconnect → host feedback | ✅ | "PARTNER DISCONNECTED" banner |
-| Host disconnect → guest feedback | ❌ | No signal, no banner, no return to menu — see **C1** |
+| Host disconnect → guest feedback | ✅ | `host_disconnected` signal; guest auto-returns to main menu (m11) |
 
 ---
 
@@ -187,7 +188,7 @@ exists in the codebase. Not evaluated further.
 |-------|--------|-------|
 | Guest disconnects mid-mine → host banner | ✅ | "PARTNER DISCONNECTED" |
 | Guest node cleaned up on disconnect | ❌ | `guest_player_node` not freed — see **m7** |
-| Host disconnects mid-mine → guest feedback | ❌ | No signal; guest is stuck — see **C1** |
+| Host disconnects mid-mine → guest feedback | ✅ | Guest auto-returns to main menu with notification (m11) |
 | Run completion → both see RunSummary | ✅ | `rpc_complete_run_as_guest` |
 | Run failure → both return to Overworld | ✅ | `rpc_trigger_game_over` |
 | Return to lobby after run without restart | ✅ | Both peers transition to Overworld |
@@ -267,6 +268,8 @@ exists in the codebase. Not evaluated further.
 | **m8** | Default port 25565 conflicts with Minecraft Java Edition — minor UX friction | `NetworkManager.gd:13` | ⏳ Deferred (not blocking; change with future branding pass) |
 | **m9** | No DTLS / transport encryption — acceptable for documented LAN-only scope | `NetworkManager.gd` | ✅ Won't fix (LAN-only; revisit before any WAN/Steam path) |
 | **m10** | No reconnect flow — disconnected players must restart entirely | `NetworkManager.gd` | ⏳ Deferred (requires session state serialisation; post-launch) |
+| **m11** | Guest stranded after host disconnect — banner shown but no scene transition back to main menu | `NetworkManager.gd`, `MiningLevel.gd` | ✅ Fixed (2026-03-20) |
+| **m12** | No connection timeout on join — guest waits indefinitely if host is unreachable | `NetworkManager.gd` | ✅ Fixed (2026-03-20) |
 
 ### Cosmetic
 
@@ -513,7 +516,7 @@ should be executed manually before each release candidate.
 | Session ends; host re-hosts same save | Both can join a new session without restarting | ☐ |
 | Full session at max activity (both mining, boss active) | No frame-rate collapse; sync stays coherent | ☐ |
 | Port already in use on `create_server` | Error shown in lobby status | ☐ |
-| Wrong IP on join | "Connection failed" status; no hang | ☐ |
+| Wrong IP on join | "Connection failed" status after ≤8s timeout; no hang | ☐ |
 
 ### Steam Path
 
