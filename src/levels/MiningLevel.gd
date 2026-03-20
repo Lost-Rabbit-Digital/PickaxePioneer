@@ -742,12 +742,13 @@ func _ready() -> void:
 	# Co-op: spawn second player and assign authorities.
 	# On the host machine, guest_peer_id may be -1 if the guest hasn't connected yet
 	# (drop-in scenario). In that case, defer setup until the guest actually arrives.
+	# The connection is kept persistent (not ONE_SHOT) so a guest who disconnects and
+	# reconnects mid-mine can rejoin without requiring a full session restart.
 	if NetworkManager.is_multiplayer_session:
+		if NetworkManager.is_host:
+			NetworkManager.guest_connected.connect(_on_guest_late_joined)
 		if not NetworkManager.is_host or NetworkManager.guest_peer_id > 0:
 			_setup_multiplayer_players()
-		else:
-			# Host is in the mine but guest hasn't joined yet — wait for them.
-			NetworkManager.guest_connected.connect(_on_guest_late_joined, CONNECT_ONE_SHOT)
 
 	# Kick off the spaceship entry cinematic (hides player until ship deposits them)
 	player_node.visible = false
@@ -796,10 +797,13 @@ func _setup_multiplayer_players() -> void:
 
 	# Connect the appropriate disconnect signal so we can show a warning mid-mine.
 	# Hosts listen for the guest leaving; guests listen for the host dropping.
+	# Guard against duplicate connections when a guest reconnects mid-mine.
 	if NetworkManager.is_host:
-		NetworkManager.guest_disconnected.connect(_on_coop_peer_disconnected)
+		if not NetworkManager.guest_disconnected.is_connected(_on_coop_peer_disconnected):
+			NetworkManager.guest_disconnected.connect(_on_coop_peer_disconnected)
 	else:
-		NetworkManager.host_disconnected.connect(_on_coop_peer_disconnected)
+		if not NetworkManager.host_disconnected.is_connected(_on_coop_peer_disconnected):
+			NetworkManager.host_disconnected.connect(_on_coop_peer_disconnected)
 
 ## Returns the PlayerProbe that is locally authoritative (driven by this machine's input).
 func _get_local_player() -> PlayerProbe:
@@ -831,10 +835,14 @@ func _on_coop_peer_disconnected() -> void:
 		guest_player_node.queue_free()
 		guest_player_node = null
 
-## Called when a guest connects after the host's MiningLevel is already running.
-## Sets up the second player node now that we have a valid guest peer ID.
+## Called when a guest connects (or reconnects) while the host's MiningLevel is
+## already running.  Cleans up any leftover guest node before spawning a fresh one.
 func _on_guest_late_joined(_peer_id: int) -> void:
+	if guest_player_node:
+		guest_player_node.queue_free()
+		guest_player_node = null
 	_setup_multiplayer_players()
+	_show_zone_banner("PARTNER JOINED", Color(0.2, 1.0, 0.4), 3.0)
 
 # ---------------------------------------------------------------------------
 # Collision TileMapLayer setup
