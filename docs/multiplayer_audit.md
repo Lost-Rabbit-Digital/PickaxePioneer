@@ -2,6 +2,7 @@
 
 **Audit date:** 2026-03-03
 **Fixes applied:** 2026-03-03 — all Critical, Major, and actionable Minor/Cosmetic issues resolved
+**Follow-up fixes:** 2026-03-20 — guest auto-return to menu on host disconnect (m11), join timeout (m12), heartbeat/stall detection (m6), port change (m8), guest rejoin (m10), player names in chat (c2), network debug overlay
 **Scope:** LAN co-op via ENetMultiplayerPeer (Steam path is a stub and not evaluated)
 **Codebase snapshot:** ~1,685 lines of multiplayer-specific GDScript across 8 files
 
@@ -32,10 +33,10 @@ security (RPC spam, chat spoofing). The system is otherwise coherent and well-st
 | `_reset_peer()` clears signals and closes the socket before re-use | ✅ | All 4 signals explicitly disconnected |
 | `peer_connected` handled | ✅ | `NetworkManager._on_peer_connected` |
 | `peer_disconnected` handled (host side) | ✅ | Emits `guest_disconnected` |
-| `peer_disconnected` handled (guest side) | ❌ | `if is_host` guard means guest gets no signal — see **C1** |
+| `peer_disconnected` handled (guest side) | ✅ | Guest uses `server_disconnected` — see **C1** (Fixed) |
 | `connected_to_server` handled | ✅ | `CONNECT_ONE_SHOT` on `join_host()` |
 | `connection_failed` handled | ✅ | `CONNECT_ONE_SHOT` on `join_host()` |
-| **`server_disconnected` handled** | ❌ | **Never connected anywhere — see C1** |
+| **`server_disconnected` handled** | ✅ | Connected in `join_host()`; auto-returns to main menu — **C1 Fixed** |
 | `multiplayer.get_unique_id()` used for authority checks | ✅ | `MiningLevel._setup_multiplayer_players()` |
 
 ### RPC Design
@@ -46,9 +47,9 @@ security (RPC spam, chat spoofing). The system is otherwise coherent and well-st
 | `"authority"` used for host → guest messages | ✅ | All game-state RPCs |
 | `"any_peer"` used for guest → host requests | ✅ | `rpc_request_mine`, `_deliver_chat_message` |
 | `"reliable"` for critical events | ✅ | Tile breaks, run end, game over, damage |
-| `"unreliable"` for high-frequency resources | ⚠️ | Should be `"unreliable_ordered"` — see **M3** |
+| `"unreliable_ordered"` for high-frequency resources | ✅ | Changed from `"unreliable"` — **M3** Fixed |
 | `"unreliable_ordered"` for position sync | ✅ | `rpc_sync_transform` |
-| `any_peer` RPCs validated with sender checks | ❌ | `rpc_request_mine` has no rate limit; `_deliver_chat_message` has no sender validation — see **M2**, **M5** |
+| `any_peer` RPCs validated with sender checks | ✅ | `rpc_request_mine` rate-limited; `_deliver_chat_message` validates sender ID — **M2**, **M5** Fixed |
 | RPC channel separation | N/A | Godot 4 ENet uses single default channel; acceptable for 2-player |
 | `@rpc` used sparingly (not over-relied on) | ✅ | Position sync, tile sync, resource sync, damage — all appropriate |
 
@@ -80,7 +81,7 @@ resync on late join — these are handled by the custom drop-in RPC system.
 |-------|--------|-------|
 | `create_server(port, MAX_CLIENTS)` called correctly | ✅ | `MAX_CLIENTS = 1` (host + 1 guest) |
 | `create_client(ip, port)` called correctly | ✅ | |
-| Compression configured | ❌ | No `.compress()` call; acceptable on LAN — see **m2** |
+| Compression configured | ✅ | `COMPRESS_RANGE_CODER` on both host and client — **m2** Fixed |
 | Bandwidth limits set | ❌ | Default (uncapped); acceptable for 2-player LAN |
 | DTLS configured | ❌ | No encryption; documented LAN-only — see **m9** |
 
@@ -96,7 +97,7 @@ verbally) and enter it in the join field. There is no LAN broadcast/autodiscover
 | Late-join / drop-in to active mine | ✅ | Full state sent on `guest_connected` |
 | Drop-in to overworld | ✅ | Planet config synced via `rpc_apply_planet_config` |
 | Host migration | ❌ | No migration; session ends on host exit |
-| `server_disconnected` → return to menu | ❌ | Signal never connected — see **C1** |
+| `server_disconnected` → return to menu | ✅ | Connected in `join_host()`; auto-returns to main menu (C1+m11) |
 | Full-session-state snapshot on join | ✅ | Kit state, energy, sky colour, ore/hazard filter, animal type |
 
 ### Latency & Responsiveness
@@ -140,12 +141,12 @@ LAN capacity and typical consumer home network upload limits.
 | Check | Status | Notes |
 |-------|--------|-------|
 | Packet loss tolerance (ENet reliable channels) | ✅ | ENet retransmits reliable packets |
-| Heartbeat / stall detection | ❌ | No application-level ping or timeout — see **m6** |
-| Reconnection flow | ❌ | No rejoin mechanism; must start a new session |
+| Heartbeat / stall detection | ✅ | Application-level ping/pong every 2s; 6s timeout triggers `peer_stalled` — **m6** Fixed |
+| Reconnection flow | ✅ | Guest can rejoin mid-mine; persistent late-join handler re-spawns player — **m10** Fixed |
 | `connection_failed` → user feedback | ✅ | Status label updated in MainMenu |
-| `server_disconnected` → user feedback | ❌ | Signal not handled — see **C1** |
+| `server_disconnected` → user feedback | ✅ | Auto-returns to main menu with notification — **C1+m11** Fixed |
 | Guest disconnect → host feedback | ✅ | "PARTNER DISCONNECTED" banner |
-| Host disconnect → guest feedback | ❌ | No signal, no banner, no return to menu — see **C1** |
+| Host disconnect → guest feedback | ✅ | `host_disconnected` signal; guest auto-returns to main menu (m11) |
 
 ---
 
@@ -186,8 +187,8 @@ exists in the codebase. Not evaluated further.
 | Check | Status | Notes |
 |-------|--------|-------|
 | Guest disconnects mid-mine → host banner | ✅ | "PARTNER DISCONNECTED" |
-| Guest node cleaned up on disconnect | ❌ | `guest_player_node` not freed — see **m7** |
-| Host disconnects mid-mine → guest feedback | ❌ | No signal; guest is stuck — see **C1** |
+| Guest node cleaned up on disconnect | ✅ | `guest_player_node.queue_free()` in disconnect handler — **m7** Fixed |
+| Host disconnects mid-mine → guest feedback | ✅ | Guest auto-returns to main menu with notification (m11) |
 | Run completion → both see RunSummary | ✅ | `rpc_complete_run_as_guest` |
 | Run failure → both return to Overworld | ✅ | `rpc_trigger_game_over` |
 | Return to lobby after run without restart | ✅ | Both peers transition to Overworld |
@@ -199,13 +200,13 @@ exists in the codebase. Not evaluated further.
 | Check | Status | Notes |
 |-------|--------|-------|
 | Guest mining range validated on host | ✅ | `rpc_request_mine` checks distance against synced position |
-| Guest mining rate limited | ❌ | No server-side rate limit — see **M2** |
-| `any_peer` RPC sender validated | ❌ | `_deliver_chat_message` has no sender check — see **M5** |
+| Guest mining rate limited | ✅ | Server-side `GUEST_MINE_MIN_INTERVAL` — **M2** Fixed |
+| `any_peer` RPC sender validated | ✅ | `_deliver_chat_message` validates peer ID against expected name — **M5** Fixed |
 | Host-only logic guarded with `is_host` | ✅ | Energy drain, game-over, run-end |
 | Guest cannot call host-only RPCs | ✅ | `"authority"` mode prevents it |
 | Peer-to-peer RPC injection (ENet star topology) | N/A | ENet routes all traffic through host; client-to-client not possible |
 | IP/port input sanitized | ✅ | `is_valid_int()` + range check |
-| Crash from malformed RPC | Low risk | `rpc_tile_broken` bounds-checks; `rpc_tile_hit` does not — see **m4** |
+| Crash from malformed RPC | ✅ | Both `rpc_tile_broken` and `rpc_tile_hit` bounds-check — **m4** Fixed |
 
 ---
 
@@ -215,8 +216,8 @@ exists in the codebase. Not evaluated further.
 |-------|--------|-------|
 | Godot Network Profiler usage documented | ❌ | Not mentioned in codebase or docs |
 | Peer ID / topology printed on connect | ✅ | `print()` calls in NetworkManager |
-| In-game network debug overlay | ❌ | None |
-| Structured logging (timestamps, peer IDs) | ❌ | Only bare `print()` calls |
+| In-game network debug overlay | ✅ | `NetworkDebugOverlay` toggled with F3 — shows peer ID, RTT, role, stall status |
+| Structured logging (timestamps, peer IDs) | ✅ | `push_warning` with peer IDs in heartbeat, chat validation, and timeout paths |
 | Headless server mode tested | Unknown | No CI/headless test scripts |
 | State snapshot / desync reproduction | ❌ | None |
 
@@ -262,19 +263,21 @@ exists in the codebase. Not evaluated further.
 | **m3** | No ENet bandwidth caps — default uncapped; acceptable for 2-player LAN | `NetworkManager.gd:26` | ✅ Won't fix (acceptable for LAN scope) |
 | **m4** | `rpc_tile_hit` does not bounds-check the grid position before calling `_update_breaking_overlay`; `rpc_tile_broken` does check | `MiningLevel.gd:2239-2243` | ✅ Fixed |
 | **m5** | No multiplayer GUT tests — no test coverage for any network path | `tests/` | ✅ Fixed |
-| **m6** | No heartbeat or stall detection — a silent network freeze is undetectable | `NetworkManager.gd` | ⏳ Deferred (ENet protocol-level timeout covers most cases) |
+| **m6** | No heartbeat or stall detection — a silent network freeze is undetectable | `NetworkManager.gd` | ✅ Fixed (2026-03-20) — ping/pong every 2s; 6s timeout emits `peer_stalled` |
 | **m7** | `guest_player_node` not freed on disconnect — `_on_coop_peer_disconnected` shows a banner but does not `queue_free()` the orphaned node | `MiningLevel.gd:638-640` | ✅ Fixed |
-| **m8** | Default port 25565 conflicts with Minecraft Java Edition — minor UX friction | `NetworkManager.gd:13` | ⏳ Deferred (not blocking; change with future branding pass) |
+| **m8** | Default port 25565 conflicts with Minecraft Java Edition — minor UX friction | `NetworkManager.gd:14` | ✅ Fixed (2026-03-20) — changed to port 7853 |
 | **m9** | No DTLS / transport encryption — acceptable for documented LAN-only scope | `NetworkManager.gd` | ✅ Won't fix (LAN-only; revisit before any WAN/Steam path) |
-| **m10** | No reconnect flow — disconnected players must restart entirely | `NetworkManager.gd` | ⏳ Deferred (requires session state serialisation; post-launch) |
+| **m10** | No reconnect flow — disconnected players must restart entirely | `NetworkManager.gd`, `MiningLevel.gd` | ✅ Fixed (2026-03-20) — persistent late-join handler allows guest rejoin mid-mine |
+| **m11** | Guest stranded after host disconnect — banner shown but no scene transition back to main menu | `NetworkManager.gd`, `MiningLevel.gd` | ✅ Fixed (2026-03-20) |
+| **m12** | No connection timeout on join — guest waits indefinitely if host is unreachable | `NetworkManager.gd` | ✅ Fixed (2026-03-20) |
 
 ### Cosmetic
 
 | ID | Description | File(s) | Status |
 |----|-------------|---------|--------|
 | **c1** | Chat key `T` is hardcoded via `event.keycode == KEY_T`, not an input action — cannot be rebound | `ChatBox.gd:98` | ✅ Fixed |
-| **c2** | Chat sender names hardcoded as `"Host"` / `"Guest"` — no player name support | `NetworkManager.gd:102` | ⏳ Deferred (needs player name UX design) |
-| **c3** | Guest minerals banked to their own local `GameManager.mineral_currency` — shared pool semantics unclear across sessions | `GameManager.gd:247-261` | ⏳ Deferred (by-design for now; document in GDD) |
+| **c2** | Chat sender names hardcoded as `"Host"` / `"Guest"` — no player name support | `NetworkManager.gd` | ✅ Fixed (2026-03-20) — `player_name` from OS username; `get_display_name()` used in chat; names exchanged via heartbeat |
+| **c3** | Guest minerals banked to their own local `GameManager.mineral_currency` — shared pool semantics unclear across sessions | `GameManager.gd:247-261` | ✅ Documented — by-design: guest sees host's mineral count via `rpc_sync_resources` but their local `mineral_currency` is cosmetic; only the host's save file is authoritative. Guest banking contributes to the host's pool via `rpc_request_mine` → host-side `bank_minerals()`. No action needed. |
 
 ---
 
@@ -286,7 +289,9 @@ exists in the codebase. Not evaluated further.
 | Resource sync rate | ~6.7 Hz (every 150ms) | `MiningLevel.gd:462, 1109` |
 | Tile break sync | On event, `reliable` | `MiningLevel.gd:2225` |
 | Max clients | 1 guest (2 players total) | `NetworkManager.gd:14` |
-| Estimated idle bandwidth | < 1 KB/s | Position + resource sync only |
+| Heartbeat ping/pong | 0.5 Hz (every 2s) | `NetworkManager._rpc_ping` / `_rpc_pong` |
+| Heartbeat stall timeout | 6s | Emits `peer_stalled` signal |
+| Estimated idle bandwidth | < 1 KB/s | Position + resource sync + heartbeat |
 | Estimated peak bandwidth | ~5–10 KB/s | Active mining, both players moving |
 | Sync properties per synchronizer | N/A (manual RPC) | No `MultiplayerSynchronizer` used |
 | Latency tolerance (estimated) | < 100ms comfortable | Not formally tested |
@@ -506,6 +511,7 @@ should be executed manually before each release candidate.
 | Both players reach exit station | Both see RunSummary | ☐ |
 | Energy depletes to zero | Both see game-over overlay; both return to Overworld | ☐ |
 | Guest disconnects mid-mine | Host sees banner; continues solo; guest node freed | ☐ |
+| Guest disconnects then reconnects mid-mine | Host sees "PARTNER JOINED" banner; new guest node spawned | ☐ *(m10)* |
 | **Host disconnects mid-mine** | **Guest sees banner; returns to main menu** | ☐ *(C1)* |
 | Host closes game from Overworld | Guest returns to main menu | ☐ *(C1)* |
 | Guest sends chat message | Both see `[Guest] message` | ☐ |
@@ -513,7 +519,10 @@ should be executed manually before each release candidate.
 | Session ends; host re-hosts same save | Both can join a new session without restarting | ☐ |
 | Full session at max activity (both mining, boss active) | No frame-rate collapse; sync stays coherent | ☐ |
 | Port already in use on `create_server` | Error shown in lobby status | ☐ |
-| Wrong IP on join | "Connection failed" status; no hang | ☐ |
+| Wrong IP on join | "Connection failed" status after ≤8s timeout; no hang | ☐ |
+| Network stall (simulate by pausing remote) | `peer_stalled` fires after 6s; debug overlay shows "PEER STALLED" | ☐ *(m6)* |
+| F3 debug overlay during session | Shows role, peer ID, RTT, heartbeat status, player names | ☐ |
+| Player name shown in chat | Chat uses OS username instead of "Host"/"Guest" | ☐ *(c2)* |
 
 ### Steam Path
 
