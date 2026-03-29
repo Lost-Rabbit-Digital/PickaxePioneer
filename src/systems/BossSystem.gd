@@ -453,6 +453,25 @@ func try_hit_boss_segment(click_world: Vector2, last_ore_group: String = "") -> 
 # Spawn helpers
 # ---------------------------------------------------------------------------
 
+## Create a ring of segments at a given radius around the boss center.
+## extra_props: additional properties merged into each segment dictionary.
+func _create_orbital_ring(count: int, radius: float, hp: int, phase_offset: float = 0.0, extra_props: Dictionary = {}) -> Array:
+	var ring: Array = []
+	for i in count:
+		var a := float(i) / float(count) * TAU + phase_offset
+		var seg := {
+			"pos": boss_center_pos + Vector2(cos(a), sin(a)) * radius,
+			"hp": hp,
+			"max_hp": hp,
+			"is_core": false,
+			"angle": a,
+			"orbit_r": radius,
+		}
+		seg.merge(extra_props)
+		ring.append(seg)
+	return ring
+
+
 func _spawn_giant_rat_king(player_col: int) -> void:
 	var boss_row := BOSS_MILESTONES[0]
 	var cs := _cell_size
@@ -471,28 +490,9 @@ func _spawn_giant_rat_king(player_col: int) -> void:
 	})
 
 	# Outer ring — 6 segments
-	for i in 6:
-		var a := float(i) / 6.0 * TAU
-		boss_segments.append({
-			"pos": boss_center_pos + Vector2(cos(a), sin(a)) * RAT_ORBIT_RADIUS_OUTER,
-			"hp": RAT_SEGMENT_HP,
-			"max_hp": RAT_SEGMENT_HP,
-			"is_core": false,
-			"angle": a,
-			"orbit_r": RAT_ORBIT_RADIUS_OUTER,
-		})
-
-	# Inner ring — 6 segments (offset phase)
-	for i in 6:
-		var a := float(i) / 6.0 * TAU + TAU / 12.0
-		boss_segments.append({
-			"pos": boss_center_pos + Vector2(cos(a), sin(a)) * RAT_ORBIT_RADIUS_INNER,
-			"hp": RAT_SEGMENT_HP,
-			"max_hp": RAT_SEGMENT_HP,
-			"is_core": false,
-			"angle": a,
-			"orbit_r": RAT_ORBIT_RADIUS_INNER,
-		})
+	boss_segments.append_array(_create_orbital_ring(6, RAT_ORBIT_RADIUS_OUTER, RAT_SEGMENT_HP))
+	# Inner ring — 6 segments with phase offset
+	boss_segments.append_array(_create_orbital_ring(6, RAT_ORBIT_RADIUS_INNER, RAT_SEGMENT_HP, TAU / 12.0))
 
 	_activate([], BOSS_TYPE_GIANT_RAT, boss_row)
 	_rat_center = Vector2i(player_col, boss_row)
@@ -520,21 +520,12 @@ func _spawn_cave_spider_matriarch(player_col: int) -> void:
 		"orbit_r": 0.0,
 	})
 
-	# 8 legs evenly distributed — spider faces the player and turns as a group
+	# 8 legs evenly distributed
 	_spider_facing_angle = 0.0
-	for i in 8:
-		var base_offset := float(i) / 8.0 * TAU
-		var a := base_offset
-		boss_segments.append({
-			"pos": boss_center_pos + Vector2(cos(a), sin(a)) * SPIDER_ORBIT_RADIUS,
-			"hp": SPIDER_SEGMENT_HP,
-			"max_hp": SPIDER_SEGMENT_HP,
-			"is_core": false,
-			"angle": a,
-			"orbit_r": SPIDER_ORBIT_RADIUS,
-			"base_orbit_r": SPIDER_ORBIT_RADIUS,
-			"base_angle_offset": base_offset,
-		})
+	var legs := _create_orbital_ring(8, SPIDER_ORBIT_RADIUS, SPIDER_SEGMENT_HP, 0.0, {"base_orbit_r": SPIDER_ORBIT_RADIUS})
+	for i in legs.size():
+		legs[i]["base_angle_offset"] = float(i) / 8.0 * TAU
+	boss_segments.append_array(legs)
 
 	_activate([], BOSS_TYPE_SPIDER, boss_row)
 	_spider_center = Vector2i(player_col, boss_row)
@@ -563,31 +554,10 @@ func _spawn_blind_mole(player_col: int) -> void:
 		"is_claw": false,
 	})
 
-	# 4 claws — inner ring, tougher than body segments
-	for i in 4:
-		var a := float(i) / 4.0 * TAU
-		boss_segments.append({
-			"pos": boss_center_pos + Vector2(cos(a), sin(a)) * MOLE_ORBIT_RADIUS_INNER,
-			"hp": MOLE_CLAW_HP,
-			"max_hp": MOLE_CLAW_HP,
-			"is_core": false,
-			"angle": a,
-			"orbit_r": MOLE_ORBIT_RADIUS_INNER,
-			"is_claw": true,
-		})
-
-	# 8 body segments — outer ring
-	for i in 8:
-		var a := float(i) / 8.0 * TAU + TAU / 16.0  # offset from claws
-		boss_segments.append({
-			"pos": boss_center_pos + Vector2(cos(a), sin(a)) * MOLE_ORBIT_RADIUS_OUTER,
-			"hp": MOLE_SEGMENT_HP,
-			"max_hp": MOLE_SEGMENT_HP,
-			"is_core": false,
-			"angle": a,
-			"orbit_r": MOLE_ORBIT_RADIUS_OUTER,
-			"is_claw": false,
-		})
+	# 4 claws — inner ring
+	boss_segments.append_array(_create_orbital_ring(4, MOLE_ORBIT_RADIUS_INNER, MOLE_CLAW_HP, 0.0, {"is_claw": true}))
+	# 8 body segments — outer ring with phase offset
+	boss_segments.append_array(_create_orbital_ring(8, MOLE_ORBIT_RADIUS_OUTER, MOLE_SEGMENT_HP, TAU / 16.0, {"is_claw": false}))
 
 	_activate([], BOSS_TYPE_MOLE, boss_row)
 	_mole_center = Vector2i(player_col, boss_row)
@@ -618,44 +588,12 @@ func _spawn_stone_golem(player_col: int) -> void:
 		"orbit_r": 0.0,
 	})
 
-	# Phase 0 (copper armor) — 5 segments, outer ring
-	for i in 5:
-		var a := float(i) / 5.0 * TAU
-		boss_segments.append({
-			"pos": boss_center_pos + Vector2(cos(a), sin(a)) * GOLEM_ORBIT_RADIUS_OUTER,
-			"hp": GOLEM_SEGMENT_HP,
-			"max_hp": GOLEM_SEGMENT_HP,
-			"is_core": false,
-			"angle": a,
-			"orbit_r": GOLEM_ORBIT_RADIUS_OUTER,
-			"armor_phase": 0,
-		})
-
-	# Phase 1 (iron armor) — 5 segments, middle ring
-	for i in 5:
-		var a := float(i) / 5.0 * TAU + TAU / 10.0
-		boss_segments.append({
-			"pos": boss_center_pos + Vector2(cos(a), sin(a)) * GOLEM_ORBIT_RADIUS_MID,
-			"hp": GOLEM_SEGMENT_HP,
-			"max_hp": GOLEM_SEGMENT_HP,
-			"is_core": false,
-			"angle": a,
-			"orbit_r": GOLEM_ORBIT_RADIUS_MID,
-			"armor_phase": 1,
-		})
-
-	# Phase 2 (gold armor) — 5 segments, inner ring
-	for i in 5:
-		var a := float(i) / 5.0 * TAU + TAU / 5.0
-		boss_segments.append({
-			"pos": boss_center_pos + Vector2(cos(a), sin(a)) * GOLEM_ORBIT_RADIUS_INNER,
-			"hp": GOLEM_SEGMENT_HP,
-			"max_hp": GOLEM_SEGMENT_HP,
-			"is_core": false,
-			"angle": a,
-			"orbit_r": GOLEM_ORBIT_RADIUS_INNER,
-			"armor_phase": 2,
-		})
+	# Phase 0 (copper armor) — 5 segments outer ring
+	boss_segments.append_array(_create_orbital_ring(5, GOLEM_ORBIT_RADIUS_OUTER, GOLEM_SEGMENT_HP, 0.0, {"armor_phase": 0}))
+	# Phase 1 (iron armor) — 5 segments mid ring
+	boss_segments.append_array(_create_orbital_ring(5, GOLEM_ORBIT_RADIUS_MID, GOLEM_SEGMENT_HP, TAU / 10.0, {"armor_phase": 1}))
+	# Phase 2 (gold armor) — 5 segments inner ring
+	boss_segments.append_array(_create_orbital_ring(5, GOLEM_ORBIT_RADIUS_INNER, GOLEM_SEGMENT_HP, TAU / 5.0, {"armor_phase": 2}))
 
 	_activate([], BOSS_TYPE_GOLEM, boss_row)
 	golem_phase = 0
@@ -728,31 +666,10 @@ func _spawn_ancient_one(player_col: int) -> void:
 		"orbit_r": 0.0,
 	})
 
-	# 12 outer shell segments — wide ring (phase 0)
-	for i in 12:
-		var a := float(i) / 12.0 * TAU
-		boss_segments.append({
-			"pos": boss_center_pos + Vector2(cos(a), sin(a)) * ANCIENT_ORBIT_RADIUS_OUTER,
-			"hp": ANCIENT_SEGMENT_HP,
-			"max_hp": ANCIENT_SEGMENT_HP,
-			"is_core": false,
-			"angle": a,
-			"orbit_r": ANCIENT_ORBIT_RADIUS_OUTER,
-			"ring": 0,
-		})
-
-	# 8 inner crystal segments — tighter ring (phase 1)
-	for i in 8:
-		var a := float(i) / 8.0 * TAU + TAU / 16.0
-		boss_segments.append({
-			"pos": boss_center_pos + Vector2(cos(a), sin(a)) * ANCIENT_ORBIT_RADIUS_INNER,
-			"hp": ANCIENT_SEGMENT_HP,
-			"max_hp": ANCIENT_SEGMENT_HP,
-			"is_core": false,
-			"angle": a,
-			"orbit_r": ANCIENT_ORBIT_RADIUS_INNER,
-			"ring": 1,
-		})
+	# 12 outer shell segments
+	boss_segments.append_array(_create_orbital_ring(12, ANCIENT_ORBIT_RADIUS_OUTER, ANCIENT_SEGMENT_HP, 0.0, {"ring": 0}))
+	# 8 inner crystal segments with phase offset
+	boss_segments.append_array(_create_orbital_ring(8, ANCIENT_ORBIT_RADIUS_INNER, ANCIENT_SEGMENT_HP, TAU / 16.0, {"ring": 1}))
 
 	_activate([], BOSS_TYPE_ANCIENT, boss_row)
 	_ancient_center = Vector2i(player_col, boss_row)
@@ -858,7 +775,7 @@ func _on_boss_despawned() -> void:
 
 
 func _is_valid_pos(pos: Vector2i) -> bool:
-	return pos.x >= 0 and pos.x < _grid_cols and pos.y >= 0 and pos.y < _grid_rows
+	return GridUtils.is_valid(pos.x, pos.y, _grid_cols, _grid_rows)
 
 
 # ---------------------------------------------------------------------------

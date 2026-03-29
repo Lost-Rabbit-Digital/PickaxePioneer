@@ -306,7 +306,7 @@ func _find_nearest_ore(anchor: Vector2, radius_tiles: int) -> Vector2i:
 		for dr in range(-radius_tiles, radius_tiles + 1):
 			var col := anchor_col + dc
 			var row := anchor_row + dr
-			if col < 0 or col >= _grid_cols or row < _surface_rows or row >= _grid_rows:
+			if not GridUtils.is_valid(col, row, _grid_cols, _grid_rows) or row < _surface_rows:
 				continue
 			if _is_ore_tile(_grid[col][row]):
 				var dist := float(dc * dc + dr * dr)
@@ -322,7 +322,7 @@ func _is_ore_tile(tile: int) -> bool:
 
 
 func _is_valid_ore(pos: Vector2i) -> bool:
-	if pos.x < 0 or pos.x >= _grid_cols or pos.y < 0 or pos.y >= _grid_rows:
+	if not GridUtils.is_valid(pos.x, pos.y, _grid_cols, _grid_rows):
 		return false
 	if _grid.is_empty():
 		return false

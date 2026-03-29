@@ -861,7 +861,7 @@ func _build_shop_protection_zones() -> void:
 					for dr in range(-SHOP_PROTECTION_RADIUS, SHOP_PROTECTION_RADIUS + 1):
 						var nc := col + dc
 						var nr := row + dr
-						if nc >= 0 and nc < GRID_COLS and nr >= 0 and nr < GRID_ROWS:
+						if GridUtils.is_valid(nc, nr, GRID_COLS, GRID_ROWS):
 							_shop_protected_cells[Vector2i(nc, nr)] = true
 
 # ---------------------------------------------------------------------------
@@ -1279,7 +1279,7 @@ func _process(delta: float) -> void:
 			continue
 		var pgp: Vector2i = p_check.get_grid_pos()
 		p_check.on_ladder = (
-			pgp.x >= 0 and pgp.x < GRID_COLS and pgp.y >= 0 and pgp.y < GRID_ROWS
+			GridUtils.is_valid(pgp.x, pgp.y, GRID_COLS, GRID_ROWS)
 			and grid[pgp.x][pgp.y] == TileType.LADDER
 		)
 
@@ -1399,7 +1399,7 @@ func _update_cursor_highlight() -> void:
 		return
 	var mouse_world := get_global_mouse_position()
 	var gp := Vector2i(floori(mouse_world.x / CELL_SIZE), floori(mouse_world.y / CELL_SIZE))
-	if gp.x >= 0 and gp.x < GRID_COLS and gp.y >= 0 and gp.y < GRID_ROWS:
+	if GridUtils.is_valid(gp.x, gp.y, GRID_COLS, GRID_ROWS):
 		_cursor_raw_grid_pos = gp
 		# World-space distance from player position to tile centre (in tile units)
 		# matches the range check used in PlayerProbe so the highlight is accurate.
@@ -1637,7 +1637,7 @@ func _cast_ray(fx: float, fy: float, dx: float, dy: float, steps: int,
 		var cy := floori(fy + dy * t)
 		if (cx == to_tile.x and cy == to_tile.y) or (cx == from_tx and cy == from_ty):
 			continue
-		if cx < 0 or cx >= GRID_COLS or cy < 0 or cy >= GRID_ROWS:
+		if not GridUtils.is_valid(cx, cy, GRID_COLS, GRID_ROWS):
 			continue
 		var tile_type: int = grid[cx][cy]
 		if tile_type != TileType.EMPTY and tile_type != TileType.LADDER:
@@ -1647,7 +1647,7 @@ func _cast_ray(fx: float, fy: float, dx: float, dy: float, steps: int,
 func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 	var col := grid_pos.x
 	var row := grid_pos.y
-	if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
+	if not GridUtils.is_valid(col, row, GRID_COLS, GRID_ROWS):
 		return
 
 	# Free-floating boss segments — check before grid tile lookup so clicks
@@ -1816,7 +1816,7 @@ func try_mine_at(grid_pos: Vector2i, miner_node: PlayerProbe = null) -> void:
 func check_player_hazard(col: int, row: int, source_player: PlayerProbe = null) -> void:
 	if _hazard_cooldown > 0.0 or _game_over:
 		return
-	if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
+	if not GridUtils.is_valid(col, row, GRID_COLS, GRID_ROWS):
 		return
 	var tile: int = grid[col][row]
 	var target_player := source_player if source_player else player_node
@@ -1887,7 +1887,7 @@ func _spawn_decorations(data: Dictionary) -> void:
 # Schedule a gravity check for any gravity tile sitting directly above (col, row).
 func _trigger_gravity_above(col: int, row: int) -> void:
 	var above_row := row - 1
-	if above_row < 0 or col < 0 or col >= GRID_COLS:
+	if not GridUtils.is_valid(col, above_row, GRID_COLS, GRID_ROWS):
 		return
 	if grid[col][above_row] in GRAVITY_TILES:
 		var pos := Vector2i(col, above_row)
@@ -1915,7 +1915,7 @@ func _process_gravity(delta: float) -> void:
 		var row: int = pos.y
 
 		# Tile may have already been mined away while waiting — skip if so.
-		if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
+		if not GridUtils.is_valid(col, row, GRID_COLS, GRID_ROWS):
 			continue
 		if not grid[col][row] in GRAVITY_TILES:
 			continue
@@ -2052,7 +2052,7 @@ func _apply_terrain_resume(changes: Array) -> void:
 		var col: int = entry[0]
 		var row: int = entry[1]
 		var tile: int = entry[2]
-		if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
+		if not GridUtils.is_valid(col, row, GRID_COLS, GRID_ROWS):
 			continue
 		grid[col][row] = tile
 
@@ -2110,7 +2110,7 @@ func _explode_area(center_col: int, center_row: int, chain_depth: int = 0) -> vo
 		for dr in range(-r, r + 1):
 			var nc := center_col + dc
 			var nr := center_row + dr
-			if nc >= 0 and nc < GRID_COLS and nr >= 0 and nr < GRID_ROWS:
+			if GridUtils.is_valid(nc, nr, GRID_COLS, GRID_ROWS):
 				var tile: int = grid[nc][nr]
 				if tile == TileType.EXPLOSIVE or tile == TileType.EXPLOSIVE_ARMED:
 					chain_explosives.append(Vector2i(nc, nr))
@@ -2120,7 +2120,7 @@ func _explode_area(center_col: int, center_row: int, chain_depth: int = 0) -> vo
 		for dr in range(-r, r + 1):
 			var nc := center_col + dc
 			var nr := center_row + dr
-			if nc >= 0 and nc < GRID_COLS and nr >= 0 and nr < GRID_ROWS:
+			if GridUtils.is_valid(nc, nr, GRID_COLS, GRID_ROWS):
 				var tile: int = grid[nc][nr]
 				if tile in ORE_TILES:
 					var minerals: int = TILE_MINERALS.get(tile, 1)
@@ -2464,7 +2464,7 @@ func _update_interact_prompt() -> void:
 	}
 	for offset in adj:
 		var check: Vector2i = local_p.get_grid_pos() + offset
-		if check.x < 0 or check.x >= GRID_COLS or check.y < 0 or check.y >= GRID_ROWS:
+		if not GridUtils.is_valid(check.x, check.y, GRID_COLS, GRID_ROWS):
 			continue
 		var t: int = grid[check.x][check.y]
 		if t in STATION_PROMPTS:
@@ -2510,7 +2510,7 @@ func _try_interact() -> void:
 	}
 	for offset in [Vector2i(0, 0), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
 		var check: Vector2i = local_p.get_grid_pos() + offset
-		if check.x < 0 or check.x >= GRID_COLS or check.y < 0 or check.y >= GRID_ROWS:
+		if not GridUtils.is_valid(check.x, check.y, GRID_COLS, GRID_ROWS):
 			continue
 		var t: int = grid[check.x][check.y]
 		if t in STATION_SHOPS:
@@ -2639,7 +2639,7 @@ func _queue_boss_hints(hints: Array) -> void:
 func cat_mine_at(grid_pos: Vector2i) -> void:
 	var col := grid_pos.x
 	var row := grid_pos.y
-	if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
+	if not GridUtils.is_valid(col, row, GRID_COLS, GRID_ROWS):
 		return
 	if _shop_protected_cells.has(Vector2i(col, row)):
 		return
@@ -2671,7 +2671,7 @@ func _try_place_ladder_at(gp: Vector2i) -> void:
 	if GameManager.ladder_count <= 0:
 		EventBus.ore_mined_popup.emit(0, "No ladders! Buy packs at the Recharging Station.")
 		return
-	if gp.x < 0 or gp.x >= GRID_COLS or gp.y < 0 or gp.y >= GRID_ROWS:
+	if not GridUtils.is_valid(gp.x, gp.y, GRID_COLS, GRID_ROWS):
 		EventBus.ore_mined_popup.emit(0, "Aim the cursor at an empty tile to place a ladder.")
 		return
 	var player_tile := player_node.get_grid_pos()
@@ -2702,7 +2702,7 @@ func _guest_request_place_ladder(gp: Vector2i) -> void:
 	if GameManager.ladder_count <= 0:
 		EventBus.ore_mined_popup.emit(0, "No ladders! Buy packs at the Recharging Station.")
 		return
-	if gp.x < 0 or gp.x >= GRID_COLS or gp.y < 0 or gp.y >= GRID_ROWS:
+	if not GridUtils.is_valid(gp.x, gp.y, GRID_COLS, GRID_ROWS):
 		EventBus.ore_mined_popup.emit(0, "Aim the cursor at an empty tile to place a ladder.")
 		return
 	var player_tile := local_player.get_grid_pos()
@@ -2728,7 +2728,7 @@ func _try_remove_ladder_at(gp: Vector2i) -> void:
 	# Host / single-player path
 	if not player_node:
 		return
-	if gp.x < 0 or gp.x >= GRID_COLS or gp.y < 0 or gp.y >= GRID_ROWS:
+	if not GridUtils.is_valid(gp.x, gp.y, GRID_COLS, GRID_ROWS):
 		return
 	if grid[gp.x][gp.y] != TileType.LADDER:
 		EventBus.ore_mined_popup.emit(0, "Right-click a placed ladder to retrieve it.")
@@ -2756,7 +2756,7 @@ func _guest_request_remove_ladder(gp: Vector2i) -> void:
 	var local_player := _get_local_player()
 	if not local_player:
 		return
-	if gp.x < 0 or gp.x >= GRID_COLS or gp.y < 0 or gp.y >= GRID_ROWS:
+	if not GridUtils.is_valid(gp.x, gp.y, GRID_COLS, GRID_ROWS):
 		return
 	if grid[gp.x][gp.y] != TileType.LADDER:
 		EventBus.ore_mined_popup.emit(0, "Right-click a placed ladder to retrieve it.")
@@ -2802,7 +2802,7 @@ func rpc_request_mine(grid_pos: Vector2i) -> void:
 func rpc_tile_broken(grid_pos: Vector2i, burst_r: float, burst_g: float, burst_b: float) -> void:
 	var col := grid_pos.x
 	var row := grid_pos.y
-	if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
+	if not GridUtils.is_valid(col, row, GRID_COLS, GRID_ROWS):
 		return
 	_remove_breaking_overlay(grid_pos)
 	_mine_cell(col, row)
@@ -2815,7 +2815,7 @@ func rpc_tile_broken(grid_pos: Vector2i, burst_r: float, burst_g: float, burst_b
 ## Host → Guest: partial hit on a tile — sync the breaking overlay.
 @rpc("authority", "call_remote", "reliable")
 func rpc_tile_hit(grid_pos: Vector2i, damage_ratio: float) -> void:
-	if grid_pos.x < 0 or grid_pos.x >= GRID_COLS or grid_pos.y < 0 or grid_pos.y >= GRID_ROWS:
+	if not GridUtils.is_valid(grid_pos.x, grid_pos.y, GRID_COLS, GRID_ROWS):
 		return
 	_update_breaking_overlay(grid_pos, damage_ratio)
 	_flash_cells[grid_pos] = 1.0
@@ -2875,7 +2875,7 @@ func rpc_consume_energy_from_guest(amount: int) -> void:
 ## Host → Guest: a ladder was placed — update grid so guest can climb it.
 @rpc("authority", "call_remote", "reliable")
 func rpc_ladder_placed(grid_pos: Vector2i) -> void:
-	if grid_pos.x < 0 or grid_pos.x >= GRID_COLS or grid_pos.y < 0 or grid_pos.y >= GRID_ROWS:
+	if not GridUtils.is_valid(grid_pos.x, grid_pos.y, GRID_COLS, GRID_ROWS):
 		return
 	grid[grid_pos.x][grid_pos.y] = TileType.LADDER
 	_set_visual_cell(grid_pos.x, grid_pos.y)
@@ -2884,7 +2884,7 @@ func rpc_ladder_placed(grid_pos: Vector2i) -> void:
 ## Host → Guest: a ladder was retrieved — clear it from the guest's grid.
 @rpc("authority", "call_remote", "reliable")
 func rpc_ladder_removed(grid_pos: Vector2i) -> void:
-	if grid_pos.x < 0 or grid_pos.x >= GRID_COLS or grid_pos.y < 0 or grid_pos.y >= GRID_ROWS:
+	if not GridUtils.is_valid(grid_pos.x, grid_pos.y, GRID_COLS, GRID_ROWS):
 		return
 	grid[grid_pos.x][grid_pos.y] = TileType.EMPTY
 	_set_tile_collision(grid_pos.x, grid_pos.y, false)
@@ -2899,7 +2899,7 @@ func rpc_request_place_ladder(grid_pos: Vector2i) -> void:
 		return
 	if not guest_player_node:
 		return
-	if grid_pos.x < 0 or grid_pos.x >= GRID_COLS or grid_pos.y < 0 or grid_pos.y >= GRID_ROWS:
+	if not GridUtils.is_valid(grid_pos.x, grid_pos.y, GRID_COLS, GRID_ROWS):
 		return
 	var guest_tile := Vector2i(
 		floori(guest_player_node.global_position.x / CELL_SIZE),
@@ -2926,7 +2926,7 @@ func rpc_request_remove_ladder(grid_pos: Vector2i) -> void:
 		return
 	if not guest_player_node:
 		return
-	if grid_pos.x < 0 or grid_pos.x >= GRID_COLS or grid_pos.y < 0 or grid_pos.y >= GRID_ROWS:
+	if not GridUtils.is_valid(grid_pos.x, grid_pos.y, GRID_COLS, GRID_ROWS):
 		return
 	if grid[grid_pos.x][grid_pos.y] != TileType.LADDER:
 		return
@@ -2971,7 +2971,7 @@ func rpc_explode_area(center: Vector2i) -> void:
 		for dr: int in range(-r, r + 1):
 			var nc := center.x + dc
 			var nr := center.y + dr
-			if nc >= 0 and nc < GRID_COLS and nr >= 0 and nr < GRID_ROWS:
+			if GridUtils.is_valid(nc, nr, GRID_COLS, GRID_ROWS):
 				if grid[nc][nr] != TileType.EMPTY:
 					_mine_cell(nc, nr)
 					var cell_world := Vector2(nc * CELL_SIZE + CELL_SIZE * 0.5, nr * CELL_SIZE + CELL_SIZE * 0.5)
@@ -2997,7 +2997,7 @@ func rpc_request_explode(grid_pos: Vector2i) -> void:
 		return
 	var col := grid_pos.x
 	var row := grid_pos.y
-	if col < 0 or col >= GRID_COLS or row < 0 or row >= GRID_ROWS:
+	if not GridUtils.is_valid(col, row, GRID_COLS, GRID_ROWS):
 		return
 	var tile: int = grid[col][row]
 	if tile != TileType.EXPLOSIVE and tile != TileType.EXPLOSIVE_ARMED:

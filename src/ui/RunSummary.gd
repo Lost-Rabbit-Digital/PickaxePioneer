@@ -306,33 +306,15 @@ func _play_intro() -> void:
 # ---------------------------------------------------------------------------
 
 func _add_separator(parent: Control, px: float, sep_y: float, width: float) -> void:
-	var sep := ColorRect.new()
-	sep.position = Vector2(px + 12.0, sep_y)
-	sep.size = Vector2(width - 24.0, 2.0)
-	sep.color = Color(0.25, 0.45, 0.80, 0.45)
-	parent.add_child(sep)
+	UIHelper.create_separator(parent, px, sep_y, width)
 
 func _add_colour_icon(parent: Control, px: float, row_y: float, color: Color) -> ColorRect:
-	var icon := ColorRect.new()
-	icon.position = Vector2(px + 10.0, row_y + (ROW_H - 26.0) / 2.0)
-	icon.size = Vector2(26.0, 26.0)
-	icon.color = color
-	parent.add_child(icon)
-	return icon
+	return UIHelper.create_colour_icon(parent, px, row_y, color)
 
 func _add_label(parent: Control, text: String, lx: float, ly: float,
 		w: float, h: float, font_size: int, color: Color,
 		h_align: HorizontalAlignment) -> Label:
-	var lbl := Label.new()
-	lbl.text = text
-	lbl.position = Vector2(lx, ly)
-	lbl.size = Vector2(w, h)
-	lbl.horizontal_alignment = h_align
-	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	lbl.add_theme_font_size_override("font_size", font_size)
-	lbl.add_theme_color_override("font_color", color)
-	parent.add_child(lbl)
-	return lbl
+	return UIHelper.create_label(parent, text, lx, ly, w, h, font_size, color, h_align)
 
 func _on_return_pressed() -> void:
 	GameManager.bank_currency()

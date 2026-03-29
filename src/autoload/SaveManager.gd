@@ -146,27 +146,16 @@ func clear_active_slot_run_data() -> void:
 # ---------------------------------------------------------------------------
 
 func _load_all_slots() -> void:
-	if not FileAccess.file_exists(SAVE_PATH):
-		# Migrate legacy single save if it exists
+	var data: Variant = FileIOHelper.load_json(SAVE_PATH)
+	if data == null:
 		_migrate_legacy_save()
 		return
-
-	var file = FileAccess.open(SAVE_PATH, FileAccess.READ)
-	if not file:
-		return
-	var json_string = file.get_as_text()
-	file.close()
-
-	var json = JSON.new()
-	if json.parse(json_string) == OK and json.data is Array:
-		for i in range(mini(json.data.size(), MAX_SLOTS)):
-			_slots[i] = json.data[i]  # may be null for empty slots
+	if data is Array:
+		for i in range(mini(data.size(), MAX_SLOTS)):
+			_slots[i] = data[i]
 
 func _persist_all_slots() -> void:
-	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if file:
-		file.store_string(JSON.stringify(_slots))
-		file.close()
+	FileIOHelper.save_json(SAVE_PATH, _slots)
 
 ## Save global progress (cross-save XP, level, and playtime incentive timer) to its own file.
 func save_global_progress() -> void:
@@ -176,40 +165,22 @@ func save_global_progress() -> void:
 		"global_player_level": gm.global_player_level,
 		"playtime_xp_timer": gm.playtime_xp_timer,
 	}
-	var file = FileAccess.open(GLOBAL_SAVE_PATH, FileAccess.WRITE)
-	if file:
-		file.store_string(JSON.stringify(data))
-		file.close()
+	FileIOHelper.save_json(GLOBAL_SAVE_PATH, data)
 
 func _load_global_progress() -> void:
-	if not FileAccess.file_exists(GLOBAL_SAVE_PATH):
+	var data: Variant = FileIOHelper.load_json(GLOBAL_SAVE_PATH)
+	if data == null or not data is Dictionary:
 		return
-	var file = FileAccess.open(GLOBAL_SAVE_PATH, FileAccess.READ)
-	if not file:
-		return
-	var json_string = file.get_as_text()
-	file.close()
-	var json = JSON.new()
-	if json.parse(json_string) == OK and json.data is Dictionary:
-		var gm = GameManager
-		gm.global_player_xp = json.data.get("global_player_xp", 0)
-		gm.global_player_level = json.data.get("global_player_level", 1)
-		gm.playtime_xp_timer = json.data.get("playtime_xp_timer", 0.0)
+	var gm = GameManager
+	gm.global_player_xp = data.get("global_player_xp", 0)
+	gm.global_player_level = data.get("global_player_level", 1)
+	gm.playtime_xp_timer = data.get("playtime_xp_timer", 0.0)
 
 func _migrate_legacy_save() -> void:
-	# If the old single-file save exists, import it into slot 0
 	const LEGACY_PATH = "user://save_data.json"
-	if not FileAccess.file_exists(LEGACY_PATH):
-		return
-	var file = FileAccess.open(LEGACY_PATH, FileAccess.READ)
-	if not file:
-		return
-	var json_string = file.get_as_text()
-	file.close()
-
-	var json = JSON.new()
-	if json.parse(json_string) == OK and json.data is Dictionary:
-		_slots[0] = json.data
+	var data: Variant = FileIOHelper.load_json(LEGACY_PATH)
+	if data is Dictionary:
+		_slots[0] = data
 		_persist_all_slots()
 
 # ---------------------------------------------------------------------------

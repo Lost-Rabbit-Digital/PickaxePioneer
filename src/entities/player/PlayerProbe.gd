@@ -76,14 +76,8 @@ var _air_jumps_used: int = 0
 # Trinket-powered boost after all air jumps are spent (Jet Boots trinket).
 var _jet_boost_used: bool = false
 
-# Trinket effect timers
-var _regen_timer: float = 0.0
-const REGEN_INTERVAL: float = 4.0          # Stone of Regeneration: +1 HP every 4 sec
-var _boots_energy_accum: float = 0.0       # Boots of Sprinting energy regen accumulator
-var _curse_timer: float = 0.0              # Curse of the Core damage interval
-const CURSE_DAMAGE_INTERVAL: float = 8.0  # Seconds between curse damage ticks
-var _cosmic_timer: float = 0.0             # Cosmic Radiation bitflip interval
-const COSMIC_INTERVAL: float = 15.0       # Seconds between cosmic events
+# Trinket passive effects (extracted to TrinketEffectsManager)
+var _trinket_fx := TrinketEffectsManager.new()
 
 # --- Gamepad right-stick aiming ---
 # When the right stick is deflected, warp the mouse cursor so all existing
@@ -582,42 +576,18 @@ func _update_followers() -> void:
 			_leaf_follower.play(follower_anim)
 
 func _update_trinket_effects(delta: float) -> void:
-	# Stone of Regeneration — heal 1 HP every 4 seconds when not at max health.
-	if GameManager.trinket_stone_of_regen:
-		_regen_timer += delta
-		if _regen_timer >= REGEN_INTERVAL:
-			_regen_timer = 0.0
-			if not is_at_max_health():
-				heal(1)
-	else:
-		_regen_timer = 0.0
-
-	# Boots of Sprinting — restore 1 energy per second while walking on the ground.
-	if GameManager.trinket_boots_of_sprinting and is_on_floor() and abs(velocity.x) > 10.0:
-		_boots_energy_accum += delta
-		if _boots_energy_accum >= 1.0:
-			_boots_energy_accum -= 1.0
-			GameManager.restore_energy(1)
-	else:
-		_boots_energy_accum = 0.0
-
-	# Curse of the Core — 1 damage every 8 seconds while underground.
-	if GameManager.trinket_curse_of_core and get_depth_row() > 0:
-		_curse_timer += delta
-		if _curse_timer >= CURSE_DAMAGE_INTERVAL:
-			_curse_timer = 0.0
-			take_damage(1.0)
-	else:
-		_curse_timer = 0.0
-
-	# Cosmic Radiation — random HP/energy bitflip every 15 seconds underground.
-	if GameManager.trinket_cosmic_radiation and get_depth_row() > 0:
-		_cosmic_timer += delta
-		if _cosmic_timer >= COSMIC_INTERVAL:
-			_cosmic_timer = 0.0
-			_trigger_cosmic_bitflip()
-	else:
-		_cosmic_timer = 0.0
+	var is_underground: bool = get_depth_row() > 0
+	var is_moving: bool = abs(velocity.x) > 10.0
+	var actions := _trinket_fx.update(delta, is_underground, is_on_floor(), is_moving,
+		int(health_component.current_health), health_component.max_health)
+	if actions["heal"] > 0:
+		heal(1)
+	if actions["energy_restore"] > 0:
+		GameManager.restore_energy(1)
+	if actions["curse_damage"] > 0:
+		take_damage(1.0)
+	if actions["cosmic_bitflip"]:
+		_trigger_cosmic_bitflip()
 
 func _trigger_cosmic_bitflip() -> void:
 	# Randomly swap a positive or negative effect — represents radiation "bitflips".

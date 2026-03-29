@@ -88,20 +88,49 @@ var equipped_ice: bool = false
 # Stub companion equipped states — keyed by companion id (see HatMenu.COMPANIONS)
 var equipped_companions: Dictionary = {}
 
-# Equipped trinkets (independent toggles, persistent)
-var trinket_paraglider: bool = false          # Glide + no fall damage
-var trinket_jet_boots: bool = false           # Mid-air boost after double jump
-var trinket_stone_of_regen: bool = false      # +1 HP every 4 seconds
-var trinket_spring_boots: bool = false        # +2m jump height
-var trinket_jumping_bean: bool = false        # +20% mining power
-var trinket_sneakers: bool = false            # Free sprint (no energy cost)
-var trinket_gecko_gloves: bool = false        # Wall slide to slow descent
-var trinket_boots_of_sprinting: bool = false  # +1 energy/sec while walking
-var trinket_cube_of_curing: bool = false      # Immune to plasma burn
-var trinket_scuba_helmet: bool = false        # Immune to gas clouds
-var trinket_magnet: bool = false              # Attract ore within 4 tiles
-var trinket_cosmic_radiation: bool = false    # Random HP/energy bitflips
-var trinket_curse_of_core: bool = false       # -1 HP every 8 sec underground
+# Trinket system — delegates to TrinketManager for state and queries.
+var trinkets := TrinketManager.new()
+
+# Backwards-compatible trinket property accessors (delegate to TrinketManager).
+var trinket_paraglider: bool:
+	get: return trinkets.is_equipped("trinket_paraglider")
+	set(v): trinkets.set_equipped("trinket_paraglider", v)
+var trinket_jet_boots: bool:
+	get: return trinkets.is_equipped("trinket_jet_boots")
+	set(v): trinkets.set_equipped("trinket_jet_boots", v)
+var trinket_stone_of_regen: bool:
+	get: return trinkets.is_equipped("trinket_stone_of_regen")
+	set(v): trinkets.set_equipped("trinket_stone_of_regen", v)
+var trinket_spring_boots: bool:
+	get: return trinkets.is_equipped("trinket_spring_boots")
+	set(v): trinkets.set_equipped("trinket_spring_boots", v)
+var trinket_jumping_bean: bool:
+	get: return trinkets.is_equipped("trinket_jumping_bean")
+	set(v): trinkets.set_equipped("trinket_jumping_bean", v)
+var trinket_sneakers: bool:
+	get: return trinkets.is_equipped("trinket_sneakers")
+	set(v): trinkets.set_equipped("trinket_sneakers", v)
+var trinket_gecko_gloves: bool:
+	get: return trinkets.is_equipped("trinket_gecko_gloves")
+	set(v): trinkets.set_equipped("trinket_gecko_gloves", v)
+var trinket_boots_of_sprinting: bool:
+	get: return trinkets.is_equipped("trinket_boots_of_sprinting")
+	set(v): trinkets.set_equipped("trinket_boots_of_sprinting", v)
+var trinket_cube_of_curing: bool:
+	get: return trinkets.is_equipped("trinket_cube_of_curing")
+	set(v): trinkets.set_equipped("trinket_cube_of_curing", v)
+var trinket_scuba_helmet: bool:
+	get: return trinkets.is_equipped("trinket_scuba_helmet")
+	set(v): trinkets.set_equipped("trinket_scuba_helmet", v)
+var trinket_magnet: bool:
+	get: return trinkets.is_equipped("trinket_magnet")
+	set(v): trinkets.set_equipped("trinket_magnet", v)
+var trinket_cosmic_radiation: bool:
+	get: return trinkets.is_equipped("trinket_cosmic_radiation")
+	set(v): trinkets.set_equipped("trinket_cosmic_radiation", v)
+var trinket_curse_of_core: bool:
+	get: return trinkets.is_equipped("trinket_curse_of_core")
+	set(v): trinkets.set_equipped("trinket_curse_of_core", v)
 
 # Selected class for the current save (set during class selection on new game).
 # Empty string means no class chosen (legacy saves / multiplayer guest).
@@ -151,15 +180,15 @@ var legs_gem_socketed: bool = false          # +25 max energy, +15 move speed
 var mandibles_gem_socketed: bool = false     # +4 mining power
 var sense_gem_socketed: bool = false         # +3 sonar ping radius
 
-# Spaceship Upgrade system — permanent ship upgrades unlocked by milestone conditions.
-# Unlock conditions are checked at runtime; build costs are spent from dollars.
-## Spaceship upgrade costs in copper (100 copper = 1g).
-## 20000 copper = 200g, 15000 = 150g, 30000 = 300g, 25000 = 250g.
-const SHIP_COST_WARP_DRIVE: int       = 20000  # unlocks when total_coins_banked >= 50000
-const SHIP_COST_CARGO_BAY: int        = 15000  # unlocks when bosses_defeated_total >= 1
-const SHIP_COST_LONG_SCANNER: int     = 30000  # unlocks when total_coins_banked >= 100000
-const SHIP_COST_GEM_REFINERY: int     = 25000
-const SHIP_COST_TRADE_AMPLIFIER: int  = 20000  # unlocks when deepest_row_reached >= 96
+# Spaceship Upgrade system — delegates to ShipUpgradeManager.
+var ship := ShipUpgradeManager.new()
+
+# Cost constants kept for backwards compatibility.
+const SHIP_COST_WARP_DRIVE: int       = ShipUpgradeManager.COST_WARP_DRIVE
+const SHIP_COST_CARGO_BAY: int        = ShipUpgradeManager.COST_CARGO_BAY
+const SHIP_COST_LONG_SCANNER: int     = ShipUpgradeManager.COST_LONG_SCANNER
+const SHIP_COST_GEM_REFINERY: int     = ShipUpgradeManager.COST_GEM_REFINERY
+const SHIP_COST_TRADE_AMPLIFIER: int  = ShipUpgradeManager.COST_TRADE_AMPLIFIER
 
 # Cumulative milestone trackers (persisted to save)
 var total_coins_banked: int = 0          # sum of all coins ever banked (in copper)
@@ -167,12 +196,22 @@ var bosses_defeated_total: int = 0       # total boss encounters won
 var deepest_row_reached: int = 0         # deepest grid row ever reached
 var total_playtime_seconds: float = 0.0  # total seconds played (accumulated while PLAYING)
 
-# Spaceship upgrade built flags (persisted to save)
-var warp_drive_built: bool = false       # 2x caravan travel speed on overworld
-var cargo_bay_built: bool = false        # +25 ore carrying capacity per run
-var long_scanner_built: bool = false     # always show both asteroid mines on overworld
-var gem_refinery_built: bool = false     # +1 bonus gem per gem ore mined
-var trade_amplifier_built: bool = false  # +25% dollar payout when selling bars
+# Spaceship upgrade built flags — delegate to ShipUpgradeManager.
+var warp_drive_built: bool:
+	get: return ship.warp_drive_built
+	set(v): ship.warp_drive_built = v
+var cargo_bay_built: bool:
+	get: return ship.cargo_bay_built
+	set(v): ship.cargo_bay_built = v
+var long_scanner_built: bool:
+	get: return ship.long_scanner_built
+	set(v): ship.long_scanner_built = v
+var gem_refinery_built: bool:
+	get: return ship.gem_refinery_built
+	set(v): ship.gem_refinery_built = v
+var trade_amplifier_built: bool:
+	get: return ship.trade_amplifier_built
+	set(v): ship.trade_amplifier_built = v
 
 # Father's Debt — story goal tracked across all runs (persisted to save)
 ## Total debt owed: 50,000,000 copper (5000g). Paid off incrementally via the Clowder menu.
@@ -682,11 +721,11 @@ func get_warp_cost_reduction() -> float:
 
 ## Bonus gems awarded per gem ore mined (boosted by Gem Refinery).
 func get_gem_mine_bonus() -> int:
-	return 1 if gem_refinery_built else 0
+	return ship.get_gem_mine_bonus()
 
 ## Dollar sell multiplier for smeltery bars (boosted by Trade Amplifier).
 func get_dollar_sell_mult() -> float:
-	return 1.25 if trade_amplifier_built else 1.0
+	return ship.get_dollar_sell_mult()
 
 func get_sonar_ping_energy_cost() -> int:
 	return maxi(1, 5 - perk_ranks.get("whiskers", 0))
@@ -743,7 +782,7 @@ func get_sprint_speed_mult() -> float:
 
 ## Magnet attraction radius in pixels (0 when trinket not equipped).
 func get_magnet_range() -> float:
-	return 256.0 if trinket_magnet else 0.0  # 4 tiles × 64 px
+	return trinkets.get_magnet_range()
 
 func consume_energy(amount: int) -> bool:
 	current_energy -= amount
@@ -894,87 +933,72 @@ func save_game() -> void:
 	}
 
 	SaveManager.save_active_slot()
-
-	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if file:
-		file.store_string(JSON.stringify(save_data))
-		file.close()
+	FileIOHelper.save_json(SAVE_PATH, save_data)
 
 func load_game() -> void:
-	if not FileAccess.file_exists(SAVE_PATH):
+	var data: Variant = FileIOHelper.load_json(SAVE_PATH)
+	if not data is Dictionary:
 		return
-	
-	var file = FileAccess.open(SAVE_PATH, FileAccess.READ)
-	if file:
-		var json_string = file.get_as_text()
-		file.close()
-		
-		var json = JSON.new()
-		var error = json.parse(json_string)
-		if error == OK:
-			var data = json.data
-			# Migrate legacy saves that stored mineral_currency + dollars separately
-			var legacy_minerals: int = data.get("mineral_currency", 0)
-			var legacy_dollars: int = data.get("dollars", 0)
-			coins = data.get("coins", legacy_minerals * 100 + legacy_dollars * 100)
-			carapace_level = data.get("carapace_level", 0)
-			legs_level = data.get("legs_level", 0)
-			mandibles_level = data.get("mandibles_level", 0)
-			mineral_sense_level = data.get("mineral_sense_level", 0)
-			claws_level = data.get("claws_level", 0)
-			ladder_climb_speed_level = data.get("ladder_climb_speed_level", 0)
-			mining_reach_level = data.get("mining_reach_level", 0)
-			settlement_energy_bonus = data.get("settlement_energy_bonus", 0)
-			settlement_forager_bonus = data.get("settlement_forager_bonus", 0)
-			settlement_shroom_charges = data.get("settlement_shroom_charges", 0)
-			settlement_mandible_bonus = data.get("settlement_mandible_bonus", 0)
-			gem_count = data.get("gem_count", 0)
-			carapace_gem_socketed = data.get("carapace_gem_socketed", false)
-			legs_gem_socketed = data.get("legs_gem_socketed", false)
-			mandibles_gem_socketed = data.get("mandibles_gem_socketed", false)
-			sense_gem_socketed = data.get("sense_gem_socketed", false)
-			total_coins_banked = data.get("total_coins_banked", data.get("total_minerals_banked", 0) * 100)
-			bosses_defeated_total = data.get("bosses_defeated_total", 0)
-			deepest_row_reached = data.get("deepest_row_reached", 0)
-			warp_drive_built = data.get("warp_drive_built", false)
-			cargo_bay_built = data.get("cargo_bay_built", false)
-			long_scanner_built = data.get("long_scanner_built", false)
-			gem_refinery_built = data.get("gem_refinery_built", false)
-			trade_amplifier_built = data.get("trade_amplifier_built", false)
-			debt_paid = data.get("debt_paid", 0)
-			ladder_count = data.get("ladder_count", 0)
-			equipped_leaf = data.get("equipped_leaf", false)
-			equipped_ice = data.get("equipped_ice", false)
-			var saved_companions: Variant = data.get("equipped_companions", {})
-			equipped_companions = saved_companions if saved_companions is Dictionary else {}
-			var color_html: String = data.get("cat_color", "")
-			if color_html != "":
-				cat_color = Color.from_string(color_html, Color.WHITE)
-			else:
-				cat_color = Color.WHITE
-			var outline_html: String = data.get("cat_outline_color", "")
-			if outline_html != "":
-				cat_outline_color = Color.from_string(outline_html, Color("2b222a"))
-			else:
-				cat_outline_color = Color("2b222a")
-			has_completed_tier_1_mine = data.get("has_completed_tier_1_mine", false)
-			has_completed_tier_2_settlement = data.get("has_completed_tier_2_settlement", false)
-			has_seen_overworld_hint = data.get("has_seen_overworld_hint", false)
-			has_completed_first_run = data.get("has_completed_first_run", false)
-			has_seen_intro = data.get("has_seen_intro", false)
-			trinket_paraglider = data.get("trinket_paraglider", false)
-			trinket_jet_boots = data.get("trinket_jet_boots", false)
-			trinket_stone_of_regen = data.get("trinket_stone_of_regen", false)
-			trinket_spring_boots = data.get("trinket_spring_boots", false)
-			trinket_jumping_bean = data.get("trinket_jumping_bean", false)
-			trinket_sneakers = data.get("trinket_sneakers", false)
-			trinket_gecko_gloves = data.get("trinket_gecko_gloves", false)
-			trinket_boots_of_sprinting = data.get("trinket_boots_of_sprinting", false)
-			trinket_cube_of_curing = data.get("trinket_cube_of_curing", false)
-			trinket_scuba_helmet = data.get("trinket_scuba_helmet", false)
-			trinket_magnet = data.get("trinket_magnet", false)
-			trinket_cosmic_radiation = data.get("trinket_cosmic_radiation", false)
-			trinket_curse_of_core = data.get("trinket_curse_of_core", false)
-			pass
-		else:
-			push_warning("GameManager: Failed to parse save file")
+
+	# Migrate legacy saves that stored mineral_currency + dollars separately
+	var legacy_minerals: int = data.get("mineral_currency", 0)
+	var legacy_dollars: int = data.get("dollars", 0)
+	coins = data.get("coins", legacy_minerals * 100 + legacy_dollars * 100)
+	carapace_level = data.get("carapace_level", 0)
+	legs_level = data.get("legs_level", 0)
+	mandibles_level = data.get("mandibles_level", 0)
+	mineral_sense_level = data.get("mineral_sense_level", 0)
+	claws_level = data.get("claws_level", 0)
+	ladder_climb_speed_level = data.get("ladder_climb_speed_level", 0)
+	mining_reach_level = data.get("mining_reach_level", 0)
+	settlement_energy_bonus = data.get("settlement_energy_bonus", 0)
+	settlement_forager_bonus = data.get("settlement_forager_bonus", 0)
+	settlement_shroom_charges = data.get("settlement_shroom_charges", 0)
+	settlement_mandible_bonus = data.get("settlement_mandible_bonus", 0)
+	gem_count = data.get("gem_count", 0)
+	carapace_gem_socketed = data.get("carapace_gem_socketed", false)
+	legs_gem_socketed = data.get("legs_gem_socketed", false)
+	mandibles_gem_socketed = data.get("mandibles_gem_socketed", false)
+	sense_gem_socketed = data.get("sense_gem_socketed", false)
+	total_coins_banked = data.get("total_coins_banked", data.get("total_minerals_banked", 0) * 100)
+	bosses_defeated_total = data.get("bosses_defeated_total", 0)
+	deepest_row_reached = data.get("deepest_row_reached", 0)
+	warp_drive_built = data.get("warp_drive_built", false)
+	cargo_bay_built = data.get("cargo_bay_built", false)
+	long_scanner_built = data.get("long_scanner_built", false)
+	gem_refinery_built = data.get("gem_refinery_built", false)
+	trade_amplifier_built = data.get("trade_amplifier_built", false)
+	debt_paid = data.get("debt_paid", 0)
+	ladder_count = data.get("ladder_count", 0)
+	equipped_leaf = data.get("equipped_leaf", false)
+	equipped_ice = data.get("equipped_ice", false)
+	var saved_companions: Variant = data.get("equipped_companions", {})
+	equipped_companions = saved_companions if saved_companions is Dictionary else {}
+	var color_html: String = data.get("cat_color", "")
+	if color_html != "":
+		cat_color = Color.from_string(color_html, Color.WHITE)
+	else:
+		cat_color = Color.WHITE
+	var outline_html: String = data.get("cat_outline_color", "")
+	if outline_html != "":
+		cat_outline_color = Color.from_string(outline_html, Color("2b222a"))
+	else:
+		cat_outline_color = Color("2b222a")
+	has_completed_tier_1_mine = data.get("has_completed_tier_1_mine", false)
+	has_completed_tier_2_settlement = data.get("has_completed_tier_2_settlement", false)
+	has_seen_overworld_hint = data.get("has_seen_overworld_hint", false)
+	has_completed_first_run = data.get("has_completed_first_run", false)
+	has_seen_intro = data.get("has_seen_intro", false)
+	trinket_paraglider = data.get("trinket_paraglider", false)
+	trinket_jet_boots = data.get("trinket_jet_boots", false)
+	trinket_stone_of_regen = data.get("trinket_stone_of_regen", false)
+	trinket_spring_boots = data.get("trinket_spring_boots", false)
+	trinket_jumping_bean = data.get("trinket_jumping_bean", false)
+	trinket_sneakers = data.get("trinket_sneakers", false)
+	trinket_gecko_gloves = data.get("trinket_gecko_gloves", false)
+	trinket_boots_of_sprinting = data.get("trinket_boots_of_sprinting", false)
+	trinket_cube_of_curing = data.get("trinket_cube_of_curing", false)
+	trinket_scuba_helmet = data.get("trinket_scuba_helmet", false)
+	trinket_magnet = data.get("trinket_magnet", false)
+	trinket_cosmic_radiation = data.get("trinket_cosmic_radiation", false)
+	trinket_curse_of_core = data.get("trinket_curse_of_core", false)

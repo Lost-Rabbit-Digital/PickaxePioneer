@@ -57,6 +57,10 @@ func _ready() -> void:
 # Audio
 # ---------------------------------------------------------------------------
 
+## Convert a linear volume (0.0–1.0) to decibels, with -80 dB floor for silence.
+static func _volume_to_db(value: float) -> float:
+	return linear_to_db(value) if value > 0.0 else -80.0
+
 func _ensure_audio_buses() -> void:
 	if AudioServer.get_bus_index("Music") == -1:
 		AudioServer.add_bus()
@@ -72,18 +76,15 @@ func _ensure_audio_buses() -> void:
 
 func set_master_volume(value: float) -> void:
 	master_volume = clampf(value, 0.0, 1.0)
-	var db = linear_to_db(master_volume) if master_volume > 0.0 else -80.0
-	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Master"), db)
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Master"), _volume_to_db(master_volume))
 
 func set_music_volume(value: float) -> void:
 	music_volume = clampf(value, 0.0, 1.0)
-	var db = linear_to_db(music_volume) if music_volume > 0.0 else -80.0
-	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), db)
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), _volume_to_db(music_volume))
 
 func set_sfx_volume(value: float) -> void:
 	sfx_volume = clampf(value, 0.0, 1.0)
-	var db = linear_to_db(sfx_volume) if sfx_volume > 0.0 else -80.0
-	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("SFX"), db)
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("SFX"), _volume_to_db(sfx_volume))
 
 # ---------------------------------------------------------------------------
 # Display

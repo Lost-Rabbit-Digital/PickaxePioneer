@@ -94,32 +94,13 @@ func _play_sample(stream: AudioStream, volume_db: float = -8.0, pitch_min: float
 
 
 func play_pickup_sound() -> void:
-	var player = AudioStreamPlayer.new()
-	add_child(player)
-
-	player.stream = _pop_sounds[randi() % _pop_sounds.size()]
-	player.pitch_scale = randf_range(0.8, 1.2)
-	player.bus = &"SFX"
-	player.volume_db = -8.0
-	player.play()
-
-	await player.finished
-	player.queue_free()
+	_play_sample(_pop_sounds[randi() % _pop_sounds.size()], -8.0, 0.8, 1.2)
 
 func play_drill_sound() -> void:
 	if _mining_hit_sound:
 		_play_sample(_mining_hit_sound, -8.0, 0.85, 1.15)
-		return
-	# Fallback: pop sound
-	var player = AudioStreamPlayer.new()
-	add_child(player)
-	player.stream = _pop_sounds[randi() % _pop_sounds.size()]
-	player.pitch_scale = randf_range(0.8, 1.2)
-	player.bus = &"SFX"
-	player.volume_db = -8.0
-	player.play()
-	await player.finished
-	player.queue_free()
+	else:
+		_play_sample(_pop_sounds[randi() % _pop_sounds.size()], -8.0, 0.8, 1.2)
 
 func play_sonar_ping_sound() -> void:
 	if _sonar_ping_sound:
