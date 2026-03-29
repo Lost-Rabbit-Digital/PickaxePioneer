@@ -163,17 +163,8 @@ func _build_energy_shop() -> void:
 
 	_energy_layer.add_child(_dim_rect())
 
-	var border := ColorRect.new()
-	border.position = Vector2(PX - 3, PY - 3)
-	border.size = Vector2(PANEL_W + 6, PANEL_H + 6)
-	border.color = Color(0.20, 0.60, 0.90)
-	_energy_layer.add_child(border)
-
-	var panel := ColorRect.new()
-	panel.position = Vector2(PX, PY)
-	panel.size = Vector2(PANEL_W, PANEL_H)
-	panel.color = Color(0.07, 0.10, 0.14, 0.97)
-	_energy_layer.add_child(panel)
+	UIHelper.create_bordered_panel(_energy_layer, PX, PY, PANEL_W, PANEL_H,
+		Color(0.20, 0.60, 0.90), Color(0.07, 0.10, 0.14, 0.97))
 
 	var title := Label.new()
 	title.text = "Recharging Station"
@@ -294,17 +285,8 @@ func _build_upgrade_station() -> void:
 
 	_upgrade_layer.add_child(_dim_rect())
 
-	var border := ColorRect.new()
-	border.position = Vector2(PX - 3, PY - 3)
-	border.size = Vector2(PANEL_W + 6, PANEL_H + 6)
-	border.color = Color(0.45, 0.30, 0.80)
-	_upgrade_layer.add_child(border)
-
-	var panel := ColorRect.new()
-	panel.position = Vector2(PX, PY)
-	panel.size = Vector2(PANEL_W, PANEL_H)
-	panel.color = Color(0.06, 0.04, 0.14, 0.97)
-	_upgrade_layer.add_child(panel)
+	UIHelper.create_bordered_panel(_upgrade_layer, PX, PY, PANEL_W, PANEL_H,
+		Color(0.45, 0.30, 0.80), Color(0.06, 0.04, 0.14, 0.97))
 
 	var title := Label.new()
 	title.text = "Upgrade Bay"
@@ -393,17 +375,8 @@ func _build_smeltery() -> void:
 
 	_smeltery_layer.add_child(_dim_rect())
 
-	var border := ColorRect.new()
-	border.position = Vector2(PX - 3, PY - 3)
-	border.size = Vector2(PANEL_W + 6, PANEL_H + 6)
-	border.color = Color(1.0, 0.55, 0.0)
-	_smeltery_layer.add_child(border)
-
-	var panel := ColorRect.new()
-	panel.position = Vector2(PX, PY)
-	panel.size = Vector2(PANEL_W, PANEL_H)
-	panel.color = Color(0.12, 0.08, 0.04, 0.97)
-	_smeltery_layer.add_child(panel)
+	UIHelper.create_bordered_panel(_smeltery_layer, PX, PY, PANEL_W, PANEL_H,
+		Color(1.0, 0.55, 0.0), Color(0.12, 0.08, 0.04, 0.97))
 
 	var title := Label.new()
 	title.text = "Space Forge"
@@ -528,17 +501,8 @@ func _build_cat_tavern() -> void:
 
 	_cat_tavern_layer.add_child(_dim_rect())
 
-	var border := ColorRect.new()
-	border.position = Vector2(PX - 3, PY - 3)
-	border.size = Vector2(PANEL_W + 6, PANEL_H + 6)
-	border.color = Color(0.80, 0.55, 0.10)
-	_cat_tavern_layer.add_child(border)
-
-	var panel := ColorRect.new()
-	panel.position = Vector2(PX, PY)
-	panel.size = Vector2(PANEL_W, PANEL_H)
-	panel.color = Color(0.08, 0.06, 0.03, 0.97)
-	_cat_tavern_layer.add_child(panel)
+	UIHelper.create_bordered_panel(_cat_tavern_layer, PX, PY, PANEL_W, PANEL_H,
+		Color(0.80, 0.55, 0.10), Color(0.08, 0.06, 0.03, 0.97))
 
 	var title := Label.new()
 	title.text = "The Cat Tavern"
