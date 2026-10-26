@@ -1,0 +1,55 @@
+name: Godot Check
+
+# Cheap sanity gate: one headless import + parse check, no LFS, no exports.
+# Runs only when Godot files change, and cancels superseded runs.
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**.gd'
+      - '**.tscn'
+      - '**.tres'
+      - 'project.godot'
+      - '.github/workflows/godot-check.yml'
+  pull_request:
+    paths:
+      - '**.gd'
+      - '**.tscn'
+      - '**.tres'
+      - 'project.godot'
+      - '.github/workflows/godot-check.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: godot-check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+    working-directory: .
+
+jobs:
+  check:
+    name: Import & parse (Godot 4.7)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: barichello/godot-ci:4.7
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Import project
+        run: |
+          set -o pipefail
+          godot --headless --import . 2>&1 | tee import.log
+
+      - name: Fail on script errors
+        run: |
+          if grep -E "SCRIPT ERROR|Parse Error" import.log; then
+            echo "::error::Script parse errors found (see log above)."
+            exit 1
+          fi
