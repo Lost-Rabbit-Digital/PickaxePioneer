@@ -1,8 +1,10 @@
 # Pickaxe Pioneer — CLAUDE.md
 
+Studio conventions: https://github.com/Lost-Rabbit-Digital/studio-playbook (source of truth for Lost Rabbit Digital practices).
+
 ## WHY — What This Project Is
 
-**Pickaxe Pioneer** is a 2D Terraria-style space mining roguelite built in Godot 4.5.
+**Pickaxe Pioneer** is a 2D Terraria-style space mining roguelite built in Godot 4.7.
 You play as a **mining cat** travelling between planets, scavenging ore to fuel your
 next jump. Your home base is **the Clowder** — a feline space-station civilization.
 Inspired by Motherload / Super Motherload.
@@ -10,8 +12,8 @@ Inspired by Motherload / Super Motherload.
 - **Genre:** Mining roguelite (side-scrolling, physics-based)
 - **Core loop:** Star chart → land on planet → mine run → bank minerals → buy upgrades → next planet
 - **Platforms:** Steam (Windows/Linux/Mac) + Itch.io | **Price:** $3–5
-- **Engine:** Godot 4.5 | **Language:** GDScript (static typing required, no C#)
-- **Addons:** GUT (unit testing framework)
+- **Engine:** Godot 4.7 | **Language:** GDScript (static typing required, no C#)
+- **Addons:** `manage_user_data` (no test framework installed)
 
 **Mandatory terminology** — use these exclusively in all code strings, comments, and docs:
 
@@ -43,7 +45,6 @@ res://
 │   ├── levels/       # Scene controllers (Overworld, MiningLevel, CityLevel, SettlementLevel)
 │   ├── systems/      # Extracted subsystems (RefCounted classes)
 │   └── ui/           # UI controllers
-└── tests/            # GUT unit tests
 ```
 
 ### Autoloads (registered singletons)
@@ -115,17 +116,18 @@ res://
 
 ## HOW — Build, Run, and Verify
 
-**Run the game:** Open `project.godot` in Godot 4.5, press F5.
+**Run the game:** Open `project.godot` in Godot 4.7, press F5.
 
-**Run tests:** `Godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/`
-(or use the GUT panel in the editor)
+**Tests:** There is no unit test framework or `tests/` folder. CI
+(`.github/workflows/godot-check.yml`) runs a headless Godot 4.7 import and fails on
+script/parse errors; run `godot --headless --import .` locally for the same check.
 
 **Export:** Project → Export → select Windows/Linux/Mac preset.
 
 **Verify a change works:**
 1. Open the affected scene in the editor
 2. Run the game (F5), navigate to the changed feature
-3. If logic change: write or update a GUT test in `tests/`
+3. Run the headless import check above to catch parse errors
 
 **Branch strategy:** Feature branches off `main`, named `feature/short-description`.
 PRs require at least one review before merge.
